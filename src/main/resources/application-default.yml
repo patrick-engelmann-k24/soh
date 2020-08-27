@@ -1,0 +1,18 @@
+#
+# Camunda BPM configuration
+#
+camunda:
+  bpm:
+    database:
+      # IMPORTANT! flyway is responsible for database changes
+      schema-update: false
+      schema-name: bpm
+      table-prefix: ${camunda.bpm.database.schema-name}.
+    admin-user:
+      id: demo
+      password: demo
+      firstName: Demo
+    filter:
+      create: All tasks
+    history-level: full
+

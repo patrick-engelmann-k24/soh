@@ -1,4 +1,4 @@
-package com.kfzteile24.osh.helper;
+package de.kfzteile24.salesOrderHub.helper;
 
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.ProcessEngines;

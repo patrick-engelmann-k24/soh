@@ -1,7 +1,15 @@
-camunda.bpm:
-  admin-user:
-    id: demo
-    password: demo
-    firstName: Demo
-  filter:
-    create: All tasks
+#
+# Profile documentation: https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-profiles
+#
+spring:
+  profiles.active: development,default
+
+---
+spring:
+  profiles: development
+
+  datasource:
+    jdbcUrl: jdbc:postgresql://thalassa.bs67:5432/soh?currentSchema=public
+    username: postgres
+    password: postgres
+    poolName: sales-order-hub

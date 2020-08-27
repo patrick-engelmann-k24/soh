@@ -15,6 +15,9 @@
 -- limitations under the License.
 --
 
+create schema bpm;
+SET search_path TO bpm;
+
 create table ACT_GE_PROPERTY (
     NAME_ varchar(64),
     VALUE_ varchar(300),
@@ -1342,3 +1345,5 @@ create index ACT_IDX_HI_DEC_OUT_INST on ACT_HI_DEC_OUT(DEC_INST_ID_);
 create index ACT_IDX_HI_DEC_OUT_RULE on ACT_HI_DEC_OUT(RULE_ORDER_, CLAUSE_ID_);
 create index ACT_IDX_HI_DEC_OUT_ROOT_PI on ACT_HI_DEC_OUT(ROOT_PROC_INST_ID_);
 create index ACT_IDX_HI_DEC_OUT_RM_TIME on ACT_HI_DEC_OUT(REMOVAL_TIME_);
+
+SET search_path TO bpm, public;

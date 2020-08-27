@@ -1,4 +1,4 @@
-package com.kfzteile24.osh;
+package de.kfzteile24.salesOrderHub;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -15,7 +15,7 @@ import static org.junit.Assert.assertTrue;
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-        classes = SohProcessApplication.class,
+        classes = SalesOrderHubProcessApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
 public class WebAppTest {

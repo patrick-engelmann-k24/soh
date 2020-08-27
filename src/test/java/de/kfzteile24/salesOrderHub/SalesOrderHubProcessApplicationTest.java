@@ -14,11 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.kfzteile24.osh;
+package de.kfzteile24.salesOrderHub;
 
 import org.camunda.bpm.engine.ProcessEngine;
-import org.camunda.bpm.spring.boot.starter.actuator.ProcessEngineHealthIndicator;
-import org.camunda.bpm.spring.boot.starter.property.ManagementProperties.Health;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,10 +27,10 @@ import static org.junit.Assert.assertEquals;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-        classes = SohProcessApplication.class,
+        classes = SalesOrderHubProcessApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
-public class SohProcessApplicationTest {
+public class SalesOrderHubProcessApplicationTest {
     @Autowired
     public ProcessEngine processEngine;
 

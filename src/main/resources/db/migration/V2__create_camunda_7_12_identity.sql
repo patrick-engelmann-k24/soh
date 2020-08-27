@@ -15,6 +15,9 @@
 -- limitations under the License.
 --
 
+SET search_path TO bpm;
+
+
 create table ACT_ID_GROUP (
     ID_ varchar(64),
     REV_ integer,
@@ -107,3 +110,5 @@ alter table ACT_ID_TENANT_MEMBER
     add constraint ACT_FK_TENANT_MEMB_GROUP
     foreign key (GROUP_ID_)
     references ACT_ID_GROUP (ID_);
+
+SET search_path TO bpm, public;

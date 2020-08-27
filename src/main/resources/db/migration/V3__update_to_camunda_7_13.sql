@@ -15,6 +15,8 @@
 -- limitations under the License.
 --
 
+SET search_path TO bpm;
+
 insert into ACT_GE_SCHEMA_LOG
 values ('200', CURRENT_TIMESTAMP, '7.13.0');
 
@@ -61,3 +63,5 @@ ALTER TABLE ACT_RU_VARIABLE
 
 ALTER TABLE ACT_HI_DETAIL
   ADD INITIAL_ boolean;
+
+SET search_path TO bpm, public;
