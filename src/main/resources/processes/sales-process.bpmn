@@ -209,7 +209,7 @@
         </bpmn:intermediateThrowEvent>
       </bpmn:subProcess>
       <bpmn:subProcess id="activitySubProcessOrderItemChangeDeliveryAddress" triggeredByEvent="true">
-        <bpmn:startEvent id="eventStartMsgOrderItemDeliveryAddreeeChange" name="Delivery address change" isInterrupting="false">
+        <bpmn:startEvent id="eventStartMsgOrderItemDeliveryAddressChange" name="Delivery address change" isInterrupting="false">
           <bpmn:outgoing>Flow_1f9j5r5</bpmn:outgoing>
           <bpmn:messageEventDefinition id="MessageEventDefinition_1bez68i" messageRef="Message_1o2idhb" />
         </bpmn:startEvent>
@@ -217,7 +217,7 @@
           <bpmn:incoming>Flow_1f9j5r5</bpmn:incoming>
           <bpmn:outgoing>Flow_0ngja53</bpmn:outgoing>
         </bpmn:task>
-        <bpmn:sequenceFlow id="Flow_1f9j5r5" sourceRef="eventStartMsgOrderItemDeliveryAddreeeChange" targetRef="activityOrderItemCheckChangeAddressPossible" />
+        <bpmn:sequenceFlow id="Flow_1f9j5r5" sourceRef="eventStartMsgOrderItemDeliveryAddressChange" targetRef="activityOrderItemCheckChangeAddressPossible" />
         <bpmn:exclusiveGateway id="gwXOROrderItemChangePossible" name="Change possible?">
           <bpmn:incoming>Flow_0ngja53</bpmn:incoming>
           <bpmn:outgoing>Flow_0di5kzo</bpmn:outgoing>
@@ -251,11 +251,11 @@ Pickup: n/a</bpmn:text>
         </bpmn:textAnnotation>
       </bpmn:subProcess>
       <bpmn:subProcess id="activitySubProcessCancelOrderItem" triggeredByEvent="true">
-        <bpmn:startEvent id="eventCatchEscalationOrderItemOrderCanceled" name="Order canceled">
+        <bpmn:startEvent id="eventCatchEscalationOrderItemOrderCancelled" name="Order canceled">
           <bpmn:outgoing>Flow_1k5ki6n</bpmn:outgoing>
           <bpmn:escalationEventDefinition id="EscalationEventDefinition_0d88xuv" escalationRef="Escalation_0v7r5ct" />
         </bpmn:startEvent>
-        <bpmn:sequenceFlow id="Flow_1k5ki6n" sourceRef="eventCatchEscalationOrderItemOrderCanceled" targetRef="eventThrowMsgOrderItemCancelled" />
+        <bpmn:sequenceFlow id="Flow_1k5ki6n" sourceRef="eventCatchEscalationOrderItemOrderCancelled" targetRef="eventThrowMsgOrderItemCancelled" />
         <bpmn:endEvent id="eventThrowMsgOrderItemCancelled" name="Order item cancelled">
           <bpmn:incoming>Flow_1k5ki6n</bpmn:incoming>
           <bpmn:messageEventDefinition id="MessageEventDefinition_0lnfvrd" />
@@ -284,7 +284,7 @@ Pickup: only before "Item picked up"</bpmn:text>
         <bpmn:outgoing>Flow_0d2x8sg</bpmn:outgoing>
       </bpmn:task>
       <bpmn:sequenceFlow id="Flow_1daj8ak" sourceRef="eventStartMsgInvoiceAddressChangeReceived" targetRef="gwXORInvoiceExist" />
-      <bpmn:sequenceFlow id="Flow_0d2x8sg" sourceRef="Activity_1n37dku" targetRef="Event_1usdu2f" />
+      <bpmn:sequenceFlow id="Flow_0d2x8sg" sourceRef="Activity_1n37dku" targetRef="eventInvoiceAddressChanged" />
       <bpmn:exclusiveGateway id="gwXORInvoiceExist" name="Invoice exist?">
         <bpmn:incoming>Flow_1daj8ak</bpmn:incoming>
         <bpmn:outgoing>Flow_0tnk89y</bpmn:outgoing>
@@ -293,13 +293,13 @@ Pickup: only before "Item picked up"</bpmn:text>
       <bpmn:sequenceFlow id="Flow_0tnk89y" name="No" sourceRef="gwXORInvoiceExist" targetRef="Activity_1n37dku">
         <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${invoiceExist}</bpmn:conditionExpression>
       </bpmn:sequenceFlow>
-      <bpmn:endEvent id="Event_0d2xc90" name="Address not changed">
+      <bpmn:endEvent id="eventInvoiceAddressNotChanged" name="Address not changed">
         <bpmn:incoming>Flow_1adwckx</bpmn:incoming>
       </bpmn:endEvent>
-      <bpmn:sequenceFlow id="Flow_1adwckx" name="Yes" sourceRef="gwXORInvoiceExist" targetRef="Event_0d2xc90">
+      <bpmn:sequenceFlow id="Flow_1adwckx" name="Yes" sourceRef="gwXORInvoiceExist" targetRef="eventInvoiceAddressNotChanged">
         <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${invoiceExist}</bpmn:conditionExpression>
       </bpmn:sequenceFlow>
-      <bpmn:endEvent id="Event_1usdu2f" name="Invoice address changed">
+      <bpmn:endEvent id="eventInvoiceAddressChanged" name="Invoice address changed">
         <bpmn:incoming>Flow_0d2x8sg</bpmn:incoming>
         <bpmn:messageEventDefinition id="MessageEventDefinition_1tn1iim" />
       </bpmn:endEvent>
@@ -314,10 +314,10 @@ Pickup: only before "Item picked up"</bpmn:text>
         <bpmn:outgoing>Flow_1utbsvm</bpmn:outgoing>
       </bpmn:task>
       <bpmn:sequenceFlow id="Flow_05twbpu" sourceRef="eventStartMsgInvoiceCreated" targetRef="Activity_1a5blkg" />
-      <bpmn:endEvent id="Event_029w133" name="Invoice saved">
+      <bpmn:endEvent id="eventInvoiceSaved" name="Invoice saved">
         <bpmn:incoming>Flow_1utbsvm</bpmn:incoming>
       </bpmn:endEvent>
-      <bpmn:sequenceFlow id="Flow_1utbsvm" sourceRef="Activity_1a5blkg" targetRef="Event_029w133" />
+      <bpmn:sequenceFlow id="Flow_1utbsvm" sourceRef="Activity_1a5blkg" targetRef="eventInvoiceSaved" />
     </bpmn:subProcess>
     <bpmn:endEvent id="eventThrowMsgOrderCompleted" name="Order completed">
       <bpmn:incoming>Flow_0f2bo4s</bpmn:incoming>
@@ -397,7 +397,7 @@ Pickup: only before "Item picked up"</bpmn:text>
   <bpmn:message id="Message_1p947gv" name="msg_orderReceivedFromBranch" />
   <bpmn:message id="Message_0qljm9c" name="msg_orderReceivedFromGarage" />
   <bpmn:escalation id="Escalation_1vowjkp" name="escaltionOrderItemFullfilmentCancelled" escalationCode="1234567890" />
-  <bpmn:escalation id="Escalation_0v7r5ct" name="escalationOrderCanceled" escalationCode="1234567890" />
+  <bpmn:escalation id="Escalation_0v7r5ct" name="escalationOrderCancelled" escalationCode="1234567890" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="SalesOrderProcess">
       <bpmndi:BPMNShape id="TextAnnotation_0xbq3xi_di" bpmnElement="TextAnnotation_0xbq3xi">
@@ -590,7 +590,7 @@ Pickup: only before "Item picked up"</bpmn:text>
       <bpmndi:BPMNShape id="Activity_1a5blkg_di" bpmnElement="Activity_1a5blkg">
         <dc:Bounds x="260" y="1030" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_029w133_di" bpmnElement="Event_029w133">
+      <bpmndi:BPMNShape id="Event_029w133_di" bpmnElement="eventInvoiceSaved">
         <dc:Bounds x="422" y="1052" width="36" height="36" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="406" y="1095" width="68" height="14" />
@@ -905,7 +905,7 @@ Pickup: only before "Item picked up"</bpmn:text>
         <di:waypoint x="1848" y="830" />
         <di:waypoint x="1890" y="830" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="Event_1xeitoz_di" bpmnElement="eventStartMsgOrderItemDeliveryAddreeeChange">
+      <bpmndi:BPMNShape id="Event_1xeitoz_di" bpmnElement="eventStartMsgOrderItemDeliveryAddressChange">
         <dc:Bounds x="1812" y="812" width="36" height="36" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="1790" y="855" width="82" height="27" />
@@ -946,7 +946,7 @@ Pickup: only before "Item picked up"</bpmn:text>
         <di:waypoint x="1866" y="650" />
         <di:waypoint x="2002" y="650" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="Event_1hczgno_di" bpmnElement="eventCatchEscalationOrderItemOrderCanceled">
+      <bpmndi:BPMNShape id="Event_1hczgno_di" bpmnElement="eventCatchEscalationOrderItemOrderCancelled">
         <dc:Bounds x="1830" y="632" width="36" height="36" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="1811" y="675" width="76" height="14" />
@@ -1011,13 +1011,13 @@ Pickup: only before "Item picked up"</bpmn:text>
           <dc:Bounds x="656" y="971" width="67" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_0d2xc90_di" bpmnElement="Event_0d2xc90">
+      <bpmndi:BPMNShape id="Event_0d2xc90_di" bpmnElement="eventInvoiceAddressNotChanged">
         <dc:Bounds x="976" y="1102" width="36" height="36" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="965" y="1145" width="59" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_1qpteb7_di" bpmnElement="Event_1usdu2f">
+      <bpmndi:BPMNShape id="Event_1qpteb7_di" bpmnElement="eventInvoiceAddressChanged">
         <dc:Bounds x="976" y="1002" width="36" height="36" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="956" y="1045" width="78" height="27" />
