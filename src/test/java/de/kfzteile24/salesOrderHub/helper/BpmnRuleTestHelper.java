@@ -1,16 +1,22 @@
 package de.kfzteile24.salesOrderHub.helper;
 
+import de.kfzteile24.salesOrderHub.SalesOrderHubProcessApplicationTest;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.ProcessEngines;
 import org.camunda.bpm.engine.test.ProcessEngineRule;
 import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.model.Statement;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.Map;
 
+@RunWith(SpringRunner.class)
+@SpringBootTest(
+        classes = SalesOrderHubProcessApplicationTest.class,
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
+)
 public class BpmnRuleTestHelper extends ProcessEngineRule {
     @Override
     public Statement apply(Statement base, Description description) {

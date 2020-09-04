@@ -15,7 +15,7 @@ import static org.junit.Assert.assertTrue;
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-        classes = SalesOrderHubProcessApplication.class,
+        classes = SalesOrderHubProcessApplicationTest.class,
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
 public class WebAppTest {

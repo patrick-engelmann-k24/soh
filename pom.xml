@@ -80,11 +80,11 @@
       <artifactId>junit</artifactId>
       <scope>test</scope>
     </dependency>
-<!--    <dependency>-->
-<!--      <groupId>com.zaxxer</groupId>-->
-<!--      <artifactId>HikariCP</artifactId>-->
-<!--      <version>3.4.5</version>-->
-<!--    </dependency>-->
+    <dependency>
+      <groupId>org.camunda.commons</groupId>
+      <artifactId>camunda-commons-testing</artifactId>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>

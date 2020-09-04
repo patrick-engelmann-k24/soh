@@ -15,8 +15,6 @@ public class SalesOrderHubProcessApplication {
 
     public static void main(String... args) {
         SpringApplication.run(SalesOrderHubProcessApplication.class, args);
-
-
     }
 
     @Bean
