@@ -94,25 +94,19 @@ public class SalesOrderHubProcessApplicationTest {
                 .correlate();
 
         runtimeService.createMessageCorrelation(MSG_ITEM_TRANSMITTED)
-                .processInstanceBusinessKey(orderId)
+                .processInstanceVariableEquals("orderId", orderId)
+                .processInstanceVariableEquals("orderItemId", firstItem)
                 .correlateAll();
 
         List<MessageCorrelationResult> msg_packingStarted = runtimeService.createMessageCorrelation("msg_packingStarted")
-                .processInstanceBusinessKey(orderId)
+                .processInstanceVariableEquals("orderId", orderId)
+                .processInstanceVariableEquals("orderItemId", firstItem)
                 .correlateAllWithResult();
 
         // cancel 1st orderItem
         runtimeService.createMessageCorrelation(MSG_DROPSHIPMENT_CANCELLATION_RECEIVED)
-//                .processInstanceVariableEquals("orderItem", firstItem)
-                .localVariableEquals("item", firstItem)
+                .processInstanceVariableEquals("orderItemId", firstItem)
                 .correlate();
-//        runtimeService.correlateMessage(MSG_DROPSHIPMENT_CANCELLATION_RECEIVED)
-//            .MessageCorrelationResult salesOrderProcess = runtimeService.createMessageCorrelation
-//        ;//, orderId, correlationKeys, orderItemVars);
-//        runtimeService.createMessageCorrelation(MSG_DROPSHIPMENT_CANCELLATION_RECEIVED, orderId + "-item-" + 0)
-//                .processInstanceId(processInstance.getId())
-//                .setVariable("trackingIdReceived", false)
-//                .correlate();
     }
 
     final List<String> getOrderItems(final String orderId, final int number) {

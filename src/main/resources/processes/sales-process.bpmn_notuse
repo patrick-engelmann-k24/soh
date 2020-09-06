@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.2.0" camunda:diagramRelationId="06f23589-a629-45e3-92ba-b59cee025910">
-  <bpmn:process id="SalesOrderProcess" name="Sales Order Process" isExecutable="true">
+  <bpmn:process id="SalesOrderProcess" name="Sales Order Process" isExecutable="false">
     <bpmn:intermediateThrowEvent id="eventThrowMsgOrderCreated" name="Order created">
       <bpmn:incoming>Flow_0v1861j</bpmn:incoming>
       <bpmn:outgoing>Flow_01fom6v</bpmn:outgoing>
@@ -52,6 +52,10 @@
       <bpmn:outgoing>Flow_0f2bo4s</bpmn:outgoing>
       <bpmn:multiInstanceLoopCharacteristics camunda:collection="${orderItems}" camunda:elementVariable="item" />
       <bpmn:startEvent id="eventStartSubProcessOrderItem">
+        <bpmn:extensionElements>
+          <camunda:executionListener expression="${execution.setVariableLocal(&#39;orderItemId&#39;,item)}" event="start" />
+          <camunda:executionListener expression="${execution.setVariableLocal(&#39;trackingIdReceived&#39;,false)}" event="start" />
+        </bpmn:extensionElements>
         <bpmn:outgoing>Flow_0rd4tij</bpmn:outgoing>
       </bpmn:startEvent>
       <bpmn:endEvent id="eventEndOrderItemFinished">
@@ -183,18 +187,14 @@
           <bpmn:outgoing>Flow_0cn11d7</bpmn:outgoing>
         </bpmn:exclusiveGateway>
         <bpmn:sequenceFlow id="Flow_0qtf2ew" sourceRef="eventStartMsgOrderItemDropshipmentCancellationReceived" targetRef="gwXOROrderItemTrackingIdReceived" />
-        <bpmn:task id="activityOrderItemHandleCancellationDropshipment" name="Handle cancellation">
-          <bpmn:incoming>Flow_08vrzij</bpmn:incoming>
-          <bpmn:outgoing>Flow_0icw6ew</bpmn:outgoing>
-        </bpmn:task>
         <bpmn:sequenceFlow id="Flow_08vrzij" name="No" sourceRef="gwXOROrderItemTrackingIdReceived" targetRef="activityOrderItemHandleCancellationDropshipment">
-          <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${trackingIdReceived}</bpmn:conditionExpression>
+          <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${not trackingIdReceived}</bpmn:conditionExpression>
         </bpmn:sequenceFlow>
         <bpmn:endEvent id="eventEndOrderItemCancellationDropshipmentNotHandled" name="Cancellation not handled">
           <bpmn:incoming>Flow_0cn11d7</bpmn:incoming>
         </bpmn:endEvent>
         <bpmn:sequenceFlow id="Flow_0cn11d7" name="Yes" sourceRef="gwXOROrderItemTrackingIdReceived" targetRef="eventEndOrderItemCancellationDropshipmentNotHandled">
-          <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${not trackingIdReceived}</bpmn:conditionExpression>
+          <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${trackingIdReceived}</bpmn:conditionExpression>
         </bpmn:sequenceFlow>
         <bpmn:sequenceFlow id="Flow_0icw6ew" sourceRef="activityOrderItemHandleCancellationDropshipment" targetRef="eventThrowMsgOrderItemDropshipmentCancelled" />
         <bpmn:endEvent id="eventThrowOrderItemCancellationDropshipmentHandled" name="Order item dropshipment cancelled">
@@ -207,6 +207,10 @@
           <bpmn:outgoing>Flow_0y0gf02</bpmn:outgoing>
           <bpmn:escalationEventDefinition id="EscalationEventDefinition_0q54i7a" escalationRef="Escalation_0v7r5ct" />
         </bpmn:intermediateThrowEvent>
+        <bpmn:serviceTask id="activityOrderItemHandleCancellationDropshipment" name="Handle cancellation" camunda:delegateExpression="${handleCancellation}">
+          <bpmn:incoming>Flow_08vrzij</bpmn:incoming>
+          <bpmn:outgoing>Flow_0icw6ew</bpmn:outgoing>
+        </bpmn:serviceTask>
       </bpmn:subProcess>
       <bpmn:subProcess id="activitySubProcessOrderItemChangeDeliveryAddress" triggeredByEvent="true">
         <bpmn:startEvent id="eventStartMsgOrderItemDeliveryAddressChange" name="Delivery address change" isInterrupting="false">
@@ -251,15 +255,22 @@ Pickup: n/a</bpmn:text>
         </bpmn:textAnnotation>
       </bpmn:subProcess>
       <bpmn:subProcess id="activitySubProcessCancelOrderItem" triggeredByEvent="true">
-        <bpmn:startEvent id="eventCatchEscalationOrderItemOrderCancelled" name="Order canceled">
-          <bpmn:outgoing>Flow_1k5ki6n</bpmn:outgoing>
-          <bpmn:escalationEventDefinition id="EscalationEventDefinition_0d88xuv" escalationRef="Escalation_0v7r5ct" />
-        </bpmn:startEvent>
         <bpmn:sequenceFlow id="Flow_1k5ki6n" sourceRef="eventCatchEscalationOrderItemOrderCancelled" targetRef="eventThrowMsgOrderItemCancelled" />
         <bpmn:endEvent id="eventThrowMsgOrderItemCancelled" name="Order item cancelled">
+          <bpmn:extensionElements>
+            <camunda:executionListener event="start">
+              <camunda:script scriptFormat="Javascript">print("cancel orderitem");</camunda:script>
+            </camunda:executionListener>
+          </bpmn:extensionElements>
           <bpmn:incoming>Flow_1k5ki6n</bpmn:incoming>
           <bpmn:messageEventDefinition id="MessageEventDefinition_0lnfvrd" />
         </bpmn:endEvent>
+        <bpmn:startEvent id="eventCatchEscalationOrderItemOrderCancelled" name="Order canceled">
+          <bpmn:outgoing>Flow_1k5ki6n</bpmn:outgoing>
+          <bpmn:conditionalEventDefinition id="ConditionalEventDefinition_1oiawin" camunda:variableName="itemCancelled" camunda:variableEvent="create">
+            <bpmn:condition xsi:type="bpmn:tFormalExpression">${itemCancelled}</bpmn:condition>
+          </bpmn:conditionalEventDefinition>
+        </bpmn:startEvent>
       </bpmn:subProcess>
       <bpmn:textAnnotation id="TextAnnotation_04czjs3">
         <bpmn:text>Batch creation in fullfilment</bpmn:text>
@@ -752,9 +763,6 @@ Pickup: only before "Item picked up"</bpmn:text>
           <dc:Bounds x="1334" y="768" width="53" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1wzjngg_di" bpmnElement="activityOrderItemHandleCancellationDropshipment">
-        <dc:Bounds x="1460" y="790" width="100" height="80" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0oam9xi_di" bpmnElement="eventEndOrderItemCancellationDropshipmentNotHandled">
         <dc:Bounds x="1652" y="902" width="36" height="36" />
         <bpmndi:BPMNLabel>
@@ -772,6 +780,9 @@ Pickup: only before "Item picked up"</bpmn:text>
         <bpmndi:BPMNLabel>
           <dc:Bounds x="1574" y="855" width="52" height="27" />
         </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_13w5vu5_di" bpmnElement="activityOrderItemHandleCancellationDropshipment">
+        <dc:Bounds x="1460" y="790" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_1w3777n_di" bpmnElement="activitySubProcessOrderItemChangeDeliveryAddress" isExpanded="true">
         <dc:Bounds x="1780" y="770" width="520" height="310" />
@@ -847,16 +858,16 @@ Pickup: only before "Item picked up"</bpmn:text>
         <di:waypoint x="1866" y="650" />
         <di:waypoint x="2002" y="650" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="Event_1hczgno_di" bpmnElement="eventCatchEscalationOrderItemOrderCancelled">
-        <dc:Bounds x="1830" y="632" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1811" y="675" width="76" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_1r7m205_di" bpmnElement="eventThrowMsgOrderItemCancelled">
         <dc:Bounds x="2002" y="632" width="36" height="36" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="1994" y="675" width="52" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1261mf7_di" bpmnElement="eventCatchEscalationOrderItemOrderCancelled">
+        <dc:Bounds x="1830" y="632" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1811" y="675" width="76" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="TextAnnotation_04czjs3_di" bpmnElement="TextAnnotation_04czjs3">
