@@ -186,7 +186,7 @@
     </bpmn:textAnnotation>
     <bpmn:association id="Association_1n9keyh" sourceRef="Group_1tm7um4" targetRef="TextAnnotation_0q0bx81" />
     <bpmn:textAnnotation id="TextAnnotation_1l8bnv9">
-      <bpmn:text>for a better transparancy we will bring up a sup process which shows every validation step</bpmn:text>
+      <bpmn:text>for a better transparancy we will bring up a subprocess which shows every validation step</bpmn:text>
     </bpmn:textAnnotation>
     <bpmn:association id="Association_0zq0ia0" sourceRef="activityValidateOrder" targetRef="TextAnnotation_1l8bnv9" />
     <bpmn:textAnnotation id="TextAnnotation_1q57ikg">
@@ -236,7 +236,7 @@
         <dc:Bounds x="900" y="760" width="100" height="110" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_0ero9gg_di" bpmnElement="Flow_0ero9gg">
-        <di:waypoint x="1130" y="300" />
+        <di:waypoint x="1150" y="300" />
         <di:waypoint x="1242" y="300" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0juu9dc_di" bpmnElement="Flow_0juu9dc">
@@ -264,7 +264,7 @@
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0fe05aw_di" bpmnElement="Flow_0fe05aw">
         <di:waypoint x="998" y="300" />
-        <di:waypoint x="1030" y="300" />
+        <di:waypoint x="1050" y="300" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0yh1rub_di" bpmnElement="Flow_0yh1rub">
         <di:waypoint x="620" y="300" />
@@ -337,6 +337,9 @@
         <bpmndi:BPMNLabel>
           <dc:Bounds x="944" y="325" width="74" height="27" />
         </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1jsfxam_di" bpmnElement="Activity_07bg56b">
+        <dc:Bounds x="1050" y="260" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_0ttoph5_di" bpmnElement="activitySubProcessInvoiceAddressChange" isExpanded="true">
         <dc:Bounds x="880" y="520" width="510" height="200" />
@@ -474,16 +477,9 @@
       <bpmndi:BPMNShape id="Activity_0cvnso8_di" bpmnElement="activityManualWorkNecessary">
         <dc:Bounds x="740" y="370" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1jsfxam_di" bpmnElement="Activity_07bg56b">
-        <dc:Bounds x="1030" y="260" width="100" height="80" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="TextAnnotation_0xbq3xi_di" bpmnElement="TextAnnotation_0xbq3xi">
         <dc:Bounds x="1710" y="100" width="100" height="30" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="Association_0bzrkcg_di" bpmnElement="Association_0bzrkcg">
-        <di:waypoint x="1107" y="260" />
-        <di:waypoint x="1134" y="219" />
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Association_1cn4wni_di" bpmnElement="Association_1cn4wni">
         <di:waypoint x="449" y="286" />
         <di:waypoint x="399" y="220" />
@@ -525,6 +521,10 @@
       <bpmndi:BPMNEdge id="Association_13pw6ym_di" bpmnElement="Association_13pw6ym">
         <di:waypoint x="840" y="796" />
         <di:waypoint x="900" y="785" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_0bzrkcg_di" bpmnElement="Association_0bzrkcg">
+        <di:waypoint x="1121" y="260" />
+        <di:waypoint x="1142" y="219" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="Group_1tm7um4_di" bpmnElement="Group_1tm7um4" bioc:stroke="black" bioc:fill="white">
         <dc:Bounds x="500" y="160" width="430" height="320" />
