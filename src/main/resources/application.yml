@@ -9,7 +9,7 @@ spring:
   profiles: development
 
   datasource:
-    jdbcUrl: jdbc:postgresql://thalassa.bs67:5432/soh?currentSchema=public
+    jdbcUrl: jdbc:postgresql://localhost:5432/soh?currentSchema=public
     username: postgres
     password: postgres
     poolName: sales-order-hub
