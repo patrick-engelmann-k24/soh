@@ -1,8 +1,12 @@
 package de.kfzteile24.salesOrderHub.constants;
 
-public enum BPMEventEnum {
-    EVENT_THROW_MSG_ORDER_PAYMENT_SECURED("eventThrowMsgOrderPaymentSecured"),
+public enum BPMSalesOrderProcess implements BpmItem {
+    ACTIVITY_ORDER_ITEM_FULFILLMENT_PROCESS("activityOrderItemFulfillmentProcess"),
+    ACTIVITY_VALIDATE_ORDER ("activityValidateOrder"),
+    ACTIVITY_CHANGE_INVOICE_ADDRESS("activityChangeInvoiceAddress"),
     EVENT_THROW_MSG_ORDER_CREATED("eventThrowMsgOrderCreated"),
+    EVENT_END_MSG_ORDER_CANCELLED("eventEndMsgOrderCancelled"),
+    EVENT_START_ORDER_ITEM_FULFILLMENT_PROCESS ("eventStartOrderItemFulfillmentProcess"),
     EVENT_START_SUB_PROCESS_ORDER_ITEM("eventStartSubProcessOrderItem"),
     EVENT_END_ORDER_ITEM_FINISHED("eventEndOrderItemFinished"),
     EVENT_CATCH_MSG_ORDER_ITEM_TRANSMITTED_TO_LOGISTICS("eventCatchMsgOrderItemTransmittedToLogistics"),
@@ -27,24 +31,43 @@ public enum BPMEventEnum {
     EVENT_THROW_MSG_ORDER_ITEM_CANCELLED("eventThrowMsgOrderItemCancelled"),
     EVENT_START_MSG_INVOICE_ADDRESS_CHANGE_RECEIVED("eventStartMsgInvoiceAddressChangeReceived"),
     EVENT_INVOICE_ADDRESS_NOT_CHANGED("eventInvoiceAddressNotChanged"),
-    EVENT_INVOICE_ADDRESS_CHANGED("eventInvoiceAddressChanged"),
+    EVENT_END_MSG_INVOICE_ADDRESS_CHANGED("eventEndMsgInvoiceAddressChanged"),
     EVENT_START_MSG_INVOICE_CREATED("eventStartMsgInvoiceCreated"),
     EVENT_INVOICE_SAVED("eventInvoiceSaved"),
-    EVENT_THROW_MSG_ORDER_COMPLETED("eventThrowMsgOrderCompleted"),
+    EVENT_END_MSG_ORDER_COMPLETED("eventEndMsgOrderCompleted"),
     EVENT_START_MSG_ORDER_RECEIVED_FROM_MARKETPLACE("eventStartMsgOrderReceivedFromMarketplace"),
     EVENT_START_MSG_ORDER_RECEIVED_FROM_ECP("eventStartMsgOrderReceivedFromECP"),
     EVENT_START_MSG_ORDER_RECEIVED_FROM_CUSTOMER_CARE("eventStartMsgOrderReceivedFromCustomerCare"),
     EVENT_START_MSG_ORDER_RECEIVED_FROM_BRANCH("eventStartMsgOrderReceivedFromBranch"),
     EVENT_START_MSG_ORDER_RECEIVED_FROM_GARAGE("eventStartMsgOrderReceivedFromGarage"),
     EVENT_THROW_MSG_ORDER_VALIDATED("eventThrowMsgOrderValidated"),
-    EVENT_END_MSG_ORDER_NOT_VALID_COMPLETED("eventEndMsgOrderNotValidCompleted");
-    private final String eventName;
+    EVENT_END_MSG_ORDER_NOT_VALID_COMPLETED("eventEndMsgOrderNotValidCompleted"),
+    EVENT_MSG_ORDER_PAYMENT_SECURED ("eventMsgOrderPaymentSecured"),
 
-    BPMEventEnum(final String eventName) {
-        this.eventName = eventName;
+    GW_XOR_ORDER_RECEIVED_ECP_OR_MARKETPLACE("gwXOROrderReceivedECPOrMarketplace"),
+    GW_XOR_ORDER_VALID("gwXOROrderValid"),
+    GW_XOR_ORDER_VALIDATED("gwXOROrderValidated"),
+    GW_XOR_CHECK_MANUAL_SUCCESSFUL("gwXORCheckManualSuccessful"),
+    // messages
+    MSG_ORDER_PAYMENT_SECURED ( "msgOrderPaymentSecured"),
+    MSG_ORDER_RECEIVED_MARKETPLACE ("msgOrderReceivedMarketplace"),
+
+    // variables
+    VAR_ORDER_ID("orderId")   ,
+    VAR_PAYMENT_TYPE("payment_type"),
+    VAR_PAYMENT_STATUS("payment_status"),
+    VAR_ORDER_VALID("orderValid"),
+    VAR_ORDER_ITEMS("orderItems"),
+    VAR_SHIPMENT_METHOD("shipment_method")
+    ;
+
+    private final String name;
+
+    BPMSalesOrderProcess(final String name) {
+        this.name = name;
     }
 
-    String getEventName() {
-        return eventName;
+    public String getName() {
+        return name;
     }
 }

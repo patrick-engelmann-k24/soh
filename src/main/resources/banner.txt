@@ -11,4 +11,4 @@ ___  ____ ____ ____ ____ ____ ____    ____ _  _ ____ _ _  _ ____
 
   Spring-Boot:      ${spring-boot.formatted-version}
   Camunda BPM:       ${camunda.bpm.formatted-version}
-  active profile(s):${spring.profiles.active}
+  active profile(s): ${spring.profiles.active}

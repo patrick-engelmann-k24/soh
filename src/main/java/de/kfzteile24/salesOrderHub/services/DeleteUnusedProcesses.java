@@ -13,13 +13,13 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import java.util.List;
 
-@Component
+// disabled, cause to slow
+//@Component
 @Log
 public class DeleteUnusedProcesses {
 
     @Autowired
     private ProjectConfiguration projectConfiguration;
-
 
     @Autowired
     private RepositoryService repositoryService;
