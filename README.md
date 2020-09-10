@@ -15,8 +15,8 @@ The processes are located in src/main/resources/processes
 ### Database
 
 1. Create a database and edit the following files:
-    a. src/main/resources/application.yml -> replace jdbcURL with your database settings
-    b. make a copy of .env.localhost.dist to .env.localhost -> replace FLYWAY_URL with your settings
+    * src/main/resources/application.yml -> replace jdbcURL with your database settings
+    * make a copy of .env.localhost.dist to .env.localhost -> replace FLYWAY_URL with your settings
     
 2. run source .env.localhost
 3. run ./migrate.sh -> check output. Flyway should no go through all the files needed to setup the database
