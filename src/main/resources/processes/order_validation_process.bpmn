@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_02ktk9i" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.2.0">
+  <bpmn:process id="OrderValidationProcess" name="Order Validation Process" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1" name="Order validation started">
+      <bpmn:outgoing>Flow_11vpd8b</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="Activity_0ixhyuj" name="Check &#34;Packstation&#34; in delivery address">
+      <bpmn:incoming>Flow_11vpd8b</bpmn:incoming>
+      <bpmn:outgoing>Flow_1uslk02</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_11vpd8b" sourceRef="StartEvent_1" targetRef="Activity_0ixhyuj" />
+    <bpmn:endEvent id="Event_106m4kw" name="Order validated">
+      <bpmn:incoming>Flow_09ux8ob</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1uslk02" sourceRef="Activity_0ixhyuj" targetRef="Activity_1r554wz" />
+    <bpmn:task id="Activity_1r554wz" name="Check customer comment">
+      <bpmn:incoming>Flow_1uslk02</bpmn:incoming>
+      <bpmn:outgoing>Flow_09ux8ob</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_09ux8ob" sourceRef="Activity_1r554wz" targetRef="Event_106m4kw" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="OrderValidationProcess">
+      <bpmndi:BPMNEdge id="Flow_11vpd8b_di" bpmnElement="Flow_11vpd8b">
+        <di:waypoint x="215" y="117" />
+        <di:waypoint x="270" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1uslk02_di" bpmnElement="Flow_1uslk02">
+        <di:waypoint x="370" y="117" />
+        <di:waypoint x="410" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_09ux8ob_di" bpmnElement="Flow_09ux8ob">
+        <di:waypoint x="510" y="117" />
+        <di:waypoint x="562" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="179" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="158" y="142" width="78" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0ixhyuj_di" bpmnElement="Activity_0ixhyuj">
+        <dc:Bounds x="270" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_106m4kw_di" bpmnElement="Event_106m4kw">
+        <dc:Bounds x="562" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="542" y="142" width="76" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1r554wz_di" bpmnElement="Activity_1r554wz">
+        <dc:Bounds x="410" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

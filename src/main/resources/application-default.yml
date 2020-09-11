@@ -14,5 +14,11 @@ camunda:
       firstName: Demo
     filter:
       create: All tasks
-    history-level: full
-
+    history-level: FULL
+    history-level-default: FULL
+kfzteile:
+  #
+  # Delete processes that are not used?
+  # KEEP OFF ON PRODUCTION
+  #
+  deleteUnusedProcesses: true

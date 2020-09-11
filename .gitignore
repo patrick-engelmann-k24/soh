@@ -1,3 +1,5 @@
 .env.localhost
 /.idea/
 /target
+/src/main/resources/application-development.yml
+*.iml
