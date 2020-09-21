@@ -3,7 +3,7 @@ WORKDIR .
 COPY . .
 RUN mvn clean install -DskipTests --batch-mode
 
-FROM openjdk:14-jdk-alpine
+FROM openjdk:14-slim-buster
 
 COPY --from=MAVEN target/de.kfzteile24.sales-order-hub-0.0.1.jar app.jar
 COPY --from=MAVEN docker-flyway.conf /docker-flyway.conf
