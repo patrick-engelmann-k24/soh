@@ -9,7 +9,7 @@ spring:
   profiles: development
 
   datasource:
-    jdbcUrl: ${JDBC_URL}
-    username: ${DATABASE_USER}
-    password: ${DATABASE_PW}
+    jdbcUrl: jdbc:postgresql://${soh_db_host}:${soh_db_port}/${soh_db_database}?currentSchema=public
+    username: ${soh_db_username}
+    password: ${soh_db_password}
     poolName: sales-order-hub
