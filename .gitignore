@@ -3,3 +3,15 @@
 /target
 /src/main/resources/application-development.yml
 *.iml
+
+### Terraform ###
+# Local .terraform directories
+**/.terraform/*
+infrastructure/out.plan
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
+
+# Crash log files
+**/.terraform/crash.log
