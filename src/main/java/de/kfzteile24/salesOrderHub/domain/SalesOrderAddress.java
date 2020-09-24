@@ -10,14 +10,13 @@ import java.util.Date;
 import java.util.UUID;
 
 @Entity
-//@EntityListeners(AuditLogService.class) // WIP
 @Table(name = "sales_order_address", schema = "public", catalog = "soh")
 @Data
 @Builder
 @EqualsAndHashCode(callSuper = true)
 @AllArgsConstructor
 @NoArgsConstructor
-public class SalesOrderAddress extends AbstractBaseEntity implements AuditableEntity {
+public class SalesOrderAddress extends AbstractBaseEntity {
     // important!
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
@@ -82,9 +81,4 @@ public class SalesOrderAddress extends AbstractBaseEntity implements AuditableEn
     @Temporal(TemporalType.TIMESTAMP) //
     private @Nullable
     Date updatedAt;
-
-    @Override
-    public String getEntity() {
-        return "sales_order_address";
-    }
 }

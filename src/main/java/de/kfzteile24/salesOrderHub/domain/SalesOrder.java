@@ -1,11 +1,8 @@
 package de.kfzteile24.salesOrderHub.domain;
 
-import de.kfzteile24.salesOrderHub.components.AuditLogEventListener;
-import de.kfzteile24.salesOrderHub.services.AuditLogService;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import org.springframework.lang.Nullable;
 
 import javax.persistence.*;
@@ -14,14 +11,13 @@ import java.util.Set;
 import java.util.UUID;
 
 @Entity
-//@EntityListeners(AuditLogService.class) // WIP
 @Table(name = "sales_order", schema = "public", catalog = "soh")
 @Data
 @Builder
 @EqualsAndHashCode(callSuper = true)
 @AllArgsConstructor
 @NoArgsConstructor
-public class SalesOrder extends AbstractBaseEntity implements AuditableEntity {
+public class SalesOrder extends AbstractBaseEntity {
 
     private static final long serialVersionUID = 1L;
 
@@ -85,9 +81,4 @@ public class SalesOrder extends AbstractBaseEntity implements AuditableEntity {
     @EqualsAndHashCode.Exclude
     @OneToMany(mappedBy = "salesOrder", targetEntity = SalesOrderAddress.class, fetch = FetchType.LAZY)
     private Set<SalesOrderAddress> salesOrderAddressList;
-
-    @Override
-    public String getEntity() {
-        return "sales_order";
-    }
 }

@@ -8,6 +8,10 @@ import java.sql.Timestamp;
 import java.util.Date;
 import java.util.UUID;
 
+/**
+ * Entity for storing our audit events
+ *
+ */
 @Entity
 @Table(name = "audit_log", schema = "public", catalog = "soh")
 @NoArgsConstructor

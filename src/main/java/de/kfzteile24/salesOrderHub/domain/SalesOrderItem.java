@@ -6,17 +6,15 @@ import org.springframework.lang.Nullable;
 import javax.persistence.*;
 import java.math.BigDecimal;
 import java.util.Date;
-import java.util.UUID;
 
 @Entity
-//@EntityListeners(AuditLogService.class) // WIP
 @Table(name = "sales_order_item", schema = "public", catalog = "soh")
 @Data
 @Builder
 @EqualsAndHashCode(callSuper = true)
 @AllArgsConstructor
 @NoArgsConstructor
-public class SalesOrderItem extends AbstractBaseEntity implements AuditableEntity {
+public class SalesOrderItem extends AbstractBaseEntity {
     // important!
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
@@ -34,17 +32,20 @@ public class SalesOrderItem extends AbstractBaseEntity implements AuditableEntit
     @Basic
     @Column(name = "returned_at")
     @Temporal(TemporalType.TIMESTAMP) //
-    private @Nullable Date returnedAt;
+    private @Nullable
+    Date returnedAt;
 
     @Basic
     @Column(name = "delivered_at")
     @Temporal(TemporalType.TIMESTAMP) //
-    private @Nullable Date deliveredAt;
+    private @Nullable
+    Date deliveredAt;
 
     @Basic
     @Column(name = "cancellation_at")
     @Temporal(TemporalType.TIMESTAMP) //
-    private @Nullable Date cancellationAt;
+    private @Nullable
+    Date cancellationAt;
 
     @Basic
     @Column(name = "shipping_type")
@@ -53,9 +54,4 @@ public class SalesOrderItem extends AbstractBaseEntity implements AuditableEntit
     @Basic
     @Column(name = "tracking_id")
     private String trackingId;
-
-    @Override
-    public String getEntity() {
-        return "sales_order";
-    }
 }

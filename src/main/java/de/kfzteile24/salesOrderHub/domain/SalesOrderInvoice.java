@@ -9,14 +9,13 @@ import javax.persistence.*;
 import java.util.Date;
 
 @Entity
-//@EntityListeners(AuditLogService.class) // WIP
 @Table(name = "sales_order_invoice", schema = "public", catalog = "soh")
 @Data
 @Builder
 @EqualsAndHashCode(callSuper = true)
 @AllArgsConstructor
 @NoArgsConstructor
-public class SalesOrderInvoice extends AbstractBaseEntity implements AuditableEntity {
+public class SalesOrderInvoice extends AbstractBaseEntity {
     // important!
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
@@ -49,9 +48,4 @@ public class SalesOrderInvoice extends AbstractBaseEntity implements AuditableEn
     @LastModifiedDate
     private @Nullable
     Date updatedAt;
-
-    @Override
-    public String getEntity() {
-        return "sales_order";
-    }
 }
