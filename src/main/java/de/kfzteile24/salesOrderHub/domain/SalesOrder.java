@@ -1,5 +1,6 @@
 package de.kfzteile24.salesOrderHub.domain;
 
+import com.fasterxml.jackson.annotation.JsonRawValue;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -29,9 +30,9 @@ public class SalesOrder extends AbstractBaseEntity {
     @Column(name = "process_id")
     private UUID processId;
 
-//    @Basic
-//    @Column(name = "original_order")
-//    private String originalOrder;
+    @Column(name = "original_order", columnDefinition = "json")
+    @JsonRawValue
+    private String originalOrder;
 
     @Basic
     @Column(name = "customer_email")
