@@ -1,6 +1,5 @@
 package de.kfzteile24.salesOrderHub.domain;
 
-import org.hibernate.annotations.GenericGenerator;
 import org.springframework.data.domain.Persistable;
 
 import javax.persistence.Column;
