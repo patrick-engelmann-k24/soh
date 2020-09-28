@@ -25,9 +25,14 @@ public class SalesOrderService {
     public SalesOrder createOrder(/* todo: GSON class?*/String orderNumber) {
         final SalesOrder salesOrder = SalesOrder.builder()
                 .orderNumber(orderNumber)
+                .originalOrder("{\"orderNumber\": 1234}")
                 .salesLocale("DE_de")
                 .build();
 
+        return this.save(salesOrder);
+    }
+
+    public SalesOrder createOrder(SalesOrder salesOrder) {
         return orderRepository.save(salesOrder);
     }
 
