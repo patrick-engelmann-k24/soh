@@ -37,6 +37,3 @@ Password: demo
 
 (these settings are defined in src/main/resources/application-default.yml)
 
-## Documentation
-tbd
-
