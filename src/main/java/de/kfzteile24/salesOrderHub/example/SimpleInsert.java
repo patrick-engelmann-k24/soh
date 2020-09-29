@@ -25,7 +25,7 @@ public class SimpleInsert {
     @NotNull SalesOrderService service;
     @NotNull SalesOrderRepository repository;
 
-    @PostConstruct
+    // @PostConstruct
     public void simpleInsert() throws IOException {
         OrderJSON json = this.orderToObject();
         final SalesOrder order2 = SalesOrder.builder()

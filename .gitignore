@@ -15,3 +15,5 @@ infrastructure/out.plan
 
 # Crash log files
 **/.terraform/crash.log
+
+**/.DS_Store
