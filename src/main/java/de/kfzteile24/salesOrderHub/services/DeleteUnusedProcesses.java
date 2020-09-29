@@ -1,4 +1,4 @@
-package de.kfzteile24.salesOrderHub.components;
+package de.kfzteile24.salesOrderHub.services;
 
 import de.kfzteile24.salesOrderHub.configuration.ProjectConfiguration;
 import lombok.extern.java.Log;
@@ -8,6 +8,7 @@ import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.repository.Deployment;
 import org.camunda.bpm.engine.repository.ProcessDefinition;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
