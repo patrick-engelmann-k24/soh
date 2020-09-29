@@ -1,0 +1,6 @@
+terraform_role_arn         = "arn:aws:iam::307487914182:role/K24.Terraform"
+source_repo_branch         = "develop"
+db_instance_class          = "db.t3.medium"
+domain_name                = "stage.kfzteile24.io"
+environment                = "stage"
+stage                      = "staging-1"
