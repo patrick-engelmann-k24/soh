@@ -25,3 +25,11 @@ variable "stage" {
 variable "github_token" {
   type = string
 }
+
+variable "aws_sqs_ecp_orders_allowed_iams" {
+  type = list
+}
+
+variable "ecp_new_order_sns" {
+  type = string
+}

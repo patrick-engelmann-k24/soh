@@ -1,4 +1,5 @@
 locals {
+  service_prefix               = "soh"
   service                      = "soh-bpmn-engine"
   source_repo_name             = "soh-business-processing-engine"
 }
