@@ -96,56 +96,15 @@ public class SalesOrderHubProcessApplicationTest {
                 _N(BPMSalesOrderProcess.EVENT_START_MSG_ORDER_RECEIVED_FROM_MARKETPLACE),
                 _N(BPMSalesOrderProcess.GW_XOR_ORDER_RECEIVED_ECP_OR_MARKETPLACE),
                 _N(BPMSalesOrderProcess.EVENT_THROW_MSG_ORDER_CREATED),
-                _N(BPMSalesOrderProcess.ACTIVITY_VALIDATE_ORDER),
-                _N(BPMSalesOrderProcess.GW_XOR_ORDER_VALID),
-                _N(BPMSalesOrderProcess.GW_XOR_ORDER_VALIDATED),
-                _N(BPMSalesOrderProcess.EVENT_THROW_MSG_ORDER_VALIDATED),
+                //_N(BPMSalesOrderProcess.ACTIVITY_VALIDATE_ORDER),
+                //_N(BPMSalesOrderProcess.GW_XOR_ORDER_VALID),
+                //_N(BPMSalesOrderProcess.GW_XOR_ORDER_VALIDATED),
+                //_N(BPMSalesOrderProcess.EVENT_THROW_MSG_ORDER_VALIDATED),
                 _N(BPMSalesOrderProcess.EVENT_MSG_ORDER_PAYMENT_SECURED),
                 _N(BPMSalesOrderProcess.ACTIVITY_ORDER_ITEM_FULFILLMENT_PROCESS),
                 _N(BPMSalesOrderProcess.EVENT_END_MSG_ORDER_COMPLETED)
         );
 
-        assertThat(salesOrderProcessInstance).isEnded();
-    }
-
-    @Test
-    public void salesOrderItemDropshipmentCancellationTest() {
-        final String orderId = getOrderNumber();
-        final String firstItem = orderId + "-item-" + 0;
-
-        final ProcessInstance salesOrderProcessInstance = firstPartOfSalesOrderProcess(orderId);
-
-        List<MessageCorrelationResult> msg_packingStarted = sendMessage(_N(BPMSalesOrderItemFullfilment.MSG_PACKING_STARTED), orderId);
-
-        final ProcessInstance firstItemProcessInstance = getFirstOrderItem(firstItem, msg_packingStarted);
-
-        assertThat(firstItemProcessInstance).hasPassedInOrder(_N(BPMSalesOrderItemFullfilment.EVENT_ITEM_TRANSMITTED_TO_LOGISTICS));
-
-        // cancel 1st orderItem
-        sendMessage(_N(BPMSalesOrderItemFullfilment.MSG_DROPSHIPMENT_CANCELLATION_RECEIVED), orderId, firstItem);
-        assertThat(salesOrderProcessInstance).isWaitingAt(_N(BPMSalesOrderProcess.ACTIVITY_ORDER_ITEM_FULFILLMENT_PROCESS));
-        // we can't check here for hasPassedInOrder, cause subProcessOrderItemCancellation &
-        // ActivityHandleCancellation are not in a defined order
-        assertThat(firstItemProcessInstance).hasPassed(
-                _N(BPMSalesOrderItemFullfilment.EVENT_START_ORDER_ITEM_FULFILLMENT_PROCESS),
-                _N(BPMSalesOrderItemFullfilment.EVENT_ITEM_TRANSMITTED_TO_LOGISTICS),
-                _N(BPMSalesOrderItemFullfilment.GW_XOR_SHIPMENT_METHOD),
-                _N(BPMSalesOrderItemFullfilment.EVENT_PACKING_STARTED),
-                _N(BPMSalesOrderItemFullfilment.GW_XOR_DROP_SHIPMENT),
-                _N(BPMSalesOrderItemFullfilment.EVENT_MSG_DROPSHIPMENT_CANCELLATION_RECEIVED),
-                _N(BPMSalesOrderItemFullfilment.GW_XOR_TRACKING_ID_RECEIVED),
-                _N(BPMSalesOrderItemFullfilment.EVENT_TRACKING_ID_RECEIVED),
-                _N(BPMSalesOrderItemFullfilment.SUB_PROCESS_ORDER_ITEM_CANCELLATION_DROPSHIPMENT),
-                _N(BPMSalesOrderItemFullfilment.ACTIVITY_HANDLE_CANCELLATION_DROPSHIPMENT),
-                _N(BPMSalesOrderItemFullfilment.EVENT_ORDER_CANCEL),
-                _N(BPMSalesOrderItemFullfilment.EVENT_ORDER_ITEM_CANCELLED),
-                _N(BPMSalesOrderItemFullfilment.SUB_PROCESS_HANDLE_ORDER_ITEM_CANCELLATION)
-        );
-        assertThat(firstItemProcessInstance).isEnded();
-
-        // move remaining items
-        sendMessage(_N(BPMSalesOrderItemFullfilment.MSG_TRACKING_ID_RECEIVED), orderId);
-        sendMessage(_N(BPMSalesOrderItemFullfilment.MSG_ITEM_DELIVERED), orderId);
         assertThat(salesOrderProcessInstance).isEnded();
     }
 
@@ -174,12 +133,10 @@ public class SalesOrderHubProcessApplicationTest {
                 _N(BPMSalesOrderItemFullfilment.EVENT_ITEM_TRANSMITTED_TO_LOGISTICS),
                 _N(BPMSalesOrderItemFullfilment.GW_XOR_SHIPMENT_METHOD),
                 _N(BPMSalesOrderItemFullfilment.EVENT_PACKING_STARTED),
-                _N(BPMSalesOrderItemFullfilment.GW_XOR_DROP_SHIPMENT),
                 _N(BPMSalesOrderItemFullfilment.EVENT_MSG_SHIPMENT_CANCELLATION_RECEIVED),
                 _N(BPMSalesOrderItemFullfilment.ACTIVITY_CHECK_CANCELLATION_POSSIBLE),
                 _N(BPMSalesOrderItemFullfilment.GW_XOR_CANCELLATION_POSSIBLE),
-                _N(BPMSalesOrderItemFullfilment.ACTIVITY_HANDLE_CANCELLATION_SHIPMENT),
-                _N(BPMSalesOrderItemFullfilment.EVENT_ORDER_ITEM_SHIPMENT_CANCELLED)
+                _N(BPMSalesOrderItemFullfilment.ACTIVITY_HANDLE_CANCELLATION_SHIPMENT)
         );
         assertThat(firstItemProcessInstance).isEnded();
 
@@ -218,18 +175,14 @@ public class SalesOrderHubProcessApplicationTest {
                         .setVariable(_N(BPMSalesOrderProcess.VAR_SHIPMENT_METHOD), "parcel")
                         .correlateWithResult().getProcessInstance();
         assertThat(salesOrderProcessInstance).isActive();
-        assertThat(salesOrderProcessInstance).isWaitingAt(_N(BPMSalesOrderProcess.EVENT_MSG_ORDER_PAYMENT_SECURED));
-        assertThat(salesOrderProcessInstance).hasPassed(_N(BPMSalesOrderProcess.ACTIVITY_VALIDATE_ORDER));
+        assertThat(salesOrderProcessInstance)
+                .hasPassed(_N(BPMSalesOrderProcess.EVENT_THROW_MSG_ORDER_CREATED))
+                .isWaitingAt(_N(BPMSalesOrderProcess.EVENT_MSG_ORDER_PAYMENT_SECURED));
 
         runtimeService.createMessageCorrelation(_N(BPMSalesOrderProcess.MSG_ORDER_PAYMENT_SECURED))
                 .processInstanceBusinessKey(orderId)
                 .setVariable(_N(BPMSalesOrderProcess.VAR_PAYMENT_STATUS), "captured")
                 .correlateWithResult().getProcessInstance();
-
-        assertThat(salesOrderProcessInstance).hasPassed(
-                _N(BPMSalesOrderProcess.EVENT_THROW_MSG_ORDER_CREATED),
-                _N(BPMSalesOrderProcess.EVENT_THROW_MSG_ORDER_VALIDATED)
-        );
 
         assertThat(salesOrderProcessInstance).isWaitingAt(_N(BPMSalesOrderProcess.ACTIVITY_ORDER_ITEM_FULFILLMENT_PROCESS));
 

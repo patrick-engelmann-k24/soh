@@ -105,7 +105,7 @@
       </bpmn:endEvent>
       <bpmn:endEvent id="eventDeliveryAddressChanged" name="Delivery Address changed">
         <bpmn:incoming>Flow_1y311on</bpmn:incoming>
-        <bpmn:messageEventDefinition id="MessageEventDefinition_05vn07l" />
+        <bpmn:messageEventDefinition id="MessageEventDefinition_05vn07l" camunda:delegateExpression="${deliveryAddressChangedDelegate}" />
       </bpmn:endEvent>
       <bpmn:sequenceFlow id="Flow_1deyyx2" name="No" sourceRef="gwXORDeliveryAdressChangePossible" targetRef="eventDeliveryAddressNotChanged">
         <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${not deliveryAdressChangePossible}</bpmn:conditionExpression>
@@ -139,7 +139,7 @@ Pickup: n/a</bpmn:text>
           </camunda:executionListener>
         </bpmn:extensionElements>
         <bpmn:incoming>Flow_1acb332</bpmn:incoming>
-        <bpmn:messageEventDefinition id="MessageEventDefinition_113l560" />
+        <bpmn:messageEventDefinition id="MessageEventDefinition_113l560" camunda:delegateExpression="${orderItemCancelledDelegate}" />
       </bpmn:endEvent>
       <bpmn:startEvent id="eventOrderCancel" name="Order canceled">
         <bpmn:outgoing>Flow_1acb332</bpmn:outgoing>
