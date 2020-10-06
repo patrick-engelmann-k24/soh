@@ -4,7 +4,7 @@
     <bpmn:intermediateThrowEvent id="eventThrowMsgOrderCreated" name="Order created">
       <bpmn:incoming>Flow_0v1861j</bpmn:incoming>
       <bpmn:outgoing>Flow_01fom6v</bpmn:outgoing>
-      <bpmn:messageEventDefinition id="MessageEventDefinition_12tlo3v" />
+      <bpmn:messageEventDefinition id="MessageEventDefinition_12tlo3v" camunda:delegateExpression="${orderCreatedDelegate}" />
     </bpmn:intermediateThrowEvent>
     <bpmn:exclusiveGateway id="gwXOROrderReceivedECPOrMarketplace">
       <bpmn:incoming>Flow_1bjb58d</bpmn:incoming>
@@ -67,7 +67,7 @@
       </bpmn:sequenceFlow>
       <bpmn:endEvent id="eventEndMsgInvoiceAddressChanged" name="Invoice address changed">
         <bpmn:incoming>Flow_0d2x8sg</bpmn:incoming>
-        <bpmn:messageEventDefinition id="MessageEventDefinition_1tn1iim" />
+        <bpmn:messageEventDefinition id="MessageEventDefinition_1tn1iim" camunda:delegateExpression="${invoiceAddressChangedDelegate}" />
       </bpmn:endEvent>
       <bpmn:task id="Activity_14gfa18" name="Check invoice exists">
         <bpmn:incoming>Flow_1daj8ak</bpmn:incoming>
@@ -92,7 +92,7 @@
     </bpmn:subProcess>
     <bpmn:endEvent id="eventEndMsgOrderCompleted" name="Order completed">
       <bpmn:incoming>Flow_0ero9gg</bpmn:incoming>
-      <bpmn:messageEventDefinition id="MessageEventDefinition_0razo0j" />
+      <bpmn:messageEventDefinition id="MessageEventDefinition_0razo0j" camunda:delegateExpression="${orderCompletedDelegate}" />
     </bpmn:endEvent>
     <bpmn:startEvent id="eventStartMsgOrderReceivedFromMarketplace" name="order received from marketplaces">
       <bpmn:outgoing>Flow_1qagd7m</bpmn:outgoing>
@@ -138,7 +138,7 @@
       <bpmn:sequenceFlow id="Flow_1a4ul6f" sourceRef="Activity_03ico7x" targetRef="eventEndMsgOrderCancelled" />
       <bpmn:endEvent id="eventEndMsgOrderCancelled" name="Order cancelled">
         <bpmn:incoming>Flow_1a4ul6f</bpmn:incoming>
-        <bpmn:messageEventDefinition id="MessageEventDefinition_1kwzu0f" />
+        <bpmn:messageEventDefinition id="MessageEventDefinition_1kwzu0f" camunda:delegateExpression="${orderCancelledDelegate}" />
       </bpmn:endEvent>
     </bpmn:subProcess>
     <bpmn:sequenceFlow id="Flow_1s45fp1" sourceRef="eventStartMsgOrderReceivedFromECP" targetRef="gwXOROrderReceivedECPOrMarketplace" />
@@ -255,9 +255,17 @@
       <bpmndi:BPMNShape id="Activity_0ttoph5_di" bpmnElement="activitySubProcessInvoiceAddressChange" isExpanded="true">
         <dc:Bounds x="880" y="450" width="660" height="200" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="Flow_1daj8ak_di" bpmnElement="Flow_1daj8ak">
-        <di:waypoint x="956" y="510" />
-        <di:waypoint x="990" y="510" />
+      <bpmndi:BPMNEdge id="Flow_1cq9tyd_di" bpmnElement="Flow_1cq9tyd">
+        <di:waypoint x="1090" y="510" />
+        <di:waypoint x="1121" y="510" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1adwckx_di" bpmnElement="Flow_1adwckx">
+        <di:waypoint x="1146" y="535" />
+        <di:waypoint x="1146" y="590" />
+        <di:waypoint x="1432" y="590" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1152" y="559" width="18" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0tnk89y_di" bpmnElement="Flow_0tnk89y">
         <di:waypoint x="1171" y="510" />
@@ -270,17 +278,9 @@
         <di:waypoint x="1320" y="510" />
         <di:waypoint x="1432" y="510" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_1adwckx_di" bpmnElement="Flow_1adwckx">
-        <di:waypoint x="1146" y="535" />
-        <di:waypoint x="1146" y="590" />
-        <di:waypoint x="1432" y="590" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1152" y="559" width="18" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_1cq9tyd_di" bpmnElement="Flow_1cq9tyd">
-        <di:waypoint x="1090" y="510" />
-        <di:waypoint x="1121" y="510" />
+      <bpmndi:BPMNEdge id="Flow_1daj8ak_di" bpmnElement="Flow_1daj8ak">
+        <di:waypoint x="956" y="510" />
+        <di:waypoint x="990" y="510" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="Event_09byydz_di" bpmnElement="eventStartMsgInvoiceAddressChangeReceived">
         <dc:Bounds x="920" y="492" width="36" height="36" />
