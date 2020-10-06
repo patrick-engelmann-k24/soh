@@ -43,10 +43,6 @@
         <bpmn:outgoing>Flow_05u4xge</bpmn:outgoing>
         <bpmn:messageEventDefinition id="MessageEventDefinition_06a9137" messageRef="Message_0co8mn0" />
       </bpmn:startEvent>
-      <bpmn:task id="activityCheckCancellationPossible" name="Check cancellation possible">
-        <bpmn:incoming>Flow_05u4xge</bpmn:incoming>
-        <bpmn:outgoing>Flow_0mea46a</bpmn:outgoing>
-      </bpmn:task>
       <bpmn:endEvent id="eventOrderItemShipmentCancelled" name="Cancellation handled">
         <bpmn:incoming>Flow_0360u8p</bpmn:incoming>
       </bpmn:endEvent>
@@ -59,9 +55,13 @@
         <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${itemCancellationPossible}</bpmn:conditionExpression>
       </bpmn:sequenceFlow>
       <bpmn:sequenceFlow id="Flow_05u4xge" sourceRef="eventMsgShipmentCancellationReceived" targetRef="activityCheckCancellationPossible" />
-      <bpmn:serviceTask id="activityHandleCancellationShipment" name="Handle cancellation" camunda:delegateExpression="${handleCancellation}">
+      <bpmn:serviceTask id="activityHandleCancellationShipment" name="Handle cancellation" camunda:delegateExpression="${handleOrderItemCancellation}">
         <bpmn:incoming>Flow_13ibsm9</bpmn:incoming>
         <bpmn:outgoing>Flow_0360u8p</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:serviceTask id="activityCheckCancellationPossible" name="Check cancellation possible" camunda:delegateExpression="${checkItemCancellationPossible}">
+        <bpmn:incoming>Flow_05u4xge</bpmn:incoming>
+        <bpmn:outgoing>Flow_0mea46a</bpmn:outgoing>
       </bpmn:serviceTask>
     </bpmn:subProcess>
     <bpmn:exclusiveGateway id="gwXORShipmentMethod" name="Shipment-Method?">
@@ -104,10 +104,6 @@
         <bpmn:outgoing>Flow_1deyyx2</bpmn:outgoing>
         <bpmn:outgoing>Flow_0o27d4k</bpmn:outgoing>
       </bpmn:exclusiveGateway>
-      <bpmn:task id="activityChangeDeliveryAddress" name="Change delivery address">
-        <bpmn:incoming>Flow_0o27d4k</bpmn:incoming>
-        <bpmn:outgoing>Flow_1y311on</bpmn:outgoing>
-      </bpmn:task>
       <bpmn:endEvent id="eventDeliveryAddressNotChanged" name="Address not changed">
         <bpmn:incoming>Flow_1deyyx2</bpmn:incoming>
       </bpmn:endEvent>
@@ -124,6 +120,10 @@
       </bpmn:sequenceFlow>
       <bpmn:sequenceFlow id="Flow_1eflki8" sourceRef="activityCheckDeliveryAddressChangePossible" targetRef="gwXORDeliveryAdressChangePossible" />
       <bpmn:sequenceFlow id="Flow_0qzv6af" sourceRef="eventMsgDeliveryAddressChange" targetRef="activityCheckDeliveryAddressChangePossible" />
+      <bpmn:serviceTask id="activityChangeDeliveryAddress" name="Change delivery address" camunda:delegateExpression="${changeDeliveryAddress}">
+        <bpmn:incoming>Flow_0o27d4k</bpmn:incoming>
+        <bpmn:outgoing>Flow_1y311on</bpmn:outgoing>
+      </bpmn:serviceTask>
       <bpmn:textAnnotation id="TextAnnotation_0tz7azp">
         <bpmn:text>Parcel: only before "Packing started"
 Own delivery: only before "Tour started"
@@ -341,9 +341,6 @@ Pickup: only before "Item picked up"</bpmn:text>
           <dc:Bounds x="262" y="645" width="59" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_0rrdbco_di" bpmnElement="activityCheckCancellationPossible">
-        <dc:Bounds x="340" y="580" width="100" height="80" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0ukdtbc_di" bpmnElement="eventOrderItemShipmentCancelled">
         <dc:Bounds x="762" y="602" width="36" height="36" />
         <bpmndi:BPMNLabel>
@@ -352,6 +349,9 @@ Pickup: only before "Item picked up"</bpmn:text>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_14ctbwd_di" bpmnElement="activityHandleCancellationShipment">
         <dc:Bounds x="580" y="580" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1dvh9m7_di" bpmnElement="activityCheckCancellationPossible">
+        <dc:Bounds x="340" y="580" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_0ivluh2_di" bpmnElement="gwXORShipmentMethod" isMarkerVisible="true">
         <dc:Bounds x="425" y="155" width="50" height="50" />
@@ -425,9 +425,6 @@ Pickup: only before "Item picked up"</bpmn:text>
           <dc:Bounds x="1095" y="701" width="89" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_0ypzr8l_di" bpmnElement="activityChangeDeliveryAddress">
-        <dc:Bounds x="1200" y="710" width="100" height="80" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_16bgfup_di" bpmnElement="eventDeliveryAddressNotChanged">
         <dc:Bounds x="1332" y="812" width="36" height="36" />
         <bpmndi:BPMNLabel>
@@ -439,6 +436,9 @@ Pickup: only before "Item picked up"</bpmn:text>
         <bpmndi:BPMNLabel>
           <dc:Bounds x="1309" y="775" width="84" height="27" />
         </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_17mxuyj_di" bpmnElement="activityChangeDeliveryAddress">
+        <dc:Bounds x="1200" y="710" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="TextAnnotation_0tz7azp_di" bpmnElement="TextAnnotation_0tz7azp">
         <dc:Bounds x="1040" y="850" width="240" height="54" />
