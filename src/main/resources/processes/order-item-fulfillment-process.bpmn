@@ -95,10 +95,6 @@
         <bpmn:outgoing>Flow_0qzv6af</bpmn:outgoing>
         <bpmn:messageEventDefinition id="MessageEventDefinition_0zb2zu8" messageRef="Message_1sm0n67" />
       </bpmn:startEvent>
-      <bpmn:task id="activityCheckDeliveryAddressChangePossible" name="Check change possible">
-        <bpmn:incoming>Flow_0qzv6af</bpmn:incoming>
-        <bpmn:outgoing>Flow_1eflki8</bpmn:outgoing>
-      </bpmn:task>
       <bpmn:exclusiveGateway id="gwXORDeliveryAdressChangePossible" name="Change possible?">
         <bpmn:incoming>Flow_1eflki8</bpmn:incoming>
         <bpmn:outgoing>Flow_1deyyx2</bpmn:outgoing>
@@ -123,6 +119,10 @@
       <bpmn:serviceTask id="activityChangeDeliveryAddress" name="Change delivery address" camunda:delegateExpression="${changeDeliveryAddress}">
         <bpmn:incoming>Flow_0o27d4k</bpmn:incoming>
         <bpmn:outgoing>Flow_1y311on</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:serviceTask id="activityCheckDeliveryAddressChangePossible" name="Check change possible" camunda:delegateExpression="${checkItemChangePossible}">
+        <bpmn:incoming>Flow_0qzv6af</bpmn:incoming>
+        <bpmn:outgoing>Flow_1eflki8</bpmn:outgoing>
       </bpmn:serviceTask>
       <bpmn:textAnnotation id="TextAnnotation_0tz7azp">
         <bpmn:text>Parcel: only before "Packing started"
@@ -416,9 +416,6 @@ Pickup: only before "Item picked up"</bpmn:text>
           <dc:Bounds x="890" y="775" width="82" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_11mt5rj_di" bpmnElement="activityCheckDeliveryAddressChangePossible">
-        <dc:Bounds x="990" y="710" width="100" height="80" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_0vmruk0_di" bpmnElement="gwXORDeliveryAdressChangePossible" isMarkerVisible="true">
         <dc:Bounds x="1115" y="725" width="50" height="50" />
         <bpmndi:BPMNLabel>
@@ -442,6 +439,9 @@ Pickup: only before "Item picked up"</bpmn:text>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="TextAnnotation_0tz7azp_di" bpmnElement="TextAnnotation_0tz7azp">
         <dc:Bounds x="1040" y="850" width="240" height="54" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1idlusq_di" bpmnElement="activityCheckDeliveryAddressChangePossible">
+        <dc:Bounds x="990" y="710" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Association_0h6k50a_di" bpmnElement="Association_0h6k50a">
         <di:waypoint x="1034" y="790" />
