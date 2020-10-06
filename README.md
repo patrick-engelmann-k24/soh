@@ -37,3 +37,15 @@ Password: demo
 
 (these settings are defined in src/main/resources/application-default.yml)
 
+### Repo for prepare sns topics in aws with terraform
+
+[SNS-Topics](https://github.com/kfzteile24/soh-sns-topics)
+
+## Documentation
+tbd
+
+
+## Contribute
+
+
+

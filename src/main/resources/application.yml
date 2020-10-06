@@ -2,14 +2,43 @@
 # Profile documentation: https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-profiles
 #
 spring:
-  profiles.active: development,default
+  # Per default the application starts with the default,local profile. This is good for local development.
+  # You can override this with the
+  # a)  commandline option
+  #      java -jar application.jar -Dspring.profiles.active=default,local or default,production
+  #  b) via environment variable
+  #      export SPRING_PROFILES_ACTIVE=default,local or default,production
+  #      java -jar application.jar
+  profiles.active: default,local
 
 ---
 spring:
-  profiles: development
+  profiles: default
 
-  datasource:
-    jdbcUrl: jdbc:postgresql://localhost:5432/soh?currentSchema=public
-    username: postgres
-    password: postgres
-    poolName: sales-order-hub
+  camunda:
+    bpm:
+      database:
+        # IMPORTANT! flyway is responsible for database changes
+        schema-update: false
+        schema-name: bpm
+        table-prefix: ${camunda.bpm.database.schema-name}.
+      admin-user:
+        id: demo
+        password: demo
+        firstName: Demo
+      filter:
+        create: All tasks
+      history-level: FULL
+      history-level-default: FULL
+  kfzteile:
+    #
+    # Delete processes that are not used?
+    # KEEP OFF ON PRODUCTION
+    #
+    deleteUnusedProcesses: true
+
+  management:
+    endpoints:
+      web:
+        exposure:
+          include: info, health,configprops

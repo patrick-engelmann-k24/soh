@@ -1,4 +1,6 @@
-package de.kfzteile24.salesOrderHub.constants;
+package de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item;
+
+import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 
 /**
  * All Activities, Gateways, Events from the Order Item Fullfilment process
@@ -40,22 +42,8 @@ public enum BPMSalesOrderItemFullfilment implements BpmItem {
 
     SUB_PROCESS_ORDER_ITEM_CANCELLATION_DROPSHIPMENT("subProcessOrderItemCancellationDropshipment"),
     SUB_PROCESS_HANDLE_ORDER_ITEM_CANCELLATION("subProcessHandleOrderItemCancellation"),
-    SUB_PROCESS_ORDER_ITEM_CANCELLATION_SHIPMENT("subProcessOrderItemCancellationShipment"),
-
-    // process messages,
-    MSG_ITEM_TRANSMITTED("msgItemTransmitted"),
-    MSG_PACKING_STARTED("msgPackingStarted"),
-    MSG_TRACKING_ID_RECEIVED("msgTrackingIdReceived"),
-    MSG_ITEM_DELIVERED("msgItemDelivered"),
-    MSG_TOUR_STARTED("msgTourStarted"),
-    MSG_ITEM_PREPARED("msgItemPrepared"),
-    MSG_ITEM_PICKED_UP("msgItemPickedUp"),
-    MSG_DROPSHIPMENT_CANCELLATION_RECEIVED("msgDropshipmentCancellationReceived"),
-    MSG_ORDER_ITEM_CANCELLATION_RECEIVED("msgOrderItemCancellationReceived"),
-
-    // process variables
-    VAR_ITEM_CANCELLED("itemCancelled"),
-    VAR_ITEM_ID("orderItemId");
+    SUB_PROCESS_ORDER_ITEM_CANCELLATION_SHIPMENT("subProcessOrderItemCancellationShipment")
+    ;
 
     private final String name;
 

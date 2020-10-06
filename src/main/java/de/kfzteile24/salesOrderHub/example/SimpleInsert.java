@@ -25,22 +25,25 @@ public class SimpleInsert {
     @NotNull SalesOrderService service;
     @NotNull SalesOrderRepository repository;
 
-    @PostConstruct
-    public void simpleInsert() throws IOException {
-        OrderJSON json = this.orderToObject();
-        final SalesOrder order2 = SalesOrder.builder()
-                .orderNumber("123456")
-                .salesLocale(json.getOrderHeader().getOrigin().getLocale())
-                .originalOrder(orderAsJson(json))
-                .build();
-        final SalesOrder order = service.createOrder(order2);
+    //@PostConstruct
+    public void simpleInsert() {
+        try {
+            OrderJSON json = this.orderToObject();
+            final SalesOrder order2 = SalesOrder.builder()
+                    .orderNumber("123456")
+                    .salesLocale(json.getOrderHeader().getOrigin().getLocale())
+                    .originalOrder(orderAsJson(json))
+                    .build();
+            final SalesOrder order = service.createOrder(order2);
 
-        order.setCustomerEmail("test@mail.de");
-        final SalesOrder order1 = service.save(order);
+            order.setCustomerEmail("test@mail.de");
+            final SalesOrder order1 = service.save(order);
 
-        repository.delete(order1);
-
-        System.out.println(order1);
+            repository.delete(order1);
+            System.out.println(order1);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     //    @PostConstruct

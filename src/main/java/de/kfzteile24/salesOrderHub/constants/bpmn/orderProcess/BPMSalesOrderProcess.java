@@ -1,13 +1,9 @@
-package de.kfzteile24.salesOrderHub.constants;
+package de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess;
+
+import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 
 public enum BPMSalesOrderProcess implements BpmItem {
-    ACTIVITY_ORDER_ITEM_FULFILLMENT_PROCESS("activityOrderItemFulfillmentProcess"),
-    ACTIVITY_VALIDATE_ORDER ("activityValidateOrder"),
-    ACTIVITY_CHANGE_INVOICE_ADDRESS("activityChangeInvoiceAddress"),
-    EVENT_THROW_MSG_ORDER_CREATED("eventThrowMsgOrderCreated"),
-    EVENT_END_MSG_ORDER_CANCELLED("eventEndMsgOrderCancelled"),
-    EVENT_START_ORDER_ITEM_FULFILLMENT_PROCESS ("eventStartOrderItemFulfillmentProcess"),
-    EVENT_START_SUB_PROCESS_ORDER_ITEM("eventStartSubProcessOrderItem"),
+
     EVENT_END_ORDER_ITEM_FINISHED("eventEndOrderItemFinished"),
     EVENT_CATCH_MSG_ORDER_ITEM_TRANSMITTED_TO_LOGISTICS("eventCatchMsgOrderItemTransmittedToLogistics"),
     EVENT_CATCH_MSG_ORDER_ITEM_TRACKING_ID_RECEIVED("eventCatchMsgOrderItemTrackingIdReceived"),
@@ -48,17 +44,6 @@ public enum BPMSalesOrderProcess implements BpmItem {
     GW_XOR_ORDER_VALID("gwXOROrderValid"),
     GW_XOR_ORDER_VALIDATED("gwXOROrderValidated"),
     GW_XOR_CHECK_MANUAL_SUCCESSFUL("gwXORCheckManualSuccessful"),
-    // messages
-    MSG_ORDER_PAYMENT_SECURED ( "msgOrderPaymentSecured"),
-    MSG_ORDER_RECEIVED_MARKETPLACE ("msgOrderReceivedMarketplace"),
-
-    // variables
-    VAR_ORDER_ID("orderId")   ,
-    VAR_PAYMENT_TYPE("payment_type"),
-    VAR_PAYMENT_STATUS("payment_status"),
-    VAR_ORDER_VALID("orderValid"),
-    VAR_ORDER_ITEMS("orderItems"),
-    VAR_SHIPMENT_METHOD("shipment_method")
     ;
 
     private final String name;

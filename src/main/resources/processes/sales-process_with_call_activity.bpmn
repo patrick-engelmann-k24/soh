@@ -157,7 +157,7 @@
     </bpmn:textAnnotation>
     <bpmn:association id="Association_13pw6ym" sourceRef="Activity_0h6r060" targetRef="TextAnnotation_1q57ikg" />
   </bpmn:process>
-  <bpmn:message id="Message_00gxny4" name="msgOrderPaymentSecured" />
+  <bpmn:message id="Message_00gxny4" name="msgOrderReceivedPaymentSecured" />
   <bpmn:message id="Message_0c0nntq" name="msg_itemTransmitted" />
   <bpmn:message id="Message_0qyl1xm" name="msg_packingStarted" />
   <bpmn:message id="Message_0q3xneq" name="msg_trackingIdReceived" />
@@ -171,18 +171,15 @@
   <bpmn:message id="Message_0yk7q6d" name="msg_invoiceCreated" />
   <bpmn:message id="Message_1rxhtzg" name="msg_invoiceAddressChangeReceived" />
   <bpmn:message id="Message_0ixpcjn" name="msgOrderReceivedMarketplace" />
-  <bpmn:message id="Message_07x4crw" name="msg_orderReceivedEcp" />
-  <bpmn:message id="Message_0rbxapr" name="msg_orderReceivedCustomerCare" />
-  <bpmn:message id="Message_1p947gv" name="msg_orderReceivedFromBranch" />
-  <bpmn:message id="Message_0qljm9c" name="msg_orderReceivedFromGarage" />
+  <bpmn:message id="Message_07x4crw" name="msgOrderReceivedEcp" />
+  <bpmn:message id="Message_0rbxapr" name="msgOrderReceivedCustomerCare" />
+  <bpmn:message id="Message_1p947gv" name="msgOrderReceivedBranch" />
+  <bpmn:message id="Message_0qljm9c" name="msgOrderReceivedGarage" />
   <bpmn:escalation id="Escalation_1vowjkp" name="escaltionOrderItemFullfilmentCancelled" escalationCode="1234567890" />
   <bpmn:escalation id="Escalation_0v7r5ct" name="escalationOrderCancelled" escalationCode="1234567890" />
   <bpmn:message id="Message_0u9ctv5" name="msg_orderCancellationReceived" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="SalesOrderProcess_v2">
-      <bpmndi:BPMNShape id="TextAnnotation_124vwel_di" bpmnElement="TextAnnotation_124vwel">
-        <dc:Bounds x="500" y="80" width="140" height="70" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_0ero9gg_di" bpmnElement="Flow_0ero9gg">
         <di:waypoint x="1320" y="230" />
         <di:waypoint x="1392" y="230" />
@@ -410,12 +407,19 @@
           <dc:Bounds x="761" y="785" width="78" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_124vwel_di" bpmnElement="TextAnnotation_124vwel">
+        <dc:Bounds x="500" y="80" width="140" height="70" />
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="TextAnnotation_08nju3g_di" bpmnElement="TextAnnotation_08nju3g">
         <dc:Bounds x="1194" y="81" width="190" height="68" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="TextAnnotation_1q57ikg_di" bpmnElement="TextAnnotation_1q57ikg">
         <dc:Bounds x="900" y="690" width="100" height="110" />
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_1cn4wni_di" bpmnElement="Association_1cn4wni">
+        <di:waypoint x="470" y="215" />
+        <di:waypoint x="510" y="150" />
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Association_0bzrkcg_di" bpmnElement="Association_0bzrkcg">
         <di:waypoint x="1256" y="190" />
         <di:waypoint x="1242" y="149" />
@@ -423,10 +427,6 @@
       <bpmndi:BPMNEdge id="Association_13pw6ym_di" bpmnElement="Association_13pw6ym">
         <di:waypoint x="840" y="726" />
         <di:waypoint x="900" y="715" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Association_1cn4wni_di" bpmnElement="Association_1cn4wni">
-        <di:waypoint x="470" y="215" />
-        <di:waypoint x="510" y="150" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

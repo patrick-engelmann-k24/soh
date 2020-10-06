@@ -1,10 +1,12 @@
 ---
 spring:
-  profiles: development
+  profiles: local
 
   datasource:
     # overwrite your datasource connection here.
     # start the app with environment
-    #       SPRING_PROFILES_ACTIVE=development,default
-    # then it takes this se
+    #       SPRING_PROFILES_ACTIVE=local,default
+    # then it takes this value
     jdbcUrl: jdbc:postgresql://your-server:5432/your-database?currentSchema=public
+    username: postgres
+    password: postgres
