@@ -22,7 +22,7 @@ public class OrderCreatedDelegate implements JavaDelegate {
     SnsPublishService snsPublishService;
 
     @Value("${soh.sns.topic.orderCreated}")
-    String snsOrderCreatedTopic; //= "arn:aws:sns:eu-central-1:000000000000:soh-order-created";
+    String snsOrderCreatedTopic;
 
     @Autowired
     SalesOrderService salesOrderService;
