@@ -24,20 +24,11 @@ public class OrderCreatedDelegate implements JavaDelegate {
     @Value("${soh.sns.topic.orderCreated}")
     String snsOrderCreatedTopic;
 
-    @Autowired
-    SalesOrderService salesOrderService;
-
     @Override
     public void execute(DelegateExecution delegateExecution) throws Exception {
         log.info("SNS-Topic: " + snsOrderCreatedTopic);
 
         String orderNumber = (String) delegateExecution.getVariable(BPMSalesOrderProcess.VAR_ORDER_ID.getName());
-        Optional<SalesOrder> salesOrderOptional = salesOrderService.getOrderByOrderNumber(orderNumber);
-        if (salesOrderOptional.isPresent()) {
-            SalesOrder salesOrder = salesOrderOptional.get();
-            snsPublishService.send(snsOrderCreatedTopic, "Sales Order Created", salesOrder.getOriginalOrder());
-        } else {
-            throw new Exception("no sales order found");
-        }
+        snsPublishService.sendOrder(snsOrderCreatedTopic, "Sales Order Created", orderNumber);
     }
 }
