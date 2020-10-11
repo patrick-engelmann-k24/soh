@@ -13,3 +13,19 @@ spring:
     username: ${soh_db_username}
     password: ${soh_db_password}
     poolName: sales-order-hub
+
+cloud:
+  aws:
+    region:
+      static: eu-central-1
+    stack:
+      auto: false
+    credentials:
+      access-key: ${aws_accessKey}
+      secret-key: ${aws_sercretKey}
+
+#AWS
+soh:
+  sns:
+    topic:
+      orderCreated: ${soh_order_created}
