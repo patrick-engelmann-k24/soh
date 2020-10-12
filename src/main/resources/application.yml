@@ -13,6 +13,8 @@ spring:
     username: ${soh_db_username}
     password: ${soh_db_password}
     poolName: sales-order-hub
+    data-source-properties:
+      stringtype: unspecified
 
 cloud:
   aws:

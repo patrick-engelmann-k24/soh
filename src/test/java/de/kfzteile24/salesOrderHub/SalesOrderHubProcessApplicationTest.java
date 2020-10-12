@@ -16,9 +16,14 @@
  */
 package de.kfzteile24.salesOrderHub;
 
+import camundajar.impl.com.google.gson.Gson;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.util.JsonParserDelegate;
 import de.kfzteile24.salesOrderHub.constants.BPMSalesOrderItemFullfilment;
 import de.kfzteile24.salesOrderHub.constants.BPMSalesOrderProcess;
 import de.kfzteile24.salesOrderHub.constants.BpmItem;
+import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RepositoryService;
 import org.camunda.bpm.engine.RuntimeService;
@@ -27,6 +32,7 @@ import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.runtime.ProcessInstanceQuery;
 import org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,6 +62,16 @@ public class SalesOrderHubProcessApplicationTest {
     @Autowired
     RepositoryService repositoryService;
 
+    @Autowired
+    SalesOrderService salesOrderService;
+
+    private SalesOrder testOrder;
+
+    @Before
+    public void setup() {
+        testOrder = salesOrderService.createOrder(getOrderNumber());
+    }
+
     @Test
     public void startUpTest() {
         // context init test
@@ -69,7 +85,7 @@ public class SalesOrderHubProcessApplicationTest {
      */
     @Test
     public void salesOrderItemPassThruTest() {
-        final String orderId = getOrderNumber();
+        final String orderId = testOrder.getOrderNumber();
         final List<String> orderItems = getOrderItems(orderId, 5);
 
         ProcessInstance salesOrderProcessInstance =
@@ -110,7 +126,7 @@ public class SalesOrderHubProcessApplicationTest {
 
     @Test
     public void salesOrderItemShipmentCancellationPossibleTest() {
-        final String orderId = getOrderNumber();
+        final String orderId = testOrder.getOrderNumber();
         final String firstItem = orderId + "-item-" + 0;
 
         final ProcessInstance salesOrderProcessInstance = firstPartOfSalesOrderProcess(orderId);
