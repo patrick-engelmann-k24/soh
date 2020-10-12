@@ -12,6 +12,8 @@ public enum ItemVariables implements BpmItem {
     VAR_ITEM_CANCELLATION_POSSIBLE("itemCancellationPossible"),
     SHIPMENT_METHOD("shipment_method"),
     TRACKING_ID_RECEIVED("trackingIdReceived"),
+    // todo: fix typo in BPM diagram
+    DELIVERY_ADDRESS_CHANGE_POSSIBLE("deliveryAdressChangePossible"),
     ITEM_DELIVERED("itemDelivered"),
     ITEM_PICKED_UP("itemDelivered");
 
