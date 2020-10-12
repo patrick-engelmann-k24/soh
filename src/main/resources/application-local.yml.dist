@@ -1,3 +1,8 @@
+#
+#
+# This is only a template! To use this file with Spring, make a copy application-local.yml.dist -> application-local.yml
+#
+#
 ---
 spring:
   profiles: local
@@ -5,7 +10,7 @@ spring:
   datasource:
     # overwrite your datasource connection here.
     # start the app with environment
-    #       SPRING_PROFILES_ACTIVE=local,default
+    #       SPRING_PROFILES_ACTIVE=default,local
     # then it takes this value
     jdbcUrl: jdbc:postgresql://your-server:5432/your-database?currentSchema=public
     username: postgres

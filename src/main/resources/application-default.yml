@@ -1,12 +1,5 @@
-#
-# General (environment unspecific) settings. If you wnt to overwrite setting, add them in the corresponding
-# application-${env}.yml file.
-#
 
 
-#
-# Camunda BPM configuration
-#
 ---
 spring:
   profiles: default
@@ -22,3 +15,10 @@ spring:
 
   jpa:
     open-in-view: false
+
+  management:
+    endpoints:
+      web:
+        exposure:
+          include: info, health,configprops
+
