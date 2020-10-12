@@ -65,3 +65,5 @@ cloud:
     endpoint:
       url: "http://localhost:4566"
 ```
+
+Further instructions you can find [here](aws_localstack/README.md)
