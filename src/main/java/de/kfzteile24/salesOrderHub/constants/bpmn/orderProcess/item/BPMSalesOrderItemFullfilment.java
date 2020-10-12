@@ -3,6 +3,7 @@ package de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item;
 import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 
 /**
+ * todo: remove class
  * All Activities, Gateways, Events from the Order Item Fullfilment process
  */
 public enum BPMSalesOrderItemFullfilment implements BpmItem {

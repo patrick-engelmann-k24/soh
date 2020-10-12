@@ -9,11 +9,7 @@ public enum Messages implements BpmItem {
     MSG_ORDER_RECEIVED_ECP ("msgOrderReceivedEcp"),
     MSG_ORDER_RECEIVED_CUSTOMER_CARE ("msgOrderReceivedCustomerCare"),
     MSG_ORDER_RECEIVED_BRANCH("msgOrderReceivedBranch"),
-    MSG_ORDER_RECEIVED_GARAGE("msgOrderReceivedGarage"),
-
-    EVENT_THROW_MSG_ORDER_CREATED("eventThrowMsgOrderCreated"),
-    EVENT_END_MSG_ORDER_CANCELLED("eventEndMsgOrderCancelled"),
-
+    MSG_ORDER_RECEIVED_GARAGE("msgOrderReceivedGarage")
     ;
 
     private final String name;

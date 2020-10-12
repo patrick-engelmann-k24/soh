@@ -6,7 +6,7 @@
 
   <properties>
     <camunda.spring-boot.version>7.13.0</camunda.spring-boot.version>
-    <spring-boot.version>2.2.5.RELEASE</spring-boot.version>
+    <spring-boot.version>2.3.3.RELEASE</spring-boot.version>
     <spring-boot-test.version>5.2.3.RELEASE</spring-boot-test.version>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
@@ -89,7 +89,7 @@
     <dependency>
       <groupId>org.camunda.bpm.assert</groupId>
       <artifactId>camunda-bpm-assert</artifactId>
-      <version>7.0.0</version>
+      <version>8.0.0</version>
       <scope>test</scope>
     </dependency>
 <!--    <dependency>-->
