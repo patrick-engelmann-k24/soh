@@ -3,6 +3,7 @@ package de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess;
 import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 
 public enum Events implements BpmItem {
+    EVENT_MSG_ORDER_PAYMENT_SECURED("eventMsgOrderPaymentSecured"),
     EVENT_THROW_MSG_ORDER_CREATED("eventThrowMsgOrderCreated"),
     EVENT_END_MSG_ORDER_CANCELLED("eventEndMsgOrderCancelled"),
     EVENT_END_ORDER_ITEM_FINISHED("eventEndOrderItemFinished"),
@@ -39,7 +40,6 @@ public enum Events implements BpmItem {
     EVENT_START_MSG_ORDER_RECEIVED_FROM_MARKETPLACE("eventStartMsgOrderReceivedFromMarketplace"),
     EVENT_THROW_MSG_ORDER_VALIDATED("eventThrowMsgOrderValidated"),
     EVENT_END_MSG_ORDER_NOT_VALID_COMPLETED("eventEndMsgOrderNotValidCompleted"),
-    EVENT_MSG_ORDER_PAYMENT_SECURED("eventMsgOrderPaymentSecured"),
     ;
 
     private final String name;

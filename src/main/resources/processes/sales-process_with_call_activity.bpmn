@@ -51,15 +51,15 @@
         <bpmn:incoming>Flow_0tnk89y</bpmn:incoming>
         <bpmn:outgoing>Flow_0d2x8sg</bpmn:outgoing>
       </bpmn:task>
-      <bpmn:sequenceFlow id="Flow_1daj8ak" sourceRef="eventStartMsgInvoiceAddressChangeReceived" targetRef="gwXORInvoiceExist" />
+      <bpmn:sequenceFlow id="Flow_1daj8ak" sourceRef="eventStartMsgInvoiceAddressChangeReceived" targetRef="activityChangeInvoiceAddressPossible" />
       <bpmn:sequenceFlow id="Flow_0d2x8sg" sourceRef="activityChangeInvoiceAddress" targetRef="eventEndMsgInvoiceAddressChanged" />
       <bpmn:exclusiveGateway id="gwXORInvoiceExist" name="Invoice exist?">
-        <bpmn:incoming>Flow_1daj8ak</bpmn:incoming>
+        <bpmn:incoming>Flow_01gshae</bpmn:incoming>
         <bpmn:outgoing>Flow_0tnk89y</bpmn:outgoing>
         <bpmn:outgoing>Flow_1adwckx</bpmn:outgoing>
       </bpmn:exclusiveGateway>
       <bpmn:sequenceFlow id="Flow_0tnk89y" name="No" sourceRef="gwXORInvoiceExist" targetRef="activityChangeInvoiceAddress">
-        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${invoiceExist}</bpmn:conditionExpression>
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${not invoiceExist}</bpmn:conditionExpression>
       </bpmn:sequenceFlow>
       <bpmn:endEvent id="eventInvoiceAddressNotChanged" name="Address not changed">
         <bpmn:incoming>Flow_1adwckx</bpmn:incoming>
@@ -71,6 +71,11 @@
         <bpmn:incoming>Flow_0d2x8sg</bpmn:incoming>
         <bpmn:messageEventDefinition id="MessageEventDefinition_1tn1iim" camunda:delegateExpression="${invoiceAddressChangedDelegate}" />
       </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_01gshae" sourceRef="activityChangeInvoiceAddressPossible" targetRef="gwXORInvoiceExist" />
+      <bpmn:serviceTask id="activityChangeInvoiceAddressPossible" name="Check change invoice address possible" camunda:delegateExpression="${changeInvoiceAddressPossibleDelegate}">
+        <bpmn:incoming>Flow_1daj8ak</bpmn:incoming>
+        <bpmn:outgoing>Flow_01gshae</bpmn:outgoing>
+      </bpmn:serviceTask>
     </bpmn:subProcess>
     <bpmn:subProcess id="activitySubProcessSaveInvoice" triggeredByEvent="true">
       <bpmn:startEvent id="eventStartMsgInvoiceCreated" name="Invoice created" isInterrupting="false">
@@ -258,30 +263,34 @@
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_0ttoph5_di" bpmnElement="activitySubProcessInvoiceAddressChange" isExpanded="true">
-        <dc:Bounds x="880" y="450" width="510" height="200" />
+        <dc:Bounds x="880" y="450" width="630" height="200" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="Flow_1adwckx_di" bpmnElement="Flow_1adwckx">
-        <di:waypoint x="1020" y="535" />
-        <di:waypoint x="1020" y="590" />
-        <di:waypoint x="1306" y="590" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1026" y="559" width="18" height="14" />
-        </bpmndi:BPMNLabel>
+      <bpmndi:BPMNEdge id="Flow_1daj8ak_di" bpmnElement="Flow_1daj8ak">
+        <di:waypoint x="956" y="510" />
+        <di:waypoint x="990" y="510" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0tnk89y_di" bpmnElement="Flow_0tnk89y">
-        <di:waypoint x="1045" y="510" />
-        <di:waypoint x="1094" y="510" />
+        <di:waypoint x="1181" y="510" />
+        <di:waypoint x="1230" y="510" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1062" y="492" width="15" height="14" />
+          <dc:Bounds x="1198" y="492" width="15" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0d2x8sg_di" bpmnElement="Flow_0d2x8sg">
-        <di:waypoint x="1194" y="510" />
-        <di:waypoint x="1306" y="510" />
+        <di:waypoint x="1330" y="510" />
+        <di:waypoint x="1442" y="510" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_1daj8ak_di" bpmnElement="Flow_1daj8ak">
-        <di:waypoint x="956" y="510" />
-        <di:waypoint x="995" y="510" />
+      <bpmndi:BPMNEdge id="Flow_1adwckx_di" bpmnElement="Flow_1adwckx">
+        <di:waypoint x="1156" y="535" />
+        <di:waypoint x="1156" y="590" />
+        <di:waypoint x="1442" y="590" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1162" y="559" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_01gshae_di" bpmnElement="Flow_01gshae">
+        <di:waypoint x="1090" y="510" />
+        <di:waypoint x="1131" y="510" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="Event_09byydz_di" bpmnElement="eventStartMsgInvoiceAddressChangeReceived">
         <dc:Bounds x="920" y="492" width="36" height="36" />
@@ -290,25 +299,28 @@
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_1n37dku_di" bpmnElement="activityChangeInvoiceAddress">
-        <dc:Bounds x="1094" y="470" width="100" height="80" />
+        <dc:Bounds x="1230" y="470" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_1jxpcev_di" bpmnElement="gwXORInvoiceExist" isMarkerVisible="true">
-        <dc:Bounds x="995" y="485" width="50" height="50" />
+        <dc:Bounds x="1131" y="485" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="986" y="461" width="67" height="14" />
+          <dc:Bounds x="1122" y="461" width="67" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0d2xc90_di" bpmnElement="eventInvoiceAddressNotChanged">
-        <dc:Bounds x="1306" y="572" width="36" height="36" />
+        <dc:Bounds x="1442" y="572" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1295" y="615" width="59" height="27" />
+          <dc:Bounds x="1431" y="615" width="59" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_1qpteb7_di" bpmnElement="eventEndMsgInvoiceAddressChanged">
-        <dc:Bounds x="1306" y="492" width="36" height="36" />
+        <dc:Bounds x="1442" y="492" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1286" y="535" width="78" height="27" />
+          <dc:Bounds x="1422" y="535" width="78" height="27" />
         </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_125gznb_di" bpmnElement="activityChangeInvoiceAddressPossible">
+        <dc:Bounds x="990" y="470" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_0gf3t1i_di" bpmnElement="activitySubProcessSaveInvoice" isExpanded="true">
         <dc:Bounds x="490" y="450" width="350" height="200" />
