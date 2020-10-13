@@ -1,0 +1,253 @@
+package de.kfzteile24.salesOrderHub.delegates.salesOrder;
+
+import de.kfzteile24.salesOrderHub.SalesOrderHubProcessApplication;
+import de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.*;
+import de.kfzteile24.salesOrderHub.delegates.salesOrder.item.CheckItemCancellationPossible;
+import de.kfzteile24.salesOrderHub.helper.BpmUtil;
+import org.camunda.bpm.engine.ProcessEngine;
+import org.camunda.bpm.engine.RepositoryService;
+import org.camunda.bpm.engine.RuntimeService;
+import org.camunda.bpm.engine.runtime.ProcessInstance;
+import org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.junit4.SpringRunner;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
+import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
+
+@RunWith(SpringRunner.class)
+@SpringBootTest(
+        classes = SalesOrderHubProcessApplication.class,
+        webEnvironment = SpringBootTest.WebEnvironment.NONE
+)
+@Import(CheckItemCancellationPossible.class)
+public class ChangeInvoiceAddressTest {
+    @Autowired
+    public ProcessEngine processEngine;
+
+    @Autowired
+    RuntimeService runtimeService;
+
+    @Autowired
+    RepositoryService repositoryService;
+
+    @Autowired
+    BpmUtil util;
+
+    @Before
+    public void setUp() {
+        init(processEngine);
+    }
+
+    @Test
+    public void testChangeInvoiceAddressPossible() {
+        final Map<String, Object> processVariables = new HashMap<>();
+        processVariables.put(util._N(ItemVariables.SHIPMENT_METHOD), util._N(ShipmentMethod.PARCEL));
+
+        final ProcessInstance orderProcess =
+                runtimeService.createMessageCorrelation(util._N(Messages.MSG_ORDER_RECEIVED_MARKETPLACE))
+                        .processInstanceBusinessKey(orderId)
+                        .setVariable(util._N(Variables.VAR_ORDER_ID), orderId)
+                        .setVariable(util._N(Variables.VAR_PAYMENT_TYPE), "creditCard")
+                        .setVariable(util._N(Variables.VAR_ORDER_VALID), true)
+                        .setVariable(util._N(Variables.VAR_ORDER_ITEMS), orderItems)
+                        .setVariable(util._N(Variables.VAR_SHIPMENT_METHOD), "parcel")
+                        .correlateWithResult().getProcessInstance();
+        assertThat(salesOrderProcessInstance).isWaitingAt(util._N(Activities.EVENT_MSG_ORDER_PAYMENT_SECURED));
+
+        util.sendMessage(Messages.MSG_ORDER_INVOICE_ADDESS_CHANGE_RECEIVED);
+
+        BpmnAwareTests.assertThat(orderProcess).hasPassedInOrder(
+                util._N(ItemActivities.EVENT_START_ORDER_ITEM_FULFILLMENT_PROCESS),
+                util._N(ItemActivities.EVENT_ITEM_TRANSMITTED_TO_LOGISTICS),
+                util._N(BPMSalesOrderItemFullfilment.GW_XOR_SHIPMENT_METHOD),
+                util._N(ItemActivities.EVENT_PACKING_STARTED),
+                util._N(ItemActivities.EVENT_MSG_DELIVERY_ADDRESS_CHANGE),
+                util._N(ItemActivities.ACTIVITY_CHECK_DELIVERY_ADDRESS_CHANGE_POSSIBLE),
+                util._N(BPMSalesOrderItemFullfilment.GW_XOR_DELIVERY_ADRESS_CHANGE_POSSIBLE)
+        );
+
+        BpmnAwareTests.assertThat(orderProcess).hasPassed(
+                util._N(BPMSalesOrderItemFullfilment.SUB_PROCESS_ORDER_ITEM_DELIVERY_ADDRES_CHANGE),
+                util._N(ItemActivities.EVENT_DELIVERY_ADDRESS_NOT_CHANGED)
+        );
+
+        BpmnAwareTests.assertThat(orderProcess).hasNotPassed(
+                util._N(ItemActivities.ACTIVITY_CHANGE_DELIVERY_ADDRESS)
+        );
+
+        BpmnAwareTests.assertThat(orderProcess).isWaitingAt(util._N(ItemActivities.EVENT_TRACKING_ID_RECEIVED));
+
+        util.sendMessage(ItemMessages.MSG_TRACKING_ID_RECEIVED);
+        util.sendMessage(ItemMessages.MSG_ITEM_DELIVERED);
+
+        BpmnAwareTests.assertThat(orderProcess).isEnded();
+    }
+
+    @Test
+    public void testChangeAddressPossibleOnParcelShipment() {
+        final Map<String, Object> processVariables = new HashMap<>();
+        processVariables.put(util._N(ItemVariables.SHIPMENT_METHOD), util._N(ShipmentMethod.PARCEL));
+
+        final ProcessInstance orderItemFulfillmentProcess = runtimeService.startProcessInstanceByKey(
+                ProcessDefinition.SALES_ORDER_ITEM_FULFILLMENT_PROCESS.getName(),
+                processVariables);
+        util.sendMessage(ItemMessages.MSG_ITEM_TRANSMITTED);
+        util.sendMessage(ItemMessages.MSG_DELIVERY_ADDRESS_CHANGE);
+
+        BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
+                util._N(ItemActivities.EVENT_START_ORDER_ITEM_FULFILLMENT_PROCESS),
+                util._N(ItemActivities.EVENT_ITEM_TRANSMITTED_TO_LOGISTICS),
+                util._N(BPMSalesOrderItemFullfilment.GW_XOR_SHIPMENT_METHOD),
+                util._N(ItemActivities.EVENT_MSG_DELIVERY_ADDRESS_CHANGE),
+                util._N(ItemActivities.ACTIVITY_CHECK_DELIVERY_ADDRESS_CHANGE_POSSIBLE),
+                util._N(BPMSalesOrderItemFullfilment.GW_XOR_DELIVERY_ADRESS_CHANGE_POSSIBLE),
+                util._N(ItemActivities.ACTIVITY_CHANGE_DELIVERY_ADDRESS)
+        );
+
+        BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassed(
+                util._N(BPMSalesOrderItemFullfilment.SUB_PROCESS_ORDER_ITEM_DELIVERY_ADDRES_CHANGE),
+                util._N(ItemActivities.EVENT_DELIVERY_ADDRESS_CHANGED)
+        );
+
+        BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasNotPassed(
+                util._N(ItemActivities.EVENT_DELIVERY_ADDRESS_NOT_CHANGED)
+        );
+
+        BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isWaitingAt(util._N(ItemActivities.EVENT_PACKING_STARTED));
+        util.sendMessage(ItemMessages.MSG_PACKING_STARTED);
+
+        BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isWaitingAt(util._N(ItemActivities.EVENT_TRACKING_ID_RECEIVED));
+
+        util.sendMessage(ItemMessages.MSG_TRACKING_ID_RECEIVED);
+        util.sendMessage(ItemMessages.MSG_ITEM_DELIVERED);
+
+        BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isEnded();
+
+    }
+
+    @Test
+    public void testChangeAddressNotPossibleOnOwnDeliveryShipmentAfterTourStarted() {
+        final Map<String, Object> processVariables = new HashMap<>();
+        processVariables.put(util._N(ItemVariables.SHIPMENT_METHOD), util._N(ShipmentMethod.OWN_DELIVERY));
+
+        final ProcessInstance orderItemFulfillmentProcess = runtimeService.startProcessInstanceByKey(
+                ProcessDefinition.SALES_ORDER_ITEM_FULFILLMENT_PROCESS.getName(),
+                processVariables);
+        util.sendMessage(ItemMessages.MSG_ITEM_TRANSMITTED);
+        util.sendMessage(ItemMessages.MSG_TOUR_STARTED);
+        util.sendMessage(ItemMessages.MSG_DELIVERY_ADDRESS_CHANGE);
+
+        BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
+                util._N(ItemActivities.EVENT_START_ORDER_ITEM_FULFILLMENT_PROCESS),
+                util._N(ItemActivities.EVENT_ITEM_TRANSMITTED_TO_LOGISTICS),
+                util._N(BPMSalesOrderItemFullfilment.GW_XOR_SHIPMENT_METHOD),
+                util._N(ItemActivities.EVENT_TOUR_STARTED),
+                util._N(ItemActivities.EVENT_MSG_DELIVERY_ADDRESS_CHANGE),
+                util._N(ItemActivities.ACTIVITY_CHECK_DELIVERY_ADDRESS_CHANGE_POSSIBLE),
+                util._N(BPMSalesOrderItemFullfilment.GW_XOR_DELIVERY_ADRESS_CHANGE_POSSIBLE)
+        );
+
+        BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassed(
+                util._N(BPMSalesOrderItemFullfilment.SUB_PROCESS_ORDER_ITEM_DELIVERY_ADDRES_CHANGE),
+                util._N(ItemActivities.EVENT_DELIVERY_ADDRESS_NOT_CHANGED)
+        );
+
+        BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasNotPassed(
+                util._N(ItemActivities.ACTIVITY_CHANGE_DELIVERY_ADDRESS)
+        );
+
+        BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isWaitingAt(util._N(ItemActivities.EVENT_ITEM_DELIVERED));
+
+        util.sendMessage(ItemMessages.MSG_ITEM_DELIVERED);
+
+        BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isEnded();
+    }
+
+    @Test
+    public void testChangeAddressPossibleOnOwnDeliveryShipment() {
+        final Map<String, Object> processVariables = new HashMap<>();
+        processVariables.put(util._N(ItemVariables.SHIPMENT_METHOD), util._N(ShipmentMethod.OWN_DELIVERY));
+
+        final ProcessInstance orderItemFulfillmentProcess = runtimeService.startProcessInstanceByKey(
+                ProcessDefinition.SALES_ORDER_ITEM_FULFILLMENT_PROCESS.getName(),
+                processVariables);
+        util.sendMessage(ItemMessages.MSG_ITEM_TRANSMITTED);
+        util.sendMessage(ItemMessages.MSG_DELIVERY_ADDRESS_CHANGE);
+
+        BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
+                util._N(ItemActivities.EVENT_START_ORDER_ITEM_FULFILLMENT_PROCESS),
+                util._N(ItemActivities.EVENT_ITEM_TRANSMITTED_TO_LOGISTICS),
+                util._N(BPMSalesOrderItemFullfilment.GW_XOR_SHIPMENT_METHOD),
+                util._N(ItemActivities.EVENT_MSG_DELIVERY_ADDRESS_CHANGE),
+                util._N(ItemActivities.ACTIVITY_CHECK_DELIVERY_ADDRESS_CHANGE_POSSIBLE),
+                util._N(BPMSalesOrderItemFullfilment.GW_XOR_DELIVERY_ADRESS_CHANGE_POSSIBLE),
+                util._N(ItemActivities.ACTIVITY_CHANGE_DELIVERY_ADDRESS)
+        );
+
+        BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassed(
+                util._N(BPMSalesOrderItemFullfilment.SUB_PROCESS_ORDER_ITEM_DELIVERY_ADDRES_CHANGE),
+                util._N(ItemActivities.EVENT_DELIVERY_ADDRESS_CHANGED)
+        );
+
+        BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasNotPassed(
+                util._N(ItemActivities.EVENT_DELIVERY_ADDRESS_NOT_CHANGED)
+        );
+
+        BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isWaitingAt(util._N(ItemActivities.EVENT_TOUR_STARTED));
+        util.sendMessage(ItemMessages.MSG_TOUR_STARTED);
+        util.sendMessage(ItemMessages.MSG_ITEM_DELIVERED);
+
+        BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isEnded();
+    }
+
+    @Test
+    public void testChangeAddressNotPossibleOnPickup() {
+        final Map<String, Object> processVariables = new HashMap<>();
+        processVariables.put(util._N(ItemVariables.SHIPMENT_METHOD), util._N(ShipmentMethod.PICKUP));
+
+        final ProcessInstance orderItemFulfillmentProcess = runtimeService.startProcessInstanceByKey(
+                ProcessDefinition.SALES_ORDER_ITEM_FULFILLMENT_PROCESS.getName(),
+                processVariables);
+        util.sendMessage(ItemMessages.MSG_ITEM_TRANSMITTED);
+        util.sendMessage(ItemMessages.MSG_DELIVERY_ADDRESS_CHANGE);
+
+        BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
+                util._N(ItemActivities.EVENT_START_ORDER_ITEM_FULFILLMENT_PROCESS),
+                util._N(ItemActivities.EVENT_ITEM_TRANSMITTED_TO_LOGISTICS),
+                util._N(BPMSalesOrderItemFullfilment.GW_XOR_SHIPMENT_METHOD),
+                util._N(ItemActivities.EVENT_MSG_DELIVERY_ADDRESS_CHANGE),
+                util._N(ItemActivities.ACTIVITY_CHECK_DELIVERY_ADDRESS_CHANGE_POSSIBLE),
+                util._N(BPMSalesOrderItemFullfilment.GW_XOR_DELIVERY_ADRESS_CHANGE_POSSIBLE)
+        );
+
+        BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassed(
+                util._N(BPMSalesOrderItemFullfilment.SUB_PROCESS_ORDER_ITEM_DELIVERY_ADDRES_CHANGE),
+                util._N(ItemActivities.EVENT_DELIVERY_ADDRESS_NOT_CHANGED)
+        );
+
+        BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasNotPassed(
+                util._N(ItemActivities.ACTIVITY_CHANGE_DELIVERY_ADDRESS)
+        );
+
+        BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isWaitingAt(util._N(ItemActivities.EVENT_ITEM_PREPARED_FOR_PICKUP));
+
+        util.sendMessage(ItemMessages.MSG_ITEM_PREPARED);
+        util.sendMessage(ItemMessages.MSG_ITEM_PICKED_UP);
+
+        BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isEnded();
+    }
+
+}
