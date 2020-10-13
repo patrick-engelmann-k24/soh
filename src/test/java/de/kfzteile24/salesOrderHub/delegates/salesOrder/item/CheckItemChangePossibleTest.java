@@ -14,7 +14,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.HashMap;
@@ -68,7 +67,7 @@ public class CheckItemChangePossibleTest {
         );
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassed(
-                util._N(BPMSalesOrderItemFullfilment.SUB_PROCESS_ORDER_ITEM_DELIVERY_ADDRES_CHANGE),
+                util._N(BPMSalesOrderItemFullfilment.SUB_PROCESS_ORDER_ITEM_DELIVERY_ADDRESS_CHANGE),
                 util._N(ItemEvents.EVENT_DELIVERY_ADDRESS_NOT_CHANGED)
         );
 
@@ -106,7 +105,7 @@ public class CheckItemChangePossibleTest {
         );
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassed(
-                util._N(BPMSalesOrderItemFullfilment.SUB_PROCESS_ORDER_ITEM_DELIVERY_ADDRES_CHANGE),
+                util._N(BPMSalesOrderItemFullfilment.SUB_PROCESS_ORDER_ITEM_DELIVERY_ADDRESS_CHANGE),
                 util._N(ItemEvents.EVENT_DELIVERY_ADDRESS_CHANGED)
         );
 
@@ -149,7 +148,7 @@ public class CheckItemChangePossibleTest {
         );
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassed(
-                util._N(BPMSalesOrderItemFullfilment.SUB_PROCESS_ORDER_ITEM_DELIVERY_ADDRES_CHANGE),
+                util._N(BPMSalesOrderItemFullfilment.SUB_PROCESS_ORDER_ITEM_DELIVERY_ADDRESS_CHANGE),
                 util._N(ItemEvents.EVENT_DELIVERY_ADDRESS_NOT_CHANGED)
         );
 
@@ -186,7 +185,7 @@ public class CheckItemChangePossibleTest {
         );
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassed(
-                util._N(BPMSalesOrderItemFullfilment.SUB_PROCESS_ORDER_ITEM_DELIVERY_ADDRES_CHANGE),
+                util._N(BPMSalesOrderItemFullfilment.SUB_PROCESS_ORDER_ITEM_DELIVERY_ADDRESS_CHANGE),
                 util._N(ItemEvents.EVENT_DELIVERY_ADDRESS_CHANGED)
         );
 
@@ -222,7 +221,7 @@ public class CheckItemChangePossibleTest {
         );
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassed(
-                util._N(BPMSalesOrderItemFullfilment.SUB_PROCESS_ORDER_ITEM_DELIVERY_ADDRES_CHANGE),
+                util._N(BPMSalesOrderItemFullfilment.SUB_PROCESS_ORDER_ITEM_DELIVERY_ADDRESS_CHANGE),
                 util._N(ItemEvents.EVENT_DELIVERY_ADDRESS_NOT_CHANGED)
         );
 

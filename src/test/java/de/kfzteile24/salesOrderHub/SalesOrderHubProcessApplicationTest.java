@@ -33,10 +33,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -63,13 +61,15 @@ public class SalesOrderHubProcessApplicationTest {
 
     @Autowired
     SalesOrderService salesOrderService;
+
     @Autowired
     BpmUtil util;
+
     private SalesOrder testOrder;
 
     @Before
     public void setup() {
-        testOrder = salesOrderService.createOrder(getOrderNumber());
+        testOrder = salesOrderService.createOrder(util.getRandomOrderNumber());
     }
 
     @Test
@@ -86,7 +86,7 @@ public class SalesOrderHubProcessApplicationTest {
     @Test
     public void salesOrderItemPassThruTest() {
         final String orderId = testOrder.getOrderNumber();
-        final List<String> orderItems = getOrderItems(orderId, 5);
+        final List<String> orderItems = util.getOrderItems(orderId, 5);
 
         ProcessInstance salesOrderProcessInstance =
                 runtimeService.createMessageCorrelation(util._N(Messages.MSG_ORDER_RECEIVED_MARKETPLACE))
@@ -180,7 +180,7 @@ public class SalesOrderHubProcessApplicationTest {
     }
 
     protected ProcessInstance firstPartOfSalesOrderProcess(final String orderId) {
-        final List<String> orderItems = getOrderItems(orderId, 5);
+        final List<String> orderItems = util.getOrderItems(orderId, 5);
         final ProcessInstance salesOrderProcessInstance =
                 runtimeService.createMessageCorrelation(util._N(Messages.MSG_ORDER_RECEIVED_MARKETPLACE))
                         .processInstanceBusinessKey(orderId)
@@ -206,14 +206,6 @@ public class SalesOrderHubProcessApplicationTest {
         // move all items to packing started
         util.sendMessage(util._N(ItemMessages.MSG_ITEM_TRANSMITTED), orderId);
         return salesOrderProcessInstance;
-    }
-
-    final List<String> getOrderItems(final String orderId, final int number) {
-        final List<String> result = new ArrayList<>();
-        for (int i = 0; i < number; i++) {
-            result.add(orderId + "-item-" + i);
-        }
-        return result;
     }
 
     final String getOrderNumber() {

@@ -2,29 +2,21 @@ package de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 
-/**
- * All Activities, Gateways, Events from the Order Item Fullfilment process
- */
-public enum ItemVariables implements BpmItem {
-    // process variables
-    VAR_ITEM_CANCELLED("itemCancelled"),
-    VAR_ITEM_ID("orderItemId"),
-    VAR_ITEM_CANCELLATION_POSSIBLE("itemCancellationPossible"),
-    SHIPMENT_METHOD("shipment_method"),
-    TRACKING_ID_RECEIVED("trackingIdReceived"),
-    // todo: fix typo in BPM diagram
-    DELIVERY_ADDRESS_CHANGE_POSSIBLE("deliveryAdressChangePossible"),
-    ITEM_DELIVERED("itemDelivered"),
-    ITEM_PICKED_UP("itemDelivered");
+public enum ItemActivities implements BpmItem {
+    ACTIVITY_CHECK_CANCELLATION_POSSIBLE("activityCheckCancellationPossible"),
+    ACTIVITY_HANDLE_CANCELLATION_DROPSHIPMENT("activityHandleCancellationDropshipment"),
+    ACTIVITY_HANDLE_CANCELLATION_SHIPMENT("activityHandleCancellationShipment"),
+    ACTIVITY_CHECK_DELIVERY_ADDRESS_CHANGE_POSSIBLE("activityCheckDeliveryAddressChangePossible"),
+    ACTIVITY_CHANGE_DELIVERY_ADDRESS("activityChangeDeliveryAddress"),
+    ;
 
     private final String name;
 
-    ItemVariables(final String name) {
+    ItemActivities(final String name) {
         this.name = name;
     }
 
     public String getName() {
         return name;
     }
-
 }

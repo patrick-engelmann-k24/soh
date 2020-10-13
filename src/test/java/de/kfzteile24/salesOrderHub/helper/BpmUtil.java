@@ -7,10 +7,7 @@ import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 @Component
 public class BpmUtil {
@@ -74,6 +71,14 @@ public class BpmUtil {
             buffer.append((char) randomLimitedInt);
         }
         return buffer.toString();
+    }
+
+    public final List<String> getOrderItems(final String orderId, final int number) {
+        final List<String> result = new ArrayList<>();
+        for (int i = 0; i < number; i++) {
+            result.add(orderId + "-item-" + i);
+        }
+        return result;
     }
 
     public final String _N(BpmItem item) {
