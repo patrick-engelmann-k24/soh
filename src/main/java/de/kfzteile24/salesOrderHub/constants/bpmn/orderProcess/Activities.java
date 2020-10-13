@@ -7,7 +7,7 @@ public enum Activities implements BpmItem {
     ACTIVITY_VALIDATE_ORDER( "msgOrderReceivedPaymentSecured"),
     ACTIVITY_ORDER_ITEM_FULFILLMENT_PROCESS("activityOrderItemFulfillmentProcess"),
     ACTIVITY_CHANGE_INVOICE_ADDRESS("activityChangeInvoiceAddress"),
-    EVENT_CATCH_MSG_ORDER_CREATED("eventThrowMsgOrderCreated"),
+    EVENT_THROW_MSG_ORDER_CREATED("eventThrowMsgOrderCreated"),
     EVENT_END_MSG_ORDER_CANCELLED("eventEndMsgOrderCancelled"),
     EVENT_END_ORDER_ITEM_FINISHED("eventEndOrderItemFinished"),
     EVENT_CATCH_MSG_ORDER_ITEM_TRANSMITTED_TO_LOGISTICS("eventCatchMsgOrderItemTransmittedToLogistics"),

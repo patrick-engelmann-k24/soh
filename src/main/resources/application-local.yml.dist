@@ -15,3 +15,19 @@ spring:
     jdbcUrl: jdbc:postgresql://your-server:5432/your-database?currentSchema=public
     username: postgres
     password: postgres
+
+  cloud:
+    aws:
+      region:
+        static: eu-central-1
+      stack:
+        auto: false
+      credentials:
+        access-key: your-access-key
+        secret-key: your-secret-key
+
+  #AWS
+  soh:
+    sns:
+      topic:
+        orderCreated: arn:aws:sns:eu-central-1:000000000000:soh-order-created
