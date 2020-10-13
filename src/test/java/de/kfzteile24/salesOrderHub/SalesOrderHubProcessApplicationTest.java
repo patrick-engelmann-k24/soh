@@ -16,21 +16,14 @@
  */
 package de.kfzteile24.salesOrderHub;
 
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Gateways;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.BPMSalesOrderItemFullfilment;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemActivities;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemMessages;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemVariables;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.*;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.*;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RepositoryService;
 import org.camunda.bpm.engine.RuntimeService;
-import org.camunda.bpm.engine.runtime.MessageCorrelationBuilder;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.runtime.ProcessInstanceQuery;
@@ -40,9 +33,13 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
 import static org.camunda.bpm.engine.test.assertions.ProcessEngineTests.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -55,7 +52,6 @@ import static org.junit.Assert.assertNotNull;
 )
 public class SalesOrderHubProcessApplicationTest {
 
-    final static String msgSalesOrder = "msg_orderReceivedMarketplace";
     @Autowired
     public ProcessEngine processEngine;
 
@@ -101,7 +97,7 @@ public class SalesOrderHubProcessApplicationTest {
                         .setVariable(util._N(Variables.VAR_ORDER_ITEMS), orderItems)
                         .setVariable(util._N(Variables.VAR_SHIPMENT_METHOD), "parcel")
                         .correlateWithResult().getProcessInstance();
-        assertThat(salesOrderProcessInstance).isWaitingAt(util._N(Activities.EVENT_MSG_ORDER_PAYMENT_SECURED));
+        assertThat(salesOrderProcessInstance).isWaitingAt(util._N(Events.EVENT_MSG_ORDER_PAYMENT_SECURED));
 
         util.sendMessage(util._N(Messages.MSG_ORDER_RECEIVED_PAYMENT_SECURED), orderId);
         assertThat(salesOrderProcessInstance).isWaitingAt(util._N(Activities.ACTIVITY_ORDER_ITEM_FULFILLMENT_PROCESS));
@@ -113,16 +109,16 @@ public class SalesOrderHubProcessApplicationTest {
         util.sendMessage(util._N(ItemMessages.MSG_ITEM_DELIVERED), orderId);
 
         BpmnAwareTests.assertThat(salesOrderProcessInstance).hasPassedInOrder(
-                util._N(Activities.EVENT_START_MSG_ORDER_RECEIVED_FROM_MARKETPLACE),
+                util._N(Events.EVENT_START_MSG_ORDER_RECEIVED_FROM_MARKETPLACE),
                 util._N(Gateways.GW_XOR_ORDER_RECEIVED_ECP_OR_MARKETPLACE),
-                util._N(Activities.EVENT_THROW_MSG_ORDER_CREATED),
+                util._N(Events.EVENT_THROW_MSG_ORDER_CREATED),
 //                util._N(Activities.ACTIVITY_VALIDATE_ORDER),
 //                util._N(Gateways.GW_XOR_ORDER_VALID),
 //                util._N(Gateways.GW_XOR_ORDER_VALIDATED),
-//                util._N(Activities.EVENT_THROW_MSG_ORDER_VALIDATED),
-                util._N(Activities.EVENT_MSG_ORDER_PAYMENT_SECURED),
+//                util._N(Events.EVENT_THROW_MSG_ORDER_VALIDATED),
+                util._N(Events.EVENT_MSG_ORDER_PAYMENT_SECURED),
                 util._N(Activities.ACTIVITY_ORDER_ITEM_FULFILLMENT_PROCESS),
-                util._N(Activities.EVENT_END_MSG_ORDER_COMPLETED)
+                util._N(Events.EVENT_END_MSG_ORDER_COMPLETED)
         );
 
         assertThat(salesOrderProcessInstance).isEnded();
@@ -139,7 +135,7 @@ public class SalesOrderHubProcessApplicationTest {
 
         final ProcessInstance firstItemProcessInstance = getFirstOrderItem(firstItem, msg_packingStarted);
 
-        assertThat(firstItemProcessInstance).hasPassedInOrder(util._N(ItemActivities.EVENT_ITEM_TRANSMITTED_TO_LOGISTICS));
+        assertThat(firstItemProcessInstance).hasPassedInOrder(util._N(ItemEvents.EVENT_ITEM_TRANSMITTED_TO_LOGISTICS));
 
         // cancel 1st orderItem
         final Map<String, Object> processVariables = Map.of("itemCancellationPossible", true);
@@ -149,13 +145,13 @@ public class SalesOrderHubProcessApplicationTest {
         assertThat(salesOrderProcessInstance).isWaitingAt(util._N(Activities.ACTIVITY_ORDER_ITEM_FULFILLMENT_PROCESS));
 
         assertThat(firstItemProcessInstance).hasPassed(
-                util._N(ItemActivities.EVENT_START_ORDER_ITEM_FULFILLMENT_PROCESS),
-                util._N(ItemActivities.EVENT_ITEM_TRANSMITTED_TO_LOGISTICS),
-                util._N(BPMSalesOrderItemFullfilment.GW_XOR_SHIPMENT_METHOD),
-                util._N(ItemActivities.EVENT_PACKING_STARTED),
-                util._N(ItemActivities.EVENT_MSG_SHIPMENT_CANCELLATION_RECEIVED),
+                util._N(ItemEvents.EVENT_START_ORDER_ITEM_FULFILLMENT_PROCESS),
+                util._N(ItemEvents.EVENT_ITEM_TRANSMITTED_TO_LOGISTICS),
+                util._N(ItemGateways.GW_XOR_SHIPMENT_METHOD),
+                util._N(ItemEvents.EVENT_PACKING_STARTED),
+                util._N(ItemEvents.EVENT_MSG_SHIPMENT_CANCELLATION_RECEIVED),
                 util._N(ItemActivities.ACTIVITY_CHECK_CANCELLATION_POSSIBLE),
-                util._N(BPMSalesOrderItemFullfilment.GW_XOR_CANCELLATION_POSSIBLE),
+                util._N(ItemGateways.GW_XOR_CANCELLATION_POSSIBLE),
                 util._N(ItemActivities.ACTIVITY_HANDLE_CANCELLATION_SHIPMENT)
         );
         assertThat(firstItemProcessInstance).isEnded();
@@ -196,8 +192,8 @@ public class SalesOrderHubProcessApplicationTest {
                         .correlateWithResult().getProcessInstance();
         assertThat(salesOrderProcessInstance).isActive();
         assertThat(salesOrderProcessInstance)
-                .hasPassed(util._N(Activities.EVENT_THROW_MSG_ORDER_CREATED))
-                .isWaitingAt(util._N(Activities.EVENT_MSG_ORDER_PAYMENT_SECURED));
+                .hasPassed(util._N(Events.EVENT_THROW_MSG_ORDER_CREATED))
+                .isWaitingAt(util._N(Events.EVENT_MSG_ORDER_PAYMENT_SECURED));
 
         runtimeService.createMessageCorrelation(util._N(Messages.MSG_ORDER_RECEIVED_PAYMENT_SECURED))
                 .processInstanceBusinessKey(orderId)

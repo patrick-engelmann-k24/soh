@@ -1,7 +1,7 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder.item;
 
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.BPMSalesOrderItemFullfilment;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemActivities;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemEvents;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemVariables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.delegates.CommonDelegate;
@@ -37,11 +37,11 @@ public class CheckItemChangePossible extends CommonDelegate {
     }
 
     protected boolean checkOnShipmentMethodParcel(DelegateExecution delegateExecution) {
-        return helper.hasNotPassed(delegateExecution.getProcessInstanceId(), ItemActivities.EVENT_PACKING_STARTED.getName());
+        return helper.hasNotPassed(delegateExecution.getProcessInstanceId(), ItemEvents.EVENT_PACKING_STARTED.getName());
     }
 
     protected boolean checkOnShipmentMethodOwnDelivery(DelegateExecution delegateExecution) {
-        return helper.hasNotPassed(delegateExecution.getProcessInstanceId(), ItemActivities.EVENT_TOUR_STARTED.getName());
+        return helper.hasNotPassed(delegateExecution.getProcessInstanceId(), ItemEvents.EVENT_TOUR_STARTED.getName());
     }
 
     void setResultVariable(DelegateExecution delegateExecution, boolean checkResult) {

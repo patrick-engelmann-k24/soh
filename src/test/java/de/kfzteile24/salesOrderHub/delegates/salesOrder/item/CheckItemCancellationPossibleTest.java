@@ -60,14 +60,14 @@ public class CheckItemCancellationPossibleTest {
         util.sendMessage(ItemMessages.MSG_ITEM_DELIVERED);
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
-                util._N(ItemActivities.EVENT_START_ORDER_ITEM_FULFILLMENT_PROCESS),
-                util._N(ItemActivities.EVENT_ITEM_TRANSMITTED_TO_LOGISTICS),
-                util._N(BPMSalesOrderItemFullfilment.GW_XOR_SHIPMENT_METHOD),
-                util._N(ItemActivities.EVENT_PACKING_STARTED),
-                util._N(ItemActivities.EVENT_TRACKING_ID_RECEIVED),
-                util._N(BPMSalesOrderItemFullfilment.GW_XOR_TOUR_STARTED),
-                util._N(ItemActivities.EVENT_ITEM_DELIVERED),
-                util._N(ItemActivities.EVENT_ORDER_ITEM_FULFILLMENT_PROCESS_FINISHED)
+                util._N(ItemEvents.EVENT_START_ORDER_ITEM_FULFILLMENT_PROCESS),
+                util._N(ItemEvents.EVENT_ITEM_TRANSMITTED_TO_LOGISTICS),
+                util._N(ItemGateways.GW_XOR_SHIPMENT_METHOD),
+                util._N(ItemEvents.EVENT_PACKING_STARTED),
+                util._N(ItemEvents.EVENT_TRACKING_ID_RECEIVED),
+                util._N(ItemGateways.GW_XOR_TOUR_STARTED),
+                util._N(ItemEvents.EVENT_ITEM_DELIVERED),
+                util._N(ItemEvents.EVENT_ORDER_ITEM_FULFILLMENT_PROCESS_FINISHED)
         );
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isEnded();
     }
@@ -86,13 +86,13 @@ public class CheckItemCancellationPossibleTest {
         util.sendMessage(ItemMessages.MSG_ITEM_DELIVERED);
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
-                util._N(ItemActivities.EVENT_START_ORDER_ITEM_FULFILLMENT_PROCESS),
-                util._N(ItemActivities.EVENT_ITEM_TRANSMITTED_TO_LOGISTICS),
-                util._N(BPMSalesOrderItemFullfilment.GW_XOR_SHIPMENT_METHOD),
-                util._N(ItemActivities.EVENT_TOUR_STARTED),
-                util._N(BPMSalesOrderItemFullfilment.GW_XOR_TOUR_STARTED),
-                util._N(ItemActivities.EVENT_ITEM_DELIVERED),
-                util._N(ItemActivities.EVENT_ORDER_ITEM_FULFILLMENT_PROCESS_FINISHED)
+                util._N(ItemEvents.EVENT_START_ORDER_ITEM_FULFILLMENT_PROCESS),
+                util._N(ItemEvents.EVENT_ITEM_TRANSMITTED_TO_LOGISTICS),
+                util._N(ItemGateways.GW_XOR_SHIPMENT_METHOD),
+                util._N(ItemEvents.EVENT_TOUR_STARTED),
+                util._N(ItemGateways.GW_XOR_TOUR_STARTED),
+                util._N(ItemEvents.EVENT_ITEM_DELIVERED),
+                util._N(ItemEvents.EVENT_ORDER_ITEM_FULFILLMENT_PROCESS_FINISHED)
         );
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isEnded();
     }
@@ -111,12 +111,12 @@ public class CheckItemCancellationPossibleTest {
         util.sendMessage(ItemMessages.MSG_ITEM_PICKED_UP);
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
-                util._N(ItemActivities.EVENT_START_ORDER_ITEM_FULFILLMENT_PROCESS),
-                util._N(ItemActivities.EVENT_ITEM_TRANSMITTED_TO_LOGISTICS),
-                util._N(BPMSalesOrderItemFullfilment.GW_XOR_SHIPMENT_METHOD),
-                util._N(ItemActivities.EVENT_ITEM_PREPARED_FOR_PICKUP),
-                util._N(ItemActivities.EVENT_ITEM_PICKED_UP),
-                util._N(ItemActivities.EVENT_ORDER_ITEM_FULFILLMENT_PROCESS_FINISHED)
+                util._N(ItemEvents.EVENT_START_ORDER_ITEM_FULFILLMENT_PROCESS),
+                util._N(ItemEvents.EVENT_ITEM_TRANSMITTED_TO_LOGISTICS),
+                util._N(ItemGateways.GW_XOR_SHIPMENT_METHOD),
+                util._N(ItemEvents.EVENT_ITEM_PREPARED_FOR_PICKUP),
+                util._N(ItemEvents.EVENT_ITEM_PICKED_UP),
+                util._N(ItemEvents.EVENT_ORDER_ITEM_FULFILLMENT_PROCESS_FINISHED)
         );
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isEnded();
     }
@@ -152,27 +152,27 @@ public class CheckItemCancellationPossibleTest {
         util.sendMessage(ItemMessages.MSG_ORDER_ITEM_CANCELLATION_RECEIVED);
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
-                util._N(ItemActivities.EVENT_START_ORDER_ITEM_FULFILLMENT_PROCESS),
-                util._N(ItemActivities.EVENT_ITEM_TRANSMITTED_TO_LOGISTICS),
-                util._N(BPMSalesOrderItemFullfilment.GW_XOR_SHIPMENT_METHOD),
-                util._N(ItemActivities.EVENT_PACKING_STARTED),
-                util._N(ItemActivities.EVENT_TRACKING_ID_RECEIVED),
-                util._N(BPMSalesOrderItemFullfilment.GW_XOR_TOUR_STARTED),
+                util._N(ItemEvents.EVENT_START_ORDER_ITEM_FULFILLMENT_PROCESS),
+                util._N(ItemEvents.EVENT_ITEM_TRANSMITTED_TO_LOGISTICS),
+                util._N(ItemGateways.GW_XOR_SHIPMENT_METHOD),
+                util._N(ItemEvents.EVENT_PACKING_STARTED),
+                util._N(ItemEvents.EVENT_TRACKING_ID_RECEIVED),
+                util._N(ItemGateways.GW_XOR_TOUR_STARTED),
                 util._N(ItemActivities.ACTIVITY_CHECK_CANCELLATION_POSSIBLE),
-                util._N(BPMSalesOrderItemFullfilment.GW_XOR_CANCELLATION_POSSIBLE)
+                util._N(ItemGateways.GW_XOR_CANCELLATION_POSSIBLE)
         );
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassed(
-                util._N(ItemActivities.EVENT_ORDER_ITEM_SHIPMENT_NOT_HANDLED),
+                util._N(ItemEvents.EVENT_ORDER_ITEM_SHIPMENT_NOT_HANDLED),
                 util._N(BPMSalesOrderItemFullfilment.SUB_PROCESS_ORDER_ITEM_CANCELLATION_SHIPMENT)
         );
 
-        BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isWaitingAt(util._N(ItemActivities.EVENT_ITEM_DELIVERED));
+        BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isWaitingAt(util._N(ItemEvents.EVENT_ITEM_DELIVERED));
         util.sendMessage(ItemMessages.MSG_ITEM_DELIVERED);
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassed(
-                util._N(ItemActivities.EVENT_TRACKING_ID_RECEIVED),
-                util._N(ItemActivities.EVENT_ITEM_DELIVERED)
+                util._N(ItemEvents.EVENT_TRACKING_ID_RECEIVED),
+                util._N(ItemEvents.EVENT_ITEM_DELIVERED)
         );
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isEnded();
 
@@ -187,25 +187,25 @@ public class CheckItemCancellationPossibleTest {
         util.sendMessage(ItemMessages.MSG_ORDER_ITEM_CANCELLATION_RECEIVED);
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
-                util._N(ItemActivities.EVENT_START_ORDER_ITEM_FULFILLMENT_PROCESS),
-                util._N(ItemActivities.EVENT_ITEM_TRANSMITTED_TO_LOGISTICS),
-                util._N(BPMSalesOrderItemFullfilment.GW_XOR_SHIPMENT_METHOD),
-                util._N(ItemActivities.EVENT_PACKING_STARTED),
-                util._N(ItemActivities.EVENT_MSG_SHIPMENT_CANCELLATION_RECEIVED),
+                util._N(ItemEvents.EVENT_START_ORDER_ITEM_FULFILLMENT_PROCESS),
+                util._N(ItemEvents.EVENT_ITEM_TRANSMITTED_TO_LOGISTICS),
+                util._N(ItemGateways.GW_XOR_SHIPMENT_METHOD),
+                util._N(ItemEvents.EVENT_PACKING_STARTED),
+                util._N(ItemEvents.EVENT_MSG_SHIPMENT_CANCELLATION_RECEIVED),
                 util._N(ItemActivities.ACTIVITY_CHECK_CANCELLATION_POSSIBLE),
-                util._N(BPMSalesOrderItemFullfilment.GW_XOR_CANCELLATION_POSSIBLE),
+                util._N(ItemGateways.GW_XOR_CANCELLATION_POSSIBLE),
                 util._N(BPMSalesOrderItemFullfilment.SUB_PROCESS_ORDER_ITEM_CANCELLATION_SHIPMENT),
-                util._N(ItemActivities.EVENT_ORDER_CANCEL)
+                util._N(ItemEvents.EVENT_ORDER_CANCEL)
         );
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassed(
-                util._N(ItemActivities.EVENT_ORDER_ITEM_CANCELLED),
+                util._N(ItemEvents.EVENT_ORDER_ITEM_CANCELLED),
                 util._N(BPMSalesOrderItemFullfilment.SUB_PROCESS_HANDLE_ORDER_ITEM_CANCELLATION)
         );
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasNotPassed(
 //                util._N(ItemActivities.EVENT_TRACKING_ID_RECEIVED),
-                util._N(ItemActivities.EVENT_ITEM_DELIVERED)
+                util._N(ItemEvents.EVENT_ITEM_DELIVERED)
         );
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isEnded();

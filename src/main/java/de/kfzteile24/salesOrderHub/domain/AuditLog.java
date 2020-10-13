@@ -4,13 +4,11 @@ import lombok.*;
 import org.springframework.lang.Nullable;
 
 import javax.persistence.*;
-import java.sql.Timestamp;
 import java.util.Date;
 import java.util.UUID;
 
 /**
  * Entity for storing our audit events
- *
  */
 @Entity
 @Table(name = "audit_log", schema = "public", catalog = "soh")
@@ -45,7 +43,8 @@ public class AuditLog extends AbstractBaseEntity {
     @Basic
     @Column(name = "created_date")
     @Temporal(TemporalType.TIMESTAMP) //
-    private @Nullable Date createdAt;
+    private @Nullable
+    Date createdAt;
 
     @Basic
     @Column(name = "last_modified_by")
@@ -54,6 +53,7 @@ public class AuditLog extends AbstractBaseEntity {
     @Basic
     @Column(name = "last_modified_date")
     @Temporal(TemporalType.TIMESTAMP) //
-    private @Nullable Date lastModifiedDate;
+    private @Nullable
+    Date lastModifiedDate;
 
 }

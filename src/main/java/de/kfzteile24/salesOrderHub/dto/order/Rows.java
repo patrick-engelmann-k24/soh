@@ -1,7 +1,6 @@
 package de.kfzteile24.salesOrderHub.dto.order;
 
 import de.kfzteile24.salesOrderHub.dto.order.rows.*;
-import de.kfzteile24.salesOrderHub.dto.order.rows.Creator;
 import de.kfzteile24.salesOrderHub.dto.order.total.Taxes;
 import lombok.Data;
 

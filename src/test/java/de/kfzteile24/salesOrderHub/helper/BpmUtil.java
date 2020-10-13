@@ -1,7 +1,6 @@
 package de.kfzteile24.salesOrderHub.helper;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
-import org.aspectj.bridge.Message;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.MessageCorrelationBuilder;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
@@ -47,7 +46,7 @@ public class BpmUtil {
     }
 
     public final MessageCorrelationResult sendMessage(final String message, final String orderId, final String orderItem,
-                                               final Map<String, Object> processVariables) {
+                                                      final Map<String, Object> processVariables) {
         MessageCorrelationBuilder builder = runtimeService.createMessageCorrelation(message)
                 .processInstanceVariableEquals("orderId", orderId)
                 .processInstanceVariableEquals("orderItemId", orderItem);

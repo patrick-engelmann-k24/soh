@@ -1,23 +1,16 @@
 package de.kfzteile24.salesOrderHub.delegates.helper;
 
-import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 import org.camunda.bpm.engine.HistoryService;
-import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.history.HistoricActivityInstance;
 import org.camunda.bpm.engine.history.HistoricActivityInstanceQuery;
-import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Component
 public class CamundaHelper {
-
-    ProcessEngine processEngine;
 
     @Autowired
     HistoryService historyService;

@@ -1,6 +1,7 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder.item;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemActivities;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemEvents;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemVariables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.delegates.CommonDelegate;
@@ -44,15 +45,15 @@ public class CheckItemCancellationPossible extends CommonDelegate {
     }
 
     protected boolean checkOnShipmentMethodParcel(DelegateExecution delegateExecution) {
-        return helper.hasNotPassed(delegateExecution.getProcessInstanceId(), ItemActivities.EVENT_TRACKING_ID_RECEIVED.getName());
+        return helper.hasNotPassed(delegateExecution.getProcessInstanceId(), ItemEvents.EVENT_TRACKING_ID_RECEIVED.getName());
     }
 
     protected boolean checkOnShipmentMethodPickup(DelegateExecution delegateExecution) {
-        return helper.hasNotPassed(delegateExecution.getProcessInstanceId(), ItemActivities.EVENT_ITEM_PICKED_UP.getName());
+        return helper.hasNotPassed(delegateExecution.getProcessInstanceId(), ItemEvents.EVENT_ITEM_PICKED_UP.getName());
     }
 
     protected boolean checkOnShipmentMethodOwnDelivery(DelegateExecution delegateExecution) {
-        return helper.hasNotPassed(delegateExecution.getProcessInstanceId(), ItemActivities.EVENT_ITEM_DELIVERED.getName());
+        return helper.hasNotPassed(delegateExecution.getProcessInstanceId(), ItemEvents.EVENT_ITEM_DELIVERED.getName());
     }
 
     void setResultVariable(DelegateExecution delegateExecution, boolean checkResult) {

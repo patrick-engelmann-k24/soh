@@ -7,7 +7,6 @@ import org.springframework.lang.Nullable;
 
 import javax.persistence.*;
 import java.util.Date;
-import java.util.UUID;
 
 @Entity
 @Table(name = "sales_order_address", schema = "public", catalog = "soh")

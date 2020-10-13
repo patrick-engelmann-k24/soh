@@ -14,11 +14,12 @@ public enum ItemMessages implements BpmItem {
     MSG_TOUR_STARTED("msgTourStarted"),
     MSG_ITEM_PREPARED("msgItemPrepared"),
     MSG_ITEM_PICKED_UP("msgItemPickedUp"),
+    // todo: change name in sales-order-item process
     MSG_DELIVERY_ADDRESS_CHANGE("msg_deliveryAddressChange"),
     MSG_DROPSHIPMENT_CANCELLATION_RECEIVED("msgDropshipmentCancellationReceived"),
     MSG_ORDER_ITEM_CANCELLATION_RECEIVED("msgOrderItemCancellationReceived"),
 
-    EVENT_START_ORDER_ITEM_FULFILLMENT_PROCESS ("eventStartOrderItemFulfillmentProcess");
+    EVENT_START_ORDER_ITEM_FULFILLMENT_PROCESS("eventStartOrderItemFulfillmentProcess");
 
 
     private final String name;
