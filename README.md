@@ -57,7 +57,7 @@ Adapt the DATADIR for your local behavior.
 
 Currently there are only SNS and SQS service configured.
 
-Adapt also your `application-development.yml` file. Add the following
+Adapt also your `application-local.yml` file. Add the following
 
 ```
 cloud:

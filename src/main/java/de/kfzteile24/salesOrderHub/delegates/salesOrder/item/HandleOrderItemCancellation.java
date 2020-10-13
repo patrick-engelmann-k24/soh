@@ -1,6 +1,6 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder.item;
 
-import de.kfzteile24.salesOrderHub.constants.BPMSalesOrderItemFullfilment;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemVariables;
 import lombok.extern.java.Log;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.JavaDelegate;
@@ -13,6 +13,6 @@ public class HandleOrderItemCancellation implements JavaDelegate {
     public void execute(DelegateExecution delegateExecution) {
         // todo: DEV-15633
         log.info("todo: DEV-15633");
-        delegateExecution.setVariable(BPMSalesOrderItemFullfilment.VAR_ITEM_CANCELLED.getName(), true);
+        delegateExecution.setVariable(ItemVariables.VAR_ITEM_CANCELLED.getName(), true);
     }
 }

@@ -1,10 +1,10 @@
 package de.kfzteile24.salesOrderHub.domain;
 
+import com.fasterxml.jackson.annotation.JsonRawValue;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.lang.Nullable;
-import com.fasterxml.jackson.annotation.JsonRawValue;
 
 import javax.persistence.*;
 import java.util.Date;

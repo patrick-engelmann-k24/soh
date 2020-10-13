@@ -1,6 +1,5 @@
 package de.kfzteile24.salesOrderHub.services;
 
-import com.amazonaws.services.sns.AmazonSNS;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.aws.messaging.core.NotificationMessagingTemplate;

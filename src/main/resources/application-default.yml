@@ -1,24 +1,39 @@
-#
-# Camunda BPM configuration
-#
-camunda:
-  bpm:
-    database:
-      # IMPORTANT! flyway is responsible for database changes
-      schema-update: false
-      schema-name: bpm
-      table-prefix: ${camunda.bpm.database.schema-name}.
-    admin-user:
-      id: demo
-      password: demo
-      firstName: Demo
-    filter:
-      create: All tasks
-    history-level: FULL
-    history-level-default: FULL
-kfzteile:
-  #
-  # Delete processes that are not used?
-  # KEEP OFF ON PRODUCTION
-  #
-  deleteUnusedProcesses: true
+
+
+---
+spring:
+  profiles: default
+
+  # overwrite env specific settings in  the corresponding application-${env}.yml
+  datasource:
+    jdbcUrl: jdbc:postgresql://${soh_db_host}:${soh_db_port}/${soh_db_database}?currentSchema=public
+    username: ${soh_db_username}
+    password: ${soh_db_password}
+    poolName: sales-order-hub
+    data-source-properties:
+      stringtype: unspecified
+
+  jpa:
+    open-in-view: false
+
+  management:
+    endpoints:
+      web:
+        exposure:
+          include: info, health,configprops
+
+  cloud:
+    aws:
+      region:
+        static: eu-central-1
+      stack:
+        auto: false
+      credentials:
+        access-key: ${aws_accessKey}
+        secret-key: ${aws_sercretKey}
+
+  #AWS
+  soh:
+    sns:
+      topic:
+        orderCreated: ${soh_order_created}

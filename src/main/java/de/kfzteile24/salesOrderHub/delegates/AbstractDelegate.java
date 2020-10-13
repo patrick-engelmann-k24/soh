@@ -9,6 +9,6 @@ abstract public class AbstractDelegate implements JavaDelegate {
     @Override
     public void execute(DelegateExecution execution) throws Exception {
         // todo: remove after implementation of all delegates.
-        log.warning("This delegate is not yet implemented");
+        log.warning("This delegate is not yet implemented " + this.getClass().getCanonicalName());
     }
 }

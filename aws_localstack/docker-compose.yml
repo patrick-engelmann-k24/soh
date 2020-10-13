@@ -1,4 +1,4 @@
-version: '2.1'
+version: '3.4'
 
 services:
   localstack:
@@ -8,7 +8,7 @@ services:
     ports:
       - "4566:4566"
       - "4571:4571"
-      - "${PORT_WEB_UI-8090}:${PORT_WEB_UI-8090}"
+      - "${PORT_WEB_UI-8080}:8080"
     environment:
       - SERVICES=sns,sqs
       - DEFAULT_REGION=eu-central-1
@@ -16,5 +16,8 @@ services:
       - HOST_TMP_FOLDER=${TMPDIR}
       - DATA_DIR=${DATA_DIR- }
     volumes:
-      - "${TMPDIR:-/tmp/localstack}:/tmp/localstack"
+      - "${TMPDIR:-data_tmp}:/tmp/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
+
+volumes:
+  data_tmp:

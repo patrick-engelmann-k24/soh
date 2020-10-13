@@ -11,8 +11,6 @@ import org.springframework.cloud.aws.messaging.core.NotificationMessagingTemplat
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.net.URI;
-
 @Configuration
 public class AwsConfig {
 
@@ -46,7 +44,7 @@ public class AwsConfig {
                 .withCredentials(new AWSStaticCredentialsProvider(awsCredentials));
 
         if (endpoint != null) {
-            AwsClientBuilder.EndpointConfiguration localEndpoint = new AwsClientBuilder.EndpointConfiguration(endpoint,awsRegion);
+            AwsClientBuilder.EndpointConfiguration localEndpoint = new AwsClientBuilder.EndpointConfiguration(endpoint, awsRegion);
             builder.withEndpointConfiguration(localEndpoint);
         } else {
             builder.withRegion(awsRegion);
