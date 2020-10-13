@@ -1,24 +1,36 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder;
 
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemEvents;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemVariables;
 import de.kfzteile24.salesOrderHub.delegates.CommonDelegate;
+import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
+import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
 import lombok.extern.java.Log;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
-import org.camunda.bpm.engine.delegate.JavaDelegate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Component
 @Log
-public class ChangeInvoiceAddress extends CommonDelegate {
+public class ChangeInvoiceAddressPossibleDelegate extends CommonDelegate {
+
+    @Autowired
+    SalesOrderInvoiceRepository invoiceRepository;
+
     @Override
     public void execute(DelegateExecution delegateExecution) {
-        // todo: DEV-15635
-        log.info("todo: DEV-15635");
-        final boolean hasNotPassed = helper.hasNotPassed(delegateExecution.getProcessInstanceId(), Events.EVENT_INVOICE_SAVED.getName());
+        final String orderId = (String) delegateExecution.getVariable(Variables.VAR_ORDER_ID.getName());
+        setResultVariable(delegateExecution, Variables.VAR_INVOICE_EXISTS, checkInvoiceExistentForOrder(orderId));
+    }
 
-        setResultVariable(delegateExecution, Variables.VAR_INVOICE_EXISTS, );
+    /**
+     * If we find an invoice, there are already invoice(s) created
+     * @param orderId
+     * @return
+     */
+    Boolean checkInvoiceExistentForOrder(final String orderId) {
+        final List<SalesOrderInvoice> orderInvoiceList = invoiceRepository.getInvoicesByOrderNumber(orderId);
+        return orderInvoiceList.size() > 0;
     }
 }

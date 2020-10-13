@@ -1,18 +1,15 @@
 package de.kfzteile24.salesOrderHub.repositories;
 
-import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.Optional;
+import java.util.List;
 import java.util.UUID;
 
-public interface SalesOrderRepository extends JpaRepository<SalesOrder, UUID> {
+public interface SalesOrderInvoiceRepository extends JpaRepository<SalesOrderInvoice, UUID> {
 
-    @Query("SELECT a FROM SalesOrder a WHERE a.orderNumber = :orderNumber")
-    Optional<SalesOrder> getOrderByOrderNumber(@Param("orderNumber") String orderNumber);
-
-    @Query("SELECT a FROM SalesOrder a WHERE a.processId = :processId")
-    Optional<SalesOrder> getOrderByProcessId(@Param("processId") UUID processId);
+    @Query("SELECT inv FROM SalesOrderInvoice inv WHERE inv.salesOrder.orderNumber = :orderNumber")
+    List<SalesOrderInvoice> getInvoicesByOrderNumber(@Param("orderNumber") String orderNumber);
 }

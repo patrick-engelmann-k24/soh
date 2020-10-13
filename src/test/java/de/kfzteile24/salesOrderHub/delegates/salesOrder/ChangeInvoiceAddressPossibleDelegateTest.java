@@ -1,14 +1,14 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder;
 
 import de.kfzteile24.salesOrderHub.SalesOrderHubProcessApplication;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.*;
-import de.kfzteile24.salesOrderHub.delegates.salesOrder.item.CheckItemCancellationPossible;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.*;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemMessages;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemVariables;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
+import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RepositoryService;
@@ -19,7 +19,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.HashMap;
@@ -34,7 +33,7 @@ import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertT
         classes = SalesOrderHubProcessApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.NONE
 )
-public class ChangeInvoiceAddressTest {
+public class ChangeInvoiceAddressPossibleDelegateTest {
     @Autowired
     public ProcessEngine processEngine;
 
@@ -50,18 +49,71 @@ public class ChangeInvoiceAddressTest {
     @Autowired
     SalesOrderService salesOrderService;
 
-    private SalesOrder testOrder;
-
+    @Autowired
+    SalesOrderInvoiceRepository invoiceRepository;
 
     @Before
     public void setUp() {
         init(processEngine);
-        testOrder = salesOrderService.createOrder(util.getRandomOrderNumber());
     }
 
     @Test
     public void testChangeInvoiceAddressPossible() {
+        final SalesOrder testOrder = getSalesOrder();
+        final ProcessInstance orderProcess = createOrderProcess(testOrder);
         final String orderId = testOrder.getOrderNumber();
+
+        assertThat(orderProcess).isWaitingAt(util._N(Events.EVENT_MSG_ORDER_PAYMENT_SECURED));
+        util.sendMessage(Messages.MSG_ORDER_INVOICE_ADDESS_CHANGE_RECEIVED);
+
+        assertThat(orderProcess).hasPassedInOrder(
+                util._N(Events.EVENT_START_MSG_INVOICE_ADDRESS_CHANGE_RECEIVED),
+                util._N(Activities.ACTIVITY_CHANGE_INVOICE_ADDRESS_POSSIBLE),
+                util._N(Gateways.GW_XOR_INVOICE_EXIST)
+        );
+        assertThat(orderProcess).hasPassed(
+                util._N(Activities.ACTIVITY_CHANGE_INVOICE_ADDRESS),
+                util._N(Activities.ACTIVITY_SUB_PROCESS_INVOICE_ADDRESS_CHANGE)
+        );
+
+        assertThat(orderProcess).hasNotPassed(util._N(Events.EVENT_INVOICE_ADDRESS_NOT_CHANGED));
+
+        finishOrderProcess(orderProcess, orderId);
+    }
+
+    @Test
+    public void testChangeInvoiceAddressPossibleNotPossible() {
+        final SalesOrder testOrder = getSalesOrder();
+        final ProcessInstance orderProcess = createOrderProcess(testOrder);
+        final String orderId = testOrder.getOrderNumber();
+
+        final SalesOrderInvoice orderInvoice = SalesOrderInvoice.builder()
+                .salesOrder(testOrder)
+                .invoiceNumber(util.getRandomOrderNumber())
+                .build();
+        invoiceRepository.save(orderInvoice);
+
+        assertThat(orderProcess).isWaitingAt(util._N(Events.EVENT_MSG_ORDER_PAYMENT_SECURED));
+        util.sendMessage(Messages.MSG_ORDER_INVOICE_ADDESS_CHANGE_RECEIVED);
+
+        assertThat(orderProcess).hasPassedInOrder(
+                util._N(Events.EVENT_START_MSG_INVOICE_ADDRESS_CHANGE_RECEIVED),
+                util._N(Activities.ACTIVITY_CHANGE_INVOICE_ADDRESS_POSSIBLE),
+                util._N(Gateways.GW_XOR_INVOICE_EXIST)
+        );
+
+        assertThat(orderProcess).hasPassed(
+                util._N(Activities.ACTIVITY_SUB_PROCESS_INVOICE_ADDRESS_CHANGE),
+                util._N(Events.EVENT_INVOICE_ADDRESS_NOT_CHANGED)
+        );
+        assertThat(orderProcess).hasNotPassed(util._N(Events.EVENT_END_MSG_INVOICE_ADDRESS_CHANGED));
+
+        finishOrderProcess(orderProcess, orderId);
+
+    }
+
+    ProcessInstance createOrderProcess(SalesOrder salesOrder) {
+        final String orderId = salesOrder.getOrderNumber();
         final List<String> orderItems = util.getOrderItems(orderId, 5);
 
         final Map<String, Object> processVariables = new HashMap<>();
@@ -72,39 +124,26 @@ public class ChangeInvoiceAddressTest {
         processVariables.put(util._N(Variables.VAR_ORDER_ITEMS), orderItems);
         processVariables.put(util._N(Variables.VAR_SHIPMENT_METHOD), "parcel");
 
-        final ProcessInstance orderProcess =
-                runtimeService.createMessageCorrelation(util._N(Messages.MSG_ORDER_RECEIVED_MARKETPLACE))
-                        .processInstanceBusinessKey(orderId)
-                        .setVariables(processVariables)
-                        .correlateWithResult().getProcessInstance();
-        assertThat(orderProcess).isWaitingAt(util._N(Events.EVENT_MSG_ORDER_PAYMENT_SECURED));
+        return runtimeService.createMessageCorrelation(util._N(Messages.MSG_ORDER_RECEIVED_MARKETPLACE))
+                .processInstanceBusinessKey(orderId)
+                .setVariables(processVariables)
+                .correlateWithResult().getProcessInstance();
+    }
 
-        util.sendMessage(Messages.MSG_ORDER_INVOICE_ADDESS_CHANGE_RECEIVED);
+    void finishOrderProcess(final ProcessInstance orderProcess, final String orderId) {
+        // start subprocess
+        util.sendMessage(util._N(Messages.MSG_ORDER_RECEIVED_PAYMENT_SECURED), orderId);
 
-        assertThat(orderProcess).hasPassedInOrder(
-                util._N(ItemEvents.EVENT_START_ORDER_ITEM_FULFILLMENT_PROCESS),
-                util._N(ItemEvents.EVENT_ITEM_TRANSMITTED_TO_LOGISTICS),
-                util._N(ItemGateways.GW_XOR_SHIPMENT_METHOD),
-                util._N(ItemEvents.EVENT_PACKING_STARTED),
-                util._N(ItemEvents.EVENT_MSG_DELIVERY_ADDRESS_CHANGE),
-                util._N(ItemActivities.ACTIVITY_CHECK_DELIVERY_ADDRESS_CHANGE_POSSIBLE),
-                util._N(ItemGateways.GW_XOR_DELIVERY_ADRESS_CHANGE_POSSIBLE)
-        );
-
-        assertThat(orderProcess).hasPassed(
-                util._N(BPMSalesOrderItemFullfilment.SUB_PROCESS_ORDER_ITEM_DELIVERY_ADDRES_CHANGE),
-                util._N(ItemEvents.EVENT_DELIVERY_ADDRESS_NOT_CHANGED)
-        );
-
-        assertThat(orderProcess).hasNotPassed(
-                util._N(ItemActivities.ACTIVITY_CHANGE_DELIVERY_ADDRESS)
-        );
-
-        assertThat(orderProcess).isWaitingAt(util._N(ItemEvents.EVENT_TRACKING_ID_RECEIVED));
-
-        util.sendMessage(ItemMessages.MSG_TRACKING_ID_RECEIVED);
-        util.sendMessage(ItemMessages.MSG_ITEM_DELIVERED);
+        // send items thru
+        util.sendMessage(util._N(ItemMessages.MSG_ITEM_TRANSMITTED), orderId);
+        util.sendMessage(util._N(ItemMessages.MSG_PACKING_STARTED), orderId);
+        util.sendMessage(util._N(ItemMessages.MSG_TRACKING_ID_RECEIVED), orderId);
+        util.sendMessage(util._N(ItemMessages.MSG_ITEM_DELIVERED), orderId);
 
         assertThat(orderProcess).isEnded();
+    }
+
+    SalesOrder getSalesOrder() {
+        return salesOrderService.createOrder(util.getRandomOrderNumber());
     }
 }
