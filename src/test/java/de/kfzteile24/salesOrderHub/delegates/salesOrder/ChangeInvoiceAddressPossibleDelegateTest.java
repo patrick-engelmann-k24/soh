@@ -27,6 +27,8 @@ import java.util.Map;
 
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
 import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
@@ -66,6 +68,13 @@ public class ChangeInvoiceAddressPossibleDelegateTest {
         assertThat(orderProcess).isWaitingAt(util._N(Events.EVENT_MSG_ORDER_PAYMENT_SECURED));
         util.sendMessage(Messages.MSG_ORDER_INVOICE_ADDESS_CHANGE_RECEIVED);
 
+        // check if the delegate sets the variable
+        assertThat(orderProcess)
+                .hasVariables(util._N(Variables.VAR_INVOICE_EXISTS));
+        final Boolean invoiceExists = (Boolean) runtimeService
+                .getVariable(orderProcess.getProcessInstanceId(), util._N(Variables.VAR_INVOICE_EXISTS));
+        assertTrue(invoiceExists);
+
         assertThat(orderProcess).hasPassedInOrder(
                 util._N(Events.EVENT_START_MSG_INVOICE_ADDRESS_CHANGE_RECEIVED),
                 util._N(Activities.ACTIVITY_CHANGE_INVOICE_ADDRESS_POSSIBLE),
@@ -95,6 +104,13 @@ public class ChangeInvoiceAddressPossibleDelegateTest {
 
         assertThat(orderProcess).isWaitingAt(util._N(Events.EVENT_MSG_ORDER_PAYMENT_SECURED));
         util.sendMessage(Messages.MSG_ORDER_INVOICE_ADDESS_CHANGE_RECEIVED);
+
+        // check if the delegate sets the variable
+        assertThat(orderProcess)
+                .hasVariables(util._N(Variables.VAR_INVOICE_EXISTS));
+        final Boolean invoiceExists = (Boolean) runtimeService
+                .getVariable(orderProcess.getProcessInstanceId(), util._N(Variables.VAR_INVOICE_EXISTS));
+        assertFalse(invoiceExists);
 
         assertThat(orderProcess).hasPassedInOrder(
                 util._N(Events.EVENT_START_MSG_INVOICE_ADDRESS_CHANGE_RECEIVED),
