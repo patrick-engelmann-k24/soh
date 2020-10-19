@@ -1,5 +1,6 @@
 package de.kfzteile24.salesOrderHub.configuration;
 
+import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
@@ -14,6 +15,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class AwsConfig {
 
+    private static final int MAX_CONNECTIONS = 100;
 
     @Value("${cloud.aws.credentials.secret-key:#{null}}")
     protected String awsSecretKey;
@@ -32,25 +34,36 @@ public class AwsConfig {
         return new NotificationMessagingTemplate(amazonSns);
     }
 
+//    @Bean
+//    public AmazonSNS amazonSNS() {
+//        AWSCredentials awsCredentials = new BasicAWSCredentials(
+//                awsAccessKey,
+//                awsSecretKey
+//        );
+//
+//        AmazonSNSClientBuilder builder = AmazonSNSClientBuilder
+//                .standard()
+//                .withCredentials(new AWSStaticCredentialsProvider(awsCredentials));
+//
+//        if (endpoint != null) {
+//            AwsClientBuilder.EndpointConfiguration localEndpoint = new AwsClientBuilder.EndpointConfiguration(endpoint, awsRegion);
+//            builder.withEndpointConfiguration(localEndpoint);
+//        } else {
+//            builder.withRegion(awsRegion);
+//        }
+//
+//        return builder.build();
+//    }
+
+    /**
+     * Amazon SNS bean.
+     * @return AmazonSNS
+     */
     @Bean
     public AmazonSNS amazonSNS() {
-        AWSCredentials awsCredentials = new BasicAWSCredentials(
-                awsAccessKey,
-                awsSecretKey
-        );
-
-        AmazonSNSClientBuilder builder = AmazonSNSClientBuilder
-                .standard()
-                .withCredentials(new AWSStaticCredentialsProvider(awsCredentials));
-
-        if (endpoint != null) {
-            AwsClientBuilder.EndpointConfiguration localEndpoint = new AwsClientBuilder.EndpointConfiguration(endpoint, awsRegion);
-            builder.withEndpointConfiguration(localEndpoint);
-        } else {
-            builder.withRegion(awsRegion);
-        }
-
-        return builder.build();
+        ClientConfiguration clientConfiguration = new ClientConfiguration().withMaxConnections(MAX_CONNECTIONS);
+        return AmazonSNSClientBuilder.standard().withRegion(awsRegion).
+                withClientConfiguration(clientConfiguration).build();
     }
 
 }
