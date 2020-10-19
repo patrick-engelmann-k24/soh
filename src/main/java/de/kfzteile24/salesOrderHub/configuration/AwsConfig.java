@@ -34,36 +34,31 @@ public class AwsConfig {
         return new NotificationMessagingTemplate(amazonSns);
     }
 
-//    @Bean
-//    public AmazonSNS amazonSNS() {
-//        AWSCredentials awsCredentials = new BasicAWSCredentials(
-//                awsAccessKey,
-//                awsSecretKey
-//        );
-//
-//        AmazonSNSClientBuilder builder = AmazonSNSClientBuilder
-//                .standard()
-//                .withCredentials(new AWSStaticCredentialsProvider(awsCredentials));
-//
-//        if (endpoint != null) {
-//            AwsClientBuilder.EndpointConfiguration localEndpoint = new AwsClientBuilder.EndpointConfiguration(endpoint, awsRegion);
-//            builder.withEndpointConfiguration(localEndpoint);
-//        } else {
-//            builder.withRegion(awsRegion);
-//        }
-//
-//        return builder.build();
-//    }
-
     /**
      * Amazon SNS bean.
+     *
      * @return AmazonSNS
      */
     @Bean
     public AmazonSNS amazonSNS() {
-        ClientConfiguration clientConfiguration = new ClientConfiguration().withMaxConnections(MAX_CONNECTIONS);
-        return AmazonSNSClientBuilder.standard().withRegion(awsRegion).
-                withClientConfiguration(clientConfiguration).build();
-    }
+        // check if local development
+        if (endpoint != null) {
+            AWSCredentials awsCredentials = new BasicAWSCredentials(
+                    awsAccessKey,
+                    awsSecretKey
+            );
 
+            AmazonSNSClientBuilder builder = AmazonSNSClientBuilder
+                    .standard()
+                    .withCredentials(new AWSStaticCredentialsProvider(awsCredentials));
+
+            AwsClientBuilder.EndpointConfiguration localEndpoint = new AwsClientBuilder.EndpointConfiguration(endpoint, awsRegion);
+            builder.withEndpointConfiguration(localEndpoint);
+            return builder.build();
+        } else {
+            ClientConfiguration clientConfiguration = new ClientConfiguration().withMaxConnections(MAX_CONNECTIONS);
+            return AmazonSNSClientBuilder.standard().withRegion(awsRegion).
+                    withClientConfiguration(clientConfiguration).build();
+        }
+    }
 }

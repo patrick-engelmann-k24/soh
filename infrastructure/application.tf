@@ -28,7 +28,12 @@ module "application_module" {
     soh_db_host                = module.aurora.this_rds_cluster_endpoint
     soh_db_port                = module.aurora.this_rds_cluster_port
     soh_db_database            = "sales_order_hub"
-    sns_soh_order_created_topic = data.aws_sns_topic.sns_soh_order_created_topic.arn
+    soh_order_created          = data.aws_sns_topic.sns_soh_order_created_topic.arn
+    soh_order_completed        = data.aws_sns_topic.sns_soh_order_completed_topic.arn
+    soh_order_item_cancelled   = data.aws_sns_topic.sns_soh_order_item_cancelled_topic.arn
+    soh_order_cancelled        = data.aws_sns_topic.sns_soh_order_cancelled_topic.arn
+    soh_invoice_address_changed = data.aws_sns_topic.sns_soh_invoice_address_changed_topic.arn
+    soh_delivery_address_changed = data.aws_sns_topic.sns_soh_delivery_address_changed_topic.arn
   }
 
   ssm_secrets_count = 7
