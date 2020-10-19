@@ -2,8 +2,11 @@ package de.kfzteile24.salesOrderHub.delegates.salesOrder.item;
 
 import de.kfzteile24.salesOrderHub.SalesOrderHubProcessApplication;
 import de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.*;
+import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
+import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RepositoryService;
 import org.camunda.bpm.engine.RuntimeService;
@@ -14,7 +17,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.HashMap;
@@ -27,7 +29,7 @@ import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.ini
         classes = SalesOrderHubProcessApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.NONE
 )
-@Import(CheckItemCancellationPossible.class)
+//@Import(CheckItemCancellationPossible.class)
 public class CheckItemCancellationPossibleTest {
     @Autowired
     public ProcessEngine processEngine;
@@ -41,6 +43,9 @@ public class CheckItemCancellationPossibleTest {
     @Autowired
     BpmUtil util;
 
+    @Autowired
+    SalesOrderUtil salesOrderUtil;
+
     @Before
     public void setUp() {
         init(processEngine);
@@ -49,15 +54,18 @@ public class CheckItemCancellationPossibleTest {
     @Test
     public void testPassThruOnParcelShipment() {
         final Map<String, Object> processVariables = new HashMap<>();
+        String orderId = util.getRandomOrderNumber();
+        processVariables.put(util._N(Variables.VAR_ORDER_NUMBER), orderId);
         processVariables.put(util._N(ItemVariables.SHIPMENT_METHOD), util._N(ShipmentMethod.PARCEL));
+        
         final ProcessInstance orderItemFulfillmentProcess = runtimeService.startProcessInstanceByKey(
                 ProcessDefinition.SALES_ORDER_ITEM_FULFILLMENT_PROCESS.getName(),
                 processVariables);
 
-        util.sendMessage(ItemMessages.MSG_ITEM_TRANSMITTED);
-        util.sendMessage(ItemMessages.MSG_PACKING_STARTED);
-        util.sendMessage(ItemMessages.MSG_TRACKING_ID_RECEIVED);
-        util.sendMessage(ItemMessages.MSG_ITEM_DELIVERED);
+        util.sendMessage(ItemMessages.MSG_ITEM_TRANSMITTED, orderId);
+        util.sendMessage(ItemMessages.MSG_PACKING_STARTED, orderId);
+        util.sendMessage(ItemMessages.MSG_TRACKING_ID_RECEIVED, orderId);
+        util.sendMessage(ItemMessages.MSG_ITEM_DELIVERED, orderId);
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
                 util._N(ItemEvents.EVENT_START_ORDER_ITEM_FULFILLMENT_PROCESS),
@@ -75,15 +83,18 @@ public class CheckItemCancellationPossibleTest {
     @Test
     public void testPassThruOnParcelOwnDelivery() {
         final Map<String, Object> processVariables = new HashMap<>();
+        String orderId = util.getRandomOrderNumber();
+        processVariables.put(util._N(Variables.VAR_ORDER_NUMBER), orderId);
         processVariables.put(util._N(ItemVariables.SHIPMENT_METHOD), util._N(ShipmentMethod.OWN_DELIVERY));
+
         final ProcessInstance orderItemFulfillmentProcess = runtimeService.startProcessInstanceByKey(
                 ProcessDefinition.SALES_ORDER_ITEM_FULFILLMENT_PROCESS.getName(),
                 processVariables);
 
-        util.sendMessage(ItemMessages.MSG_ITEM_TRANSMITTED);
-        util.sendMessage(ItemMessages.MSG_PACKING_STARTED);
-        util.sendMessage(ItemMessages.MSG_TOUR_STARTED);
-        util.sendMessage(ItemMessages.MSG_ITEM_DELIVERED);
+        util.sendMessage(ItemMessages.MSG_ITEM_TRANSMITTED, orderId);
+        util.sendMessage(ItemMessages.MSG_PACKING_STARTED, orderId);
+        util.sendMessage(ItemMessages.MSG_TOUR_STARTED, orderId);
+        util.sendMessage(ItemMessages.MSG_ITEM_DELIVERED, orderId);
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
                 util._N(ItemEvents.EVENT_START_ORDER_ITEM_FULFILLMENT_PROCESS),
@@ -100,15 +111,18 @@ public class CheckItemCancellationPossibleTest {
     @Test
     public void testPassThruOnParcelPickUp() {
         final Map<String, Object> processVariables = new HashMap<>();
+        String orderId = util.getRandomOrderNumber();
+        processVariables.put(util._N(Variables.VAR_ORDER_NUMBER), orderId);
         processVariables.put(util._N(ItemVariables.SHIPMENT_METHOD), util._N(ShipmentMethod.PICKUP));
+
         final ProcessInstance orderItemFulfillmentProcess = runtimeService.startProcessInstanceByKey(
                 ProcessDefinition.SALES_ORDER_ITEM_FULFILLMENT_PROCESS.getName(),
                 processVariables);
 
-        util.sendMessage(ItemMessages.MSG_ITEM_TRANSMITTED);
-        util.sendMessage(ItemMessages.MSG_PACKING_STARTED);
-        util.sendMessage(ItemMessages.MSG_ITEM_PREPARED);
-        util.sendMessage(ItemMessages.MSG_ITEM_PICKED_UP);
+        util.sendMessage(ItemMessages.MSG_ITEM_TRANSMITTED, orderId);
+        util.sendMessage(ItemMessages.MSG_PACKING_STARTED, orderId);
+        util.sendMessage(ItemMessages.MSG_ITEM_PREPARED, orderId);
+        util.sendMessage(ItemMessages.MSG_ITEM_PICKED_UP, orderId);
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
                 util._N(ItemEvents.EVENT_START_ORDER_ITEM_FULFILLMENT_PROCESS),
@@ -124,32 +138,39 @@ public class CheckItemCancellationPossibleTest {
     @Test
     public void testCancellationPossibleOnParcelShipmentAfterPackingStartedTrackingIdNOTSet() {
         final Map<String, Object> processVariables = new HashMap<>();
+        SalesOrder salesOrder = salesOrderUtil.createNewSalesOrder();
+        processVariables.put(util._N(Variables.VAR_ORDER_NUMBER), salesOrder.getOrderNumber());
         processVariables.put(util._N(ItemVariables.SHIPMENT_METHOD), util._N(ShipmentMethod.PARCEL));
 
-        testProcess(processVariables);
+        testProcess(processVariables, salesOrder.getOrderNumber());
     }
 
     @Test
     public void testCancellationPossibleOnParcelShipmentAfterPackingStartedTrackingIdIsSet() {
         final Map<String, Object> processVariables = new HashMap<>();
+        SalesOrder salesOrder = salesOrderUtil.createNewSalesOrder();
+        processVariables.put(util._N(Variables.VAR_ORDER_NUMBER), salesOrder.getOrderNumber());
         processVariables.put(util._N(ItemVariables.SHIPMENT_METHOD), util._N(ShipmentMethod.PARCEL));
         processVariables.put(util._N(ItemVariables.TRACKING_ID_RECEIVED), false);
 
-        testProcess(processVariables);
+        testProcess(processVariables, salesOrder.getOrderNumber());
     }
 
     @Test
     public void testCancellationNotPossibleOnParcelShipmentAfterTrackingIdReceived() {
         final Map<String, Object> processVariables = new HashMap<>();
+        String orderId = util.getRandomOrderNumber();
+        processVariables.put(util._N(Variables.VAR_ORDER_NUMBER), orderId);
         processVariables.put(util._N(ItemVariables.SHIPMENT_METHOD), util._N(ShipmentMethod.PARCEL));
 //        processVariables.put(util._N(ItemVariables.TRACKING_ID_RECEIVED), true);
+
         final ProcessInstance orderItemFulfillmentProcess = runtimeService.startProcessInstanceByKey(
                 ProcessDefinition.SALES_ORDER_ITEM_FULFILLMENT_PROCESS.getName(),
                 processVariables);
-        util.sendMessage(ItemMessages.MSG_ITEM_TRANSMITTED);
-        util.sendMessage(ItemMessages.MSG_PACKING_STARTED);
-        util.sendMessage(ItemMessages.MSG_TRACKING_ID_RECEIVED);
-        util.sendMessage(ItemMessages.MSG_ORDER_ITEM_CANCELLATION_RECEIVED);
+        util.sendMessage(ItemMessages.MSG_ITEM_TRANSMITTED, orderId);
+        util.sendMessage(ItemMessages.MSG_PACKING_STARTED, orderId);
+        util.sendMessage(ItemMessages.MSG_TRACKING_ID_RECEIVED, orderId);
+        util.sendMessage(ItemMessages.MSG_ORDER_ITEM_CANCELLATION_RECEIVED, orderId);
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
                 util._N(ItemEvents.EVENT_START_ORDER_ITEM_FULFILLMENT_PROCESS),
@@ -168,7 +189,7 @@ public class CheckItemCancellationPossibleTest {
         );
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isWaitingAt(util._N(ItemEvents.EVENT_ITEM_DELIVERED));
-        util.sendMessage(ItemMessages.MSG_ITEM_DELIVERED);
+        util.sendMessage(ItemMessages.MSG_ITEM_DELIVERED, orderId);
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassed(
                 util._N(ItemEvents.EVENT_TRACKING_ID_RECEIVED),
@@ -178,13 +199,13 @@ public class CheckItemCancellationPossibleTest {
 
     }
 
-    ProcessInstance testProcess(final Map<String, Object> processVariables) {
+    ProcessInstance testProcess(final Map<String, Object> processVariables, String orderId) {
         final ProcessInstance orderItemFulfillmentProcess = runtimeService.startProcessInstanceByKey(
                 ProcessDefinition.SALES_ORDER_ITEM_FULFILLMENT_PROCESS.getName(),
                 processVariables);
-        util.sendMessage(ItemMessages.MSG_ITEM_TRANSMITTED);
-        util.sendMessage(ItemMessages.MSG_PACKING_STARTED);
-        util.sendMessage(ItemMessages.MSG_ORDER_ITEM_CANCELLATION_RECEIVED);
+        util.sendMessage(ItemMessages.MSG_ITEM_TRANSMITTED, orderId);
+        util.sendMessage(ItemMessages.MSG_PACKING_STARTED, orderId);
+        util.sendMessage(ItemMessages.MSG_ORDER_ITEM_CANCELLATION_RECEIVED, orderId);
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
                 util._N(ItemEvents.EVENT_START_ORDER_ITEM_FULFILLMENT_PROCESS),
@@ -195,7 +216,7 @@ public class CheckItemCancellationPossibleTest {
                 util._N(ItemActivities.ACTIVITY_CHECK_CANCELLATION_POSSIBLE),
                 util._N(ItemGateways.GW_XOR_CANCELLATION_POSSIBLE),
                 util._N(BPMSalesOrderItemFullfilment.SUB_PROCESS_ORDER_ITEM_CANCELLATION_SHIPMENT),
-                util._N(ItemEvents.EVENT_ORDER_CANCEL)
+                util._N(ItemEvents.EVENT_ORDER_ITEM_CANCELLATION_RECEIVED)
         );
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassed(

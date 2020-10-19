@@ -20,7 +20,7 @@ public class ChangeInvoiceAddressPossibleDelegate extends CommonDelegate {
 
     @Override
     public void execute(DelegateExecution delegateExecution) {
-        final String orderId = (String) delegateExecution.getVariable(Variables.VAR_ORDER_ID.getName());
+        final String orderId = (String) delegateExecution.getVariable(Variables.VAR_ORDER_NUMBER.getName());
         setResultVariable(delegateExecution, Variables.VAR_INVOICE_EXISTS, checkInvoiceExistentForOrder(orderId));
     }
 

@@ -141,13 +141,13 @@ Pickup: n/a</bpmn:text>
         <bpmn:incoming>Flow_1acb332</bpmn:incoming>
         <bpmn:messageEventDefinition id="MessageEventDefinition_113l560" camunda:delegateExpression="${orderItemCancelledDelegate}" />
       </bpmn:endEvent>
-      <bpmn:startEvent id="eventOrderCancel" name="Order canceled">
+      <bpmn:startEvent id="eventOrderItemCancellationReceived" name="Order Item cancellation received">
         <bpmn:outgoing>Flow_1acb332</bpmn:outgoing>
         <bpmn:conditionalEventDefinition id="ConditionalEventDefinition_0novxw8" camunda:variableName="itemCancelled" camunda:variableEvent="create">
           <bpmn:condition xsi:type="bpmn:tFormalExpression">${itemCancelled}</bpmn:condition>
         </bpmn:conditionalEventDefinition>
       </bpmn:startEvent>
-      <bpmn:sequenceFlow id="Flow_1acb332" sourceRef="eventOrderCancel" targetRef="eventOrderItemCancelled" />
+      <bpmn:sequenceFlow id="Flow_1acb332" sourceRef="eventOrderItemCancellationReceived" targetRef="eventOrderItemCancelled" />
     </bpmn:subProcess>
     <bpmn:sequenceFlow id="Flow_1vsuxx8" sourceRef="eventStartOrderItemFulfillmentProcess" targetRef="eventItemTransmittedToLogistics" />
     <bpmn:sequenceFlow id="Flow_1906yze" sourceRef="eventItemDelivered" targetRef="Gateway_0b3ilgy" />
@@ -437,11 +437,11 @@ Pickup: only before "Item picked up"</bpmn:text>
       <bpmndi:BPMNShape id="Activity_17mxuyj_di" bpmnElement="activityChangeDeliveryAddress">
         <dc:Bounds x="1200" y="710" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="TextAnnotation_0tz7azp_di" bpmnElement="TextAnnotation_0tz7azp">
-        <dc:Bounds x="1040" y="850" width="240" height="54" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_1idlusq_di" bpmnElement="activityCheckDeliveryAddressChangePossible">
         <dc:Bounds x="990" y="710" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_0tz7azp_di" bpmnElement="TextAnnotation_0tz7azp">
+        <dc:Bounds x="1040" y="850" width="240" height="54" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Association_0h6k50a_di" bpmnElement="Association_0h6k50a">
         <di:waypoint x="1034" y="790" />
@@ -460,10 +460,10 @@ Pickup: only before "Item picked up"</bpmn:text>
           <dc:Bounds x="1084" y="605" width="52" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_057m79v_di" bpmnElement="eventOrderCancel">
+      <bpmndi:BPMNShape id="Event_057m79v_di" bpmnElement="eventOrderItemCancellationReceived">
         <dc:Bounds x="920" y="562" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="901" y="605" width="76" height="14" />
+          <dc:Bounds x="911" y="605" width="59" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_0b3ilgy_di" bpmnElement="Gateway_0b3ilgy" isMarkerVisible="true">

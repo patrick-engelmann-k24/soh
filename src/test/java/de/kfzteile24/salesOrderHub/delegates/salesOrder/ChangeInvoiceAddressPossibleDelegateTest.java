@@ -66,14 +66,14 @@ public class ChangeInvoiceAddressPossibleDelegateTest {
         final String orderId = testOrder.getOrderNumber();
 
         assertThat(orderProcess).isWaitingAt(util._N(Events.EVENT_MSG_ORDER_PAYMENT_SECURED));
-        util.sendMessage(Messages.MSG_ORDER_INVOICE_ADDESS_CHANGE_RECEIVED);
+        util.sendMessage(Messages.MSG_ORDER_INVOICE_ADDESS_CHANGE_RECEIVED, orderId);
 
         // check if the delegate sets the variable
         assertThat(orderProcess)
                 .hasVariables(util._N(Variables.VAR_INVOICE_EXISTS));
         final Boolean invoiceExists = (Boolean) runtimeService
                 .getVariable(orderProcess.getProcessInstanceId(), util._N(Variables.VAR_INVOICE_EXISTS));
-        assertTrue(invoiceExists);
+        assertFalse("Variable invoice exists does not exist", invoiceExists);
 
         assertThat(orderProcess).hasPassedInOrder(
                 util._N(Events.EVENT_START_MSG_INVOICE_ADDRESS_CHANGE_RECEIVED),
@@ -103,14 +103,14 @@ public class ChangeInvoiceAddressPossibleDelegateTest {
         invoiceRepository.save(orderInvoice);
 
         assertThat(orderProcess).isWaitingAt(util._N(Events.EVENT_MSG_ORDER_PAYMENT_SECURED));
-        util.sendMessage(Messages.MSG_ORDER_INVOICE_ADDESS_CHANGE_RECEIVED);
+        util.sendMessage(Messages.MSG_ORDER_INVOICE_ADDESS_CHANGE_RECEIVED, orderId);
 
         // check if the delegate sets the variable
         assertThat(orderProcess)
                 .hasVariables(util._N(Variables.VAR_INVOICE_EXISTS));
         final Boolean invoiceExists = (Boolean) runtimeService
                 .getVariable(orderProcess.getProcessInstanceId(), util._N(Variables.VAR_INVOICE_EXISTS));
-        assertFalse(invoiceExists);
+        assertTrue("Variable invoice exists does not exist", invoiceExists);
 
         assertThat(orderProcess).hasPassedInOrder(
                 util._N(Events.EVENT_START_MSG_INVOICE_ADDRESS_CHANGE_RECEIVED),
@@ -134,7 +134,7 @@ public class ChangeInvoiceAddressPossibleDelegateTest {
 
         final Map<String, Object> processVariables = new HashMap<>();
         processVariables.put(util._N(ItemVariables.SHIPMENT_METHOD), util._N(ShipmentMethod.PARCEL));
-        processVariables.put(util._N(Variables.VAR_ORDER_ID), orderId);
+        processVariables.put(util._N(Variables.VAR_ORDER_NUMBER), orderId);
         processVariables.put(util._N(Variables.VAR_PAYMENT_TYPE), "creditCard");
         processVariables.put(util._N(Variables.VAR_ORDER_VALID), true);
         processVariables.put(util._N(Variables.VAR_ORDER_ITEMS), orderItems);

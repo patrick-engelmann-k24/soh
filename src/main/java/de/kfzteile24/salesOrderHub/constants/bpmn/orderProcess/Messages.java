@@ -11,6 +11,7 @@ public enum Messages implements BpmItem {
     MSG_ORDER_RECEIVED_BRANCH("msgOrderReceivedBranch"),
     MSG_ORDER_RECEIVED_GARAGE("msgOrderReceivedGarage"),
     MSG_ORDER_INVOICE_ADDESS_CHANGE_RECEIVED("msg_invoiceAddressChangeReceived"),
+    MSG_ORDER_CANCELLATION_RECEIVED("msg_orderCancellationReceived")
     ;
 
     private final String name;

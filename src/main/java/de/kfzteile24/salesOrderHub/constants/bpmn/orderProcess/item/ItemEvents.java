@@ -8,7 +8,7 @@ public enum ItemEvents implements BpmItem {
     EVENT_PACKING_STARTED("eventPackingStarted"),
     EVENT_MSG_DROPSHIPMENT_CANCELLATION_RECEIVED("eventMsgDropshipmentCancellationReceived"),
     EVENT_MSG_SHIPMENT_CANCELLATION_RECEIVED("eventMsgShipmentCancellationReceived"),
-    EVENT_ORDER_CANCEL("eventOrderCancel"),
+    EVENT_ORDER_ITEM_CANCELLATION_RECEIVED("eventOrderItemCancellationReceived"),
     EVENT_ORDER_ITEM_CANCELLED("eventOrderItemCancelled"),
     EVENT_ORDER_ITEM_DROPSHIPMENT_CANCELLED("eventOrderItemDropshipmentCancelled"),
     EVENT_ORDER_ITEM_SHIPMENT_CANCELLED("eventOrderItemShipmentCancelled"),

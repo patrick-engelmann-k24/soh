@@ -22,18 +22,23 @@ spring:
         exposure:
           include: info, health,configprops
 
-  cloud:
-    aws:
-      region:
-        static: eu-central-1
-      stack:
-        auto: false
-      credentials:
-        access-key: ${aws_accessKey}
-        secret-key: ${aws_sercretKey}
+cloud:
+  aws:
+    region:
+      static: eu-central-1
+    stack:
+      auto: false
+    credentials:
+      access-key: ${aws_accessKey}
+      secret-key: ${aws_sercretKey}
 
-  #AWS
-  soh:
-    sns:
-      topic:
-        orderCreated: ${soh_order_created}
+#AWS
+soh:
+  sns:
+    topic:
+      orderCreated: ${soh_order_created}
+      orderCompleted: ${soh_order_completed}
+      orderCancelled: ${soh_order_cancelled}
+      orderItemCancelled: ${soh_order_item_cancelled}
+      invoiceAddressChanged: ${soh_invoice_address_changed}
+      deliveryAddressChanged: ${soh_delivery_address_changed}

@@ -3,8 +3,8 @@ package de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess;
 import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 
 public enum Variables implements BpmItem {
-    // variables
-    VAR_ORDER_ID("orderId"),
+    // todo: fix name in process -> orderNumber -> to distinguish better between the id and the "real" orderNumber
+    VAR_ORDER_NUMBER("orderId"),
     // todo: fix name in process -> paymentType
     VAR_PAYMENT_TYPE("payment_type"),
     // todo: fix name in process -> paymentStatus

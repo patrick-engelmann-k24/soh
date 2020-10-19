@@ -8,7 +8,7 @@ services:
     ports:
       - "4566:4566"
       - "4571:4571"
-      - "${PORT_WEB_UI-8080}:8080"
+      - "${PORT_WEB_UI-8090}:8090"
     environment:
       - SERVICES=sns,sqs
       - DEFAULT_REGION=eu-central-1

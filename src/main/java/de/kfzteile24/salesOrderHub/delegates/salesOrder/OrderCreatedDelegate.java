@@ -23,7 +23,7 @@ public class OrderCreatedDelegate implements JavaDelegate {
     public void execute(DelegateExecution delegateExecution) throws Exception {
         log.info("SNS-Topic: " + snsOrderCreatedTopic);
 
-        String orderNumber = (String) delegateExecution.getVariable(Variables.VAR_ORDER_ID.getName());
+        String orderNumber = (String) delegateExecution.getVariable(Variables.VAR_ORDER_NUMBER.getName());
         snsPublishService.sendOrder(snsOrderCreatedTopic, "Sales Order Created", orderNumber);
     }
 }

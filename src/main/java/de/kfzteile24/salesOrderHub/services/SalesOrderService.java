@@ -25,7 +25,7 @@ public class SalesOrderService {
     public SalesOrder createOrder(/* todo: GSON class?*/String orderNumber) {
         final SalesOrder salesOrder = SalesOrder.builder()
                 .orderNumber(orderNumber)
-                .originalOrder("{\"orderNumber\": 1234}")
+                .originalOrder("{\"orderNumber\": \""+ orderNumber + "\"}")
                 .salesLocale("DE_de")
                 .build();
 
