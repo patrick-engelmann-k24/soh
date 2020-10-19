@@ -15,10 +15,10 @@ import org.springframework.context.annotation.Configuration;
 public class AwsConfig {
 
 
-    @Value("${cloud.aws.credentials.secret-key}")
+    @Value("${cloud.aws.credentials.secret-key:#{null}}")
     protected String awsSecretKey;
 
-    @Value("${cloud.aws.credentials.access-key}")
+    @Value("${cloud.aws.credentials.access-key:#{null}}")
     protected String awsAccessKey;
 
     @Value("${cloud.aws.endpoint.url:#{null}}")
