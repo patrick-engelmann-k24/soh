@@ -28,9 +28,9 @@ cloud:
       static: eu-central-1
     stack:
       auto: false
-    credentials:
-      access-key: ${aws_accessKey}
-      secret-key: ${aws_sercretKey}
+#    credentials:
+#      access-key: ${aws_accessKey}
+#      secret-key: ${aws_secretKey}
 
 #AWS
 soh:
