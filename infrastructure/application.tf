@@ -54,11 +54,11 @@ data "aws_ssm_parameter" "new_relic_key" {
   name = "/new_relic/key"
 }
 
-data "aws_ssm_paramter" "camunda_user" {
+data "aws_ssm_parameter" "camunda_user" {
   name = "/soh-business-processing-engine/camunda/user"
 }
 
-data "aws_ssm_paramter" "camunda_password" {
+data "aws_ssm_parameter" "camunda_password" {
   name = "/soh-business-processing-engine/camunda/password"
 }
 
