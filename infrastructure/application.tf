@@ -31,7 +31,7 @@ module "application_module" {
     sns_soh_order_created_topic = data.aws_sns_topic.sns_soh_order_created_topic.arn
   }
 
-  ssm_secrets_count = 5
+  ssm_secrets_count = 7
 
   ssm_secrets = {
 
@@ -41,6 +41,9 @@ module "application_module" {
 
     soh_db_username            = module.aurora.this_rds_cluster_master_username_arn
     soh_db_password            = module.aurora.this_rds_cluster_master_password_arn
+
+    soh_camunda_username       = data.aws_ssm_parameter.camunda_user.arn
+    soh_camunda_password       = data.aws_ssm_parameter.camunda_password.arn
   }
 
   github_token = var.github_token
@@ -49,5 +52,13 @@ module "application_module" {
 
 data "aws_ssm_parameter" "new_relic_key" {
   name = "/new_relic/key"
+}
+
+data "aws_ssm_paramter" "camunda_user" {
+  name = "/soh-business-processing-engine/camunda/user"
+}
+
+data "aws_ssm_paramter" "camunda_password" {
+  name = "/soh-business-processing-engine/camunda/password"
 }
 

@@ -1,0 +1,18 @@
+.env.localhost
+/.idea/
+/target
+*.iml
+
+### Terraform ###
+# Local .terraform directories
+**/.terraform/*
+infrastructure/out.plan
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
+
+# Crash log files
+**/.terraform/crash.log
+
+**/.DS_Store
