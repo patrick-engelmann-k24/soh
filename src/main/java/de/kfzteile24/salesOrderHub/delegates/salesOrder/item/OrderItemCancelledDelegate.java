@@ -1,5 +1,6 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder.item;
 
+import de.kfzteile24.salesOrderHub.configuration.AwsSnsConfig;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
@@ -18,18 +19,18 @@ public class OrderItemCancelledDelegate implements JavaDelegate {
     @Autowired
     SnsPublishService snsPublishService;
 
-    @Value("${soh.sns.topic.orderItemCancelled}")
-    String snsOrderItemCancelledTopic;
-
     @Autowired
     SalesOrderService salesOrderService;
 
+    @Autowired
+    AwsSnsConfig config;
+
     @Override
     public void execute(DelegateExecution delegateExecution) throws Exception {
-        log.info("SNS-Topic: " + snsOrderItemCancelledTopic);
+        log.info("SNS-Topic: " + config.getSnsOrderItemCancelledTopic());
 
         String orderNumber = (String) delegateExecution.getVariable(Variables.VAR_ORDER_NUMBER.getName());
-        snsPublishService.sendOrder(snsOrderItemCancelledTopic, "Sales Order Item Cancelled", orderNumber);
+        snsPublishService.sendOrder(config.getSnsOrderItemCancelledTopic(), "Sales Order Item Cancelled", orderNumber);
     }
 
 }

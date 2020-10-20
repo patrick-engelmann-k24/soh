@@ -1,5 +1,6 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder.item;
 
+import de.kfzteile24.salesOrderHub.configuration.AwsSnsConfig;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.delegates.CommonDelegate;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
@@ -17,17 +18,17 @@ public class DeliveryAddressChangedDelegate extends CommonDelegate {
     @Autowired
     SnsPublishService snsPublishService;
 
-    @Value("${soh.sns.topic.deliveryAddressChanged}")
-    String snsDeliveryAddressChanged;
+    @Autowired
+    AwsSnsConfig config;
 
     @Autowired
     SalesOrderService salesOrderService;
 
     @Override
     public void execute(DelegateExecution delegateExecution) throws Exception {
-        log.info("SNS-Topic: " + snsDeliveryAddressChanged);
+        log.info("SNS-Topic: " + config.getSnsDeliveryAddressChanged());
 
         String orderNumber = (String) delegateExecution.getVariable(Variables.VAR_ORDER_NUMBER.getName());
-        snsPublishService.sendOrder(snsDeliveryAddressChanged, "Sales Order Invoice Address Changed", orderNumber);
+        snsPublishService.sendOrder(config.getSnsDeliveryAddressChanged(), "Sales Order Invoice Address Changed", orderNumber);
     }
 }
