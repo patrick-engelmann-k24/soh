@@ -60,7 +60,7 @@ public class DeleteUnusedProcesses {
                 boolean hasHistoricInstances = historyService
                         .createHistoricProcessInstanceQuery()
                         .processDefinitionId(processDefinition.getId()).count() > 0;
-                if (isLatest || hasRunningInstances || hasHistoricInstances) {
+                if (isLatest || hasRunningInstances /*|| hasHistoricInstances*/) {
                     deploymentCanBeDeleted = false;
                     break;
                 }

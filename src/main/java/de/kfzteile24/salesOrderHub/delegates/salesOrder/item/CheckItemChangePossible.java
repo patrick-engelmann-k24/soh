@@ -1,6 +1,5 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder.item;
 
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemActivities;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemEvents;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemVariables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ShipmentMethod;
@@ -9,7 +8,7 @@ import lombok.extern.java.Log;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.springframework.stereotype.Component;
 
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemVariables.SHIPMENT_METHOD;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.VAR_SHIPMENT_METHOD;
 import static java.lang.String.format;
 
 @Component
@@ -17,19 +16,19 @@ import static java.lang.String.format;
 public class CheckItemChangePossible extends CommonDelegate {
 
     public void execute(DelegateExecution delegateExecution) {
-        final String shipmentMethod = (String) delegateExecution.getVariable(SHIPMENT_METHOD.getName());
+        final String shipmentMethod = (String) delegateExecution.getVariable(VAR_SHIPMENT_METHOD.getName());
         switch (ShipmentMethod.fromString(shipmentMethod)) {
-            case PARCEL:
+            case SHIPMENT_REGULAR:
                 setResultVariable(delegateExecution, checkOnShipmentMethodParcel(delegateExecution));
                 return;
-            case PICKUP:
+            case CLICK_COLLECT:
                 setResultVariable(delegateExecution, false);
                 return;
             case OWN_DELIVERY:
                 setResultVariable(delegateExecution, checkOnShipmentMethodOwnDelivery(delegateExecution));
                 return;
             default:
-                log.warning(format("Unknown Shipment method %s", SHIPMENT_METHOD.getName()));
+                log.warning(format("Unknown Shipment method %s", VAR_SHIPMENT_METHOD.getName()));
         }
 
         // for unknown shipments, we disable cancellation

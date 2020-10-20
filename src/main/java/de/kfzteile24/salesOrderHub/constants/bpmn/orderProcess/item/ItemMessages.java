@@ -7,15 +7,14 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
  */
 public enum ItemMessages implements BpmItem {
     // process messages,
-    MSG_ITEM_TRANSMITTED("msgItemTransmitted"),
+    MSG_ITEM_TRANSMITTED_TO_LOGISTICS("msgItemTransmittedToLogistics"),
     MSG_PACKING_STARTED("msgPackingStarted"),
     MSG_TRACKING_ID_RECEIVED("msgTrackingIdReceived"),
     MSG_ITEM_DELIVERED("msgItemDelivered"),
     MSG_TOUR_STARTED("msgTourStarted"),
     MSG_ITEM_PREPARED("msgItemPrepared"),
     MSG_ITEM_PICKED_UP("msgItemPickedUp"),
-    // todo: change name in sales-order-item process
-    MSG_DELIVERY_ADDRESS_CHANGE("msg_deliveryAddressChange"),
+    MSG_DELIVERY_ADDRESS_CHANGE("msgDeliveryAddressChange"),
     MSG_DROPSHIPMENT_CANCELLATION_RECEIVED("msgDropshipmentCancellationReceived"),
     MSG_ORDER_ITEM_CANCELLATION_RECEIVED("msgOrderItemCancellationReceived"),
 

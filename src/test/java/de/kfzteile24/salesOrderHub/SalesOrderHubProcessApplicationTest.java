@@ -39,6 +39,8 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.*;
 
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.PaymentType.PAYMENT_CREDIT_CARD;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ShipmentMethod.SHIPMENT_REGULAR;
 import static org.camunda.bpm.engine.test.assertions.ProcessEngineTests.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -85,40 +87,40 @@ public class SalesOrderHubProcessApplicationTest {
      */
     @Test
     public void salesOrderItemPassThruTest() {
-        final String orderId = testOrder.getOrderNumber();
-        final List<String> orderItems = util.getOrderItems(orderId, 5);
+        final String orderNumber = testOrder.getOrderNumber();
+        final List<String> orderItems = util.getOrderItems(orderNumber, 5);
 
         ProcessInstance salesOrderProcessInstance =
                 runtimeService.createMessageCorrelation(util._N(Messages.MSG_ORDER_RECEIVED_MARKETPLACE))
-                        .processInstanceBusinessKey(orderId)
-                        .setVariable(util._N(Variables.VAR_ORDER_NUMBER), orderId)
-                        .setVariable(util._N(Variables.VAR_PAYMENT_TYPE), "creditCard")
+                        .processInstanceBusinessKey(orderNumber)
+                        .setVariable(util._N(Variables.VAR_ORDER_NUMBER), orderNumber)
+                        .setVariable(util._N(Variables.VAR_PAYMENT_TYPE), util._N(PAYMENT_CREDIT_CARD))
                         .setVariable(util._N(Variables.VAR_ORDER_VALID), true)
                         .setVariable(util._N(Variables.VAR_ORDER_ITEMS), orderItems)
-                        .setVariable(util._N(Variables.VAR_SHIPMENT_METHOD), "parcel")
+                        .setVariable(util._N(Variables.VAR_SHIPMENT_METHOD), util._N(SHIPMENT_REGULAR))
                         .correlateWithResult().getProcessInstance();
         assertThat(salesOrderProcessInstance).isWaitingAt(util._N(Events.EVENT_MSG_ORDER_PAYMENT_SECURED));
 
-        util.sendMessage(util._N(Messages.MSG_ORDER_RECEIVED_PAYMENT_SECURED), orderId);
+        util.sendMessage(util._N(Messages.MSG_ORDER_RECEIVED_PAYMENT_SECURED), orderNumber);
         assertThat(salesOrderProcessInstance).isWaitingAt(util._N(Activities.ACTIVITY_ORDER_ITEM_FULFILLMENT_PROCESS));
 
         // send items thru
-        util.sendMessage(util._N(ItemMessages.MSG_ITEM_TRANSMITTED), orderId);
-        util.sendMessage(util._N(ItemMessages.MSG_PACKING_STARTED), orderId);
-        util.sendMessage(util._N(ItemMessages.MSG_TRACKING_ID_RECEIVED), orderId);
-        util.sendMessage(util._N(ItemMessages.MSG_ITEM_DELIVERED), orderId);
+        util.sendMessage(util._N(ItemMessages.MSG_ITEM_TRANSMITTED_TO_LOGISTICS), orderNumber);
+        util.sendMessage(util._N(ItemMessages.MSG_PACKING_STARTED), orderNumber);
+        util.sendMessage(util._N(ItemMessages.MSG_TRACKING_ID_RECEIVED), orderNumber);
+        util.sendMessage(util._N(ItemMessages.MSG_ITEM_DELIVERED), orderNumber);
 
         assertThat(salesOrderProcessInstance).isEnded().hasPassed(util._N(Events.EVENT_END_MSG_ORDER_COMPLETED));
     }
 
     @Test
     public void salesOrderItemShipmentCancellationPossibleTest() {
-        final String orderId = testOrder.getOrderNumber();
-        final String firstItem = orderId + "-item-" + 0;
+        final String orderNumber = testOrder.getOrderNumber();
+        final String firstItem = orderNumber + "-item-" + 0;
 
-        final ProcessInstance salesOrderProcessInstance = firstPartOfSalesOrderProcess(orderId);
+        final ProcessInstance salesOrderProcessInstance = firstPartOfSalesOrderProcess(orderNumber);
 
-        List<MessageCorrelationResult> msg_packingStarted = util.sendMessage(util._N(ItemMessages.MSG_PACKING_STARTED), orderId);
+        List<MessageCorrelationResult> msg_packingStarted = util.sendMessage(util._N(ItemMessages.MSG_PACKING_STARTED), orderNumber);
 
         final ProcessInstance firstItemProcessInstance = getFirstOrderItem(firstItem, msg_packingStarted);
 
@@ -126,7 +128,7 @@ public class SalesOrderHubProcessApplicationTest {
 
         // cancel 1st orderItem
         final Map<String, Object> processVariables = Map.of("itemCancellationPossible", true);
-        util.sendMessage(util._N(ItemMessages.MSG_ORDER_ITEM_CANCELLATION_RECEIVED), orderId, firstItem, processVariables);
+        util.sendMessage(util._N(ItemMessages.MSG_ORDER_ITEM_CANCELLATION_RECEIVED), orderNumber, firstItem, processVariables);
 
         // main process should stay at the same pos
         assertThat(salesOrderProcessInstance).isWaitingAt(util._N(Activities.ACTIVITY_ORDER_ITEM_FULFILLMENT_PROCESS));
@@ -144,29 +146,29 @@ public class SalesOrderHubProcessApplicationTest {
         assertThat(firstItemProcessInstance).isEnded();
 
         // move remaining items
-        util.sendMessage(util._N(ItemMessages.MSG_TRACKING_ID_RECEIVED), orderId);
-        util.sendMessage(util._N(ItemMessages.MSG_ITEM_DELIVERED), orderId);
+        util.sendMessage(util._N(ItemMessages.MSG_TRACKING_ID_RECEIVED), orderNumber);
+        util.sendMessage(util._N(ItemMessages.MSG_ITEM_DELIVERED), orderNumber);
         assertThat(salesOrderProcessInstance).isEnded();
     }
 
     @Test
     public void salesOrderCancellationTest() {
-        final String orderId = testOrder.getOrderNumber();
-        final List<String> orderItems = util.getOrderItems(orderId, 5);
+        final String orderNumber = testOrder.getOrderNumber();
+        final List<String> orderItems = util.getOrderItems(orderNumber, 5);
 
         ProcessInstance salesOrderProcessInstance =
                 runtimeService.createMessageCorrelation(util._N(Messages.MSG_ORDER_RECEIVED_MARKETPLACE))
-                        .processInstanceBusinessKey(orderId)
-                        .setVariable(util._N(Variables.VAR_ORDER_NUMBER), orderId)
-                        .setVariable(util._N(Variables.VAR_PAYMENT_TYPE), "creditCard")
+                        .processInstanceBusinessKey(orderNumber)
+                        .setVariable(util._N(Variables.VAR_ORDER_NUMBER), orderNumber)
+                        .setVariable(util._N(Variables.VAR_PAYMENT_TYPE), util._N(PAYMENT_CREDIT_CARD))
                         .setVariable(util._N(Variables.VAR_ORDER_VALID), true)
                         .setVariable(util._N(Variables.VAR_ORDER_ITEMS), orderItems)
-                        .setVariable(util._N(Variables.VAR_SHIPMENT_METHOD), "parcel")
+                        .setVariable(util._N(Variables.VAR_SHIPMENT_METHOD), util._N(SHIPMENT_REGULAR))
                         .correlateWithResult().getProcessInstance();
         assertThat(salesOrderProcessInstance).isWaitingAt(util._N(Events.EVENT_MSG_ORDER_PAYMENT_SECURED));
 
         runtimeService.createMessageCorrelation(util._N(Messages.MSG_ORDER_CANCELLATION_RECEIVED))
-                .processInstanceBusinessKey(orderId)
+                .processInstanceBusinessKey(orderNumber)
                 .correlateWithResult();
 
         assertThat(salesOrderProcessInstance)
@@ -186,22 +188,22 @@ public class SalesOrderHubProcessApplicationTest {
                 .hasVariables(
                         util._N(Variables.VAR_ORDER_NUMBER),
                         util._N(Variables.VAR_SHIPMENT_METHOD),
-                        util._N(ItemVariables.VAR_ITEM_ID)
+                        util._N(ItemVariables.ORDER_ITEM_ID)
                 );
 
         return firstItemProcessInstance;
     }
 
-    protected ProcessInstance firstPartOfSalesOrderProcess(final String orderId) {
-        final List<String> orderItems = util.getOrderItems(orderId, 5);
+    protected ProcessInstance firstPartOfSalesOrderProcess(final String orderNumber) {
+        final List<String> orderItems = util.getOrderItems(orderNumber, 5);
         final ProcessInstance salesOrderProcessInstance =
                 runtimeService.createMessageCorrelation(util._N(Messages.MSG_ORDER_RECEIVED_MARKETPLACE))
-                        .processInstanceBusinessKey(orderId)
-                        .setVariable(util._N(Variables.VAR_ORDER_NUMBER), orderId)
-                        .setVariable(util._N(Variables.VAR_PAYMENT_TYPE), "creditCard")
+                        .processInstanceBusinessKey(orderNumber)
+                        .setVariable(util._N(Variables.VAR_ORDER_NUMBER), orderNumber)
+                        .setVariable(util._N(Variables.VAR_PAYMENT_TYPE), util._N(PAYMENT_CREDIT_CARD))
                         .setVariable(util._N(Variables.VAR_ORDER_VALID), true)
                         .setVariable(util._N(Variables.VAR_ORDER_ITEMS), orderItems)
-                        .setVariable(util._N(Variables.VAR_SHIPMENT_METHOD), "parcel")
+                        .setVariable(util._N(Variables.VAR_SHIPMENT_METHOD), util._N(SHIPMENT_REGULAR))
                         .correlateWithResult().getProcessInstance();
         assertThat(salesOrderProcessInstance).isActive();
         assertThat(salesOrderProcessInstance)
@@ -209,7 +211,7 @@ public class SalesOrderHubProcessApplicationTest {
                 .isWaitingAt(util._N(Events.EVENT_MSG_ORDER_PAYMENT_SECURED));
 
         runtimeService.createMessageCorrelation(util._N(Messages.MSG_ORDER_RECEIVED_PAYMENT_SECURED))
-                .processInstanceBusinessKey(orderId)
+                .processInstanceBusinessKey(orderNumber)
                 .setVariable(util._N(Variables.VAR_PAYMENT_STATUS), "captured")
                 .correlateWithResult().getProcessInstance();
 
@@ -217,7 +219,7 @@ public class SalesOrderHubProcessApplicationTest {
 
         // start the subprocess
         // move all items to packing started
-        util.sendMessage(util._N(ItemMessages.MSG_ITEM_TRANSMITTED), orderId);
+        util.sendMessage(util._N(ItemMessages.MSG_ITEM_TRANSMITTED_TO_LOGISTICS), orderNumber);
         return salesOrderProcessInstance;
     }
 

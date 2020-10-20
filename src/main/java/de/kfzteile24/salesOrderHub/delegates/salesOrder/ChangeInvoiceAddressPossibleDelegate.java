@@ -20,17 +20,17 @@ public class ChangeInvoiceAddressPossibleDelegate extends CommonDelegate {
 
     @Override
     public void execute(DelegateExecution delegateExecution) {
-        final String orderId = (String) delegateExecution.getVariable(Variables.VAR_ORDER_NUMBER.getName());
-        setResultVariable(delegateExecution, Variables.VAR_INVOICE_EXISTS, checkInvoiceExistentForOrder(orderId));
+        final String orderNumber = (String) delegateExecution.getVariable(Variables.VAR_ORDER_NUMBER.getName());
+        setResultVariable(delegateExecution, Variables.VAR_INVOICE_EXISTS, checkInvoiceExistentForOrder(orderNumber));
     }
 
     /**
      * If we find an invoice, there are already invoice(s) created
-     * @param orderId
+     * @param orderNumber
      * @return
      */
-    Boolean checkInvoiceExistentForOrder(final String orderId) {
-        final List<SalesOrderInvoice> orderInvoiceList = invoiceRepository.getInvoicesByOrderNumber(orderId);
+    Boolean checkInvoiceExistentForOrder(final String orderNumber) {
+        final List<SalesOrderInvoice> orderInvoiceList = invoiceRepository.getInvoicesByOrderNumber(orderNumber);
         return orderInvoiceList.size() > 0;
     }
 }

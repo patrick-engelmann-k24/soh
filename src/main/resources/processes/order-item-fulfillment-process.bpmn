@@ -90,7 +90,7 @@
       <bpmn:incoming>Flow_10ytpqn</bpmn:incoming>
       <bpmn:outgoing>Flow_0ya2mbr</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:subProcess id="Activity_1r18tfj" triggeredByEvent="true">
+    <bpmn:subProcess id="subProcessOrderItemDeliveryAddressChange" triggeredByEvent="true">
       <bpmn:startEvent id="eventMsgDeliveryAddressChange" name="Delivery address change" isInterrupting="false">
         <bpmn:outgoing>Flow_0qzv6af</bpmn:outgoing>
         <bpmn:messageEventDefinition id="MessageEventDefinition_0zb2zu8" messageRef="Message_1sm0n67" />
@@ -108,11 +108,11 @@
         <bpmn:messageEventDefinition id="MessageEventDefinition_05vn07l" camunda:delegateExpression="${deliveryAddressChangedDelegate}" />
       </bpmn:endEvent>
       <bpmn:sequenceFlow id="Flow_1deyyx2" name="No" sourceRef="gwXORDeliveryAdressChangePossible" targetRef="eventDeliveryAddressNotChanged">
-        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${not deliveryAdressChangePossible}</bpmn:conditionExpression>
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${not deliveryAddressChangePossible}</bpmn:conditionExpression>
       </bpmn:sequenceFlow>
       <bpmn:sequenceFlow id="Flow_1y311on" sourceRef="activityChangeDeliveryAddress" targetRef="eventDeliveryAddressChanged" />
       <bpmn:sequenceFlow id="Flow_0o27d4k" name="Yes" sourceRef="gwXORDeliveryAdressChangePossible" targetRef="activityChangeDeliveryAddress">
-        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${deliveryAdressChangePossible}</bpmn:conditionExpression>
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${deliveryAddressChangePossible}</bpmn:conditionExpression>
       </bpmn:sequenceFlow>
       <bpmn:sequenceFlow id="Flow_1eflki8" sourceRef="activityCheckDeliveryAddressChangePossible" targetRef="gwXORDeliveryAdressChangePossible" />
       <bpmn:sequenceFlow id="Flow_0qzv6af" sourceRef="eventMsgDeliveryAddressChange" targetRef="activityCheckDeliveryAddressChangePossible" />
@@ -155,15 +155,15 @@ Pickup: n/a</bpmn:text>
     <bpmn:sequenceFlow id="Flow_1mjw1ko" sourceRef="eventItemTransmittedToLogistics" targetRef="gwXORShipmentMethod" />
     <bpmn:sequenceFlow id="Flow_17aezh1" sourceRef="eventTrackingIdReceived" targetRef="gwXORTourStarted" />
     <bpmn:sequenceFlow id="Flow_0ya2mbr" sourceRef="gwXORTourStarted" targetRef="eventItemDelivered" />
-    <bpmn:sequenceFlow id="Flow_1j8lgbb" name="Parcel" sourceRef="gwXORShipmentMethod" targetRef="eventPackingStarted">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${shipment_method=="parcel"}</bpmn:conditionExpression>
+    <bpmn:sequenceFlow id="Flow_1j8lgbb" name="Regular &#38; Express" sourceRef="gwXORShipmentMethod" targetRef="eventPackingStarted">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${shipmentMethod == "shipment_regular" || shipmentMethod == "shipment_express"}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_0i51he6" sourceRef="eventPackingStarted" targetRef="eventTrackingIdReceived" />
     <bpmn:sequenceFlow id="Flow_0hihgm6" name="Own delivery" sourceRef="gwXORShipmentMethod" targetRef="eventTourStarted">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${shipment_method=="own_delivery"}</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${shipmentMethod=="own_delivery"}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="Flow_1mddwth" name="Pickup" sourceRef="gwXORShipmentMethod" targetRef="eventItemPreparedForPickUp">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${shipment_method=="pickup"}</bpmn:conditionExpression>
+    <bpmn:sequenceFlow id="Flow_1mddwth" name="Click &#38; Collect" sourceRef="gwXORShipmentMethod" targetRef="eventItemPreparedForPickUp">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${shipmentMethod=="click_collect"}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_10ytpqn" sourceRef="eventTourStarted" targetRef="gwXORTourStarted" />
     <bpmn:sequenceFlow id="Flow_1tbhmax" sourceRef="eventItemPreparedForPickUp" targetRef="eventItemPickedUp" />
@@ -184,7 +184,7 @@ Pickup: only before "Item picked up"</bpmn:text>
     <bpmn:association id="Association_16xng25" sourceRef="eventItemTransmittedToLogistics" targetRef="TextAnnotation_0jme5a7" />
     <bpmn:association id="Association_0u183io" sourceRef="activityCheckCancellationPossible" targetRef="TextAnnotation_1ndclh1" />
   </bpmn:process>
-  <bpmn:message id="Message_0n0an90" name="msgItemTransmitted" />
+  <bpmn:message id="Message_0n0an90" name="msgItemTransmittedToLogistics" />
   <bpmn:message id="Message_09xa7xb" name="msgTrackingIdReceived" />
   <bpmn:message id="Message_0d2fkb0" name="msgItemDelivered" />
   <bpmn:message id="Message_182v5lz" name="msgPackingStarted" />
@@ -195,7 +195,7 @@ Pickup: only before "Item picked up"</bpmn:text>
   <bpmn:escalation id="Escalation_16iqo54" name="escalationOrderCancelled" escalationCode="1234567890" />
   <bpmn:message id="Message_0qa8492" name="msgDropshipmentCancellationReceived" />
   <bpmn:escalation id="Escalation_09qfsfl" name="escalationOrderCancelled" escalationCode="1234567890" />
-  <bpmn:message id="Message_1sm0n67" name="msg_deliveryAddressChange" />
+  <bpmn:message id="Message_1sm0n67" name="msgDeliveryAddressChange" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="OrderItemFulfillmentProcess">
       <bpmndi:BPMNEdge id="Flow_0pptdh1_di" bpmnElement="Flow_0pptdh1">
@@ -216,7 +216,7 @@ Pickup: only before "Item picked up"</bpmn:text>
         <di:waypoint x="450" y="370" />
         <di:waypoint x="632" y="370" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="487" y="352" width="34" height="14" />
+          <dc:Bounds x="469" y="352" width="71" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0hihgm6_di" bpmnElement="Flow_0hihgm6">
@@ -235,7 +235,7 @@ Pickup: only before "Item picked up"</bpmn:text>
         <di:waypoint x="475" y="180" />
         <di:waypoint x="536" y="180" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="490" y="162" width="32" height="14" />
+          <dc:Bounds x="482" y="146" width="49" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0ya2mbr_di" bpmnElement="Flow_0ya2mbr">
@@ -356,7 +356,7 @@ Pickup: only before "Item picked up"</bpmn:text>
       <bpmndi:BPMNShape id="Gateway_0ivluh2_di" bpmnElement="gwXORShipmentMethod" isMarkerVisible="true">
         <dc:Bounds x="425" y="155" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="425" y="126" width="51" height="27" />
+          <dc:Bounds x="394" y="136" width="51" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_055vm0y_di" bpmnElement="eventTourStarted">
@@ -380,7 +380,7 @@ Pickup: only before "Item picked up"</bpmn:text>
       <bpmndi:BPMNShape id="Gateway_01vbda1_di" bpmnElement="gwXORTourStarted" isMarkerVisible="true">
         <dc:Bounds x="718" y="155" width="50" height="50" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1r18tfj_di" bpmnElement="Activity_1r18tfj" isExpanded="true">
+      <bpmndi:BPMNShape id="Activity_1r18tfj_di" bpmnElement="subProcessOrderItemDeliveryAddressChange" isExpanded="true">
         <dc:Bounds x="880" y="690" width="520" height="240" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_0qzv6af_di" bpmnElement="Flow_0qzv6af">
