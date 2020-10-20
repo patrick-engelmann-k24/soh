@@ -6,9 +6,8 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
  * All available payment types
  */
 public enum ShipmentMethod implements BpmItem {
-    // todo: what are the "official" names of shipment methods?
-    SHIPMENT_REGULAR("shipment_regular"),
-    SHIPMENT_EXPRESS("shipment_express"),
+    REGULAR("shipment_regular"),
+    EXPRESS("shipment_express"),
     OWN_DELIVERY("own_delivery"),
     CLICK_COLLECT("click_collect"),
     // sometimes we have not shipment method. But we can't return null in fromString

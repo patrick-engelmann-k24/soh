@@ -8,7 +8,6 @@ import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import lombok.extern.java.Log;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -28,7 +27,7 @@ public class DeliveryAddressChangedDelegate extends CommonDelegate {
     public void execute(DelegateExecution delegateExecution) throws Exception {
         log.info("SNS-Topic: " + config.getSnsDeliveryAddressChanged());
 
-        String orderNumber = (String) delegateExecution.getVariable(Variables.VAR_ORDER_NUMBER.getName());
+        String orderNumber = (String) delegateExecution.getVariable(Variables.ORDER_NUMBER.getName());
         snsPublishService.sendOrder(config.getSnsDeliveryAddressChanged(), "Sales Order Invoice Address Changed", orderNumber);
     }
 }

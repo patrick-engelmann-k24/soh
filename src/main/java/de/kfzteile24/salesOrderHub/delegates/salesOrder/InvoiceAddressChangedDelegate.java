@@ -7,7 +7,6 @@ import lombok.extern.java.Log;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.JavaDelegate;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -24,7 +23,7 @@ public class InvoiceAddressChangedDelegate implements JavaDelegate {
     public void execute(DelegateExecution delegateExecution) throws Exception {
         log.info("SNS-Topic: " + config.getSnsInvoiceAddressChangedTopic());
 
-        String orderNumber = (String) delegateExecution.getVariable(Variables.VAR_ORDER_NUMBER.getName());
+        String orderNumber = (String) delegateExecution.getVariable(Variables.ORDER_NUMBER.getName());
         snsPublishService.sendOrder(config.getSnsInvoiceAddressChangedTopic(), "Invoice Address Changed", orderNumber);
     }
 

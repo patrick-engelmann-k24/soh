@@ -3,13 +3,13 @@ package de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess;
 import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 
 public enum Variables implements BpmItem {
-    VAR_ORDER_NUMBER("orderNumber"),
-    VAR_PAYMENT_TYPE("paymentType"),
-    VAR_PAYMENT_STATUS("paymentStatus"),
-    VAR_ORDER_VALID("orderValid"),
-    VAR_ORDER_ITEMS("orderItems"),
-    VAR_SHIPMENT_METHOD("shipmentMethod"),
-    VAR_INVOICE_EXISTS("invoiceExist");
+    ORDER_NUMBER("orderNumber"),
+    PAYMENT_TYPE("paymentType"),
+    PAYMENT_STATUS("paymentStatus"),
+    ORDER_VALID("orderValid"),
+    ORDER_ITEMS("orderItems"),
+    SHIPMENT_METHOD("shipmentMethod"),
+    INVOICE_EXISTS("invoiceExist");
 
     private final String name;
 
