@@ -1,6 +1,6 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder.item;
 
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemActivities;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemEvents;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemVariables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ShipmentMethod;
@@ -9,7 +9,6 @@ import lombok.extern.java.Log;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.springframework.stereotype.Component;
 
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemVariables.SHIPMENT_METHOD;
 import static java.lang.String.format;
 
 @Component
@@ -17,19 +16,20 @@ import static java.lang.String.format;
 public class CheckItemChangePossible extends CommonDelegate {
 
     public void execute(DelegateExecution delegateExecution) {
-        final String shipmentMethod = (String) delegateExecution.getVariable(SHIPMENT_METHOD.getName());
+        final String shipmentMethod = (String) delegateExecution.getVariable(Variables.SHIPMENT_METHOD.getName());
         switch (ShipmentMethod.fromString(shipmentMethod)) {
-            case PARCEL:
+            case REGULAR:
+            case EXPRESS:
                 setResultVariable(delegateExecution, checkOnShipmentMethodParcel(delegateExecution));
                 return;
-            case PICKUP:
+            case CLICK_COLLECT:
                 setResultVariable(delegateExecution, false);
                 return;
             case OWN_DELIVERY:
                 setResultVariable(delegateExecution, checkOnShipmentMethodOwnDelivery(delegateExecution));
                 return;
             default:
-                log.warning(format("Unknown Shipment method %s", SHIPMENT_METHOD.getName()));
+                log.warning(format("Unknown Shipment method %s", Variables.SHIPMENT_METHOD.getName()));
         }
 
         // for unknown shipments, we disable cancellation
@@ -37,11 +37,11 @@ public class CheckItemChangePossible extends CommonDelegate {
     }
 
     protected boolean checkOnShipmentMethodParcel(DelegateExecution delegateExecution) {
-        return helper.hasNotPassed(delegateExecution.getProcessInstanceId(), ItemEvents.EVENT_PACKING_STARTED.getName());
+        return helper.hasNotPassed(delegateExecution.getProcessInstanceId(), ItemEvents.PACKING_STARTED.getName());
     }
 
     protected boolean checkOnShipmentMethodOwnDelivery(DelegateExecution delegateExecution) {
-        return helper.hasNotPassed(delegateExecution.getProcessInstanceId(), ItemEvents.EVENT_TOUR_STARTED.getName());
+        return helper.hasNotPassed(delegateExecution.getProcessInstanceId(), ItemEvents.TOUR_STARTED.getName());
     }
 
     void setResultVariable(DelegateExecution delegateExecution, boolean checkResult) {

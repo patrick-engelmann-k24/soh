@@ -21,8 +21,8 @@ public class SnsPublishService {
         notificationMessagingTemplate.sendNotification(snsTopic, message, subject);
     }
 
-    public void sendOrder(String topic, String subject, String orderId) throws Exception {
-        Optional<SalesOrder> salesOrderOptional = salesOrderService.getOrderByOrderNumber(orderId);
+    public void sendOrder(String topic, String subject, String orderNumber) throws Exception {
+        Optional<SalesOrder> salesOrderOptional = salesOrderService.getOrderByOrderNumber(orderNumber);
         if (salesOrderOptional.isPresent()) {
             SalesOrder salesOrder = salesOrderOptional.get();
             send(topic, subject, salesOrder.getOriginalOrder());

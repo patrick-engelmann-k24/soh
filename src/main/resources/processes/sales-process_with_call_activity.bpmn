@@ -119,8 +119,8 @@
     <bpmn:sequenceFlow id="Flow_0ero9gg" sourceRef="activityOrderItemFulfillmentProcess" targetRef="eventEndMsgOrderCompleted" />
     <bpmn:callActivity id="activityOrderItemFulfillmentProcess" name="Handle Orderitems" calledElement="OrderItemFulfillmentProcess">
       <bpmn:extensionElements>
-        <camunda:in source="orderId" target="orderId" />
-        <camunda:in source="shipment_method" target="shipment_method" />
+        <camunda:in source="orderNumber" target="orderNumber" />
+        <camunda:in source="shipmentMethod" target="shipmentMethod" />
         <camunda:in source="item" target="orderItemId" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0fe05aw</bpmn:incoming>

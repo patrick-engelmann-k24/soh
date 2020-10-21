@@ -13,6 +13,6 @@ public class HandleOrderItemCancellation implements JavaDelegate {
     public void execute(DelegateExecution delegateExecution) {
         // todo: DEV-15633
         log.info("todo: DEV-15633");
-        delegateExecution.setVariable(ItemVariables.VAR_ITEM_CANCELLED.getName(), true);
+        delegateExecution.setVariable(ItemVariables.ITEM_CANCELLED.getName(), true);
     }
 }

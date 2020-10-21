@@ -1,6 +1,8 @@
 package de.kfzteile24.salesOrderHub.helper;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemVariables;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.MessageCorrelationBuilder;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
@@ -15,13 +17,13 @@ public class BpmUtil {
     @Autowired
     RuntimeService runtimeService;
 
-    public final List<MessageCorrelationResult> sendMessage(BpmItem message, String orderId) {
-        return this.sendMessage(_N(message), orderId);
+    public final List<MessageCorrelationResult> sendMessage(BpmItem message, String orderNumber) {
+        return this.sendMessage(_N(message), orderNumber);
     }
 
-    public final List<MessageCorrelationResult> sendMessage(String message, String orderId) {
+    public final List<MessageCorrelationResult> sendMessage(String message, String orderNumber) {
         return runtimeService.createMessageCorrelation(message)
-                .processInstanceVariableEquals("orderId", orderId)
+                .processInstanceVariableEquals(_N(Variables.ORDER_NUMBER), orderNumber)
                 .correlateAllWithResult();
     }
 
@@ -34,19 +36,19 @@ public class BpmUtil {
                 .correlateAllWithResult();
     }
 
-    public final MessageCorrelationResult sendMessage(final String message, final String orderId, final String orderItem) {
-        return sendMessage(message, orderId, orderItem, Collections.emptyMap());
+    public final MessageCorrelationResult sendMessage(final String message, final String orderNumber, final String orderItem) {
+        return sendMessage(message, orderNumber, orderItem, Collections.emptyMap());
     }
 
-    public final MessageCorrelationResult sendMessage(final BpmItem message, final String orderId, final String orderItem) {
-        return sendMessage(_N(message), orderId, orderItem, Collections.emptyMap());
+    public final MessageCorrelationResult sendMessage(final BpmItem message, final String orderNumber, final String orderItem) {
+        return sendMessage(_N(message), orderNumber, orderItem, Collections.emptyMap());
     }
 
-    public final MessageCorrelationResult sendMessage(final String message, final String orderId, final String orderItem,
+    public final MessageCorrelationResult sendMessage(final String message, final String orderNumber, final String orderItem,
                                                       final Map<String, Object> processVariables) {
         MessageCorrelationBuilder builder = runtimeService.createMessageCorrelation(message)
-                .processInstanceVariableEquals("orderId", orderId)
-                .processInstanceVariableEquals("orderItemId", orderItem);
+                .processInstanceVariableEquals(_N(Variables.ORDER_NUMBER), orderNumber)
+                .processInstanceVariableEquals(_N(ItemVariables.ORDER_ITEM_ID), orderItem);
         if (!processVariables.isEmpty())
             builder.setVariables(processVariables);
 
@@ -54,9 +56,9 @@ public class BpmUtil {
                 .correlateWithResult();
     }
 
-    public final MessageCorrelationResult sendMessage(final BpmItem message, final String orderId, final String orderItem,
+    public final MessageCorrelationResult sendMessage(final BpmItem message, final String orderNumber, final String orderItem,
                                                       final Map<String, Object> processVariables) {
-        return sendMessage(_N(message), orderId, orderItem, processVariables);
+        return sendMessage(_N(message), orderNumber, orderItem, processVariables);
     }
 
     public final String getRandomOrderNumber() {
@@ -73,10 +75,10 @@ public class BpmUtil {
         return buffer.toString();
     }
 
-    public final List<String> getOrderItems(final String orderId, final int number) {
+    public final List<String> getOrderItems(final String orderNumber, final int number) {
         final List<String> result = new ArrayList<>();
         for (int i = 0; i < number; i++) {
-            result.add(orderId + "-item-" + i);
+            result.add(orderNumber + "-item-" + i);
         }
         return result;
     }

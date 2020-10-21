@@ -1,12 +1,12 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder;
 
+import de.kfzteile24.salesOrderHub.configuration.AwsSnsConfig;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import lombok.extern.java.Log;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.JavaDelegate;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -16,15 +16,15 @@ public class InvoiceAddressChangedDelegate implements JavaDelegate {
     @Autowired
     SnsPublishService snsPublishService;
 
-    @Value("${soh.sns.topic.invoiceAddressChanged}")
-    String snsInvoiceAddressChangedTopic;
+    @Autowired
+    AwsSnsConfig config;
 
     @Override
     public void execute(DelegateExecution delegateExecution) throws Exception {
-        log.info("SNS-Topic: " + snsInvoiceAddressChangedTopic);
+        log.info("SNS-Topic: " + config.getSnsInvoiceAddressChangedTopic());
 
-        String orderNumber = (String) delegateExecution.getVariable(Variables.VAR_ORDER_NUMBER.getName());
-        snsPublishService.sendOrder(snsInvoiceAddressChangedTopic, "Invoice Address Changed", orderNumber);
+        String orderNumber = (String) delegateExecution.getVariable(Variables.ORDER_NUMBER.getName());
+        snsPublishService.sendOrder(config.getSnsInvoiceAddressChangedTopic(), "Invoice Address Changed", orderNumber);
     }
 
 }

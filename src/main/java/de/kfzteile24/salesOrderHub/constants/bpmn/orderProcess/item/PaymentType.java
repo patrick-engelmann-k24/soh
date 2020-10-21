@@ -6,7 +6,7 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
  * All available payment types
  */
 public enum PaymentType implements BpmItem {
-    PAYMENT_CREDIT_CARD("creditCard");
+    CREDIT_CARD("creditCard");
 
     private final String name;
 

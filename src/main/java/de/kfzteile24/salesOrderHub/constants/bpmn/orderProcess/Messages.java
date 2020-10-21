@@ -3,15 +3,14 @@ package de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess;
 import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 
 public enum Messages implements BpmItem {
-    // messages
-    MSG_ORDER_RECEIVED_PAYMENT_SECURED("msgOrderReceivedPaymentSecured"),
-    MSG_ORDER_RECEIVED_MARKETPLACE("msgOrderReceivedMarketplace"),
-    MSG_ORDER_RECEIVED_ECP("msgOrderReceivedEcp"),
-    MSG_ORDER_RECEIVED_CUSTOMER_CARE("msgOrderReceivedCustomerCare"),
-    MSG_ORDER_RECEIVED_BRANCH("msgOrderReceivedBranch"),
-    MSG_ORDER_RECEIVED_GARAGE("msgOrderReceivedGarage"),
-    MSG_ORDER_INVOICE_ADDESS_CHANGE_RECEIVED("msg_invoiceAddressChangeReceived"),
-    MSG_ORDER_CANCELLATION_RECEIVED("msg_orderCancellationReceived")
+    ORDER_RECEIVED_PAYMENT_SECURED("msgOrderReceivedPaymentSecured"),
+    ORDER_RECEIVED_MARKETPLACE("msgOrderReceivedMarketplace"),
+    ORDER_RECEIVED_ECP("msgOrderReceivedEcp"),
+    ORDER_RECEIVED_CUSTOMER_CARE("msgOrderReceivedCustomerCare"),
+    ORDER_RECEIVED_BRANCH("msgOrderReceivedBranch"),
+    ORDER_RECEIVED_GARAGE("msgOrderReceivedGarage"),
+    ORDER_INVOICE_ADDESS_CHANGE_RECEIVED("msg_invoiceAddressChangeReceived"),
+    ORDER_CANCELLATION_RECEIVED("msg_orderCancellationReceived")
     ;
 
     private final String name;

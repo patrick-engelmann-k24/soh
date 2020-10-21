@@ -3,11 +3,10 @@ package de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item;
 import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 
 public enum ItemActivities implements BpmItem {
-    ACTIVITY_CHECK_CANCELLATION_POSSIBLE("activityCheckCancellationPossible"),
-    ACTIVITY_HANDLE_CANCELLATION_DROPSHIPMENT("activityHandleCancellationDropshipment"),
-    ACTIVITY_HANDLE_CANCELLATION_SHIPMENT("activityHandleCancellationShipment"),
-    ACTIVITY_CHECK_DELIVERY_ADDRESS_CHANGE_POSSIBLE("activityCheckDeliveryAddressChangePossible"),
-    ACTIVITY_CHANGE_DELIVERY_ADDRESS("activityChangeDeliveryAddress"),
+    CHANGE_DELIVERY_ADDRESS("activityChangeDeliveryAddress"),
+    CHECK_CANCELLATION_POSSIBLE("activityCheckCancellationPossible"),
+    CHECK_DELIVERY_ADDRESS_CHANGE_POSSIBLE("activityCheckDeliveryAddressChangePossible"),
+    HANDLE_CANCELLATION_SHIPMENT("activityHandleCancellationShipment"),
     ;
 
     private final String name;
