@@ -25,7 +25,7 @@ camunda:
     admin-user:
       id: ${soh_camunda_username:demo}
       password: ${soh_camunda_password:demo}
-      firstName: Demo
+      firstName: K24Admin 
     filter:
       create: All tasks
     history-level: FULL
