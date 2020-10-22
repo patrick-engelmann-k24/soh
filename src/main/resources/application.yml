@@ -23,9 +23,9 @@ camunda:
       schema-name: bpm
       table-prefix: ${camunda.bpm.database.schema-name}.
     admin-user:
-      id: demo
-      password: demo
-      firstName: Demo
+      id: ${soh_camunda_username:demo}
+      password: ${soh_camunda_password:demo}
+      firstName: K24Admin 
     filter:
       create: All tasks
     history-level: FULL
