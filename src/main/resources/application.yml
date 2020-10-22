@@ -23,8 +23,8 @@ camunda:
       schema-name: bpm
       table-prefix: ${camunda.bpm.database.schema-name}.
     admin-user:
-      id: demo
-      password: demo
+      id: ${soh_camunda_username:demo}
+      password: ${soh_camunda_password:demo}
       firstName: Demo
     filter:
       create: All tasks
