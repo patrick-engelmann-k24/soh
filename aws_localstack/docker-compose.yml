@@ -3,18 +3,18 @@ version: '3.4'
 services:
   localstack:
     container_name: "${LOCALSTACK_DOCKER_NAME-localstack_main}"
-    image: localstack/localstack
+    image: localstack/localstack-full
     network_mode: bridge
     ports:
       - "4566:4566"
-      - "4571:4571"
-      - "${PORT_WEB_UI-8090}:8090"
+      - "${PORT_WEB_UI-8081}:8081"
     environment:
-      - SERVICES=sns,sqs
+      #- SERVICES=sns,sqs
       - DEFAULT_REGION=eu-central-1
       - DOCKER_HOST=unix:///var/run/docker.sock
       - HOST_TMP_FOLDER=${TMPDIR}
       - DATA_DIR=${DATA_DIR- }
+      - HOSTNAME_EXTERNAL=${HOSTNAME_EXTERNAL- }
     volumes:
       - "${TMPDIR:-data_tmp}:/tmp/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
