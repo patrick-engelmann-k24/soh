@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Primary;
 import java.text.DateFormat;
 
 @Configuration
-public class JsonConfig {
+public class GsonConfig {
     /**
      * Gson config for k24 order json
      *

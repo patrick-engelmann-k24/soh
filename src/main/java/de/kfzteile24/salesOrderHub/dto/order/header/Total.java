@@ -28,6 +28,4 @@ public class Total {
     Number paymentTotal;
     RiskCheck riskCheck;
     Customer customer;
-    Address billingAddress;
-    Address shippingAddress;
 }

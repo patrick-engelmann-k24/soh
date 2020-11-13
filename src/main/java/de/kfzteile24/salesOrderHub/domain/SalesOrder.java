@@ -1,13 +1,13 @@
 package de.kfzteile24.salesOrderHub.domain;
 
-import com.fasterxml.jackson.annotation.JsonRawValue;
+import de.kfzteile24.salesOrderHub.domain.converter.OrderJsonConverter;
+import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.lang.Nullable;
 
 import javax.persistence.*;
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.UUID;
 
@@ -31,8 +31,8 @@ public class SalesOrder extends AbstractBaseEntity {
     private UUID processId;
 
     @Column(name = "original_order", columnDefinition = "json")
-    @JsonRawValue
-    private String originalOrder;
+    @Convert(converter = OrderJsonConverter.class)
+    private OrderJSON originalOrder;
 
     @Basic
     @Column(name = "customer_email")
@@ -57,16 +57,12 @@ public class SalesOrder extends AbstractBaseEntity {
     @Basic
     @Column(name = "created_at")
     @CreatedDate
-    @Temporal(TemporalType.TIMESTAMP) //
-    private @Nullable
-    Date createdAt;
+    private LocalDateTime createdAt;
 
     @Basic
     @Column(name = "updated_at")
     @LastModifiedDate
-    @Temporal(TemporalType.TIMESTAMP) //
-    private @Nullable
-    Date updatedAt;
+    private LocalDateTime updatedAt;
 
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
