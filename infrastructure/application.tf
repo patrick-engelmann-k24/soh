@@ -34,6 +34,7 @@ module "application_module" {
     soh_order_cancelled        = data.aws_sns_topic.sns_soh_order_cancelled_topic.arn
     soh_invoice_address_changed = data.aws_sns_topic.sns_soh_invoice_address_changed_topic.arn
     soh_delivery_address_changed = data.aws_sns_topic.sns_soh_delivery_address_changed_topic.arn
+    soh_sqs_ecp_shop_orders     = aws_sqs_queue.ecp_shop_orders.arn
   }
 
   ssm_secrets_count = 7
