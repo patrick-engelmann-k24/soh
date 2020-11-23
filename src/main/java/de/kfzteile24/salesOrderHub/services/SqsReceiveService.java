@@ -9,7 +9,8 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class SqsReceiveService {
 
-    @SqsListener("${soh.sqs.queue.ecpShopOrders}")
+    //@SqsListener("${soh.sqs.queue.ecpShopOrders}")
+    @SqsListener(value = "https://sqs.eu-central-1.amazonaws.com/967623133951/dev-soh-ecp-shop-orders-v1")
     public void queueListenerEcpShopOrders(String message, @Header("SenderId") String senderId) {
         log.info("message received: " + senderId);
         log.debug(message);
