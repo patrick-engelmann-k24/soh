@@ -2,7 +2,7 @@
 
 #set -x # print commands for debugging purposes
 
-TOPICS="soh-order-created soh-order-completed soh-order-cancelled soh-order-item-cancelled soh-invoice-address-changed soh-delivery-address-changed"
+TOPICS="soh-order-payment-secured soh-order-cancelled soh-order-invoice-created soh-order-created soh-order-completed soh-order-cancelled soh-order-item-cancelled soh-invoice-address-changed soh-delivery-address-changed order-item-transmitted-to-logistics order-item-packing-started order-item-tracking-id-received order-item-delivered"
 
 QUEUES="soh-ecp-shop-orders"
 
