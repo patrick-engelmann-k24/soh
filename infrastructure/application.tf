@@ -21,7 +21,7 @@ module "application_module" {
   codebuild_vpc                = true
 
   environment_variables = {
-
+    SPRING_PROFILES_ACTIVE     = "default,${var.stage}"
     name                       = "backend-${var.stage}"
     java_opts                  = "-Xms3072m -Xmx3072m"
 
