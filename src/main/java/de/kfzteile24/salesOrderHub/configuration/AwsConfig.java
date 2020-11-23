@@ -74,49 +74,49 @@ public class AwsConfig {
         }
     }
 
-//    @Bean
-//    public AmazonSQSAsync amazonSQSAsync() {
-//        // check if local development
-//        if (endpoint != null) {
-//            AWSCredentials awsCredentials = new BasicAWSCredentials(
-//                    awsAccessKey,
-//                    awsSecretKey
-//            );
-//
-//            AmazonSQSAsyncClientBuilder builder = AmazonSQSAsyncClientBuilder
-//                    .standard()
-//                    .withCredentials(new AWSStaticCredentialsProvider(awsCredentials));
-//
-//            AwsClientBuilder.EndpointConfiguration localEndpoint = new AwsClientBuilder.EndpointConfiguration(endpoint, awsRegion);
-//            builder.withEndpointConfiguration(localEndpoint);
-//            return builder.build();
-//        } else {
-//            ClientConfiguration clientConfiguration = new ClientConfiguration().withMaxConnections(MAX_CONNECTIONS);
-//            return AmazonSQSAsyncClientBuilder.standard().withRegion(awsRegion).
-//                    withClientConfiguration(clientConfiguration).build();
-//        }
-//    }
-
     @Bean
     public AmazonSQSAsync amazonSQSAsync() {
-        AWSCredentials awsCredentials = new BasicAWSCredentials(
-                awsAccessKey,
-                awsSecretKey
-        );
-
-        AmazonSQSAsyncClientBuilder builder = AmazonSQSAsyncClientBuilder
-                .standard()
-                .withCredentials(new AWSStaticCredentialsProvider(awsCredentials));
-
+        // check if local development
         if (endpoint != null) {
-            AwsClientBuilder.EndpointConfiguration localEndpoint = new AwsClientBuilder.EndpointConfiguration(endpoint,awsRegion);
-            builder.withEndpointConfiguration(localEndpoint);
-        } else {
-            builder.withRegion(awsRegion);
-        }
+            AWSCredentials awsCredentials = new BasicAWSCredentials(
+                    awsAccessKey,
+                    awsSecretKey
+            );
 
-        return builder.build();
+            AmazonSQSAsyncClientBuilder builder = AmazonSQSAsyncClientBuilder
+                    .standard()
+                    .withCredentials(new AWSStaticCredentialsProvider(awsCredentials));
+
+            AwsClientBuilder.EndpointConfiguration localEndpoint = new AwsClientBuilder.EndpointConfiguration(endpoint, awsRegion);
+            builder.withEndpointConfiguration(localEndpoint);
+            return builder.build();
+        } else {
+            ClientConfiguration clientConfiguration = new ClientConfiguration().withMaxConnections(MAX_CONNECTIONS);
+            return AmazonSQSAsyncClientBuilder.standard().withRegion(awsRegion).
+                    withClientConfiguration(clientConfiguration).build();
+        }
     }
+
+//    @Bean
+//    public AmazonSQSAsync amazonSQSAsync() {
+//        AWSCredentials awsCredentials = new BasicAWSCredentials(
+//                awsAccessKey,
+//                awsSecretKey
+//        );
+//
+//        AmazonSQSAsyncClientBuilder builder = AmazonSQSAsyncClientBuilder
+//                .standard()
+//                .withCredentials(new AWSStaticCredentialsProvider(awsCredentials));
+//
+//        if (endpoint != null) {
+//            AwsClientBuilder.EndpointConfiguration localEndpoint = new AwsClientBuilder.EndpointConfiguration(endpoint,awsRegion);
+//            builder.withEndpointConfiguration(localEndpoint);
+//        } else {
+//            builder.withRegion(awsRegion);
+//        }
+//
+//        return builder.build();
+//    }
 
     @Bean
     public QueueMessagingTemplate queueMessagingTemplate(AmazonSQSAsync amazonSQSAsync) {
