@@ -13,6 +13,6 @@ public class SqsReceiveService {
     @SqsListener("${soh.sqs.queue.ecpShopOrders}")
     public void queueListenerEcpShopOrders(String message, @Header("SenderId") String senderId) {
         log.info("message received: " + senderId);
-        log.debug(message);
+        log.info(message);
     }
 }
