@@ -97,27 +97,6 @@ public class AwsConfig {
         }
     }
 
-//    @Bean
-//    public AmazonSQSAsync amazonSQSAsync() {
-//        AWSCredentials awsCredentials = new BasicAWSCredentials(
-//                awsAccessKey,
-//                awsSecretKey
-//        );
-//
-//        AmazonSQSAsyncClientBuilder builder = AmazonSQSAsyncClientBuilder
-//                .standard()
-//                .withCredentials(new AWSStaticCredentialsProvider(awsCredentials));
-//
-//        if (endpoint != null) {
-//            AwsClientBuilder.EndpointConfiguration localEndpoint = new AwsClientBuilder.EndpointConfiguration(endpoint,awsRegion);
-//            builder.withEndpointConfiguration(localEndpoint);
-//        } else {
-//            builder.withRegion(awsRegion);
-//        }
-//
-//        return builder.build();
-//    }
-
     @Bean
     public QueueMessagingTemplate queueMessagingTemplate(AmazonSQSAsync amazonSQSAsync) {
         return new QueueMessagingTemplate(amazonSQSAsync);
