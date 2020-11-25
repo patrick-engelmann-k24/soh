@@ -153,7 +153,7 @@ public class ChangeInvoiceAddressPossibleDelegateTest {
         util.sendMessage(util._N(ItemMessages.ITEM_TRANSMITTED_TO_LOGISTICS), orderNumber);
         util.sendMessage(util._N(ItemMessages.PACKING_STARTED), orderNumber);
         util.sendMessage(util._N(ItemMessages.TRACKING_ID_RECEIVED), orderNumber);
-        util.sendMessage(util._N(ItemMessages.ITEM_DELIVERED), orderNumber);
+        util.sendMessage(util._N(ItemMessages.ITEM_SHIPPED), orderNumber);
 
         assertThat(orderProcess).isEnded();
     }

@@ -86,7 +86,7 @@ public class CheckItemChangePossibleTest {
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isWaitingAt(util._N(ItemEvents.TRACKING_ID_RECEIVED));
 
         util.sendMessage(ItemMessages.TRACKING_ID_RECEIVED, orderNumber);
-        util.sendMessage(ItemMessages.ITEM_DELIVERED, orderNumber);
+        util.sendMessage(ItemMessages.ITEM_SHIPPED, orderNumber);
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isEnded();
     }
@@ -130,7 +130,7 @@ public class CheckItemChangePossibleTest {
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isWaitingAt(util._N(ItemEvents.TRACKING_ID_RECEIVED));
 
         util.sendMessage(ItemMessages.TRACKING_ID_RECEIVED, orderNumber);
-        util.sendMessage(ItemMessages.ITEM_DELIVERED, orderNumber);
+        util.sendMessage(ItemMessages.ITEM_SHIPPED, orderNumber);
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isEnded();
 
@@ -155,23 +155,14 @@ public class CheckItemChangePossibleTest {
                 util._N(ItemEvents.ITEM_TRANSMITTED_TO_LOGISTICS),
                 util._N(ItemGateways.XOR_SHIPMENT_METHOD),
                 util._N(ItemEvents.TOUR_STARTED),
-                util._N(ItemEvents.MSG_DELIVERY_ADDRESS_CHANGE),
-                util._N(ItemActivities.CHECK_DELIVERY_ADDRESS_CHANGE_POSSIBLE),
-                util._N(ItemGateways.XOR_DELIVERY_ADRESS_CHANGE_POSSIBLE)
-        );
-
-        BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassed(
-                util._N(BPMSalesOrderItemFullfilment.SUB_PROCESS_ORDER_ITEM_DELIVERY_ADDRESS_CHANGE),
-                util._N(ItemEvents.DELIVERY_ADDRESS_NOT_CHANGED)
+                util._N(ItemGateways.XOR_CLICK_AND_COLLECT),
+                util._N(ItemEvents.ORDER_ITEM_FULFILLMENT_PROCESS_FINISHED)
         );
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasNotPassed(
                 util._N(ItemActivities.CHANGE_DELIVERY_ADDRESS)
         );
 
-        BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isWaitingAt(util._N(ItemEvents.ITEM_DELIVERED));
-
-        util.sendMessage(ItemMessages.ITEM_DELIVERED, orderNumber);
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isEnded();
     }
@@ -211,7 +202,7 @@ public class CheckItemChangePossibleTest {
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isWaitingAt(util._N(ItemEvents.TOUR_STARTED));
         util.sendMessage(ItemMessages.TOUR_STARTED, orderNumber);
-        util.sendMessage(ItemMessages.ITEM_DELIVERED, orderNumber);
+        util.sendMessage(ItemMessages.ITEM_SHIPPED, orderNumber);
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isEnded();
     }

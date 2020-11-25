@@ -16,6 +16,7 @@ public enum ItemMessages implements BpmItem {
     ITEM_PICKED_UP("msgItemPickedUp"),
     DELIVERY_ADDRESS_CHANGE("msgDeliveryAddressChange"),
     ORDER_ITEM_CANCELLATION_RECEIVED("msgOrderItemCancellationReceived"),
+    ITEM_SHIPPED("msgItemShipped"),
     ;
 
     private final String name;

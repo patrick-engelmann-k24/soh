@@ -12,6 +12,7 @@ public enum ItemGateways implements BpmItem {
     XOR_SHIPMENT_METHOD("gwXORShipmentMethod"),
     XOR_TOUR_STARTED("gwXORTourStarted"),
     XOR_TRACKING_ID_RECEIVED("gwXORTrackingIdReceived"),
+    XOR_CLICK_AND_COLLECT("gwXORClickAndCollect")
     ;
 
     private final String name;

@@ -64,7 +64,7 @@ public class CheckItemCancellationPossibleTest {
         util.sendMessage(ItemMessages.ITEM_TRANSMITTED_TO_LOGISTICS, orderNumber);
         util.sendMessage(ItemMessages.PACKING_STARTED, orderNumber);
         util.sendMessage(ItemMessages.TRACKING_ID_RECEIVED, orderNumber);
-        util.sendMessage(ItemMessages.ITEM_DELIVERED, orderNumber);
+        util.sendMessage(ItemMessages.ITEM_SHIPPED, orderNumber);
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
                 util._N(ItemEvents.START_ORDER_ITEM_FULFILLMENT_PROCESS),
@@ -72,8 +72,8 @@ public class CheckItemCancellationPossibleTest {
                 util._N(ItemGateways.XOR_SHIPMENT_METHOD),
                 util._N(ItemEvents.PACKING_STARTED),
                 util._N(ItemEvents.TRACKING_ID_RECEIVED),
+                util._N(ItemEvents.ITEM_SHIPPED),
                 util._N(ItemGateways.XOR_TOUR_STARTED),
-                util._N(ItemEvents.ITEM_DELIVERED),
                 util._N(ItemEvents.ORDER_ITEM_FULFILLMENT_PROCESS_FINISHED)
         );
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isEnded();
@@ -93,7 +93,7 @@ public class CheckItemCancellationPossibleTest {
         util.sendMessage(ItemMessages.ITEM_TRANSMITTED_TO_LOGISTICS, orderNumber);
         util.sendMessage(ItemMessages.PACKING_STARTED, orderNumber);
         util.sendMessage(ItemMessages.TRACKING_ID_RECEIVED, orderNumber);
-        util.sendMessage(ItemMessages.ITEM_DELIVERED, orderNumber);
+        util.sendMessage(ItemMessages.ITEM_SHIPPED, orderNumber);
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
                 util._N(ItemEvents.START_ORDER_ITEM_FULFILLMENT_PROCESS),
@@ -101,8 +101,8 @@ public class CheckItemCancellationPossibleTest {
                 util._N(ItemGateways.XOR_SHIPMENT_METHOD),
                 util._N(ItemEvents.PACKING_STARTED),
                 util._N(ItemEvents.TRACKING_ID_RECEIVED),
+                util._N(ItemEvents.ITEM_SHIPPED),
                 util._N(ItemGateways.XOR_TOUR_STARTED),
-                util._N(ItemEvents.ITEM_DELIVERED),
                 util._N(ItemEvents.ORDER_ITEM_FULFILLMENT_PROCESS_FINISHED)
         );
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isEnded();
@@ -122,7 +122,7 @@ public class CheckItemCancellationPossibleTest {
         util.sendMessage(ItemMessages.ITEM_TRANSMITTED_TO_LOGISTICS, orderNumber);
         util.sendMessage(ItemMessages.PACKING_STARTED, orderNumber);
         util.sendMessage(ItemMessages.TOUR_STARTED, orderNumber);
-        util.sendMessage(ItemMessages.ITEM_DELIVERED, orderNumber);
+        util.sendMessage(ItemMessages.ITEM_SHIPPED, orderNumber);
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
                 util._N(ItemEvents.START_ORDER_ITEM_FULFILLMENT_PROCESS),
@@ -130,7 +130,6 @@ public class CheckItemCancellationPossibleTest {
                 util._N(ItemGateways.XOR_SHIPMENT_METHOD),
                 util._N(ItemEvents.TOUR_STARTED),
                 util._N(ItemGateways.XOR_TOUR_STARTED),
-                util._N(ItemEvents.ITEM_DELIVERED),
                 util._N(ItemEvents.ORDER_ITEM_FULFILLMENT_PROCESS_FINISHED)
         );
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isEnded();
@@ -206,7 +205,6 @@ public class CheckItemCancellationPossibleTest {
                 util._N(ItemGateways.XOR_SHIPMENT_METHOD),
                 util._N(ItemEvents.PACKING_STARTED),
                 util._N(ItemEvents.TRACKING_ID_RECEIVED),
-                util._N(ItemGateways.XOR_TOUR_STARTED),
                 util._N(ItemActivities.CHECK_CANCELLATION_POSSIBLE),
                 util._N(ItemGateways.XOR_CANCELLATION_POSSIBLE)
         );
@@ -216,12 +214,12 @@ public class CheckItemCancellationPossibleTest {
                 util._N(BPMSalesOrderItemFullfilment.SUB_PROCESS_ORDER_ITEM_CANCELLATION_SHIPMENT)
         );
 
-        BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isWaitingAt(util._N(ItemEvents.ITEM_DELIVERED));
-        util.sendMessage(ItemMessages.ITEM_DELIVERED, orderNumber);
+        BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isWaitingAt(util._N(ItemEvents.ITEM_SHIPPED));
+        util.sendMessage(ItemMessages.ITEM_SHIPPED, orderNumber);
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassed(
                 util._N(ItemEvents.TRACKING_ID_RECEIVED),
-                util._N(ItemEvents.ITEM_DELIVERED)
+                util._N(ItemEvents.ITEM_SHIPPED)
         );
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isEnded();
 
@@ -254,7 +252,7 @@ public class CheckItemCancellationPossibleTest {
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasNotPassed(
 //                util._N(ItemActivities.EVENT_TRACKING_ID_RECEIVED),
-                util._N(ItemEvents.ITEM_DELIVERED)
+                util._N(ItemEvents.ITEM_SHIPPED)
         );
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isEnded();
