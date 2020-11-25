@@ -13,10 +13,10 @@ services:
       - DEFAULT_REGION=eu-central-1
       - DOCKER_HOST=unix:///var/run/docker.sock
       - HOST_TMP_FOLDER=${TMPDIR}
-      - DATA_DIR=${DATA_DIR- }
+      - DATA_DIR=/tmp/localstack
       - HOSTNAME_EXTERNAL=${HOSTNAME_EXTERNAL- }
     volumes:
-      - "${TMPDIR:-data_tmp}:/tmp/localstack"
+      - "data_tmp:/tmp/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
 
 volumes:
