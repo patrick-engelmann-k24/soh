@@ -38,8 +38,18 @@ data "aws_sns_topic" "sns_soh_delivery_address_changed_topic" {
   name = "soh-delivery-address-changed"
 }
 
-resource "aws_sns_topic_subscription" "resource_name" {
+data "aws_sns_topic" "sns_soh_order_item_shipped" {
+  name = "soh-order-item-shipped"
+}
+
+resource "aws_sns_topic_subscription" "sns_subscription_ecp_orders" {
   endpoint = aws_sqs_queue.ecp_shop_orders.arn
   protocol = "sqs"
   topic_arn = var.ecp_new_order_sns
+}
+
+resource "aws_sns_topic_subscription" "sns_subscription_order_item_shipped" {
+  endpoint = aws_sqs_queue.soh_order_item_shipped.arn
+  protocol = "sqs"
+  topic_arn = data.aws_sns_topic.sns_soh_order_item_shipped.arn
 }
