@@ -15,7 +15,7 @@ public class JsonHelper {
         final List<Rows> rows = getOrderJSONItems(orderJSON);
         List<String> orderItemList = new ArrayList<>();
         for (Rows item: rows) {
-            orderItemList.add(item.getPosition());
+            orderItemList.add(item.getSku());
         }
 
         return orderItemList;

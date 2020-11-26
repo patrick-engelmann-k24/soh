@@ -1,15 +1,24 @@
 package de.kfzteile24.salesOrderHub.services;
 
+import com.google.gson.Gson;
+import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemEvents;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ShipmentMethod;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemMessages;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemVariables;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
+import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.dto.order.customer.Address;
+import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
+import lombok.SneakyThrows;
 import lombok.extern.java.Log;
-import org.camunda.bpm.engine.delegate.DelegateExecution;
+import org.camunda.bpm.engine.RuntimeService;
+import org.camunda.bpm.engine.runtime.Execution;
+import org.camunda.bpm.engine.runtime.MessageCorrelationBuilder;
+import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import static java.lang.String.format;
+import java.util.Optional;
 
 @Service
 @Log
@@ -18,28 +27,47 @@ public class SalesOrderItemService {
     @Autowired
     CamundaHelper helper;
 
-    public Boolean itemChangeable(String processInstanceId, String shipmentMethod) {
-        switch (ShipmentMethod.fromString(shipmentMethod)) {
-            case REGULAR:
-            case EXPRESS:
-                return checkOnShipmentMethodParcel(processInstanceId);
-            case CLICK_COLLECT:
-                return false;
-            case OWN_DELIVERY:
-                return checkOnShipmentMethodOwnDelivery(processInstanceId);
-            default:
-                log.warning(format("Unknown Shipment method %s", Variables.SHIPMENT_METHOD.getName()));
+    @Autowired
+    private SalesOrderRepository orderRepository;
+
+    @Autowired
+    private RuntimeService runtimeService;
+
+    @Autowired
+    private Gson gson;
+
+    @SneakyThrows
+    public Address changeDeliveryAddress(String orderNumber, String orderItemId, Address newDeliveryAddress) {
+        final Optional<SalesOrder> soOpt = orderRepository.getOrderByOrderNumber(orderNumber);
+
+        if (soOpt.isPresent()) {
+            if (this.tryToChangeDeliveryAddress(orderNumber, orderItemId, newDeliveryAddress)) {
+                final Optional<SalesOrder> newOrder = orderRepository.getOrderByOrderNumber(orderNumber);
+                if (newOrder.isPresent()) {
+                    return newOrder.get().getOriginalOrder().getOrderHeader().getShippingAddress();
+                }
+            }
         }
-
-        // for unknown shipments, we disable cancellation
-        return false;
+        return null;
     }
 
-    protected boolean checkOnShipmentMethodParcel(String processInstanceId) {
-        return helper.hasNotPassed(processInstanceId, ItemEvents.PACKING_STARTED.getName());
+    protected boolean tryToChangeDeliveryAddress(String orderNumber, String orderItemId, Address newDeliveryAddress) {
+        final MessageCorrelationResult result = sendMessage(ItemMessages.DELIVERY_ADDRESS_CHANGE, orderNumber, orderItemId, newDeliveryAddress);
+
+        return getProcessStatus(result.getExecution());
     }
 
-    protected boolean checkOnShipmentMethodOwnDelivery(String processInstanceId) {
-        return helper.hasNotPassed(processInstanceId, ItemEvents.TOUR_STARTED.getName());
+    protected MessageCorrelationResult sendMessage(BpmItem message, String orderNumber, String orderItemId, Address newDeliveryAdress) {
+        MessageCorrelationBuilder builder = runtimeService.createMessageCorrelation(message.getName())
+                .processInstanceVariableEquals(Variables.ORDER_NUMBER.getName(), orderNumber)
+                .processInstanceVariableEquals(ItemVariables.ORDER_ITEM_ID.getName(), orderItemId)
+                .setVariable(ItemVariables.DELIVERY_ADDRESS_CHANGE_REQUEST.getName(), gson.toJson(newDeliveryAdress));
+
+        return builder.correlateWithResult();
     }
+
+    protected Boolean getProcessStatus(Execution execution) {
+        return (Boolean) runtimeService.getVariable(execution.getId(), ItemVariables.DELIVERY_ADDRESS_CHANGE_POSSIBLE.getName());
+    }
+
 }

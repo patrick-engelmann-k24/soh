@@ -37,7 +37,7 @@ public class SalesOrderService {
     }
 
     public SalesOrder updateOrderBillingAddress(SalesOrder salesOrder, Address address) {
-        // todo update SalesOrcderInvoice
+        // todo update SalesOrderInvoice
         salesOrder.getOriginalOrder().getOrderHeader().setBillingAddress(address);
         orderRepository.save(salesOrder);
         return salesOrder;

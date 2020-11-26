@@ -53,7 +53,13 @@ public class CamundaHelper {
                 .processInstanceId(processInstance);
     }
 
-    public ProcessInstance createOrderProcess(SalesOrder salesOrder) {
+    /**
+     *
+     * @param salesOrder
+     * @param originChannel - from which channel comes the order
+     * @return
+     */
+    public ProcessInstance createOrderProcess(SalesOrder salesOrder, Messages originChannel) {
         final String orderNumber = salesOrder.getOrderNumber();
         final List<String> orderItems = jsonHelper.getOrderItemsAsStringList(salesOrder.getOriginalOrder());
 
@@ -63,7 +69,7 @@ public class CamundaHelper {
         processVariables.put(Variables.PAYMENT_TYPE.getName(), salesOrder.getOriginalOrder().getOrderHeader().getPayments().get(0).getType());
         processVariables.put(Variables.ORDER_ITEMS.getName(), orderItems);
 
-        return runtimeService.createMessageCorrelation(Messages.ORDER_RECEIVED_MARKETPLACE.getName())
+        return runtimeService.createMessageCorrelation(originChannel.getName())
                 .processInstanceBusinessKey(orderNumber)
                 .setVariables(processVariables)
                 .correlateWithResult().getProcessInstance();
