@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.2.0" camunda:diagramRelationId="06f23589-a629-45e3-92ba-b59cee025910">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.3.0" camunda:diagramRelationId="06f23589-a629-45e3-92ba-b59cee025910">
   <bpmn:process id="SalesOrderProcess_v2" name="Sales Order Process" isExecutable="true">
-    <bpmn:intermediateThrowEvent id="eventThrowMsgOrderCreated" name="Order created">
+    <bpmn:intermediateThrowEvent id="eventThrowMsgOrderCreated" name="Order created" camunda:asyncBefore="true">
       <bpmn:incoming>Flow_0v1861j</bpmn:incoming>
       <bpmn:outgoing>Flow_01fom6v</bpmn:outgoing>
       <bpmn:messageEventDefinition id="MessageEventDefinition_12tlo3v" camunda:delegateExpression="${orderCreatedDelegate}" />
@@ -96,23 +96,23 @@
       <bpmn:incoming>Flow_0ero9gg</bpmn:incoming>
       <bpmn:messageEventDefinition id="MessageEventDefinition_0razo0j" camunda:delegateExpression="${orderCompletedDelegate}" />
     </bpmn:endEvent>
-    <bpmn:startEvent id="eventStartMsgOrderReceivedFromMarketplace" name="order received from marketplaces">
+    <bpmn:startEvent id="eventStartMsgOrderReceivedFromMarketplace" name="order received from marketplaces" camunda:asyncBefore="true">
       <bpmn:outgoing>Flow_0ywvexv</bpmn:outgoing>
       <bpmn:messageEventDefinition id="MessageEventDefinition_1265x2l" messageRef="Message_0ixpcjn" />
     </bpmn:startEvent>
-    <bpmn:startEvent id="eventStartMsgOrderReceivedFromECP" name="order received from ecp">
+    <bpmn:startEvent id="eventStartMsgOrderReceivedFromECP" name="order received from ecp" camunda:asyncBefore="true">
       <bpmn:outgoing>Flow_0ve7lq3</bpmn:outgoing>
       <bpmn:messageEventDefinition id="MessageEventDefinition_0sg5os6" messageRef="Message_07x4crw" />
     </bpmn:startEvent>
-    <bpmn:startEvent id="eventStartMsgOrderReceivedFromCustomerCare" name="order received from customer care (WHM)">
+    <bpmn:startEvent id="eventStartMsgOrderReceivedFromCustomerCare" name="order received from customer care (WHM)" camunda:asyncBefore="true">
       <bpmn:outgoing>Flow_12q1kh9</bpmn:outgoing>
       <bpmn:messageEventDefinition id="MessageEventDefinition_0j3kh0a" messageRef="Message_0rbxapr" />
     </bpmn:startEvent>
-    <bpmn:startEvent id="eventStartMsgOrderReceivedFromBranch" name="order received from branch (WHM)">
+    <bpmn:startEvent id="eventStartMsgOrderReceivedFromBranch" name="order received from branch (WHM)" camunda:asyncBefore="true">
       <bpmn:outgoing>Flow_1qdyh95</bpmn:outgoing>
       <bpmn:messageEventDefinition id="MessageEventDefinition_0qk2f41" messageRef="Message_1p947gv" />
     </bpmn:startEvent>
-    <bpmn:startEvent id="eventStartMsgOrderReceivedFromGarage" name="order received from garage (WHM)">
+    <bpmn:startEvent id="eventStartMsgOrderReceivedFromGarage" name="order received from garage (WHM)" camunda:asyncBefore="true">
       <bpmn:outgoing>Flow_0gdhr8r</bpmn:outgoing>
       <bpmn:messageEventDefinition id="MessageEventDefinition_0rlzplx" messageRef="Message_0qljm9c" />
     </bpmn:startEvent>
@@ -125,7 +125,7 @@
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0fe05aw</bpmn:incoming>
       <bpmn:outgoing>Flow_0ero9gg</bpmn:outgoing>
-      <bpmn:multiInstanceLoopCharacteristics camunda:collection="orderItems" camunda:elementVariable="item" />
+      <bpmn:multiInstanceLoopCharacteristics camunda:asyncBefore="true" camunda:collection="orderItems" camunda:elementVariable="item" />
     </bpmn:callActivity>
     <bpmn:subProcess id="Activity_0h6r060" triggeredByEvent="true">
       <bpmn:startEvent id="eventOrderCancellationReceived" name="Order cancellation received">
