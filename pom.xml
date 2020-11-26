@@ -1,15 +1,17 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.camunda.bpm.getstarted</groupId>
-  <artifactId>de.kfzteile24.sales-order-hub</artifactId>
+  <groupId>de.kfzteile24.soh</groupId>
+  <artifactId>sales-order-hub-bpmn</artifactId>
   <version>0.0.1</version>
+  <name>soh-order-hub-bpmn</name>
+  <description>Run the core sales order hub BPMN processes</description>
 
   <properties>
     <camunda.spring-boot.version>7.13.0</camunda.spring-boot.version>
-    <spring-boot.version>2.3.3.RELEASE</spring-boot.version>
+    <spring-boot.version>2.3.5.RELEASE</spring-boot.version>
     <spring-boot-test.version>5.2.3.RELEASE</spring-boot-test.version>
-    <maven.compiler.source>1.8</maven.compiler.source>
-    <maven.compiler.target>1.8</maven.compiler.target>
+    <maven.compiler.source>11</maven.compiler.source>
+    <maven.compiler.target>11</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <spring-cloud-version>2.2.4.RELEASE</spring-cloud-version>
     <gson.version>2.8.6</gson.version>
@@ -38,16 +40,6 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-data-jpa</artifactId>
     </dependency>
-    <dependency>
-      <groupId>com.h2database</groupId>
-      <artifactId>h2</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.postgresql</groupId>
-      <artifactId>postgresql</artifactId>
-      <version>42.2.16</version>
-    </dependency>
 
     <dependency>
       <groupId>com.sun.xml.bind</groupId>
@@ -62,9 +54,20 @@
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-configuration-processor</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-test</artifactId>
       <version>${spring-boot.version}</version>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.junit.vintage</groupId>
+          <artifactId>junit-vintage-engine</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.camunda.bpm.springboot</groupId>
@@ -106,15 +109,26 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-configuration-processor</artifactId>
-      <optional>true</optional>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>42.2.16</version>
     </dependency>
     <dependency>
       <groupId>com.google.code.gson</groupId>
       <artifactId>gson</artifactId>
       <version>${gson.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.springdoc</groupId>
+      <artifactId>springdoc-openapi-ui</artifactId>
+      <version>1.2.32</version>
+    </dependency>
+
   </dependencies>
 
    <build>
@@ -152,8 +166,8 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-compiler-plugin</artifactId>
             <configuration>
-                <source>9</source>
-                <target>9</target>
+                <source>11</source>
+                <target>11</target>
             </configuration>
         </plugin>
     </plugins>

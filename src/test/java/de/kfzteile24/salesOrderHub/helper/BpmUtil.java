@@ -1,14 +1,25 @@
 package de.kfzteile24.salesOrderHub.helper;
 
+import com.google.gson.Gson;
 import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemVariables;
+import de.kfzteile24.salesOrderHub.dto.OrderJSON;
+import de.kfzteile24.salesOrderHub.dto.sqs.EcpOrder;
+import lombok.SneakyThrows;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.MessageCorrelationBuilder;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
+import org.junit.jupiter.api.Order;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.*;
 
 @Component
@@ -16,6 +27,13 @@ public class BpmUtil {
 
     @Autowired
     RuntimeService runtimeService;
+
+    @Autowired
+    Gson gson;
+
+    @Autowired
+    @Qualifier("messageHeader")
+    Gson gsonMessageHeader;
 
     public final List<MessageCorrelationResult> sendMessage(BpmItem message, String orderNumber) {
         return this.sendMessage(_N(message), orderNumber);
@@ -75,6 +93,14 @@ public class BpmUtil {
         return buffer.toString();
     }
 
+    public final OrderJSON getRandomOrder() {
+        final EcpOrder messageHeader = gsonMessageHeader.fromJson(loadOrderJson(), EcpOrder.class);
+        final OrderJSON orderJSON = gson.fromJson(messageHeader.getMessage(), OrderJSON.class);
+
+        orderJSON.getOrderHeader().setOrderNumber(getRandomOrderNumber());
+        return orderJSON;
+    }
+
     public final List<String> getOrderItems(final String orderNumber, final int number) {
         final List<String> result = new ArrayList<>();
         for (int i = 0; i < number; i++) {
@@ -85,6 +111,12 @@ public class BpmUtil {
 
     public final String _N(BpmItem item) {
         return item.getName();
+    }
+
+    @SneakyThrows
+    protected FileReader loadOrderJson() {
+        String fileName = "examples/testmessage.json";
+        return new FileReader(getClass().getResource(fileName).getFile());
     }
 
 }
