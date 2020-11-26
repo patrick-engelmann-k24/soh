@@ -10,6 +10,17 @@ data "aws_iam_policy_document" "sns_sqs_access_policy" {
       data.aws_sns_topic.sns_soh_order_created_topic.arn,
     ]
   }
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sqs:*",
+    ]
+
+    resources = [
+      aws_sqs_queue.ecp_shop_orders.arn
+    ]
+  }
 }
 
 resource "aws_iam_role_policy" "task_role_policy" {
@@ -22,7 +33,7 @@ resource "aws_iam_user" "sales_order_hub_technical" {
   name = "${local.service}-technical-user"
 
   tags = {
-    Name    = "sales order hub technical user"
+    Name    = "soh business-processing-engine technical user"
     Group   = local.service
     GitRepo = "soh-business-processing-engine"
   }
