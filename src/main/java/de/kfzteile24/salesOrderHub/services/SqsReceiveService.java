@@ -4,14 +4,19 @@ import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemMessages;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemVariables;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.OrderJSON;
+import de.kfzteile24.salesOrderHub.dto.sns.FulfillmentMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy;
 import org.springframework.cloud.aws.messaging.listener.annotation.SqsListener;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
@@ -25,6 +30,9 @@ public class SqsReceiveService {
     final RuntimeService runtimeService;
     final SalesOrderService salesOrderService;
     final CamundaHelper camundaHelper;
+
+    @Value("${soh.sqs.maxMessageRetrieves}")
+    private Integer maxMessageRetrieves;
 
     @SqsListener("${soh.sqs.queue.ecpShopOrders}")
     public void queueListenerEcpShopOrders(String message, @Header("SenderId") String senderId) {
@@ -49,5 +57,31 @@ public class SqsReceiveService {
             log.error("ECP Order could not parsed from Json");
             log.error(e.getMessage());
         }
+    }
+
+    @SqsListener(value = "${soh.sqs.queue.orderItemShipped}", deletionPolicy = SqsMessageDeletionPolicy.ON_SUCCESS)
+    public void queueListenerItemShipped(String message, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
+        log.info("message received: " + senderId);
+        log.info("message receive count: " + receiveCount.toString());
+        FulfillmentMessage fulfillmentMessage = gson.fromJson(message, FulfillmentMessage.class);
+
+        try {
+            MessageCorrelationResult result = runtimeService.createMessageCorrelation(ItemMessages.ITEM_SHIPPED.getName())
+                    .processInstanceVariableEquals(Variables.ORDER_NUMBER.getName(), fulfillmentMessage.getOrderNumber())
+                    .processInstanceVariableEquals(ItemVariables.ORDER_ITEM_ID.getName(), fulfillmentMessage.getOrderItemSku())
+                    .correlateWithResult();
+
+            if (result.getProcessInstance() != null) {
+                log.info("Order item shipped message for oder number " + fulfillmentMessage.getOrderNumber() + " successfully received");
+            }
+        } catch (Exception e) {
+            log.error("Order item shipped message error - OrderNumber " + fulfillmentMessage.getOrderNumber() + ", OrderItem: " + fulfillmentMessage.getOrderItemSku());
+            log.error(e.getMessage());
+            if (receiveCount < maxMessageRetrieves) {
+                //ToDo handle dead letter queue sending
+                throw e;
+            }
+        }
+
     }
 }
