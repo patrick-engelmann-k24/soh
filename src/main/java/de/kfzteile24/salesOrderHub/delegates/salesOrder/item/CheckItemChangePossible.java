@@ -17,35 +17,37 @@ public class CheckItemChangePossible extends CommonDelegate {
 
     public void execute(DelegateExecution delegateExecution) {
         final String shipmentMethod = (String) delegateExecution.getVariable(Variables.SHIPMENT_METHOD.getName());
+        setResultVariable(delegateExecution,
+                itemChangeable(delegateExecution.getProcessInstanceId(), shipmentMethod));
+    }
+
+    void setResultVariable(DelegateExecution delegateExecution, boolean checkResult) {
+        setResultVariable(delegateExecution, ItemVariables.DELIVERY_ADDRESS_CHANGE_POSSIBLE, checkResult);
+    }
+
+    public Boolean itemChangeable(String processInstanceId, String shipmentMethod) {
         switch (ShipmentMethod.fromString(shipmentMethod)) {
             case REGULAR:
             case EXPRESS:
-                setResultVariable(delegateExecution, checkOnShipmentMethodParcel(delegateExecution));
-                return;
+                return checkOnShipmentMethodParcel(processInstanceId);
             case CLICK_COLLECT:
-                setResultVariable(delegateExecution, false);
-                return;
+                return false;
             case OWN_DELIVERY:
-                setResultVariable(delegateExecution, checkOnShipmentMethodOwnDelivery(delegateExecution));
-                return;
+                return checkOnShipmentMethodOwnDelivery(processInstanceId);
             default:
                 log.warning(format("Unknown Shipment method %s", Variables.SHIPMENT_METHOD.getName()));
         }
 
         // for unknown shipments, we disable cancellation
-        setResultVariable(delegateExecution, false);
+        return false;
     }
 
-    protected boolean checkOnShipmentMethodParcel(DelegateExecution delegateExecution) {
-        return helper.hasNotPassed(delegateExecution.getProcessInstanceId(), ItemEvents.PACKING_STARTED.getName());
+    protected boolean checkOnShipmentMethodParcel(String processInstanceId) {
+        return helper.hasNotPassed(processInstanceId, ItemEvents.PACKING_STARTED.getName());
     }
 
-    protected boolean checkOnShipmentMethodOwnDelivery(DelegateExecution delegateExecution) {
-        return helper.hasNotPassed(delegateExecution.getProcessInstanceId(), ItemEvents.TOUR_STARTED.getName());
-    }
-
-    void setResultVariable(DelegateExecution delegateExecution, boolean checkResult) {
-        setResultVariable(delegateExecution, ItemVariables.DELIVERY_ADDRESS_CHANGE_POSSIBLE, checkResult);
+    protected boolean checkOnShipmentMethodOwnDelivery(String processInstanceId) {
+        return helper.hasNotPassed(processInstanceId, ItemEvents.TOUR_STARTED.getName());
     }
 
 }

@@ -3,10 +3,9 @@ package de.kfzteile24.salesOrderHub.domain;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.lang.Nullable;
 
 import javax.persistence.*;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "sales_order_invoice", schema = "public", catalog = "soh")
@@ -38,14 +37,10 @@ public class SalesOrderInvoice extends AbstractBaseEntity {
     @Basic
     @Column(name = "created_at")
     @CreatedDate
-    @Temporal(TemporalType.TIMESTAMP) //
-    private @Nullable
-    Date createdAt;
+    private LocalDateTime createdAt;
 
     @Basic
     @Column(name = "updated_at")
-    @Temporal(TemporalType.TIMESTAMP) //
     @LastModifiedDate
-    private @Nullable
-    Date updatedAt;
+    private LocalDateTime updatedAt;
 }

@@ -30,6 +30,15 @@ camunda:
       create: All tasks
     history-level: FULL
     history-level-default: FULL
+
+# swagger endpoint documentation
+springdoc:
+  swagger-ui:
+    path: /api/swagger
+  api-docs:
+    path: /api-docs
+
+
 kfzteile:
   #
   # Delete processes that are not used?

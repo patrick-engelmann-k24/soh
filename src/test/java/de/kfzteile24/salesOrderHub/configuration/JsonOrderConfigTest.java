@@ -19,7 +19,7 @@ import java.util.Objects;
 import static org.junit.jupiter.api.Assertions.*;
 
 @RunWith(SpringRunner.class)
-@Import(JsonConfig.class)
+@Import(GsonConfig.class)
 public class JsonOrderConfigTest {
     @NotNull
     @Autowired

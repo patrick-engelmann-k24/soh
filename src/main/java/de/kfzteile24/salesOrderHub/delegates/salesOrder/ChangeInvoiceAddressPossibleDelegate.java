@@ -26,6 +26,7 @@ public class ChangeInvoiceAddressPossibleDelegate extends CommonDelegate {
 
     /**
      * If we find an invoice, there are already invoice(s) created
+     *
      * @param orderNumber
      * @return
      */

@@ -1,5 +1,6 @@
 package de.kfzteile24.salesOrderHub.dto.order;
 
+import de.kfzteile24.salesOrderHub.dto.order.customer.Address;
 import de.kfzteile24.salesOrderHub.dto.order.header.Creator;
 import de.kfzteile24.salesOrderHub.dto.order.header.Discount;
 import de.kfzteile24.salesOrderHub.dto.order.header.Origin;
@@ -26,4 +27,6 @@ public class Header {
     Creator creator;
     List<Discount> discounts;
     List<Payment> payments;
+    Address billingAddress;
+    Address shippingAddress;
 }

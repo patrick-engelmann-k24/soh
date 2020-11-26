@@ -1,6 +1,6 @@
 bucket = "k24-bop-terraform-state-stage"
 
-key = "sales-order-hub/terraform.tfstate"
+key = "{%service-name%}/terraform.tfstate"
 
 region = "eu-central-1"
 

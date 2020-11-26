@@ -1,11 +1,10 @@
 package de.kfzteile24.salesOrderHub.domain;
 
 import lombok.*;
-import org.springframework.lang.Nullable;
 
 import javax.persistence.*;
 import java.math.BigDecimal;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "sales_order_item", schema = "public", catalog = "soh")
@@ -31,21 +30,15 @@ public class SalesOrderItem extends AbstractBaseEntity {
     private String stockKeepingUnit;
     @Basic
     @Column(name = "returned_at")
-    @Temporal(TemporalType.TIMESTAMP) //
-    private @Nullable
-    Date returnedAt;
+    private LocalDateTime returnedAt;
 
     @Basic
     @Column(name = "delivered_at")
-    @Temporal(TemporalType.TIMESTAMP) //
-    private @Nullable
-    Date deliveredAt;
+    private LocalDateTime deliveredAt;
 
     @Basic
     @Column(name = "cancellation_at")
-    @Temporal(TemporalType.TIMESTAMP) //
-    private @Nullable
-    Date cancellationAt;
+    private LocalDateTime cancellationAt;
 
     @Basic
     @Column(name = "shipping_type")
