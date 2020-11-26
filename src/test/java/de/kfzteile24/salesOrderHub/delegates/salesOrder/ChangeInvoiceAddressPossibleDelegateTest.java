@@ -6,6 +6,7 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemMessages
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
+import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
@@ -159,6 +160,12 @@ public class ChangeInvoiceAddressPossibleDelegateTest {
     }
 
     SalesOrder getSalesOrder() {
-        return salesOrderService.createOrder(util.getRandomOrderNumber());
+        final OrderJSON order = util.getRandomOrder();
+        SalesOrder so = SalesOrder.builder()
+                .salesLocale(order.getOrderHeader().getOrigin().getLocale())
+                .originalOrder(order)
+                .orderNumber(order.getOrderHeader().getOrderNumber())
+                .build();
+        return salesOrderService.createOrder(so);
     }
 }

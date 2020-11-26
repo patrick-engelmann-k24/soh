@@ -2,17 +2,6 @@
 
 ### create sns topics 
 
-soh-order-created:  
-```
-aws --endpoint-url http://localhost:4566 sns create-topic --name soh-order-created
-```
+run the ```./prepare_sns_sqs.sh``` to create the SNS/SQS queues in Localstack.
 
-test sqs to receive the message from topic:  
-```
-aws --endpoint-url http://localhost:4566 sqs create-queue --queue-name soh-queue-order-created
-```
-
-connect sns and sqs:   
-```
-aws --endpoint-url http://localhost:4566 sns subscribe --topic arn:aws:sns:eu-central-1:000000000000:soh-order-created --protocol sqs --notification-endpoint arn:aws:sqs:eu-central-1:000000000000:soh-test-queue
-```
+You can overwrite the AWS_HOST with you Docker Host instance.

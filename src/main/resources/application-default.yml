@@ -42,3 +42,6 @@ soh:
       orderItemCancelled: ${soh_order_item_cancelled}
       invoiceAddressChanged: ${soh_invoice_address_changed}
       deliveryAddressChanged: ${soh_delivery_address_changed}
+  sqs:
+    queue:
+      ecpShopOrders: ${soh_sqs_ecp_shop_orders}

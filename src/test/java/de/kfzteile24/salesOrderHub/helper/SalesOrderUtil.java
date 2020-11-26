@@ -55,11 +55,12 @@ public class SalesOrderUtil {
         assertNotNull(sqsMessage);
 
         OrderJSON orderJSON = gson.fromJson(sqsMessage.getMessage(), OrderJSON.class);
+        orderJSON.getOrderHeader().setOrderNumber(bpmUtil.getRandomOrderNumber());
 
         final SalesOrder testOrder = de.kfzteile24.salesOrderHub.domain.SalesOrder.builder()
-                .orderNumber(orderJSON.getOrderHeader().getOrderNumber() + "-" + bpmUtil.getRandomOrderNumber())
+                .orderNumber(orderJSON.getOrderHeader().getOrderNumber())
                 .salesLocale(orderJSON.getOrderHeader().getOrigin().getLocale())
-                .originalOrder(gson.toJson(orderJSON, OrderJSON.class))
+                .originalOrder(orderJSON)
                 .build();
 
         // Get Shipping Type

@@ -9,5 +9,5 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @EntityScan(basePackages = {"de.kfzteile24.salesOrderHub.domain"})
 @EnableJpaRepositories(basePackages = {"de.kfzteile24.salesOrderHub.repositories"})
 @EnableTransactionManagement
-public class EntityConfig {
+public class JpaConfig {
 }

@@ -1,9 +1,11 @@
 #!/bin/bash
 
 #set -x # print commands for debugging purposes
+export AWS_PAGER=""
 
-TOPICS="soh-order-created soh-order-completed soh-order-cancelled soh-order-item-cancelled soh-invoice-address-changed soh-delivery-address-changed"
+TOPICS="soh-order-payment-secured soh-order-invoice-created soh-order-created soh-order-completed soh-order-cancelled soh-order-item-cancelled soh-invoice-address-changed soh-delivery-address-changed order-item-transmitted-to-logistics order-item-packing-started order-item-tracking-id-received order-item-delivered "
 
+QUEUES="soh-ecp-shop-orders"
 
 INT_AWS_HOST=${AWS_HOST:-http://localhost:4566}
 
@@ -18,4 +20,11 @@ do
   echo "create SQS/SNS ${CURRENT_TOPICS}"
   createSQSSNS "$CURRENT_TOPICS"
   echo " .. done"; echo ""
+done;
+
+for CURRENT_QUEUE in ${QUEUES}
+do
+  echo "create SQS ${CURRENT_QUEUE}"
+  aws --endpoint-url ${INT_AWS_HOST} sqs create-queue --queue-name ${CURRENT_QUEUE}"-queue"
+  echo " .. done "; echo ""
 done;
