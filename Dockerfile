@@ -6,7 +6,7 @@ RUN mvn clean install -DskipTests --batch-mode --no-transfer-progress
 
 FROM openjdk:14-slim-buster
 
-COPY --from=MAVEN target/de.kfzteile24.sales-order-hub-0.0.1.jar app.jar
+COPY --from=MAVEN target/sales-order-hub-bpmn-0.0.1.jar app.jar
 COPY --from=MAVEN docker-flyway.conf /docker-flyway.conf
 COPY --from=MAVEN entrypoint.sh /entrypoint.sh
 COPY --from=MAVEN src/main/resources/db/migration/* /migrations/
