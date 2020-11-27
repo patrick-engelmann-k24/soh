@@ -106,7 +106,7 @@ public class SalesOrderHubProcessApplicationTest {
         util.sendMessage(util._N(ItemMessages.ITEM_TRANSMITTED_TO_LOGISTICS), orderNumber);
         util.sendMessage(util._N(ItemMessages.PACKING_STARTED), orderNumber);
         util.sendMessage(util._N(ItemMessages.TRACKING_ID_RECEIVED), orderNumber);
-        util.sendMessage(util._N(ItemMessages.ITEM_DELIVERED), orderNumber);
+        util.sendMessage(util._N(ItemMessages.ITEM_SHIPPED), orderNumber);
 
         assertThat(salesOrderProcessInstance).isEnded().hasPassed(util._N(Events.END_MSG_ORDER_COMPLETED));
     }
@@ -145,7 +145,7 @@ public class SalesOrderHubProcessApplicationTest {
 
         // move remaining items
         util.sendMessage(util._N(ItemMessages.TRACKING_ID_RECEIVED), orderNumber);
-        util.sendMessage(util._N(ItemMessages.ITEM_DELIVERED), orderNumber);
+        util.sendMessage(util._N(ItemMessages.ITEM_SHIPPED), orderNumber);
         assertThat(salesOrderProcessInstance).isEnded();
     }
 

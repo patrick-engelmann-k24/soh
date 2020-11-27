@@ -43,5 +43,7 @@ soh:
       invoiceAddressChanged: ${soh_invoice_address_changed}
       deliveryAddressChanged: ${soh_delivery_address_changed}
   sqs:
+    maxMessageRetrieves: 5
     queue:
       ecpShopOrders: ${soh_sqs_ecp_shop_orders}
+      orderItemShipped: ${soh_sqs_order_item_shipped}
