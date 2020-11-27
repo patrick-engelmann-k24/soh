@@ -47,3 +47,4 @@ soh:
     queue:
       ecpShopOrders: ${soh_sqs_ecp_shop_orders}
       orderItemShipped: ${soh_sqs_order_item_shipped}
+      orderPaymentSecured: ${soh_sqs_order_payment_secured}

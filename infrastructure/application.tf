@@ -36,6 +36,7 @@ module "application_module" {
     soh_delivery_address_changed = data.aws_sns_topic.sns_soh_delivery_address_changed_topic.arn
     soh_sqs_ecp_shop_orders     = aws_sqs_queue.ecp_shop_orders.id
     soh_sqs_order_item_shipped  = aws_sqs_queue.soh_order_item_shipped.id
+    soh_sqs_order_payment_secured = aws_sqs_queue.soh_order_payment_secured.id
   }
 
   ssm_secrets_count = 7

@@ -9,6 +9,7 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemVariable
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.OrderJSON;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
 import de.kfzteile24.salesOrderHub.dto.sns.FulfillmentMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -76,6 +77,31 @@ public class SqsReceiveService {
             }
         } catch (Exception e) {
             log.error("Order item shipped message error - OrderNumber " + fulfillmentMessage.getOrderNumber() + ", OrderItem: " + fulfillmentMessage.getOrderItemSku());
+            log.error(e.getMessage());
+            if (receiveCount < maxMessageRetrieves) {
+                //ToDo handle dead letter queue sending
+                throw e;
+            }
+        }
+
+    }
+
+    @SqsListener(value = "${soh.sqs.queue.orderPaymentSecured}", deletionPolicy = SqsMessageDeletionPolicy.ON_SUCCESS)
+    public void queueListenerOrderPaymentSecured(String message, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
+        log.info("message received: " + senderId);
+        log.info("message receive count: " + receiveCount.toString());
+        CoreDataReaderEvent coreDataReaderEvent = gson.fromJson(message, CoreDataReaderEvent.class);
+
+        try {
+            MessageCorrelationResult result = runtimeService.createMessageCorrelation(Messages.ORDER_RECEIVED_PAYMENT_SECURED.getName())
+                    .processInstanceBusinessKey(coreDataReaderEvent.getOrderNumber())
+                    .correlateWithResult();
+
+            if (result.getProcessInstance() != null) {
+                log.info("Order payment secured message for oder number " + coreDataReaderEvent.getOrderNumber() + " successfully received");
+            }
+        } catch (Exception e) {
+            log.error("Order payment secured message error - OrderNumber " + coreDataReaderEvent.getOrderNumber());
             log.error(e.getMessage());
             if (receiveCount < maxMessageRetrieves) {
                 //ToDo handle dead letter queue sending
