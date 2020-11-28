@@ -64,3 +64,9 @@ resource "aws_sns_topic_subscription" "sns_subscription_order_payment_secured" {
   protocol = "sqs"
   topic_arn = data.aws_sns_topic.sns_soh_order_payment_secured.arn
 }
+
+resource "aws_sns_topic_subscription" "sns_subscription_order_item_transmitted_to_logistic" {
+  endpoint = aws_sqs_queue.soh_order_item_transmitted_to_logistic.arn
+  protocol = "sqs"
+  topic_arn = data.aws_sns_topic.sns_soh_item_transmitted_topic.arn
+}
