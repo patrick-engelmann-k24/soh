@@ -158,4 +158,28 @@ public class SqsReceiveService {
             }
         }
     }
+
+    @SqsListener(value = "${soh.sqs.queue.orderItemTrackingIdReceived}", deletionPolicy = SqsMessageDeletionPolicy.ON_SUCCESS)
+    public void queueListenerOrderItemTrackingIdReceived(String message, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
+        log.info("message received: " + senderId);
+        log.info("message receive count: " + receiveCount.toString());
+        FulfillmentMessage fulfillmentMessage = gson.fromJson(message, FulfillmentMessage.class);
+
+        try {
+            MessageCorrelationResult result = runtimeService.createMessageCorrelation(ItemMessages.PACKING_STARTED.getName())
+                    .processInstanceBusinessKey(fulfillmentMessage.getOrderNumber())
+                    .correlateWithResult();
+
+            if (result.getProcessInstance() != null) {
+                log.info("Order item tracking id received message for oder number " + fulfillmentMessage.getOrderNumber() + " successfully received");
+            }
+        } catch (Exception e) {
+            log.error("Order item tracking id received message error - OrderNumber " + fulfillmentMessage.getOrderNumber());
+            log.error(e.getMessage());
+            if (receiveCount < maxMessageRetrieves) {
+                //ToDo handle dead letter queue sending
+                throw e;
+            }
+        }
+    }
 }

@@ -22,7 +22,8 @@ data "aws_iam_policy_document" "sns_sqs_access_policy" {
       aws_sqs_queue.soh_order_item_shipped.arn,
       aws_sqs_queue.soh_order_payment_secured.arn,
       aws_sqs_queue.soh_order_item_transmitted_to_logistic.arn,
-      aws_sqs_queue.soh_order_item_packing_started.arn
+      aws_sqs_queue.soh_order_item_packing_started.arn,
+      aws_sqs_queue.soh_order_item_tracking_id_received.arn
     ]
   }
 }

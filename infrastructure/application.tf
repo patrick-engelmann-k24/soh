@@ -39,6 +39,7 @@ module "application_module" {
     soh_sqs_order_payment_secured = aws_sqs_queue.soh_order_payment_secured.id
     soh_sqs_order_item_transmitted_to_logistic = aws_sqs_queue.soh_order_item_transmitted_to_logistic.id
     soh_sqs_order_item_packing_started = aws_sqs_queue.soh_order_item_packing_started.id
+    soh_sqs_order_item_tracking_id_received = aws_sqs_queue.soh_order_item_tracking_id_received.id
   }
 
   ssm_secrets_count = 7
