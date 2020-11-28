@@ -70,3 +70,9 @@ resource "aws_sns_topic_subscription" "sns_subscription_order_item_transmitted_t
   protocol = "sqs"
   topic_arn = data.aws_sns_topic.sns_soh_item_transmitted_topic.arn
 }
+
+resource "aws_sns_topic_subscription" "sns_subscription_order_item_packing_started" {
+  endpoint = aws_sqs_queue.soh_order_item_packing_started.arn
+  protocol = "sqs"
+  topic_arn = data.aws_sns_topic.sns_soh_packing_started_topic.arn
+}

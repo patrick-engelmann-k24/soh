@@ -115,18 +115,42 @@ public class SqsReceiveService {
     public void queueListenerOrderItemTransmittedToLogistic(String message, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
         log.info("message received: " + senderId);
         log.info("message receive count: " + receiveCount.toString());
-        CoreDataReaderEvent coreDataReaderEvent = gson.fromJson(message, CoreDataReaderEvent.class);
+        FulfillmentMessage fulfillmentMessage = gson.fromJson(message, FulfillmentMessage.class);
 
         try {
             MessageCorrelationResult result = runtimeService.createMessageCorrelation(ItemMessages.ITEM_TRANSMITTED_TO_LOGISTICS.getName())
-                    .processInstanceBusinessKey(coreDataReaderEvent.getOrderNumber())
+                    .processInstanceBusinessKey(fulfillmentMessage.getOrderNumber())
                     .correlateWithResult();
 
             if (result.getProcessInstance() != null) {
-                log.info("Order item transmitted to logistic message for oder number " + coreDataReaderEvent.getOrderNumber() + " successfully received");
+                log.info("Order item transmitted to logistic message for oder number " + fulfillmentMessage.getOrderNumber() + " successfully received");
             }
         } catch (Exception e) {
-            log.error("Order item transmitted to logistic message error - OrderNumber " + coreDataReaderEvent.getOrderNumber());
+            log.error("Order item transmitted to logistic message error - OrderNumber " + fulfillmentMessage.getOrderNumber());
+            log.error(e.getMessage());
+            if (receiveCount < maxMessageRetrieves) {
+                //ToDo handle dead letter queue sending
+                throw e;
+            }
+        }
+    }
+
+    @SqsListener(value = "${soh.sqs.queue.orderItemPackingStarted}", deletionPolicy = SqsMessageDeletionPolicy.ON_SUCCESS)
+    public void queueListenerOrderItemPackingStarted(String message, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
+        log.info("message received: " + senderId);
+        log.info("message receive count: " + receiveCount.toString());
+        FulfillmentMessage fulfillmentMessage = gson.fromJson(message, FulfillmentMessage.class);
+
+        try {
+            MessageCorrelationResult result = runtimeService.createMessageCorrelation(ItemMessages.PACKING_STARTED.getName())
+                    .processInstanceBusinessKey(fulfillmentMessage.getOrderNumber())
+                    .correlateWithResult();
+
+            if (result.getProcessInstance() != null) {
+                log.info("Order item packing started message for oder number " + fulfillmentMessage.getOrderNumber() + " successfully received");
+            }
+        } catch (Exception e) {
+            log.error("Order item packing started message error - OrderNumber " + fulfillmentMessage.getOrderNumber());
             log.error(e.getMessage());
             if (receiveCount < maxMessageRetrieves) {
                 //ToDo handle dead letter queue sending

@@ -5,6 +5,7 @@ locals {
     order_item_shipped = "${var.environment}-${local.service_prefix}-order-item-shipped-${local.version}",
     order_payment_secured = "${var.environment}-${local.service_prefix}-order-payment-secured-${local.version}"
     order_item_transmitted_to_logistic = "${var.environment}-${local.service_prefix}-order-item-transmitted-to-logistic-${local.version}"
+    order_item_packing_started = "${var.environment}-${local.service_prefix}-order-item-packing-started-${local.version}"
   }
 }
 
@@ -22,4 +23,8 @@ resource "aws_sqs_queue" "soh_order_payment_secured" {
 
 resource "aws_sqs_queue" "soh_order_item_transmitted_to_logistic" {
   name = local.sqs_queues.order_item_transmitted_to_logistic
+}
+
+resource "aws_sqs_queue" "soh_order_item_packing_started" {
+  name = local.sqs_queues.order_item_packing_started
 }

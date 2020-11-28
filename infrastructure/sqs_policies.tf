@@ -201,3 +201,53 @@ resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_order_item_transmitt
   queue_url = aws_sqs_queue.soh_order_item_transmitted_to_logistic.id
   policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_soh_order_item_transmitted_to_logistic.json
 }
+
+data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_soh_order_item_packing_started" {
+  statement {
+    sid = "SNS-order-item-packing-started"
+    effect = "Allow"
+
+    actions = [
+      "sqs:SendMessage",
+    ]
+
+    principals {
+      identifiers = ["*"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_order_item_packing_started.arn
+    ]
+
+    condition {
+      test     = "ArnEquals"
+      variable = "aws:SourceArn"
+      values = [
+        data.aws_sns_topic.sns_soh_packing_started_topic.arn,
+      ]
+    }
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sqs:*",
+    ]
+
+    principals {
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_order_item_packing_started.arn
+    ]
+  }
+}
+
+resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_order_item_packing_started" {
+  queue_url = aws_sqs_queue.soh_order_item_packing_started.id
+  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_soh_order_item_packing_started.json
+}
