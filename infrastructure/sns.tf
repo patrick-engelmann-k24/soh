@@ -46,6 +46,10 @@ data "aws_sns_topic" "sns_soh_order_payment_secured" {
   name = "soh-order-payment-secured"
 }
 
+data "aws_sns_topic" "sns_soh_order_item_tour_started" {
+  name = "soh-order-item-tour-started"
+}
+
 # subscriptions of sqs to sns
 resource "aws_sns_topic_subscription" "sns_subscription_ecp_orders" {
   endpoint = aws_sqs_queue.ecp_shop_orders.arn
@@ -81,4 +85,10 @@ resource "aws_sns_topic_subscription" "sns_subscription_order_item_tracking_id_r
   endpoint = aws_sqs_queue.soh_order_item_tracking_id_received.arn
   protocol = "sqs"
   topic_arn = data.aws_sns_topic.sns_soh_tracking_id_received_topic.arn
+}
+
+resource "aws_sns_topic_subscription" "sns_subscription_order_item_tour_started" {
+  endpoint = aws_sqs_queue.soh_order_item_tour_started.arn
+  protocol = "sqs"
+  topic_arn = data.aws_sns_topic.sns_soh_order_item_tour_started.arn
 }
