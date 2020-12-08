@@ -22,6 +22,7 @@ public enum ItemEvents implements BpmItem {
     START_ORDER_ITEM_FULFILLMENT_PROCESS("eventStartOrderItemFulfillmentProcess"),
     TRACKING_ID_RECEIVED("eventTrackingIdReceived"),
     TOUR_STARTED("eventTourStarted"),
+    ITEM_SHIPPED("itemShipped"),
     ;
 
     private final String name;
