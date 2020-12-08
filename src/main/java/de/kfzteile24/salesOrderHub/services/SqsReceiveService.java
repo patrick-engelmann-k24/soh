@@ -231,6 +231,32 @@ public class SqsReceiveService {
         }
     }
 
+    @SqsListener(value = "${soh.sqs.queue.orderItemTourStarted}", deletionPolicy = SqsMessageDeletionPolicy.ON_SUCCESS)
+    public void queueListenerOrderItemTourStarted(String message, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
+        log.info("message received: " + senderId);
+        log.info("message receive count: " + receiveCount.toString());
+        FulfillmentMessage fulfillmentMessage = gson.fromJson(message, FulfillmentMessage.class);
+
+        try {
+            MessageCorrelationResult result = sendOrderItemMessage(
+                    ItemMessages.TOUR_STARTED,
+                    fulfillmentMessage.getOrderNumber(),
+                    fulfillmentMessage.getOrderItemSku()
+            );
+
+            if (result.getProcessInstance() != null) {
+                log.info("Order item tour started message for oder number " + fulfillmentMessage.getOrderNumber() + " successfully received");
+            }
+        } catch (Exception e) {
+            log.error("Order item tour started message error - OrderNumber " + fulfillmentMessage.getOrderNumber());
+            log.error(e.getMessage());
+            if (receiveCount < maxMessageRetrieves) {
+                //ToDo handle dead letter queue sending
+                throw e;
+            }
+        }
+    }
+
     /**
      * Send message to bpmn engine
      *

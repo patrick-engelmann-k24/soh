@@ -51,3 +51,4 @@ soh:
       orderItemTransmittedToLogistic: ${soh_sqs_order_item_transmitted_to_logistic}
       orderItemPackingStarted: ${soh_sqs_order_item_packing_started}
       orderItemTrackingIdReceived: ${soh_sqs_order_item_tracking_id_received}
+      orderItemTourStarted: ${soh_sqs_order_item_tour_started}

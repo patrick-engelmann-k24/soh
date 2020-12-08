@@ -301,3 +301,53 @@ resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_order_item_tracking_
   queue_url = aws_sqs_queue.soh_order_item_tracking_id_received.id
   policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_soh_order_tracking_id_received.json
 }
+
+data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_soh_order_tour_started" {
+  statement {
+    sid = "SNS-order-item-tour-started"
+    effect = "Allow"
+
+    actions = [
+      "sqs:SendMessage",
+    ]
+
+    principals {
+      identifiers = ["*"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_order_item_tour_started.arn
+    ]
+
+    condition {
+      test     = "ArnEquals"
+      variable = "aws:SourceArn"
+      values = [
+        data.aws_sns_topic.sns_soh_tracking_id_received_topic.arn,
+      ]
+    }
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sqs:*",
+    ]
+
+    principals {
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_order_item_tracking_id_received.arn
+    ]
+  }
+}
+
+resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_order_item_tracking_id_received" {
+  queue_url = aws_sqs_queue.soh_order_item_tracking_id_received.id
+  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_soh_order_tracking_id_received.json
+}
