@@ -347,7 +347,7 @@ data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_soh_order_to
   }
 }
 
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_order_item_tracking_id_received" {
+resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_order_item_tour_started" {
   queue_url = aws_sqs_queue.soh_order_item_tracking_id_received.id
   policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_soh_order_tracking_id_received.json
 }
