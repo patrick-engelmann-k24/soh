@@ -77,6 +77,7 @@ public class SqsReceiveService {
     public void queueListenerItemShipped(String message, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
         log.info("message received: " + senderId);
         log.info("message receive count: " + receiveCount.toString());
+        log.info("message content: " + message);
         FulfillmentMessage fulfillmentMessage = gson.fromJson(message, FulfillmentMessage.class);
 
         try {
@@ -111,6 +112,7 @@ public class SqsReceiveService {
     public void queueListenerOrderPaymentSecured(String message, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
         log.info("message received: " + senderId);
         log.info("message receive count: " + receiveCount.toString());
+        log.info("message content: " + message);
         CoreDataReaderEvent coreDataReaderEvent = gson.fromJson(message, CoreDataReaderEvent.class);
 
         try {
@@ -143,6 +145,7 @@ public class SqsReceiveService {
     public void queueListenerOrderItemTransmittedToLogistic(String message, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
         log.info("message received: " + senderId);
         log.info("message receive count: " + receiveCount.toString());
+        log.info("message content: " + message);
         FulfillmentMessage fulfillmentMessage = gson.fromJson(message, FulfillmentMessage.class);
 
         try {
@@ -176,6 +179,7 @@ public class SqsReceiveService {
     public void queueListenerOrderItemPackingStarted(String message, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
         log.info("message received: " + senderId);
         log.info("message receive count: " + receiveCount.toString());
+        log.info("message content: " + message);
         FulfillmentMessage fulfillmentMessage = gson.fromJson(message, FulfillmentMessage.class);
 
         try {
@@ -209,6 +213,7 @@ public class SqsReceiveService {
     public void queueListenerOrderItemTrackingIdReceived(String message, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
         log.info("message received: " + senderId);
         log.info("message receive count: " + receiveCount.toString());
+        log.info("message content: " + message);
         FulfillmentMessage fulfillmentMessage = gson.fromJson(message, FulfillmentMessage.class);
 
         try {
@@ -235,6 +240,7 @@ public class SqsReceiveService {
     public void queueListenerOrderItemTourStarted(String message, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
         log.info("message received: " + senderId);
         log.info("message receive count: " + receiveCount.toString());
+        log.info("message content: " + message);
         FulfillmentMessage fulfillmentMessage = gson.fromJson(message, FulfillmentMessage.class);
 
         try {

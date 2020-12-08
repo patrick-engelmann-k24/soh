@@ -302,7 +302,7 @@ resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_order_item_tracking_
   policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_soh_order_tracking_id_received.json
 }
 
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_soh_order_tour_started" {
+data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_soh_order_item_tour_started" {
   statement {
     sid = "SNS-order-item-tour-started"
     effect = "Allow"
@@ -324,7 +324,7 @@ data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_soh_order_to
       test     = "ArnEquals"
       variable = "aws:SourceArn"
       values = [
-        data.aws_sns_topic.sns_soh_tracking_id_received_topic.arn,
+        data.aws_sns_topic.sns_soh_order_item_tour_started.arn,
       ]
     }
   }
@@ -342,12 +342,12 @@ data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_soh_order_to
     }
 
     resources = [
-      aws_sqs_queue.soh_order_item_tracking_id_received.arn
+      aws_sqs_queue.soh_order_item_tour_started.arn
     ]
   }
 }
 
 resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_order_item_tour_started" {
-  queue_url = aws_sqs_queue.soh_order_item_tracking_id_received.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_soh_order_tracking_id_received.json
+  queue_url = aws_sqs_queue.soh_order_item_tour_started.id
+  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_soh_order_item_tour_started.json
 }

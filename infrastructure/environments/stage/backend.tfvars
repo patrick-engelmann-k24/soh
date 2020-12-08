@@ -1,6 +1,6 @@
 bucket = "k24-bop-terraform-state-stage"
 
-key = "{%service-name%}/terraform.tfstate"
+key = "soh-bpmn-engine/terraform.tfstate"
 
 region = "eu-central-1"
 
