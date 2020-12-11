@@ -51,11 +51,11 @@ data "aws_sns_topic" "sns_soh_order_item_tour_started" {
 }
 
 # subscriptions of sqs to sns
-resource "aws_sns_topic_subscription" "sns_subscription_ecp_orders" {
-  endpoint = aws_sqs_queue.ecp_shop_orders.arn
-  protocol = "sqs"
-  topic_arn = var.ecp_new_order_sns
-}
+//resource "aws_sns_topic_subscription" "sns_subscription_ecp_orders" {
+//  endpoint = aws_sqs_queue.ecp_shop_orders.arn
+//  protocol = "sqs"
+//  topic_arn = var.ecp_new_order_sns
+//}
 
 resource "aws_sns_topic_subscription" "sns_subscription_order_item_shipped" {
   endpoint = aws_sqs_queue.soh_order_item_shipped.arn
