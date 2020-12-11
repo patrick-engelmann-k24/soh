@@ -1,4 +1,5 @@
 locals {
+  service_prefix               = "soh"
   service                      = "soh-bpmn-engine"
   source_repo_name             = "soh-business-processing-engine"
 }
@@ -20,17 +21,30 @@ module "application_module" {
   codebuild_vpc                = true
 
   environment_variables = {
-
+    SPRING_PROFILES_ACTIVE     = "default,${var.stage}"
     name                       = "backend-${var.stage}"
     java_opts                  = "-Xms3072m -Xmx3072m"
 
     soh_db_host                = module.aurora.this_rds_cluster_endpoint
     soh_db_port                = module.aurora.this_rds_cluster_port
     soh_db_database            = "sales_order_hub"
-    sns_soh_order_created_topic = data.aws_sns_topic.sns_soh_order_created_topic.arn
+    soh_order_created          = data.aws_sns_topic.sns_soh_order_created_topic.arn
+    soh_order_completed        = data.aws_sns_topic.sns_soh_order_completed_topic.arn
+    soh_order_item_cancelled   = data.aws_sns_topic.sns_soh_order_item_cancelled_topic.arn
+    soh_order_cancelled        = data.aws_sns_topic.sns_soh_order_cancelled_topic.arn
+    soh_invoice_address_changed = data.aws_sns_topic.sns_soh_invoice_address_changed_topic.arn
+    soh_delivery_address_changed = data.aws_sns_topic.sns_soh_delivery_address_changed_topic.arn
+    soh_sqs_ecp_shop_orders     = aws_sqs_queue.ecp_shop_orders.id
+    soh_sqs_order_item_shipped  = aws_sqs_queue.soh_order_item_shipped.id
+    soh_sqs_order_payment_secured = aws_sqs_queue.soh_order_payment_secured.id
+    soh_sqs_order_item_transmitted_to_logistic = aws_sqs_queue.soh_order_item_transmitted_to_logistic.id
+    soh_sqs_order_item_packing_started = aws_sqs_queue.soh_order_item_packing_started.id
+    soh_sqs_order_item_tracking_id_received = aws_sqs_queue.soh_order_item_tracking_id_received.id
+    soh_sqs_order_item_tour_started = aws_sqs_queue.soh_order_item_tour_started.id
+
   }
 
-  ssm_secrets_count = 5
+  ssm_secrets_count = 7
 
   ssm_secrets = {
 
@@ -40,6 +54,9 @@ module "application_module" {
 
     soh_db_username            = module.aurora.this_rds_cluster_master_username_arn
     soh_db_password            = module.aurora.this_rds_cluster_master_password_arn
+
+    soh_camunda_username       = data.aws_ssm_parameter.camunda_user.arn
+    soh_camunda_password       = data.aws_ssm_parameter.camunda_password.arn
   }
 
   github_token = var.github_token
@@ -48,5 +65,13 @@ module "application_module" {
 
 data "aws_ssm_parameter" "new_relic_key" {
   name = "/new_relic/key"
+}
+
+data "aws_ssm_parameter" "camunda_user" {
+  name = "/soh-business-processing-engine/camunda/user"
+}
+
+data "aws_ssm_parameter" "camunda_password" {
+  name = "/soh-business-processing-engine/camunda/password"
 }
 

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.2.0" camunda:diagramRelationId="06f23589-a629-45e3-92ba-b59cee025910">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.3.0" camunda:diagramRelationId="06f23589-a629-45e3-92ba-b59cee025910">
   <bpmn:process id="SalesOrderProcess_v2" name="Sales Order Process" isExecutable="true">
-    <bpmn:intermediateThrowEvent id="eventThrowMsgOrderCreated" name="Order created">
+    <bpmn:intermediateThrowEvent id="eventThrowMsgOrderCreated" name="Order created" camunda:asyncBefore="true">
       <bpmn:incoming>Flow_0v1861j</bpmn:incoming>
       <bpmn:outgoing>Flow_01fom6v</bpmn:outgoing>
-      <bpmn:messageEventDefinition id="MessageEventDefinition_12tlo3v" />
+      <bpmn:messageEventDefinition id="MessageEventDefinition_12tlo3v" camunda:delegateExpression="${orderCreatedDelegate}" />
     </bpmn:intermediateThrowEvent>
     <bpmn:exclusiveGateway id="gwXOROrderReceivedECPOrMarketplace">
       <bpmn:incoming>Flow_1bjb58d</bpmn:incoming>
@@ -51,15 +51,15 @@
         <bpmn:incoming>Flow_0tnk89y</bpmn:incoming>
         <bpmn:outgoing>Flow_0d2x8sg</bpmn:outgoing>
       </bpmn:task>
-      <bpmn:sequenceFlow id="Flow_1daj8ak" sourceRef="eventStartMsgInvoiceAddressChangeReceived" targetRef="gwXORInvoiceExist" />
+      <bpmn:sequenceFlow id="Flow_1daj8ak" sourceRef="eventStartMsgInvoiceAddressChangeReceived" targetRef="activityChangeInvoiceAddressPossible" />
       <bpmn:sequenceFlow id="Flow_0d2x8sg" sourceRef="activityChangeInvoiceAddress" targetRef="eventEndMsgInvoiceAddressChanged" />
       <bpmn:exclusiveGateway id="gwXORInvoiceExist" name="Invoice exist?">
-        <bpmn:incoming>Flow_1daj8ak</bpmn:incoming>
+        <bpmn:incoming>Flow_01gshae</bpmn:incoming>
         <bpmn:outgoing>Flow_0tnk89y</bpmn:outgoing>
         <bpmn:outgoing>Flow_1adwckx</bpmn:outgoing>
       </bpmn:exclusiveGateway>
       <bpmn:sequenceFlow id="Flow_0tnk89y" name="No" sourceRef="gwXORInvoiceExist" targetRef="activityChangeInvoiceAddress">
-        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${invoiceExist}</bpmn:conditionExpression>
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${not invoiceExist}</bpmn:conditionExpression>
       </bpmn:sequenceFlow>
       <bpmn:endEvent id="eventInvoiceAddressNotChanged" name="Address not changed">
         <bpmn:incoming>Flow_1adwckx</bpmn:incoming>
@@ -69,8 +69,13 @@
       </bpmn:sequenceFlow>
       <bpmn:endEvent id="eventEndMsgInvoiceAddressChanged" name="Invoice address changed">
         <bpmn:incoming>Flow_0d2x8sg</bpmn:incoming>
-        <bpmn:messageEventDefinition id="MessageEventDefinition_1tn1iim" />
+        <bpmn:messageEventDefinition id="MessageEventDefinition_1tn1iim" camunda:delegateExpression="${invoiceAddressChangedDelegate}" />
       </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_01gshae" sourceRef="activityChangeInvoiceAddressPossible" targetRef="gwXORInvoiceExist" />
+      <bpmn:serviceTask id="activityChangeInvoiceAddressPossible" name="Check change invoice address possible" camunda:delegateExpression="${changeInvoiceAddressPossibleDelegate}">
+        <bpmn:incoming>Flow_1daj8ak</bpmn:incoming>
+        <bpmn:outgoing>Flow_01gshae</bpmn:outgoing>
+      </bpmn:serviceTask>
     </bpmn:subProcess>
     <bpmn:subProcess id="activitySubProcessSaveInvoice" triggeredByEvent="true">
       <bpmn:startEvent id="eventStartMsgInvoiceCreated" name="Invoice created" isInterrupting="false">
@@ -89,41 +94,41 @@
     </bpmn:subProcess>
     <bpmn:endEvent id="eventEndMsgOrderCompleted" name="Order completed">
       <bpmn:incoming>Flow_0ero9gg</bpmn:incoming>
-      <bpmn:messageEventDefinition id="MessageEventDefinition_0razo0j" />
+      <bpmn:messageEventDefinition id="MessageEventDefinition_0razo0j" camunda:delegateExpression="${orderCompletedDelegate}" />
     </bpmn:endEvent>
-    <bpmn:startEvent id="eventStartMsgOrderReceivedFromMarketplace" name="order received from marketplaces">
+    <bpmn:startEvent id="eventStartMsgOrderReceivedFromMarketplace" name="order received from marketplaces" camunda:asyncBefore="true">
       <bpmn:outgoing>Flow_0ywvexv</bpmn:outgoing>
       <bpmn:messageEventDefinition id="MessageEventDefinition_1265x2l" messageRef="Message_0ixpcjn" />
     </bpmn:startEvent>
-    <bpmn:startEvent id="eventStartMsgOrderReceivedFromECP" name="order received from ecp">
+    <bpmn:startEvent id="eventStartMsgOrderReceivedFromECP" name="order received from ecp" camunda:asyncBefore="true">
       <bpmn:outgoing>Flow_0ve7lq3</bpmn:outgoing>
       <bpmn:messageEventDefinition id="MessageEventDefinition_0sg5os6" messageRef="Message_07x4crw" />
     </bpmn:startEvent>
-    <bpmn:startEvent id="eventStartMsgOrderReceivedFromCustomerCare" name="order received from customer care (WHM)">
+    <bpmn:startEvent id="eventStartMsgOrderReceivedFromCustomerCare" name="order received from customer care (WHM)" camunda:asyncBefore="true">
       <bpmn:outgoing>Flow_12q1kh9</bpmn:outgoing>
       <bpmn:messageEventDefinition id="MessageEventDefinition_0j3kh0a" messageRef="Message_0rbxapr" />
     </bpmn:startEvent>
-    <bpmn:startEvent id="eventStartMsgOrderReceivedFromBranch" name="order received from branch (WHM)">
+    <bpmn:startEvent id="eventStartMsgOrderReceivedFromBranch" name="order received from branch (WHM)" camunda:asyncBefore="true">
       <bpmn:outgoing>Flow_1qdyh95</bpmn:outgoing>
       <bpmn:messageEventDefinition id="MessageEventDefinition_0qk2f41" messageRef="Message_1p947gv" />
     </bpmn:startEvent>
-    <bpmn:startEvent id="eventStartMsgOrderReceivedFromGarage" name="order received from garage (WHM)">
+    <bpmn:startEvent id="eventStartMsgOrderReceivedFromGarage" name="order received from garage (WHM)" camunda:asyncBefore="true">
       <bpmn:outgoing>Flow_0gdhr8r</bpmn:outgoing>
       <bpmn:messageEventDefinition id="MessageEventDefinition_0rlzplx" messageRef="Message_0qljm9c" />
     </bpmn:startEvent>
     <bpmn:sequenceFlow id="Flow_0ero9gg" sourceRef="activityOrderItemFulfillmentProcess" targetRef="eventEndMsgOrderCompleted" />
     <bpmn:callActivity id="activityOrderItemFulfillmentProcess" name="Handle Orderitems" calledElement="OrderItemFulfillmentProcess">
       <bpmn:extensionElements>
-        <camunda:in source="orderId" target="orderId" />
-        <camunda:in source="shipment_method" target="shipment_method" />
+        <camunda:in source="orderNumber" target="orderNumber" />
+        <camunda:in source="shipmentMethod" target="shipmentMethod" />
         <camunda:in source="item" target="orderItemId" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0fe05aw</bpmn:incoming>
       <bpmn:outgoing>Flow_0ero9gg</bpmn:outgoing>
-      <bpmn:multiInstanceLoopCharacteristics camunda:collection="orderItems" camunda:elementVariable="item" />
+      <bpmn:multiInstanceLoopCharacteristics camunda:asyncBefore="true" camunda:collection="orderItems" camunda:elementVariable="item" />
     </bpmn:callActivity>
     <bpmn:subProcess id="Activity_0h6r060" triggeredByEvent="true">
-      <bpmn:startEvent id="Event_17idj2m" name="Order cancellation received">
+      <bpmn:startEvent id="eventOrderCancellationReceived" name="Order cancellation received">
         <bpmn:outgoing>Flow_0yo7e7b</bpmn:outgoing>
         <bpmn:messageEventDefinition id="MessageEventDefinition_186m1rh" messageRef="Message_0u9ctv5" />
       </bpmn:startEvent>
@@ -131,11 +136,11 @@
         <bpmn:incoming>Flow_0yo7e7b</bpmn:incoming>
         <bpmn:outgoing>Flow_1a4ul6f</bpmn:outgoing>
       </bpmn:task>
-      <bpmn:sequenceFlow id="Flow_0yo7e7b" sourceRef="Event_17idj2m" targetRef="Activity_03ico7x" />
+      <bpmn:sequenceFlow id="Flow_0yo7e7b" sourceRef="eventOrderCancellationReceived" targetRef="Activity_03ico7x" />
       <bpmn:sequenceFlow id="Flow_1a4ul6f" sourceRef="Activity_03ico7x" targetRef="eventEndMsgOrderCancelled" />
       <bpmn:endEvent id="eventEndMsgOrderCancelled" name="Order cancelled">
         <bpmn:incoming>Flow_1a4ul6f</bpmn:incoming>
-        <bpmn:messageEventDefinition id="MessageEventDefinition_1kwzu0f" />
+        <bpmn:messageEventDefinition id="MessageEventDefinition_1kwzu0f" camunda:delegateExpression="${orderCancelledDelegate}" />
       </bpmn:endEvent>
     </bpmn:subProcess>
     <bpmn:textAnnotation id="TextAnnotation_124vwel">
@@ -151,7 +156,7 @@
     </bpmn:textAnnotation>
     <bpmn:association id="Association_13pw6ym" sourceRef="Activity_0h6r060" targetRef="TextAnnotation_1q57ikg" />
   </bpmn:process>
-  <bpmn:message id="Message_00gxny4" name="msgOrderPaymentSecured" />
+  <bpmn:message id="Message_00gxny4" name="msgOrderReceivedPaymentSecured" />
   <bpmn:message id="Message_0c0nntq" name="msg_itemTransmitted" />
   <bpmn:message id="Message_0qyl1xm" name="msg_packingStarted" />
   <bpmn:message id="Message_0q3xneq" name="msg_trackingIdReceived" />
@@ -165,10 +170,10 @@
   <bpmn:message id="Message_0yk7q6d" name="msg_invoiceCreated" />
   <bpmn:message id="Message_1rxhtzg" name="msg_invoiceAddressChangeReceived" />
   <bpmn:message id="Message_0ixpcjn" name="msgOrderReceivedMarketplace" />
-  <bpmn:message id="Message_07x4crw" name="msg_orderReceivedEcp" />
-  <bpmn:message id="Message_0rbxapr" name="msg_orderReceivedCustomerCare" />
-  <bpmn:message id="Message_1p947gv" name="msg_orderReceivedFromBranch" />
-  <bpmn:message id="Message_0qljm9c" name="msg_orderReceivedFromGarage" />
+  <bpmn:message id="Message_07x4crw" name="msgOrderReceivedEcp" />
+  <bpmn:message id="Message_0rbxapr" name="msgOrderReceivedCustomerCare" />
+  <bpmn:message id="Message_1p947gv" name="msgOrderReceivedBranch" />
+  <bpmn:message id="Message_0qljm9c" name="msgOrderReceivedGarage" />
   <bpmn:escalation id="Escalation_1vowjkp" name="escaltionOrderItemFullfilmentCancelled" escalationCode="1234567890" />
   <bpmn:escalation id="Escalation_0v7r5ct" name="escalationOrderCancelled" escalationCode="1234567890" />
   <bpmn:message id="Message_0u9ctv5" name="msg_orderCancellationReceived" />
@@ -248,30 +253,34 @@
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_0ttoph5_di" bpmnElement="activitySubProcessInvoiceAddressChange" isExpanded="true">
-        <dc:Bounds x="880" y="450" width="510" height="200" />
+        <dc:Bounds x="880" y="450" width="630" height="200" />
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_01gshae_di" bpmnElement="Flow_01gshae">
+        <di:waypoint x="1090" y="510" />
+        <di:waypoint x="1131" y="510" />
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1adwckx_di" bpmnElement="Flow_1adwckx">
-        <di:waypoint x="1020" y="535" />
-        <di:waypoint x="1020" y="590" />
-        <di:waypoint x="1306" y="590" />
+        <di:waypoint x="1156" y="535" />
+        <di:waypoint x="1156" y="590" />
+        <di:waypoint x="1442" y="590" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1026" y="559" width="18" height="14" />
+          <dc:Bounds x="1162" y="559" width="18" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0tnk89y_di" bpmnElement="Flow_0tnk89y">
-        <di:waypoint x="1045" y="510" />
-        <di:waypoint x="1094" y="510" />
+        <di:waypoint x="1181" y="510" />
+        <di:waypoint x="1230" y="510" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1062" y="492" width="15" height="14" />
+          <dc:Bounds x="1198" y="492" width="15" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0d2x8sg_di" bpmnElement="Flow_0d2x8sg">
-        <di:waypoint x="1194" y="510" />
-        <di:waypoint x="1306" y="510" />
+        <di:waypoint x="1330" y="510" />
+        <di:waypoint x="1442" y="510" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1daj8ak_di" bpmnElement="Flow_1daj8ak">
         <di:waypoint x="956" y="510" />
-        <di:waypoint x="995" y="510" />
+        <di:waypoint x="990" y="510" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="Event_09byydz_di" bpmnElement="eventStartMsgInvoiceAddressChangeReceived">
         <dc:Bounds x="920" y="492" width="36" height="36" />
@@ -280,25 +289,28 @@
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_1n37dku_di" bpmnElement="activityChangeInvoiceAddress">
-        <dc:Bounds x="1094" y="470" width="100" height="80" />
+        <dc:Bounds x="1230" y="470" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_1jxpcev_di" bpmnElement="gwXORInvoiceExist" isMarkerVisible="true">
-        <dc:Bounds x="995" y="485" width="50" height="50" />
+        <dc:Bounds x="1131" y="485" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="986" y="461" width="67" height="14" />
+          <dc:Bounds x="1122" y="461" width="67" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0d2xc90_di" bpmnElement="eventInvoiceAddressNotChanged">
-        <dc:Bounds x="1306" y="572" width="36" height="36" />
+        <dc:Bounds x="1442" y="572" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1295" y="615" width="59" height="27" />
+          <dc:Bounds x="1431" y="615" width="59" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_1qpteb7_di" bpmnElement="eventEndMsgInvoiceAddressChanged">
-        <dc:Bounds x="1306" y="492" width="36" height="36" />
+        <dc:Bounds x="1442" y="492" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1286" y="535" width="78" height="27" />
+          <dc:Bounds x="1422" y="535" width="78" height="27" />
         </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_125gznb_di" bpmnElement="activityChangeInvoiceAddressPossible">
+        <dc:Bounds x="990" y="470" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_0gf3t1i_di" bpmnElement="activitySubProcessSaveInvoice" isExpanded="true">
         <dc:Bounds x="490" y="450" width="350" height="200" />
@@ -376,7 +388,7 @@
         <di:waypoint x="566" y="760" />
         <di:waypoint x="620" y="760" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="Event_05vsmac_di" bpmnElement="Event_17idj2m">
+      <bpmndi:BPMNShape id="Event_05vsmac_di" bpmnElement="eventOrderCancellationReceived">
         <dc:Bounds x="530" y="742" width="36" height="36" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="503" y="785" width="90" height="27" />

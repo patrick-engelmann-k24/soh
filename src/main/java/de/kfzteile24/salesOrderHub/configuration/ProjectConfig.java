@@ -9,6 +9,6 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "kfzteile")
 @Getter
 @Setter
-public class ProjectConfiguration {
+public class ProjectConfig {
     private Boolean deleteUnusedProcesses;
 }

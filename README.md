@@ -42,10 +42,29 @@ Password: demo
 [SNS-Topics](https://github.com/kfzteile24/soh-sns-topics)
 
 ## Documentation
-tbd
 
+[Confluence](https://kfzteile24.atlassian.net/wiki/spaces/IT/pages/574554350/Sales+Order+Hub)
 
-## Contribute
+## Localstack for local AWS using/testing
+To work and test sns and sqs local on dev computer use `docker-compose.yml` in folder `aws_localstack`.  
+For mac users use command:  
+<code>TMPDIR=/private$TMPDIR DATADIR=/tmp/localstack/data docker-compose up</code>
 
+For all other user:  
+<code>DATADIR=/tmp/localstack/data docker-compose up</code>
 
+Run this command inside the folder.
+Adapt the DATADIR for your local behavior.
 
+Currently there are only SNS and SQS service configured.
+
+Adapt also your `application-local.yml` file. Add the following
+
+```
+cloud:
+  aws:
+    endpoint:
+      url: "http://localhost:4566"
+```
+
+Further instructions you can find [here](aws_localstack/README.md)

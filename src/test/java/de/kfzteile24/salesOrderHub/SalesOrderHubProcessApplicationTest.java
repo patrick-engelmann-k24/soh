@@ -16,17 +16,21 @@
  */
 package de.kfzteile24.salesOrderHub;
 
-import de.kfzteile24.salesOrderHub.constants.BPMSalesOrderItemFullfilment;
-import de.kfzteile24.salesOrderHub.constants.BPMSalesOrderProcess;
-import de.kfzteile24.salesOrderHub.constants.BpmItem;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.*;
+import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.helper.BpmUtil;
+import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RepositoryService;
 import org.camunda.bpm.engine.RuntimeService;
-import org.camunda.bpm.engine.runtime.MessageCorrelationBuilder;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.runtime.ProcessInstanceQuery;
-import org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,7 +50,6 @@ import static org.junit.Assert.assertNotNull;
 )
 public class SalesOrderHubProcessApplicationTest {
 
-    final static String msgSalesOrder = "msg_orderReceivedMarketplace";
     @Autowired
     public ProcessEngine processEngine;
 
@@ -55,6 +58,19 @@ public class SalesOrderHubProcessApplicationTest {
 
     @Autowired
     RepositoryService repositoryService;
+
+    @Autowired
+    BpmUtil util;
+
+    @Autowired
+    SalesOrderUtil salesOrderUtil;
+
+    private SalesOrder testOrder;
+
+    @Before
+    public void setup() {
+        testOrder = salesOrderUtil.createNewSalesOrder();
+    }
 
     @Test
     public void startUpTest() {
@@ -69,124 +85,94 @@ public class SalesOrderHubProcessApplicationTest {
      */
     @Test
     public void salesOrderItemPassThruTest() {
-        final String orderId = getOrderNumber();
-        final List<String> orderItems = getOrderItems(orderId, 5);
+        final String orderNumber = testOrder.getOrderNumber();
+        final List<String> orderItems = util.getOrderItems(orderNumber, 5);
 
         ProcessInstance salesOrderProcessInstance =
-                runtimeService.createMessageCorrelation(_N(BPMSalesOrderProcess.MSG_ORDER_RECEIVED_MARKETPLACE))
-                        .processInstanceBusinessKey(orderId)
-                        .setVariable(_N(BPMSalesOrderProcess.VAR_ORDER_ID), orderId)
-                        .setVariable(_N(BPMSalesOrderProcess.VAR_PAYMENT_TYPE), "creditCard")
-                        .setVariable(_N(BPMSalesOrderProcess.VAR_ORDER_VALID), true)
-                        .setVariable(_N(BPMSalesOrderProcess.VAR_ORDER_ITEMS), orderItems)
-                        .setVariable(_N(BPMSalesOrderProcess.VAR_SHIPMENT_METHOD), "parcel")
+                runtimeService.createMessageCorrelation(util._N(Messages.ORDER_RECEIVED_MARKETPLACE))
+                        .processInstanceBusinessKey(orderNumber)
+                        .setVariable(util._N(Variables.ORDER_NUMBER), orderNumber)
+                        .setVariable(util._N(Variables.PAYMENT_TYPE), util._N(PaymentType.CREDIT_CARD))
+                        .setVariable(util._N(Variables.ORDER_VALID), true)
+                        .setVariable(util._N(Variables.ORDER_ITEMS), orderItems)
+                        .setVariable(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
                         .correlateWithResult().getProcessInstance();
-        assertThat(salesOrderProcessInstance).isWaitingAt(_N(BPMSalesOrderProcess.EVENT_MSG_ORDER_PAYMENT_SECURED));
+        assertThat(salesOrderProcessInstance).isWaitingAt(util._N(Events.MSG_ORDER_PAYMENT_SECURED));
 
-        sendMessage(_N(BPMSalesOrderProcess.MSG_ORDER_PAYMENT_SECURED), orderId);
-        assertThat(salesOrderProcessInstance).isWaitingAt(_N(BPMSalesOrderProcess.ACTIVITY_ORDER_ITEM_FULFILLMENT_PROCESS));
+        util.sendMessage(util._N(Messages.ORDER_RECEIVED_PAYMENT_SECURED), orderNumber);
+        assertThat(salesOrderProcessInstance).isWaitingAt(util._N(Activities.ORDER_ITEM_FULFILLMENT_PROCESS));
 
         // send items thru
-        sendMessage(_N(BPMSalesOrderItemFullfilment.MSG_ITEM_TRANSMITTED), orderId);
-        sendMessage(_N(BPMSalesOrderItemFullfilment.MSG_PACKING_STARTED), orderId);
-        sendMessage(_N(BPMSalesOrderItemFullfilment.MSG_TRACKING_ID_RECEIVED), orderId);
-        sendMessage(_N(BPMSalesOrderItemFullfilment.MSG_ITEM_DELIVERED), orderId);
+        util.sendMessage(util._N(ItemMessages.ITEM_TRANSMITTED_TO_LOGISTICS), orderNumber);
+        util.sendMessage(util._N(ItemMessages.PACKING_STARTED), orderNumber);
+        util.sendMessage(util._N(ItemMessages.TRACKING_ID_RECEIVED), orderNumber);
+        util.sendMessage(util._N(ItemMessages.ITEM_SHIPPED), orderNumber);
 
-        BpmnAwareTests.assertThat(salesOrderProcessInstance).hasPassedInOrder(
-                _N(BPMSalesOrderProcess.EVENT_START_MSG_ORDER_RECEIVED_FROM_MARKETPLACE),
-                _N(BPMSalesOrderProcess.GW_XOR_ORDER_RECEIVED_ECP_OR_MARKETPLACE),
-                _N(BPMSalesOrderProcess.EVENT_THROW_MSG_ORDER_CREATED),
-                _N(BPMSalesOrderProcess.ACTIVITY_VALIDATE_ORDER),
-                _N(BPMSalesOrderProcess.GW_XOR_ORDER_VALID),
-                _N(BPMSalesOrderProcess.GW_XOR_ORDER_VALIDATED),
-                _N(BPMSalesOrderProcess.EVENT_THROW_MSG_ORDER_VALIDATED),
-                _N(BPMSalesOrderProcess.EVENT_MSG_ORDER_PAYMENT_SECURED),
-                _N(BPMSalesOrderProcess.ACTIVITY_ORDER_ITEM_FULFILLMENT_PROCESS),
-                _N(BPMSalesOrderProcess.EVENT_END_MSG_ORDER_COMPLETED)
-        );
-
-        assertThat(salesOrderProcessInstance).isEnded();
-    }
-
-    @Test
-    public void salesOrderItemDropshipmentCancellationTest() {
-        final String orderId = getOrderNumber();
-        final String firstItem = orderId + "-item-" + 0;
-
-        final ProcessInstance salesOrderProcessInstance = firstPartOfSalesOrderProcess(orderId);
-
-        List<MessageCorrelationResult> msg_packingStarted = sendMessage(_N(BPMSalesOrderItemFullfilment.MSG_PACKING_STARTED), orderId);
-
-        final ProcessInstance firstItemProcessInstance = getFirstOrderItem(firstItem, msg_packingStarted);
-
-        assertThat(firstItemProcessInstance).hasPassedInOrder(_N(BPMSalesOrderItemFullfilment.EVENT_ITEM_TRANSMITTED_TO_LOGISTICS));
-
-        // cancel 1st orderItem
-        sendMessage(_N(BPMSalesOrderItemFullfilment.MSG_DROPSHIPMENT_CANCELLATION_RECEIVED), orderId, firstItem);
-        assertThat(salesOrderProcessInstance).isWaitingAt(_N(BPMSalesOrderProcess.ACTIVITY_ORDER_ITEM_FULFILLMENT_PROCESS));
-        // we can't check here for hasPassedInOrder, cause subProcessOrderItemCancellation &
-        // ActivityHandleCancellation are not in a defined order
-        assertThat(firstItemProcessInstance).hasPassed(
-                _N(BPMSalesOrderItemFullfilment.EVENT_START_ORDER_ITEM_FULFILLMENT_PROCESS),
-                _N(BPMSalesOrderItemFullfilment.EVENT_ITEM_TRANSMITTED_TO_LOGISTICS),
-                _N(BPMSalesOrderItemFullfilment.GW_XOR_SHIPMENT_METHOD),
-                _N(BPMSalesOrderItemFullfilment.EVENT_PACKING_STARTED),
-                _N(BPMSalesOrderItemFullfilment.GW_XOR_DROP_SHIPMENT),
-                _N(BPMSalesOrderItemFullfilment.EVENT_MSG_DROPSHIPMENT_CANCELLATION_RECEIVED),
-                _N(BPMSalesOrderItemFullfilment.GW_XOR_TRACKING_ID_RECEIVED),
-                _N(BPMSalesOrderItemFullfilment.EVENT_TRACKING_ID_RECEIVED),
-                _N(BPMSalesOrderItemFullfilment.SUB_PROCESS_ORDER_ITEM_CANCELLATION_DROPSHIPMENT),
-                _N(BPMSalesOrderItemFullfilment.ACTIVITY_HANDLE_CANCELLATION_DROPSHIPMENT),
-                _N(BPMSalesOrderItemFullfilment.EVENT_ORDER_CANCEL),
-                _N(BPMSalesOrderItemFullfilment.EVENT_ORDER_ITEM_CANCELLED),
-                _N(BPMSalesOrderItemFullfilment.SUB_PROCESS_HANDLE_ORDER_ITEM_CANCELLATION)
-        );
-        assertThat(firstItemProcessInstance).isEnded();
-
-        // move remaining items
-        sendMessage(_N(BPMSalesOrderItemFullfilment.MSG_TRACKING_ID_RECEIVED), orderId);
-        sendMessage(_N(BPMSalesOrderItemFullfilment.MSG_ITEM_DELIVERED), orderId);
-        assertThat(salesOrderProcessInstance).isEnded();
+        assertThat(salesOrderProcessInstance).isEnded().hasPassed(util._N(Events.END_MSG_ORDER_COMPLETED));
     }
 
     @Test
     public void salesOrderItemShipmentCancellationPossibleTest() {
-        final String orderId = getOrderNumber();
-        final String firstItem = orderId + "-item-" + 0;
+        final String orderNumber = testOrder.getOrderNumber();
+        final String firstItem = orderNumber + "-item-" + 0;
 
-        final ProcessInstance salesOrderProcessInstance = firstPartOfSalesOrderProcess(orderId);
+        final ProcessInstance salesOrderProcessInstance = firstPartOfSalesOrderProcess(orderNumber);
 
-        List<MessageCorrelationResult> msg_packingStarted = sendMessage(_N(BPMSalesOrderItemFullfilment.MSG_PACKING_STARTED), orderId);
+        List<MessageCorrelationResult> msg_packingStarted = util.sendMessage(util._N(ItemMessages.PACKING_STARTED), orderNumber);
 
         final ProcessInstance firstItemProcessInstance = getFirstOrderItem(firstItem, msg_packingStarted);
 
-        assertThat(firstItemProcessInstance).hasPassedInOrder(_N(BPMSalesOrderItemFullfilment.EVENT_ITEM_TRANSMITTED_TO_LOGISTICS));
+        assertThat(firstItemProcessInstance).hasPassedInOrder(util._N(ItemEvents.ITEM_TRANSMITTED_TO_LOGISTICS));
 
         // cancel 1st orderItem
         final Map<String, Object> processVariables = Map.of("itemCancellationPossible", true);
-        sendMessage(_N(BPMSalesOrderItemFullfilment.MSG_ORDER_ITEM_CANCELLATION_RECEIVED), orderId, firstItem, processVariables);
+        util.sendMessage(util._N(ItemMessages.ORDER_ITEM_CANCELLATION_RECEIVED), orderNumber, firstItem, processVariables);
 
         // main process should stay at the same pos
-        assertThat(salesOrderProcessInstance).isWaitingAt(_N(BPMSalesOrderProcess.ACTIVITY_ORDER_ITEM_FULFILLMENT_PROCESS));
+        assertThat(salesOrderProcessInstance).isWaitingAt(util._N(Activities.ORDER_ITEM_FULFILLMENT_PROCESS));
 
         assertThat(firstItemProcessInstance).hasPassed(
-                _N(BPMSalesOrderItemFullfilment.EVENT_START_ORDER_ITEM_FULFILLMENT_PROCESS),
-                _N(BPMSalesOrderItemFullfilment.EVENT_ITEM_TRANSMITTED_TO_LOGISTICS),
-                _N(BPMSalesOrderItemFullfilment.GW_XOR_SHIPMENT_METHOD),
-                _N(BPMSalesOrderItemFullfilment.EVENT_PACKING_STARTED),
-                _N(BPMSalesOrderItemFullfilment.GW_XOR_DROP_SHIPMENT),
-                _N(BPMSalesOrderItemFullfilment.EVENT_MSG_SHIPMENT_CANCELLATION_RECEIVED),
-                _N(BPMSalesOrderItemFullfilment.ACTIVITY_CHECK_CANCELLATION_POSSIBLE),
-                _N(BPMSalesOrderItemFullfilment.GW_XOR_CANCELLATION_POSSIBLE),
-                _N(BPMSalesOrderItemFullfilment.ACTIVITY_HANDLE_CANCELLATION_SHIPMENT),
-                _N(BPMSalesOrderItemFullfilment.EVENT_ORDER_ITEM_SHIPMENT_CANCELLED)
+                util._N(ItemEvents.START_ORDER_ITEM_FULFILLMENT_PROCESS),
+                util._N(ItemEvents.ITEM_TRANSMITTED_TO_LOGISTICS),
+                util._N(ItemGateways.XOR_SHIPMENT_METHOD),
+                util._N(ItemEvents.PACKING_STARTED),
+                util._N(ItemEvents.MSG_SHIPMENT_CANCELLATION_RECEIVED),
+                util._N(ItemActivities.CHECK_CANCELLATION_POSSIBLE),
+                util._N(ItemGateways.XOR_CANCELLATION_POSSIBLE),
+                util._N(ItemActivities.HANDLE_CANCELLATION_SHIPMENT)
         );
         assertThat(firstItemProcessInstance).isEnded();
 
         // move remaining items
-        sendMessage(_N(BPMSalesOrderItemFullfilment.MSG_TRACKING_ID_RECEIVED), orderId);
-        sendMessage(_N(BPMSalesOrderItemFullfilment.MSG_ITEM_DELIVERED), orderId);
+        util.sendMessage(util._N(ItemMessages.TRACKING_ID_RECEIVED), orderNumber);
+        util.sendMessage(util._N(ItemMessages.ITEM_SHIPPED), orderNumber);
         assertThat(salesOrderProcessInstance).isEnded();
+    }
+
+    @Test
+    public void salesOrderCancellationTest() {
+        final String orderNumber = testOrder.getOrderNumber();
+        final List<String> orderItems = util.getOrderItems(orderNumber, 5);
+
+        ProcessInstance salesOrderProcessInstance =
+                runtimeService.createMessageCorrelation(util._N(Messages.ORDER_RECEIVED_MARKETPLACE))
+                        .processInstanceBusinessKey(orderNumber)
+                        .setVariable(util._N(Variables.ORDER_NUMBER), orderNumber)
+                        .setVariable(util._N(Variables.PAYMENT_TYPE), util._N(PaymentType.CREDIT_CARD))
+                        .setVariable(util._N(Variables.ORDER_VALID), true)
+                        .setVariable(util._N(Variables.ORDER_ITEMS), orderItems)
+                        .setVariable(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
+                        .correlateWithResult().getProcessInstance();
+        assertThat(salesOrderProcessInstance).isWaitingAt(util._N(Events.MSG_ORDER_PAYMENT_SECURED));
+
+        runtimeService.createMessageCorrelation(util._N(Messages.ORDER_CANCELLATION_RECEIVED))
+                .processInstanceBusinessKey(orderNumber)
+                .correlateWithResult();
+
+        assertThat(salesOrderProcessInstance)
+                .isEnded()
+                .hasPassed(util._N(Events.ORDER_CANCELLATION_RECEIVED));
+
     }
 
     protected ProcessInstance getFirstOrderItem(final String firstItem, final List<MessageCorrelationResult> correlationResultList) {
@@ -198,53 +184,41 @@ public class SalesOrderHubProcessApplicationTest {
         assertThat(firstItemProcessInstance).isActive();
         assertThat(firstItemProcessInstance)
                 .hasVariables(
-                        _N(BPMSalesOrderProcess.VAR_ORDER_ID),
-                        _N(BPMSalesOrderProcess.VAR_SHIPMENT_METHOD),
-                        _N(BPMSalesOrderItemFullfilment.VAR_ITEM_ID)
+                        util._N(Variables.ORDER_NUMBER),
+                        util._N(Variables.SHIPMENT_METHOD),
+                        util._N(ItemVariables.ORDER_ITEM_ID)
                 );
 
         return firstItemProcessInstance;
     }
 
-    protected ProcessInstance firstPartOfSalesOrderProcess(final String orderId) {
-        final List<String> orderItems = getOrderItems(orderId, 5);
+    protected ProcessInstance firstPartOfSalesOrderProcess(final String orderNumber) {
+        final List<String> orderItems = util.getOrderItems(orderNumber, 5);
         final ProcessInstance salesOrderProcessInstance =
-                runtimeService.createMessageCorrelation(_N(BPMSalesOrderProcess.MSG_ORDER_RECEIVED_MARKETPLACE))
-                        .processInstanceBusinessKey(orderId)
-                        .setVariable(_N(BPMSalesOrderProcess.VAR_ORDER_ID), orderId)
-                        .setVariable(_N(BPMSalesOrderProcess.VAR_PAYMENT_TYPE), "creditCard")
-                        .setVariable(_N(BPMSalesOrderProcess.VAR_ORDER_VALID), true)
-                        .setVariable(_N(BPMSalesOrderProcess.VAR_ORDER_ITEMS), orderItems)
-                        .setVariable(_N(BPMSalesOrderProcess.VAR_SHIPMENT_METHOD), "parcel")
+                runtimeService.createMessageCorrelation(util._N(Messages.ORDER_RECEIVED_MARKETPLACE))
+                        .processInstanceBusinessKey(orderNumber)
+                        .setVariable(util._N(Variables.ORDER_NUMBER), orderNumber)
+                        .setVariable(util._N(Variables.PAYMENT_TYPE), util._N(PaymentType.CREDIT_CARD))
+                        .setVariable(util._N(Variables.ORDER_VALID), true)
+                        .setVariable(util._N(Variables.ORDER_ITEMS), orderItems)
+                        .setVariable(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
                         .correlateWithResult().getProcessInstance();
         assertThat(salesOrderProcessInstance).isActive();
-        assertThat(salesOrderProcessInstance).isWaitingAt(_N(BPMSalesOrderProcess.EVENT_MSG_ORDER_PAYMENT_SECURED));
-        assertThat(salesOrderProcessInstance).hasPassed(_N(BPMSalesOrderProcess.ACTIVITY_VALIDATE_ORDER));
+        assertThat(salesOrderProcessInstance)
+                .hasPassed(util._N(Events.THROW_MSG_ORDER_CREATED))
+                .isWaitingAt(util._N(Events.MSG_ORDER_PAYMENT_SECURED));
 
-        runtimeService.createMessageCorrelation(_N(BPMSalesOrderProcess.MSG_ORDER_PAYMENT_SECURED))
-                .processInstanceBusinessKey(orderId)
-                .setVariable(_N(BPMSalesOrderProcess.VAR_PAYMENT_STATUS), "captured")
+        runtimeService.createMessageCorrelation(util._N(Messages.ORDER_RECEIVED_PAYMENT_SECURED))
+                .processInstanceBusinessKey(orderNumber)
+                .setVariable(util._N(Variables.PAYMENT_STATUS), "captured")
                 .correlateWithResult().getProcessInstance();
 
-        assertThat(salesOrderProcessInstance).hasPassed(
-                _N(BPMSalesOrderProcess.EVENT_THROW_MSG_ORDER_CREATED),
-                _N(BPMSalesOrderProcess.EVENT_THROW_MSG_ORDER_VALIDATED)
-        );
-
-        assertThat(salesOrderProcessInstance).isWaitingAt(_N(BPMSalesOrderProcess.ACTIVITY_ORDER_ITEM_FULFILLMENT_PROCESS));
+        assertThat(salesOrderProcessInstance).isWaitingAt(util._N(Activities.ORDER_ITEM_FULFILLMENT_PROCESS));
 
         // start the subprocess
         // move all items to packing started
-        sendMessage(_N(BPMSalesOrderItemFullfilment.MSG_ITEM_TRANSMITTED), orderId);
+        util.sendMessage(util._N(ItemMessages.ITEM_TRANSMITTED_TO_LOGISTICS), orderNumber);
         return salesOrderProcessInstance;
-    }
-
-    final List<String> getOrderItems(final String orderId, final int number) {
-        final List<String> result = new ArrayList<>();
-        for (int i = 0; i < number; i++) {
-            result.add(orderId + "-item-" + i);
-        }
-        return result;
     }
 
     final String getOrderNumber() {
@@ -261,39 +235,8 @@ public class SalesOrderHubProcessApplicationTest {
         return buffer.toString();
     }
 
-    final MessageCorrelationResult sendMessage(final String message, final String orderId, final String orderItem) {
-        return sendMessage(message, orderId, orderItem, Collections.emptyMap());
-    }
-
-    final MessageCorrelationResult sendMessage(final String message, final String orderId, final String orderItem,
-                                               final Map<String, Object> processVariables) {
-        MessageCorrelationBuilder builder = runtimeService.createMessageCorrelation(message)
-                .processInstanceVariableEquals("orderId", orderId)
-                .processInstanceVariableEquals("orderItemId", orderItem);
-        if (!processVariables.isEmpty())
-            builder.setVariables(processVariables);
-
-        return builder
-                .correlateWithResult();
-    }
-
-    final List<MessageCorrelationResult> sendMessage(String message, String orderId) {
-        return runtimeService.createMessageCorrelation(message)
-                .processInstanceVariableEquals("orderId", orderId)
-                .correlateAllWithResult();
-    }
-
-    final List<MessageCorrelationResult> sendMessage(String message) {
-        return runtimeService.createMessageCorrelation(message)
-                .correlateAllWithResult();
-    }
-
     final ProcessInstanceQuery getProcessInstanceQuery() {
         return runtimeService.createProcessInstanceQuery();
-    }
-
-    final String _N(BpmItem item) {
-        return item.getName();
     }
 
 }

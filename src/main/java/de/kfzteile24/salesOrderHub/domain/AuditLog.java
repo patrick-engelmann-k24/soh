@@ -1,16 +1,16 @@
 package de.kfzteile24.salesOrderHub.domain;
 
 import lombok.*;
-import org.springframework.lang.Nullable;
 
-import javax.persistence.*;
-import java.sql.Timestamp;
-import java.util.Date;
+import javax.persistence.Basic;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Table;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
  * Entity for storing our audit events
- *
  */
 @Entity
 @Table(name = "audit_log", schema = "public", catalog = "soh")
@@ -44,8 +44,7 @@ public class AuditLog extends AbstractBaseEntity {
 
     @Basic
     @Column(name = "created_date")
-    @Temporal(TemporalType.TIMESTAMP) //
-    private @Nullable Date createdAt;
+    private LocalDateTime createdAt;
 
     @Basic
     @Column(name = "last_modified_by")
@@ -53,7 +52,6 @@ public class AuditLog extends AbstractBaseEntity {
 
     @Basic
     @Column(name = "last_modified_date")
-    @Temporal(TemporalType.TIMESTAMP) //
-    private @Nullable Date lastModifiedDate;
+    private LocalDateTime lastModifiedDate;
 
 }

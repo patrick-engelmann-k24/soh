@@ -27,7 +27,7 @@ public class CheckEventNames {
 
         List<ProcessDefinition> processDefinitions = getProcessDefinitons();
 
-        for (ProcessDefinition processDefinition: processDefinitions) {
+        for (ProcessDefinition processDefinition : processDefinitions) {
             checkEvents(processDefinition);
         }
 
@@ -40,12 +40,10 @@ public class CheckEventNames {
     void checkEvents(ProcessDefinition processDefinition) {
         DiagramLayout processDiagramLayout = repositoryService.getProcessDiagramLayout(processDefinition.getId());
         InputStream processDiagram = repositoryService.getProcessDiagram(processDefinition.getId());
-        ProcessDefinition processDefinition1 = (ProcessDefinitionEntity) repositoryService.getProcessDefinition(processDefinition.getId());
+        ProcessDefinition processDefinition1 = repositoryService.getProcessDefinition(processDefinition.getId());
         List<Task> list = processEngine.getTaskService().createTaskQuery().processDefinitionId(processDefinition.getId()).list();
         System.out.println(processDefinition.getId());
     }
-
-
 
 
 }

@@ -25,3 +25,7 @@ variable "stage" {
 variable "github_token" {
   type = string
 }
+
+variable "ecp_new_order_sns" {
+  type = string
+}

@@ -1,6 +1,6 @@
 package de.kfzteile24.salesOrderHub.components;
 
-import de.kfzteile24.salesOrderHub.configuration.ProjectConfiguration;
+import de.kfzteile24.salesOrderHub.configuration.ProjectConfig;
 import lombok.extern.java.Log;
 import org.camunda.bpm.engine.HistoryService;
 import org.camunda.bpm.engine.RepositoryService;
@@ -8,17 +8,18 @@ import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.repository.Deployment;
 import org.camunda.bpm.engine.repository.ProcessDefinition;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
 
 // disabled, cause to slow
-//@Component
+@Component
 @Log
 public class DeleteUnusedProcesses {
 
     @Autowired
-    private ProjectConfiguration projectConfiguration;
+    private ProjectConfig projectConfig;
 
     @Autowired
     private RepositoryService repositoryService;
@@ -34,7 +35,7 @@ public class DeleteUnusedProcesses {
      */
     @PostConstruct
     public void deleteUnusedDeployments() {
-        if (!projectConfiguration.getDeleteUnusedProcesses()) {
+        if (!projectConfig.getDeleteUnusedProcesses()) {
             log.info("Remove old processes disabled. Aborting here.");
             return;
         }

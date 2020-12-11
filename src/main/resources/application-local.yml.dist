@@ -1,0 +1,42 @@
+#
+#
+# This is only a template! To use this file with Spring, make a copy application-local.yml.dist -> application-local.yml
+#
+#
+---
+spring:
+  profiles: local
+
+  datasource:
+    # overwrite your datasource connection here.
+    # start the app with environment
+    #       SPRING_PROFILES_ACTIVE=default,local
+    # then it takes this value
+    jdbcUrl: jdbc:postgresql://your-server:5432/your-database?currentSchema=public
+    username: postgres
+    password: postgres
+
+  cloud:
+    aws:
+      region:
+        static: eu-central-1
+      stack:
+        auto: false
+      credentials:
+        access-key: your-access-key
+        secret-key: your-secret-key
+
+  #AWS
+  soh:
+    sns:
+      topic:
+      orderCreated: arn:aws:sns:eu-central-1:000000000000:soh-order-created
+      orderCompleted: arn:aws:sns:eu-central-1:000000000000:soh-order-completed
+      orderCancelled: arn:aws:sns:eu-central-1:000000000000:soh-order-cancelled
+      orderItemCancelled: arn:aws:sns:eu-central-1:000000000000:soh-order-item-cancelled
+      invoiceAddressChanged: arn:aws:sns:eu-central-1:000000000000:soh-invoice-address-changed
+      deliveryAddressChanged: arn:aws:sns:eu-central-1:000000000000:soh-delivery-address-changed
+  sqs:
+    queue:
+      ecpShopOrders: http://localhost:4566/000000000000/soh-ecp-shop-orders-queue
+      orderItemShipped: http://localhost:4566/000000000000/soh-order-item-shipped-queue

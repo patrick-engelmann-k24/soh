@@ -8,6 +8,24 @@ data "aws_iam_policy_document" "sns_sqs_access_policy" {
 
     resources = [
       data.aws_sns_topic.sns_soh_order_created_topic.arn,
+      data.aws_sns_topic.sns_soh_order_completed_topic.arn
+    ]
+  }
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sqs:*",
+    ]
+
+    resources = [
+      aws_sqs_queue.ecp_shop_orders.arn,
+      aws_sqs_queue.soh_order_item_shipped.arn,
+      aws_sqs_queue.soh_order_payment_secured.arn,
+      aws_sqs_queue.soh_order_item_transmitted_to_logistic.arn,
+      aws_sqs_queue.soh_order_item_packing_started.arn,
+      aws_sqs_queue.soh_order_item_tracking_id_received.arn,
+      aws_sqs_queue.soh_order_item_tour_started.arn
     ]
   }
 }
@@ -22,7 +40,7 @@ resource "aws_iam_user" "sales_order_hub_technical" {
   name = "${local.service}-technical-user"
 
   tags = {
-    Name    = "sales order hub technical user"
+    Name    = "soh business-processing-engine technical user"
     Group   = local.service
     GitRepo = "soh-business-processing-engine"
   }
