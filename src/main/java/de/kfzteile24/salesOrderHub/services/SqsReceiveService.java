@@ -11,11 +11,13 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
 import de.kfzteile24.salesOrderHub.dto.sns.FulfillmentMessage;
+import de.kfzteile24.salesOrderHub.dto.sqs.EcpOrder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy;
 import org.springframework.cloud.aws.messaging.listener.annotation.SqsListener;
@@ -28,6 +30,8 @@ import org.springframework.stereotype.Service;
 public class SqsReceiveService {
 
     final Gson gson;
+    @Qualifier("messageHeader")
+    final Gson messageHeader;
     final RuntimeService runtimeService;
     final SalesOrderService salesOrderService;
     final CamundaHelper camundaHelper;
@@ -38,14 +42,15 @@ public class SqsReceiveService {
     /**
      * Consume sqs for new orders from ecp shop
      *
-     * @param message
+     * @param rawMessage
      * @param senderId
      */
     @SqsListener("${soh.sqs.queue.ecpShopOrders}")
-    public void queueListenerEcpShopOrders(String message, @Header("SenderId") String senderId) {
+    public void queueListenerEcpShopOrders(String rawMessage, @Header("SenderId") String senderId) {
         log.info("message received: " + senderId);
 
         try {
+            String message = messageHeader.fromJson(rawMessage, EcpOrder.class).getMessage();
             OrderJSON orderJSON = gson.fromJson(message, OrderJSON.class);
             final SalesOrder ecpSalesOrder = de.kfzteile24.salesOrderHub.domain.SalesOrder.builder()
                     .orderNumber(orderJSON.getOrderHeader().getOrderNumber())
