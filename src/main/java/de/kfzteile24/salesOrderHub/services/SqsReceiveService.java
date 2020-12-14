@@ -56,9 +56,7 @@ public class SqsReceiveService {
         log.info("message received: " + senderId);
 
         try {
-            log.info(rawMessage);
             String message = messageHeader.fromJson(rawMessage, EcpOrder.class).getMessage();
-            log.info(message);
             OrderJSON orderJSON = gson.fromJson(message, OrderJSON.class);
             final SalesOrder ecpSalesOrder = de.kfzteile24.salesOrderHub.domain.SalesOrder.builder()
                     .orderNumber(orderJSON.getOrderHeader().getOrderNumber())
