@@ -45,7 +45,3 @@ kfzteile:
   # KEEP OFF ON PRODUCTION
   #
   deleteUnusedProcesses: true
-
-  pricing-tool:
-    username: ${pricing-tool.username}
-    password: ${pricing-tool.password}

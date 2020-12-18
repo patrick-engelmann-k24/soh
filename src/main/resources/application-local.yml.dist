@@ -46,6 +46,3 @@ spring:
         orderItemTrackingIdReceived:  http://localhost:4566/000000000000/soh-order-item-tracking-id-received-queue
 
 
-  pricing-tool:
-    username: pricing-user
-    password: pricing-pass
