@@ -3,6 +3,7 @@ package de.kfzteile24.salesOrderHub.configuration;
 import com.google.gson.Gson;
 import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import de.kfzteile24.salesOrderHub.dto.aws.MessageHeader;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +15,7 @@ import javax.validation.constraints.NotNull;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -35,6 +37,21 @@ public class JsonOrderConfigTest {
         assertNotNull(gson);
         assertNotNull(gsonMessage);
         assertNotEquals(gson, gsonMessage);
+    }
+
+    @Test
+    public void testEncodeAndDecodeJson() {
+        var coreDataReader = CoreDataReaderEvent.builder()
+                .createdAt(LocalDateTime.now())
+                .orderNumber("1234567890")
+                .orderItemSku("0987654321")
+                .build();
+
+        final String json = gson.toJson(coreDataReader);
+
+        final CoreDataReaderEvent event2 = gson.fromJson(json, CoreDataReaderEvent.class);
+
+        assertEquals(coreDataReader.getCreatedAt(), event2.getCreatedAt());
     }
 
     @Test
