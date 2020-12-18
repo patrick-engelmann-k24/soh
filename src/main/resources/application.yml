@@ -13,7 +13,7 @@ spring:
 
 #
 # Camunda BPM configuration
-#   The Camuinda settings do not work with profiles. Keep it here (and use dynamic values to overwrite defaults instead)
+#   The Camunda settings do not work with profiles. Keep it here (and use dynamic values to overwrite defaults instead)
 #
 camunda:
   bpm:
