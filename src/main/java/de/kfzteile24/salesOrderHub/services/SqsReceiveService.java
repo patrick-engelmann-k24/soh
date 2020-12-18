@@ -115,16 +115,16 @@ public class SqsReceiveService {
     /**
      * Consume messages from sqs for order payment secured
      *
-     * @param message
+     * @param rawMessage
      * @param senderId
      * @param receiveCount
      */
     @SqsListener(value = "${soh.sqs.queue.orderPaymentSecured}", deletionPolicy = SqsMessageDeletionPolicy.ON_SUCCESS)
-    public void queueListenerOrderPaymentSecured(String message, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
+    public void queueListenerOrderPaymentSecured(String rawMessage, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
         log.info("message received: " + senderId);
         log.info("message receive count: " + receiveCount.toString());
-        log.info("message content: " + message);
-        CoreDataReaderEvent coreDataReaderEvent = gson.fromJson(message, CoreDataReaderEvent.class);
+        log.info("message content: " + rawMessage);
+        CoreDataReaderEvent coreDataReaderEvent = gson.fromJson(messageHeader.fromJson(rawMessage, EcpOrder.class).getMessage(), CoreDataReaderEvent.class);
 
         try {
             MessageCorrelationResult result = runtimeService.createMessageCorrelation(Messages.ORDER_RECEIVED_PAYMENT_SECURED.getName())
