@@ -65,7 +65,6 @@ public class SqsReceiveService {
                     .build();
 
             salesOrderService.save(ecpSalesOrder);
-
             ProcessInstance result = camundaHelper.createOrderProcess(ecpSalesOrder, Messages.ORDER_RECEIVED_ECP);
 
             if (result != null) {
@@ -80,16 +79,16 @@ public class SqsReceiveService {
     /**
      * Consume messages from sqs for event order item shipped
      *
-     * @param message
+     * @param rawMessage
      * @param senderId
      * @param receiveCount
      */
     @SqsListener(value = "${soh.sqs.queue.orderItemShipped}", deletionPolicy = SqsMessageDeletionPolicy.ON_SUCCESS)
-    public void queueListenerItemShipped(String message, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
+    public void queueListenerItemShipped(String rawMessage, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
         log.info("message received: " + senderId);
         log.info("message receive count: " + receiveCount.toString());
-        log.info("message content: " + message);
-        FulfillmentMessage fulfillmentMessage = gson.fromJson(message, FulfillmentMessage.class);
+        log.info("message content: " + rawMessage);
+        FulfillmentMessage fulfillmentMessage = gson.fromJson(messageHeader.fromJson(rawMessage, EcpOrder.class).getMessage(), FulfillmentMessage.class);
 
         try {
             MessageCorrelationResult result = sendOrderItemMessage(
@@ -148,16 +147,16 @@ public class SqsReceiveService {
     /**
      * Consume messages from sqs for order item transmitted to logistic
      *
-     * @param message
+     * @param rawMessage
      * @param senderId
      * @param receiveCount
      */
     @SqsListener(value = "${soh.sqs.queue.orderItemTransmittedToLogistic}", deletionPolicy = SqsMessageDeletionPolicy.ON_SUCCESS)
-    public void queueListenerOrderItemTransmittedToLogistic(String message, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
+    public void queueListenerOrderItemTransmittedToLogistic(String rawMessage, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
         log.info("message received: " + senderId);
         log.info("message receive count: " + receiveCount.toString());
-        log.info("message content: " + message);
-        FulfillmentMessage fulfillmentMessage = gson.fromJson(message, FulfillmentMessage.class);
+        log.info("message content: " + rawMessage);
+        FulfillmentMessage fulfillmentMessage = gson.fromJson(messageHeader.fromJson(rawMessage, EcpOrder.class).getMessage(), FulfillmentMessage.class);
 
         try {
             MessageCorrelationResult result = sendOrderItemMessage(
@@ -182,16 +181,16 @@ public class SqsReceiveService {
     /**
      * Consume messages from sqs for event order item packing started
      *
-     * @param message
+     * @param rawMessage
      * @param senderId
      * @param receiveCount
      */
     @SqsListener(value = "${soh.sqs.queue.orderItemPackingStarted}", deletionPolicy = SqsMessageDeletionPolicy.ON_SUCCESS)
-    public void queueListenerOrderItemPackingStarted(String message, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
+    public void queueListenerOrderItemPackingStarted(String rawMessage, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
         log.info("message received: " + senderId);
         log.info("message receive count: " + receiveCount.toString());
-        log.info("message content: " + message);
-        FulfillmentMessage fulfillmentMessage = gson.fromJson(message, FulfillmentMessage.class);
+        log.info("message content: " + rawMessage);
+        FulfillmentMessage fulfillmentMessage = gson.fromJson(messageHeader.fromJson(rawMessage, EcpOrder.class).getMessage(), FulfillmentMessage.class);
 
         try {
             MessageCorrelationResult result = sendOrderItemMessage(
@@ -216,16 +215,16 @@ public class SqsReceiveService {
     /**
      * Consume messages from sqs for event order item tracking id received
      *
-     * @param message
+     * @param rawMessage
      * @param senderId
      * @param receiveCount
      */
     @SqsListener(value = "${soh.sqs.queue.orderItemTrackingIdReceived}", deletionPolicy = SqsMessageDeletionPolicy.ON_SUCCESS)
-    public void queueListenerOrderItemTrackingIdReceived(String message, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
+    public void queueListenerOrderItemTrackingIdReceived(String rawMessage, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
         log.info("message received: " + senderId);
         log.info("message receive count: " + receiveCount.toString());
-        log.info("message content: " + message);
-        FulfillmentMessage fulfillmentMessage = gson.fromJson(message, FulfillmentMessage.class);
+        log.info("message content: " + rawMessage);
+        FulfillmentMessage fulfillmentMessage = gson.fromJson(messageHeader.fromJson(rawMessage, EcpOrder.class).getMessage(), FulfillmentMessage.class);
 
         try {
             MessageCorrelationResult result = sendOrderItemMessage(
@@ -247,12 +246,19 @@ public class SqsReceiveService {
         }
     }
 
+    /**
+     * Consume messages from sqs for event order item tour started
+     *
+     * @param rawMessage
+     * @param senderId
+     * @param receiveCount
+     */
     @SqsListener(value = "${soh.sqs.queue.orderItemTourStarted}", deletionPolicy = SqsMessageDeletionPolicy.ON_SUCCESS)
-    public void queueListenerOrderItemTourStarted(String message, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
+    public void queueListenerOrderItemTourStarted(String rawMessage, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
         log.info("message received: " + senderId);
         log.info("message receive count: " + receiveCount.toString());
-        log.info("message content: " + message);
-        FulfillmentMessage fulfillmentMessage = gson.fromJson(message, FulfillmentMessage.class);
+        log.info("message content: " + rawMessage);
+        FulfillmentMessage fulfillmentMessage = gson.fromJson(messageHeader.fromJson(rawMessage, EcpOrder.class).getMessage(), FulfillmentMessage.class);
 
         try {
             MessageCorrelationResult result = sendOrderItemMessage(
@@ -290,4 +296,6 @@ public class SqsReceiveService {
 
         return result;
     }
+
+
 }
