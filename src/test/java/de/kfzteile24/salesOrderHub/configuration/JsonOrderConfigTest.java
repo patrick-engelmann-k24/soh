@@ -18,6 +18,7 @@ import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.jupiter.api.Assertions.*;
 
 @RunWith(SpringRunner.class)
@@ -79,5 +80,29 @@ public class JsonOrderConfigTest {
 
         //Read File Content
         return new String(Files.readAllBytes(file.toPath()));
+    }
+
+    @Test
+    public void JsonToLocalDateTime() {
+        // ISO_LOCAL_DATE_TIME
+        testDateString("2020-12-18T11:47:25.682190");
+        testDateString("2020-12-18T11:47:25");
+
+        // ISO_ZONED_DATE_TIME
+        testDateString("2020-12-18T11:47:25+01:00");
+        // RabbitMQ from fulfillment (ISO_ZONED_DATE_TIME)
+        testDateString("2021-01-14T10:03:11.4588345+01:00");
+        testDateString("2020-10-26T09:51:11.652Z");
+    }
+
+    private void testDateString(final String dateString ) {
+        final String jsonString = "{\"created_at\":\"" + dateString + "\"}";
+        final CoreDataReaderEvent event = testJsonDecodeForDateTime(jsonString);
+
+        assertNotNull("testing format " + dateString, event);
+    }
+
+    private CoreDataReaderEvent testJsonDecodeForDateTime(final String json) {
+        return gson.fromJson(json, CoreDataReaderEvent.class);
     }
 }
