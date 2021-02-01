@@ -23,6 +23,8 @@ import org.springframework.test.context.junit4.SpringRunner;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.execute;
+import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.job;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
@@ -101,6 +103,10 @@ class OrderControllerTest {
 
         final String orderItemId = orderItems.get(0);
         final Address address = Address.builder()
+                .street1("Unit")
+                .street2("Test")
+                .city("Javaland")
+                .zipCode("12345")
                 .build();
 
         ProcessInstance salesOrderProcessInstance =
@@ -112,10 +118,15 @@ class OrderControllerTest {
                         .setVariable(util._N(Variables.ORDER_ITEMS), orderItems)
                         .setVariable(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
                         .correlateWithResult().getProcessInstance();
-        BpmnAwareTests.assertThat(salesOrderProcessInstance).isWaitingAt(util._N(Events.MSG_ORDER_PAYMENT_SECURED));
-
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         final var result = controller.updateBillingAddress(orderNumber, address);
         assertThat(result.getStatusCodeValue()).isEqualTo(200);
+        assertThat(result.getBody().getStreet1()).isEqualTo(address.getStreet1());
+        assertThat(result.getBody().getZipCode()).isEqualTo(address.getZipCode());
     }
 
 }

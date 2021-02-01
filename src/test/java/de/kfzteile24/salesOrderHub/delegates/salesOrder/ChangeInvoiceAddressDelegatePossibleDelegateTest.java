@@ -36,7 +36,7 @@ import static org.junit.Assert.assertTrue;
         classes = SalesOrderHubProcessApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.NONE
 )
-public class ChangeInvoiceAddressPossibleDelegateTest {
+public class ChangeInvoiceAddressDelegatePossibleDelegateTest {
     @Autowired
     public ProcessEngine processEngine;
 
