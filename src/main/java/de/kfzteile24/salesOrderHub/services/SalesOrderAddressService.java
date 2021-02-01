@@ -1,0 +1,149 @@
+package de.kfzteile24.salesOrderHub.services;
+
+import com.google.gson.Gson;
+import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemMessages;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemVariables;
+import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
+import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.dto.order.customer.Address;
+import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
+import de.kfzteile24.salesOrderHub.services.task.UpdateBillingAddress;
+import lombok.SneakyThrows;
+import lombok.extern.java.Log;
+import org.camunda.bpm.engine.RuntimeService;
+import org.camunda.bpm.engine.runtime.Execution;
+import org.camunda.bpm.engine.runtime.MessageCorrelationBuilder;
+import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+
+import java.util.Optional;
+
+import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_ITEM_FULFILLMENT_PROCESS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
+
+@Service
+@Log
+public class SalesOrderAddressService {
+
+    @Autowired
+    CamundaHelper helper;
+
+    @Autowired
+    private SalesOrderRepository orderRepository;
+
+    @Autowired
+    private RuntimeService runtimeService;
+
+    @Autowired
+    private Gson gson;
+
+    @SneakyThrows
+    public ResponseEntity<Address> updateBillingAddress(final String orderNumber, final Address newBillingAddress) {
+        final Optional<SalesOrder> soOpt = orderRepository.getOrderByOrderNumber(orderNumber);
+        if (soOpt.isPresent()) {
+            if (checkIfProcessExists(orderNumber)) {
+//               final Execution execution = tryUpdateBillingAddress(orderNumber, newBillingAddress);
+                Thread executionThread = new Thread(new UpdateBillingAddress(runtimeService, gson, orderNumber, newBillingAddress));
+                executionThread.start();
+                try {
+                    int i = 0;
+                    while (executionThread.isAlive()) {
+                        Thread.sleep(50);
+                        i++;
+
+                        if (i >= 200) {
+                            executionThread.interrupt();
+                        }
+                    }
+                } catch (InterruptedException ex) {
+                    ex.printStackTrace();
+                    return ResponseEntity.unprocessableEntity().build();
+                }
+                final var newOrder = orderRepository.getOrderByOrderNumber(orderNumber);
+                return newOrder.map(salesOrder -> ResponseEntity.ok(salesOrder.getOriginalOrder().getOrderHeader().getBillingAddress())).orElseGet(() -> ResponseEntity.notFound().build());
+            } else {
+                ResponseEntity.status(HttpStatus.CONFLICT).build();
+            }
+        }
+
+        return ResponseEntity.notFound().build();
+    }
+
+    //@SneakyThrows
+    public ResponseEntity<Address> updateDeliveryAddress(final String orderNumber, final String orderItemId, final Address newDeliveryAddress) {
+        final Optional<SalesOrder> soOpt = orderRepository.getOrderByOrderNumber(orderNumber);
+
+        if (soOpt.isPresent()) {
+            checkIfProcessExists(orderNumber, orderItemId);
+            if (this.tryUpdateDeliveryAddress(orderNumber, orderItemId, newDeliveryAddress)) {
+                final Optional<SalesOrder> newOrder = orderRepository.getOrderByOrderNumber(orderNumber);
+                if (newOrder.isPresent()) {
+                    return ResponseEntity.ok(newOrder.get().getOriginalOrder().getOrderHeader().getShippingAddress());
+                }
+            }
+        }
+        return ResponseEntity.notFound().build();
+    }
+
+//    protected Execution tryUpdateBillingAddress(String orderNumber, Address newBillingAddress) {
+//        final MessageCorrelationResult result = sendMessage(Messages.ORDER_INVOICE_ADDRESS_CHANGE_RECEIVED, orderNumber, newBillingAddress);
+//
+//        if (result.getExecution() != null) {
+//            return result.getExecution();
+//        } else {
+//            return null;
+//        }
+//    }
+
+    protected boolean tryUpdateDeliveryAddress(String orderNumber, String orderItemId, Address newDeliveryAddress) {
+        final MessageCorrelationResult result = sendMessage(ItemMessages.DELIVERY_ADDRESS_CHANGE, orderNumber, orderItemId, newDeliveryAddress);
+
+        return getProcessStatus(result.getExecution());
+    }
+
+    protected MessageCorrelationResult sendMessage(BpmItem message, String orderNumber, String orderItemId, Address newDeliveryAdress) {
+        MessageCorrelationBuilder builder = runtimeService.createMessageCorrelation(message.getName())
+                .processInstanceVariableEquals(Variables.ORDER_NUMBER.getName(), orderNumber)
+                .processInstanceVariableEquals(ItemVariables.ORDER_ITEM_ID.getName(), orderItemId)
+                .setVariable(ItemVariables.DELIVERY_ADDRESS_CHANGE_REQUEST.getName(), gson.toJson(newDeliveryAdress));
+
+        return builder.correlateWithResultAndVariables(true);
+    }
+
+    protected MessageCorrelationResult sendMessage(BpmItem message, String orderNumber, Address newDeliveryAdress) {
+        MessageCorrelationBuilder builder = runtimeService.createMessageCorrelation(message.getName())
+                .processInstanceVariableEquals(Variables.ORDER_NUMBER.getName(), orderNumber)
+                .setVariable(ItemVariables.DELIVERY_ADDRESS_CHANGE_REQUEST.getName(), gson.toJson(newDeliveryAdress));
+
+        return builder.correlateWithResultAndVariables(true);
+    }
+
+    protected void checkIfProcessExists(String orderNumber, String orderItemId) {
+        var x = runtimeService.createProcessInstanceQuery()
+                .processDefinitionKey(SALES_ORDER_ITEM_FULFILLMENT_PROCESS.getName())
+                .processInstanceBusinessKey(orderNumber)
+                //.variableValueEquals(ItemVariables.ORDER_ITEM_ID.getName(), orderItemId)
+                .list();
+
+        System.out.println(x);
+    }
+
+    protected boolean checkIfProcessExists(String orderNumber) {
+        var result = runtimeService.createProcessInstanceQuery()
+                .processDefinitionKey(SALES_ORDER_PROCESS.getName())
+                .processInstanceBusinessKey(orderNumber)
+                //.variableValueEquals(ItemVariables.ORDER_ITEM_ID.getName(), orderItemId)
+                .list().isEmpty();
+        return !result;
+    }
+
+    protected Boolean getProcessStatus(Execution execution) {
+        return (Boolean) runtimeService.getVariable(execution.getId(), ItemVariables.DELIVERY_ADDRESS_CHANGE_POSSIBLE.getName());
+    }
+
+}

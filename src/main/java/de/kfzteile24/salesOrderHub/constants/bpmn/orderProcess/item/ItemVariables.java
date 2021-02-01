@@ -9,7 +9,7 @@ public enum ItemVariables implements BpmItem {
     // process variables
     DELIVERY_ADDRESS_CHANGE_POSSIBLE("deliveryAddressChangePossible"),
     // new delivery address, if change is possible
-    DELIVERY_ADDRESS_CHANGE_REQUEST("deliveryAdressChangeRequest"),
+    DELIVERY_ADDRESS_CHANGE_REQUEST("deliveryAddressChangeRequest"),
     ITEM_CANCELLED("itemCancelled"),
     ITEM_CANCELLATION_POSSIBLE("itemCancellationPossible"),
     ITEM_DELIVERED("itemDelivered"),

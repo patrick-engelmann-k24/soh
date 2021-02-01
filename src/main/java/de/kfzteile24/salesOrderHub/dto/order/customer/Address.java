@@ -1,8 +1,10 @@
 package de.kfzteile24.salesOrderHub.dto.order.customer;
 
+import lombok.Builder;
 import lombok.Data;
 
 @Data
+@Builder
 public class Address {
     String addressKey;
     String addressFormat;

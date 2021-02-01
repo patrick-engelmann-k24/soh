@@ -67,7 +67,7 @@ public class ChangeInvoiceAddressPossibleDelegateTest {
         final String orderNumber = testOrder.getOrderNumber();
 
         assertThat(orderProcess).isWaitingAt(util._N(Events.MSG_ORDER_PAYMENT_SECURED));
-        util.sendMessage(Messages.ORDER_INVOICE_ADDESS_CHANGE_RECEIVED, orderNumber);
+        util.sendMessage(Messages.ORDER_INVOICE_ADDRESS_CHANGE_RECEIVED, orderNumber);
 
         // check if the delegate sets the variable
         assertThat(orderProcess)
@@ -104,7 +104,7 @@ public class ChangeInvoiceAddressPossibleDelegateTest {
         invoiceRepository.save(orderInvoice);
 
         assertThat(orderProcess).isWaitingAt(util._N(Events.MSG_ORDER_PAYMENT_SECURED));
-        util.sendMessage(Messages.ORDER_INVOICE_ADDESS_CHANGE_RECEIVED, orderNumber);
+        util.sendMessage(Messages.ORDER_INVOICE_ADDRESS_CHANGE_RECEIVED, orderNumber);
 
         // check if the delegate sets the variable
         assertThat(orderProcess)

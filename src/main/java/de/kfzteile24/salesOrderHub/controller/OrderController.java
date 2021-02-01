@@ -1,59 +1,45 @@
 package de.kfzteile24.salesOrderHub.controller;
 
-import com.google.gson.Gson;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.domain.SalesOrderAddress;
 import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import de.kfzteile24.salesOrderHub.dto.order.customer.Address;
-import de.kfzteile24.salesOrderHub.dto.sqs.EcpOrder;
-import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
-import de.kfzteile24.salesOrderHub.services.SalesOrderItemService;
+import de.kfzteile24.salesOrderHub.services.SalesOrderAddressService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
-import lombok.SneakyThrows;
-import org.camunda.bpm.engine.RuntimeService;
-import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.FileReader;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Optional;
-import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/order")
+@RequestMapping("/api/v1/order")
 public class OrderController {
 
     @Autowired
     private SalesOrderService salesOrderService;
 
     @Autowired
-    CamundaHelper camundaHelper;
-
-    @Autowired
-    private SalesOrderItemService orderItemService;
-
-    @GetMapping("/{orderNumber}/isChangeable")
-    public Boolean orderIsChangeable(@PathVariable String orderNumber) {
-        return false;
-    }
+    private SalesOrderAddressService orderItemService;
 
     @PutMapping("/{orderNumber}/billingAdresss")
-    public Address getBillingAddress(@PathVariable String orderNumber) {
-        // todo implement invoice change accordingly to deliveryAddress change
-        return null;
+    public ResponseEntity<Address> updateBillingAddress(@PathVariable String orderNumber, @RequestBody final Address address) {
+        return orderItemService.updateBillingAddress(orderNumber, address);
     }
 
     @PutMapping("/{orderNumber}/{orderItemId}/deliveryAddress")
     @ResponseStatus(HttpStatus.OK)
-    public Address updateBillingAddress(
+    public ResponseEntity<Address> updateDeliveryAddress(
             @PathVariable("orderNumber") final String orderNumber, @PathVariable("orderItemId") final String orderItemId, @RequestBody final Address address) {
-        return orderItemService.changeDeliveryAddress(orderNumber, orderItemId, address);
+        // todo handle response code correct
+        try {
+            return orderItemService.updateDeliveryAddress(orderNumber, orderItemId, address);
+        } catch (Exception e) {
+
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     @GetMapping("/{orderNumber}")
