@@ -121,11 +121,10 @@
       <bpmn:extensionElements>
         <camunda:in source="orderNumber" target="orderNumber" />
         <camunda:in source="shipmentMethod" target="shipmentMethod" />
-        <camunda:in source="item" target="orderItemId" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0fe05aw</bpmn:incoming>
       <bpmn:outgoing>Flow_0ero9gg</bpmn:outgoing>
-      <bpmn:multiInstanceLoopCharacteristics camunda:asyncBefore="true" camunda:collection="orderItems" camunda:elementVariable="item" />
+      <bpmn:multiInstanceLoopCharacteristics camunda:asyncBefore="true" camunda:collection="orderItems" camunda:elementVariable="orderItem" />
     </bpmn:callActivity>
     <bpmn:subProcess id="Activity_0h6r060" triggeredByEvent="true">
       <bpmn:startEvent id="eventOrderCancellationReceived" name="Order cancellation received">

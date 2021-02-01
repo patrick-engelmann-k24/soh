@@ -49,10 +49,9 @@ public class SalesOrderAddressService {
             if (checkIfProcessExists(orderNumber)) {
                 sendMessageForUpdateBillingAddress(orderNumber, newBillingAddress);
                 final var newOrder = orderRepository.getOrderByOrderNumber(orderNumber);
-                System.out.println(newOrder.get().getOriginalOrder().getOrderHeader().getBillingAddress());
                 return newOrder.map(salesOrder -> ResponseEntity.ok(salesOrder.getOriginalOrder().getOrderHeader().getBillingAddress())).orElseGet(() -> ResponseEntity.notFound().build());
             } else {
-                ResponseEntity.status(HttpStatus.CONFLICT).build();
+                return ResponseEntity.status(HttpStatus.CONFLICT).build();
             }
         }
 
@@ -64,12 +63,17 @@ public class SalesOrderAddressService {
         final Optional<SalesOrder> soOpt = orderRepository.getOrderByOrderNumber(orderNumber);
 
         if (soOpt.isPresent()) {
-            checkIfProcessExists(orderNumber, orderItemId);
-            if (this.tryUpdateDeliveryAddress(orderNumber, orderItemId, newDeliveryAddress)) {
+            if (checkIfItemProcessExists(orderNumber, orderItemId)) {
+                sendMessageForUpdateDeliveryAddress(
+                        ItemVariables.DELIVERY_ADDRESS_CHANGE_REQUEST,
+                        orderNumber, orderItemId, newDeliveryAddress);
                 final Optional<SalesOrder> newOrder = orderRepository.getOrderByOrderNumber(orderNumber);
-                if (newOrder.isPresent()) {
-                    return ResponseEntity.ok(newOrder.get().getOriginalOrder().getOrderHeader().getShippingAddress());
-                }
+                return newOrder.map(salesOrder -> ResponseEntity.ok(salesOrder.getOriginalOrder().getOrderHeader().getBillingAddress())).orElseGet(() -> ResponseEntity.notFound().build());
+            } else if (checkIfProcessExists(orderNumber)) {
+                // todo change main delivery address (order lvl)
+
+            } else {
+                return ResponseEntity.status(HttpStatus.CONFLICT).build();
             }
         }
         return ResponseEntity.notFound().build();
@@ -108,21 +112,20 @@ public class SalesOrderAddressService {
         return builder.correlateWithResultAndVariables(true);
     }
 
-    protected void checkIfProcessExists(String orderNumber, String orderItemId) {
-        var x = runtimeService.createProcessInstanceQuery()
+    protected boolean checkIfItemProcessExists(String orderNumber, String orderItemId) {
+        var result = runtimeService.createProcessInstanceQuery()
                 .processDefinitionKey(SALES_ORDER_ITEM_FULFILLMENT_PROCESS.getName())
-                .processInstanceBusinessKey(orderNumber)
-                //.variableValueEquals(ItemVariables.ORDER_ITEM_ID.getName(), orderItemId)
-                .list();
+                .variableValueEquals(Variables.ORDER_NUMBER.getName(), orderNumber)
+                .variableValueEquals(ItemVariables.ORDER_ITEM_ID.getName(), orderItemId)
+                .list().isEmpty();
 
-        System.out.println(x);
+        return !result;
     }
 
     protected boolean checkIfProcessExists(String orderNumber) {
         var result = runtimeService.createProcessInstanceQuery()
                 .processDefinitionKey(SALES_ORDER_PROCESS.getName())
                 .processInstanceBusinessKey(orderNumber)
-                //.variableValueEquals(ItemVariables.ORDER_ITEM_ID.getName(), orderItemId)
                 .list().isEmpty();
         return !result;
     }

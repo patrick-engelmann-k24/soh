@@ -2,10 +2,12 @@ package de.kfzteile24.salesOrderHub.dto.order.customer;
 
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Data
 @Builder
 public class Address {
+    @EqualsAndHashCode.Exclude
     String addressKey;
     String addressFormat;
     String addressType;

@@ -32,14 +32,7 @@ public class OrderController {
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<Address> updateDeliveryAddress(
             @PathVariable("orderNumber") final String orderNumber, @PathVariable("orderItemId") final String orderItemId, @RequestBody final Address address) {
-        // todo handle response code correct
-        try {
-            return orderItemService.updateDeliveryAddress(orderNumber, orderItemId, address);
-        } catch (Exception e) {
-
-            e.printStackTrace();
-            throw e;
-        }
+        return orderItemService.updateDeliveryAddress(orderNumber, orderItemId, address);
     }
 
     @GetMapping("/{orderNumber}")

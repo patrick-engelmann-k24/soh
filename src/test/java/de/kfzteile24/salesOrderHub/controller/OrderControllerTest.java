@@ -1,7 +1,6 @@
 package de.kfzteile24.salesOrderHub.controller;
 
 import de.kfzteile24.salesOrderHub.SalesOrderHubProcessApplication;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.PaymentType;
@@ -12,7 +11,6 @@ import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
-import org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests;
 import org.junit.Before;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
@@ -22,9 +20,9 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.List;
 
+import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.ORDER_ITEM_FULFILLMENT_PROCESS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.execute;
-import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.job;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
@@ -34,17 +32,13 @@ import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.job;
 class OrderControllerTest {
 
     @Autowired
-    private OrderController controller;
-
-    @Autowired
     RuntimeService runtimeService;
-
     @Autowired
     BpmUtil util;
-
     @Autowired
     SalesOrderUtil salesOrderUtil;
-
+    @Autowired
+    private OrderController controller;
     private SalesOrder testOrder;
 
     @Before
@@ -61,15 +55,39 @@ class OrderControllerTest {
     /**
      * Test for non existing order
      */
-    //@Test
-    void updateShippingAddressForOrderNotExisting() {
-        final String orderNumber = "1234567890";
-        final String orderItemId = "1234567890";
+    @Test
+    void updateShippingAddressForOrder() {
+        var testOrder = salesOrderUtil.createNewSalesOrder();
+        final String orderNumber = testOrder.getOrderNumber();
+        final List<String> orderItems = util.getOrderItems(orderNumber, 5);
+
         final Address address = Address.builder()
+                .street1("Unit")
+                .street2("Test")
+                .city("Javaland")
+                .zipCode("12345")
                 .build();
 
-        final var result = controller.updateDeliveryAddress(orderNumber, orderItemId, address);
-        assertThat(result.getStatusCode().is4xxClientError()).isTrue();
+        ProcessInstance salesOrderProcessInstance =
+                runtimeService.createProcessInstanceByKey(SALES_ORDER_PROCESS.getName())
+                        .businessKey(orderNumber)
+                        .setVariable(util._N(Variables.ORDER_NUMBER), orderNumber)
+                        .setVariable(util._N(Variables.PAYMENT_TYPE), util._N(PaymentType.CREDIT_CARD))
+                        .setVariable(util._N(Variables.ORDER_VALID), true)
+                        .setVariable(util._N(Variables.ORDER_ITEMS), orderItems)
+                        .setVariable(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
+                        .startBeforeActivity(ORDER_ITEM_FULFILLMENT_PROCESS.getName())
+                        .execute();
+
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+
+        final var result = controller.updateDeliveryAddress(orderNumber, orderItems.get(0), address);
+        assertThat(result.getStatusCode().is2xxSuccessful()).isTrue();
     }
 
     /**
@@ -90,6 +108,21 @@ class OrderControllerTest {
         final String orderItemId = orderItems.get(0);
         final Address address = Address.builder()
                 .build();
+
+        ProcessInstance salesOrderProcessInstance =
+                runtimeService.createMessageCorrelation(util._N(Messages.ORDER_RECEIVED_MARKETPLACE))
+                        .processInstanceBusinessKey(orderNumber)
+                        .setVariable(util._N(Variables.ORDER_NUMBER), orderNumber)
+                        .setVariable(util._N(Variables.PAYMENT_TYPE), util._N(PaymentType.CREDIT_CARD))
+                        .setVariable(util._N(Variables.ORDER_VALID), true)
+                        .setVariable(util._N(Variables.ORDER_ITEMS), orderItems)
+                        .setVariable(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
+                        .correlateWithResult().getProcessInstance();
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
         final var result = controller.updateDeliveryAddress(orderNumber, orderItemId, address);
         assertThat(result.getStatusCode().is4xxClientError()).isTrue();
