@@ -22,6 +22,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.List;
 
+import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(SpringRunner.class)
@@ -71,14 +72,15 @@ class OrderControllerTest {
                 .build();
 
         ProcessInstance salesOrderProcessInstance =
-                runtimeService.createMessageCorrelation(util._N(Messages.ORDER_RECEIVED_MARKETPLACE))
-                        .processInstanceBusinessKey(orderNumber)
-                        .setVariable(util._N(Variables.ORDER_NUMBER), orderNumber)
-                        .setVariable(util._N(Variables.PAYMENT_TYPE), util._N(PaymentType.CREDIT_CARD))
-                        .setVariable(util._N(Variables.ORDER_VALID), true)
-                        .setVariable(util._N(Variables.ORDER_ITEMS), orderItems)
-                        .setVariable(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
-                        .correlateWithResult().getProcessInstance();
+        runtimeService.createProcessInstanceByKey(SALES_ORDER_PROCESS.getName())
+                .businessKey(orderNumber)
+                .setVariable(util._N(Variables.ORDER_NUMBER), orderNumber)
+                .setVariable(util._N(Variables.PAYMENT_TYPE), util._N(PaymentType.CREDIT_CARD))
+                .setVariable(util._N(Variables.ORDER_VALID), true)
+                .setVariable(util._N(Variables.ORDER_ITEMS), orderItems)
+                .setVariable(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
+                .startBeforeActivity(Events.MSG_ORDER_PAYMENT_SECURED.getName())
+                .execute();
 
         try {
             Thread.sleep(500);
@@ -137,7 +139,6 @@ class OrderControllerTest {
         final String orderNumber = testOrder.getOrderNumber();
         final List<String> orderItems = util.getOrderItems(orderNumber, 5);
 
-        final String orderItemId = orderItems.get(0);
         final Address address = Address.builder()
                 .street1("Unit")
                 .street2("Test")

@@ -6,8 +6,8 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemMessages
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
-import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
+import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import org.camunda.bpm.engine.ProcessEngine;
@@ -55,6 +55,9 @@ public class ChangeInvoiceAddressDelegatePossibleDelegateTest {
     @Autowired
     SalesOrderInvoiceRepository invoiceRepository;
 
+    @Autowired
+    SalesOrderUtil salesOrderUtil;
+
     @Before
     public void setUp() {
         init(processEngine);
@@ -62,9 +65,15 @@ public class ChangeInvoiceAddressDelegatePossibleDelegateTest {
 
     @Test
     public void testChangeInvoiceAddressPossible() {
-        final SalesOrder testOrder = getSalesOrder();
+        final SalesOrder testOrder = salesOrderUtil.createNewSalesOrder();
         final ProcessInstance orderProcess = createOrderProcess(testOrder);
         final String orderNumber = testOrder.getOrderNumber();
+
+        try {
+            Thread.sleep(400);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
         assertThat(orderProcess).isWaitingAt(util._N(Events.MSG_ORDER_PAYMENT_SECURED));
         util.sendMessage(Messages.ORDER_INVOICE_ADDRESS_CHANGE_RECEIVED, orderNumber);
@@ -93,7 +102,7 @@ public class ChangeInvoiceAddressDelegatePossibleDelegateTest {
 
     @Test
     public void testChangeInvoiceAddressPossibleNotPossible() {
-        final SalesOrder testOrder = getSalesOrder();
+        final SalesOrder testOrder = salesOrderUtil.createNewSalesOrder();
         final ProcessInstance orderProcess = createOrderProcess(testOrder);
         final String orderNumber = testOrder.getOrderNumber();
 
@@ -102,6 +111,12 @@ public class ChangeInvoiceAddressDelegatePossibleDelegateTest {
                 .invoiceNumber(util.getRandomOrderNumber())
                 .build();
         invoiceRepository.save(orderInvoice);
+
+        try {
+            Thread.sleep(400);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
         assertThat(orderProcess).isWaitingAt(util._N(Events.MSG_ORDER_PAYMENT_SECURED));
         util.sendMessage(Messages.ORDER_INVOICE_ADDRESS_CHANGE_RECEIVED, orderNumber);
@@ -157,15 +172,5 @@ public class ChangeInvoiceAddressDelegatePossibleDelegateTest {
         util.sendMessage(util._N(ItemMessages.ITEM_SHIPPED), orderNumber);
 
         assertThat(orderProcess).isEnded();
-    }
-
-    SalesOrder getSalesOrder() {
-        final OrderJSON order = util.getRandomOrder();
-        SalesOrder so = SalesOrder.builder()
-                .salesLocale(order.getOrderHeader().getOrigin().getLocale())
-                .originalOrder(order)
-                .orderNumber(order.getOrderHeader().getOrderNumber())
-                .build();
-        return salesOrderService.createOrder(so);
     }
 }

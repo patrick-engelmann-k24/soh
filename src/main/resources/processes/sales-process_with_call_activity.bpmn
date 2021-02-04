@@ -121,9 +121,6 @@
       <bpmn:extensionElements>
         <camunda:in source="orderNumber" target="orderNumber" />
         <camunda:in source="shipmentMethod" target="shipmentMethod" />
-        <camunda:executionListener event="start">
-          <camunda:script scriptFormat="javascript">print(execution.getVariable("orderRows"));</camunda:script>
-        </camunda:executionListener>
         <camunda:in source="orderItem" target="orderItemId" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0fe05aw</bpmn:incoming>

@@ -30,18 +30,18 @@ import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.runtime.ProcessInstanceQuery;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
 import static org.camunda.bpm.engine.test.assertions.ProcessEngineTests.assertThat;
-import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.execute;
-import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.job;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -69,7 +69,7 @@ public class SalesOrderHubProcessApplicationTest {
 
     private SalesOrder testOrder;
 
-    @Before
+    @BeforeEach
     public void setup() {
         testOrder = salesOrderUtil.createNewSalesOrder();
     }
@@ -171,6 +171,13 @@ public class SalesOrderHubProcessApplicationTest {
                         .setVariable(util._N(Variables.ORDER_ITEMS), orderItems)
                         .setVariable(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
                         .correlateWithResult().getProcessInstance();
+
+        try {
+            Thread.sleep(400);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
         assertThat(salesOrderProcessInstance).isWaitingAt(util._N(Events.MSG_ORDER_PAYMENT_SECURED));
 
         runtimeService.createMessageCorrelation(util._N(Messages.ORDER_CANCELLATION_RECEIVED))
@@ -212,6 +219,13 @@ public class SalesOrderHubProcessApplicationTest {
                         .setVariable(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
                         .correlateWithResult().getProcessInstance();
         assertThat(salesOrderProcessInstance).isActive();
+
+        try {
+            Thread.sleep(400);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
         assertThat(salesOrderProcessInstance)
                 .hasPassed(util._N(Events.THROW_MSG_ORDER_CREATED))
                 .isWaitingAt(util._N(Events.MSG_ORDER_PAYMENT_SECURED));
