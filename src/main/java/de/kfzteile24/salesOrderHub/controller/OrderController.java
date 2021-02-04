@@ -5,6 +5,7 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import de.kfzteile24.salesOrderHub.dto.order.customer.Address;
 import de.kfzteile24.salesOrderHub.services.SalesOrderAddressService;
+import de.kfzteile24.salesOrderHub.services.SalesOrderItemService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -21,18 +22,41 @@ public class OrderController {
     private SalesOrderService salesOrderService;
 
     @Autowired
-    private SalesOrderAddressService orderItemService;
+    private SalesOrderAddressService orderAddressService;
+
+    @Autowired
+    private SalesOrderItemService orderItemService;
 
     @PutMapping("/{orderNumber}/billingAdresss")
     public ResponseEntity<Address> updateBillingAddress(@PathVariable String orderNumber, @RequestBody final Address address) {
-        return orderItemService.updateBillingAddress(orderNumber, address);
+        return orderAddressService.updateBillingAddress(orderNumber, address);
     }
 
     @PutMapping("/{orderNumber}/{orderItemId}/deliveryAddress")
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<Address> updateDeliveryAddress(
             @PathVariable("orderNumber") final String orderNumber, @PathVariable("orderItemId") final String orderItemId, @RequestBody final Address address) {
-        return orderItemService.updateDeliveryAddress(orderNumber, orderItemId, address);
+        return orderAddressService.updateDeliveryAddress(orderNumber, orderItemId, address);
+    }
+
+    @PutMapping("/{orderNumber}/cancel")
+    @ResponseBody
+    public ResponseEntity cancelOrder(
+            @PathVariable("orderNumber") final String orderNumber
+    ) {
+        //ToDo hier weiter machen
+        salesOrderService.cancelOrder(orderNumber);
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/{orderNumber}/cancelItem/{orderItemId}")
+    @ResponseBody
+    public ResponseEntity cancelOrderItem(
+            @PathVariable("orderNumber") final String orderNumber,
+            @PathVariable("orderItemId") final String orderItemId
+    ) {
+        orderItemService.cancelOrderItem(orderNumber, orderItemId);
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/{orderNumber}")

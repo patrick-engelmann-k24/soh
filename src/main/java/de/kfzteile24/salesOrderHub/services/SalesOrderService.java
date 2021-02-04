@@ -36,6 +36,7 @@ public class SalesOrderService {
         return orderRepository.save(salesOrder);
     }
 
+    // todo Delete this:
     public SalesOrder updateOrderBillingAddress(SalesOrder salesOrder, Address address) {
         // todo update SalesOrderInvoice
         salesOrder.getOriginalOrder().getOrderHeader().setBillingAddress(address);
@@ -50,6 +51,13 @@ public class SalesOrderService {
         }
 
         return false;
+    }
+
+    public void cancelOrder(String orderNumber) {
+        final Optional<SalesOrder> order = this.getOrderByOrderNumber(orderNumber);
+        if (order.isPresent()) {
+
+        }
     }
 
     public SalesOrder createOrder(SalesOrder salesOrder) {

@@ -59,7 +59,7 @@ public class SalesOrderAddressService {
         return ResponseEntity.notFound().build();
     }
 
-    //@SneakyThrows
+    @SneakyThrows
     public ResponseEntity<Address> updateDeliveryAddress(final String orderNumber, final String orderItemId, final Address newDeliveryAddress) {
         final Optional<SalesOrder> soOpt = orderRepository.getOrderByOrderNumber(orderNumber);
 
@@ -96,11 +96,11 @@ public class SalesOrderAddressService {
         return getProcessStatus(result.getExecution());
     }
 
-    protected MessageCorrelationResult sendMessageForUpdateDeliveryAddress(BpmItem message, String orderNumber, String orderItemId, Address newDeliveryAdress) {
+    protected MessageCorrelationResult sendMessageForUpdateDeliveryAddress(BpmItem message, String orderNumber, String orderItemId, Address newDeliveryAddress) {
         MessageCorrelationBuilder builder = runtimeService.createMessageCorrelation(message.getName())
                 .processInstanceVariableEquals(Variables.ORDER_NUMBER.getName(), orderNumber)
                 .processInstanceVariableEquals(ItemVariables.ORDER_ITEM_ID.getName(), orderItemId)
-                .setVariable(ItemVariables.DELIVERY_ADDRESS_CHANGE_REQUEST.getName(), gson.toJson(newDeliveryAdress));
+                .setVariable(ItemVariables.DELIVERY_ADDRESS_CHANGE_REQUEST.getName(), gson.toJson(newDeliveryAddress));
 
         return builder.correlateWithResultAndVariables(true);
     }
