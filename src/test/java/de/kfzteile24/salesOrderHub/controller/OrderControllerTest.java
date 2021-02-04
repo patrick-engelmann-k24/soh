@@ -1,6 +1,7 @@
 package de.kfzteile24.salesOrderHub.controller;
 
 import de.kfzteile24.salesOrderHub.SalesOrderHubProcessApplication;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.PaymentType;
@@ -11,6 +12,7 @@ import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
+import org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests;
 import org.junit.Before;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
@@ -20,8 +22,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.List;
 
-import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.ORDER_ITEM_FULFILLMENT_PROCESS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(SpringRunner.class)
@@ -62,6 +62,8 @@ class OrderControllerTest {
         final List<String> orderItems = util.getOrderItems(orderNumber, 5);
 
         final Address address = Address.builder()
+                .firstName("Max")
+                .lastName("Mustermann")
                 .street1("Unit")
                 .street2("Test")
                 .city("Javaland")
@@ -69,15 +71,14 @@ class OrderControllerTest {
                 .build();
 
         ProcessInstance salesOrderProcessInstance =
-                runtimeService.createProcessInstanceByKey(SALES_ORDER_PROCESS.getName())
-                        .businessKey(orderNumber)
+                runtimeService.createMessageCorrelation(util._N(Messages.ORDER_RECEIVED_MARKETPLACE))
+                        .processInstanceBusinessKey(orderNumber)
                         .setVariable(util._N(Variables.ORDER_NUMBER), orderNumber)
                         .setVariable(util._N(Variables.PAYMENT_TYPE), util._N(PaymentType.CREDIT_CARD))
                         .setVariable(util._N(Variables.ORDER_VALID), true)
                         .setVariable(util._N(Variables.ORDER_ITEMS), orderItems)
                         .setVariable(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
-                        .startBeforeActivity(ORDER_ITEM_FULFILLMENT_PROCESS.getName())
-                        .execute();
+                        .correlateWithResult().getProcessInstance();
 
         try {
             Thread.sleep(500);
@@ -85,6 +86,8 @@ class OrderControllerTest {
             e.printStackTrace();
         }
 
+        BpmnAwareTests.assertThat(salesOrderProcessInstance).isWaitingAt(util._N(Events.MSG_ORDER_PAYMENT_SECURED));
+        util.sendMessage(util._N(Messages.ORDER_RECEIVED_PAYMENT_SECURED), orderNumber);
 
         final var result = controller.updateDeliveryAddress(orderNumber, orderItems.get(0), address);
         assertThat(result.getStatusCode().is2xxSuccessful()).isTrue();

@@ -9,7 +9,6 @@ import de.kfzteile24.salesOrderHub.dto.order.LogisticalUnits;
 import de.kfzteile24.salesOrderHub.dto.order.customer.Address;
 import de.kfzteile24.salesOrderHub.dto.order.logisticalUnits.Item;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
-import org.apache.commons.math3.analysis.function.Add;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -26,7 +25,7 @@ public class ChangeDeliveryAddress extends AbstractDelegate {
 
     @Override
     public void execute(DelegateExecution execution) throws Exception {
-        var newAddressStr = (String)execution.getVariable(Variables.INVOICE_ADDRESS_CHANGE_REQUEST.getName());
+        var newAddressStr = (String)execution.getVariable(ItemVariables.DELIVERY_ADDRESS_CHANGE_REQUEST.getName());
         var orderNumber = (String)execution.getVariable(Variables.ORDER_NUMBER.getName());
         var orderItemId = (String)execution.getVariable(ItemVariables.ORDER_ITEM_ID.getName());
 
@@ -36,7 +35,7 @@ public class ChangeDeliveryAddress extends AbstractDelegate {
 
         if (salesOrderOptional.isPresent()) {
             final SalesOrder salesOrder = salesOrderOptional.get();
-            final List<Address> addressList = salesOrder.getOriginalOrder().getOrderHeader().getShippingAddress();
+            final List<Address> addressList = salesOrder.getOriginalOrder().getOrderHeader().getShippingAddresses();
             if (!addressList.contains(address)) {
                 int addressKey = addressList.size() + 1;
                 address.setAddressKey(Integer.toString(addressKey));

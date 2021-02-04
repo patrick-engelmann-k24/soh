@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemEvents;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemMessages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemVariables;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
@@ -65,7 +66,7 @@ public class SalesOrderAddressService {
         if (soOpt.isPresent()) {
             if (checkIfItemProcessExists(orderNumber, orderItemId)) {
                 sendMessageForUpdateDeliveryAddress(
-                        ItemVariables.DELIVERY_ADDRESS_CHANGE_REQUEST,
+                        ItemMessages.DELIVERY_ADDRESS_CHANGE,
                         orderNumber, orderItemId, newDeliveryAddress);
                 final Optional<SalesOrder> newOrder = orderRepository.getOrderByOrderNumber(orderNumber);
                 return newOrder.map(salesOrder -> ResponseEntity.ok(salesOrder.getOriginalOrder().getOrderHeader().getBillingAddress())).orElseGet(() -> ResponseEntity.notFound().build());

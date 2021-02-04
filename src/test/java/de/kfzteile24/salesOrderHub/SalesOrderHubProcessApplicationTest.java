@@ -40,6 +40,8 @@ import org.springframework.test.context.junit4.SpringRunner;
 import java.util.*;
 
 import static org.camunda.bpm.engine.test.assertions.ProcessEngineTests.assertThat;
+import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.execute;
+import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.job;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -97,8 +99,14 @@ public class SalesOrderHubProcessApplicationTest {
                         .setVariable(util._N(Variables.ORDER_ITEMS), orderItems)
                         .setVariable(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
                         .correlateWithResult().getProcessInstance();
-        assertThat(salesOrderProcessInstance).isWaitingAt(util._N(Events.MSG_ORDER_PAYMENT_SECURED));
 
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        assertThat(salesOrderProcessInstance).isWaitingAt(util._N(Events.MSG_ORDER_PAYMENT_SECURED));
         util.sendMessage(util._N(Messages.ORDER_RECEIVED_PAYMENT_SECURED), orderNumber);
         assertThat(salesOrderProcessInstance).isWaitingAt(util._N(Activities.ORDER_ITEM_FULFILLMENT_PROCESS));
 
