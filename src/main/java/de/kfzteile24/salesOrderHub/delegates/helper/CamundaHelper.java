@@ -2,12 +2,13 @@ package de.kfzteile24.salesOrderHub.delegates.helper;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ShipmentMethod;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemVariables;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import org.camunda.bpm.engine.HistoryService;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.history.HistoricActivityInstance;
 import org.camunda.bpm.engine.history.HistoricActivityInstanceQuery;
+import org.camunda.bpm.engine.runtime.Execution;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -17,7 +18,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.PaymentType.CREDIT_CARD;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_ITEM_FULFILLMENT_PROCESS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
 
 @Component
 public class CamundaHelper {
@@ -73,6 +75,28 @@ public class CamundaHelper {
                 .processInstanceBusinessKey(orderNumber)
                 .setVariables(processVariables)
                 .correlateWithResult().getProcessInstance();
+    }
+
+    public boolean checkIfItemProcessExists(String orderNumber, String orderItemId) {
+        var result = runtimeService.createProcessInstanceQuery()
+                .processDefinitionKey(SALES_ORDER_ITEM_FULFILLMENT_PROCESS.getName())
+                .variableValueEquals(Variables.ORDER_NUMBER.getName(), orderNumber)
+                .variableValueEquals(ItemVariables.ORDER_ITEM_ID.getName(), orderItemId)
+                .list().isEmpty();
+
+        return !result;
+    }
+
+    public boolean checkIfProcessExists(String orderNumber) {
+        var result = runtimeService.createProcessInstanceQuery()
+                .processDefinitionKey(SALES_ORDER_PROCESS.getName())
+                .processInstanceBusinessKey(orderNumber)
+                .list().isEmpty();
+        return !result;
+    }
+
+    public Boolean getProcessStatus(Execution execution) {
+        return (Boolean) runtimeService.getVariable(execution.getId(), ItemVariables.DELIVERY_ADDRESS_CHANGE_POSSIBLE.getName());
     }
 
 }

@@ -11,8 +11,6 @@ import org.springframework.stereotype.Component;
 public class HandleOrderItemCancellation implements JavaDelegate {
     @Override
     public void execute(DelegateExecution delegateExecution) {
-        // todo: DEV-15633
-        log.info("todo: DEV-15633");
         delegateExecution.setVariable(ItemVariables.ITEM_CANCELLED.getName(), true);
     }
 }

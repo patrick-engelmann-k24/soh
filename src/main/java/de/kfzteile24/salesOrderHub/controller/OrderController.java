@@ -1,6 +1,5 @@
 package de.kfzteile24.salesOrderHub.controller;
 
-import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import de.kfzteile24.salesOrderHub.dto.order.customer.Address;
@@ -55,8 +54,7 @@ public class OrderController {
             @PathVariable("orderNumber") final String orderNumber,
             @PathVariable("orderItemId") final String orderItemId
     ) {
-        orderItemService.cancelOrderItem(orderNumber, orderItemId);
-        return ResponseEntity.ok().build();
+        return orderItemService.cancelOrderItem(orderNumber, orderItemId);
     }
 
     @GetMapping("/{orderNumber}")

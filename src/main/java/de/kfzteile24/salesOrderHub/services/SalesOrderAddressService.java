@@ -47,7 +47,7 @@ public class SalesOrderAddressService {
     public ResponseEntity<Address> updateBillingAddress(final String orderNumber, final Address newBillingAddress) {
         final Optional<SalesOrder> soOpt = orderRepository.getOrderByOrderNumber(orderNumber);
         if (soOpt.isPresent()) {
-            if (checkIfProcessExists(orderNumber)) {
+            if (helper.checkIfProcessExists(orderNumber)) {
                 sendMessageForUpdateBillingAddress(orderNumber, newBillingAddress);
                 final var newOrder = orderRepository.getOrderByOrderNumber(orderNumber);
                 return newOrder.map(salesOrder -> ResponseEntity.ok(salesOrder.getOriginalOrder().getOrderHeader().getBillingAddress())).orElseGet(() -> ResponseEntity.notFound().build());
@@ -64,13 +64,13 @@ public class SalesOrderAddressService {
         final Optional<SalesOrder> soOpt = orderRepository.getOrderByOrderNumber(orderNumber);
 
         if (soOpt.isPresent()) {
-            if (checkIfItemProcessExists(orderNumber, orderItemId)) {
+            if (helper.checkIfItemProcessExists(orderNumber, orderItemId)) {
                 sendMessageForUpdateDeliveryAddress(
                         ItemMessages.DELIVERY_ADDRESS_CHANGE,
                         orderNumber, orderItemId, newDeliveryAddress);
                 final Optional<SalesOrder> newOrder = orderRepository.getOrderByOrderNumber(orderNumber);
                 return newOrder.map(salesOrder -> ResponseEntity.ok(salesOrder.getOriginalOrder().getOrderHeader().getBillingAddress())).orElseGet(() -> ResponseEntity.notFound().build());
-            } else if (checkIfProcessExists(orderNumber)) {
+            } else if (helper.checkIfProcessExists(orderNumber)) {
                 // todo change main delivery address (order lvl)
 
             } else {
@@ -93,7 +93,7 @@ public class SalesOrderAddressService {
     protected boolean tryUpdateDeliveryAddress(String orderNumber, String orderItemId, Address newDeliveryAddress) {
         final MessageCorrelationResult result = sendMessageForUpdateDeliveryAddress(ItemMessages.DELIVERY_ADDRESS_CHANGE, orderNumber, orderItemId, newDeliveryAddress);
 
-        return getProcessStatus(result.getExecution());
+        return helper.getProcessStatus(result.getExecution());
     }
 
     protected MessageCorrelationResult sendMessageForUpdateDeliveryAddress(BpmItem message, String orderNumber, String orderItemId, Address newDeliveryAddress) {
@@ -111,28 +111,6 @@ public class SalesOrderAddressService {
                 .setVariable(Variables.INVOICE_ADDRESS_CHANGE_REQUEST.getName(), gson.toJson(newBillingAddress));
 
         return builder.correlateWithResultAndVariables(true);
-    }
-
-    protected boolean checkIfItemProcessExists(String orderNumber, String orderItemId) {
-        var result = runtimeService.createProcessInstanceQuery()
-                .processDefinitionKey(SALES_ORDER_ITEM_FULFILLMENT_PROCESS.getName())
-                .variableValueEquals(Variables.ORDER_NUMBER.getName(), orderNumber)
-                .variableValueEquals(ItemVariables.ORDER_ITEM_ID.getName(), orderItemId)
-                .list().isEmpty();
-
-        return !result;
-    }
-
-    protected boolean checkIfProcessExists(String orderNumber) {
-        var result = runtimeService.createProcessInstanceQuery()
-                .processDefinitionKey(SALES_ORDER_PROCESS.getName())
-                .processInstanceBusinessKey(orderNumber)
-                .list().isEmpty();
-        return !result;
-    }
-
-    protected Boolean getProcessStatus(Execution execution) {
-        return (Boolean) runtimeService.getVariable(execution.getId(), ItemVariables.DELIVERY_ADDRESS_CHANGE_POSSIBLE.getName());
     }
 
 }

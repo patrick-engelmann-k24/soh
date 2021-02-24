@@ -4,6 +4,7 @@ import de.kfzteile24.salesOrderHub.SalesOrderHubProcessApplication;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemMessages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.PaymentType;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
@@ -164,6 +165,66 @@ class OrderControllerTest {
         assertThat(result.getStatusCodeValue()).isEqualTo(200);
         assertThat(result.getBody().getStreet1()).isEqualTo(address.getStreet1());
         assertThat(result.getBody().getZipCode()).isEqualTo(address.getZipCode());
+    }
+
+    @Test
+    void cancelOrderItemForExistingOrder() {
+        var testOrder = salesOrderUtil.createNewSalesOrder();
+        final String orderNumber = testOrder.getOrderNumber();
+        final List<String> orderItems = util.getOrderItems(orderNumber, 5);
+
+        ProcessInstance salesOrderProcessInstance =
+                runtimeService.createMessageCorrelation(util._N(Messages.ORDER_RECEIVED_MARKETPLACE))
+                        .processInstanceBusinessKey(orderNumber)
+                        .setVariable(util._N(Variables.ORDER_NUMBER), orderNumber)
+                        .setVariable(util._N(Variables.PAYMENT_TYPE), util._N(PaymentType.CREDIT_CARD))
+                        .setVariable(util._N(Variables.ORDER_VALID), true)
+                        .setVariable(util._N(Variables.ORDER_ITEMS), orderItems)
+                        .setVariable(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
+                        .correlateWithResult().getProcessInstance();
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        BpmnAwareTests.assertThat(salesOrderProcessInstance).isWaitingAt(util._N(Events.MSG_ORDER_PAYMENT_SECURED));
+        util.sendMessage(util._N(Messages.ORDER_RECEIVED_PAYMENT_SECURED), orderNumber);
+
+        final var result = controller.cancelOrderItem(orderNumber, orderItems.get(0));
+        assertThat(result.getStatusCodeValue()).isEqualTo(200);
+    }
+
+    @Test
+    void cancelOrderItemNotPossibleState() {
+        var testOrder = salesOrderUtil.createNewSalesOrder();
+        final String orderNumber = testOrder.getOrderNumber();
+        final List<String> orderItems = util.getOrderItems(orderNumber, 5);
+
+        ProcessInstance salesOrderProcessInstance =
+                runtimeService.createMessageCorrelation(util._N(Messages.ORDER_RECEIVED_MARKETPLACE))
+                        .processInstanceBusinessKey(orderNumber)
+                        .setVariable(util._N(Variables.ORDER_NUMBER), orderNumber)
+                        .setVariable(util._N(Variables.PAYMENT_TYPE), util._N(PaymentType.CREDIT_CARD))
+                        .setVariable(util._N(Variables.ORDER_VALID), true)
+                        .setVariable(util._N(Variables.ORDER_ITEMS), orderItems)
+                        .setVariable(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
+                        .correlateWithResult().getProcessInstance();
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        BpmnAwareTests.assertThat(salesOrderProcessInstance).isWaitingAt(util._N(Events.MSG_ORDER_PAYMENT_SECURED));
+        util.sendMessage(util._N(Messages.ORDER_RECEIVED_PAYMENT_SECURED), orderNumber);
+
+        util.sendMessage(util._N(ItemMessages.ITEM_TRANSMITTED_TO_LOGISTICS), orderNumber);
+        util.sendMessage(util._N(ItemMessages.PACKING_STARTED), orderNumber);
+        util.sendMessage(util._N(ItemMessages.TRACKING_ID_RECEIVED), orderNumber);
+
+        final var result = controller.cancelOrderItem(orderNumber, orderItems.get(0));
+        assertThat(result.getStatusCodeValue()).isEqualTo(400);
     }
 
 }
