@@ -45,7 +45,6 @@ import static org.camunda.bpm.engine.test.assertions.ProcessEngineTests.assertTh
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-@RunWith(SpringRunner.class)
 @SpringBootTest(
         classes = SalesOrderHubProcessApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.NONE

@@ -14,5 +14,5 @@ public interface SalesOrderRepository extends JpaRepository<SalesOrder, UUID> {
     Optional<SalesOrder> getOrderByOrderNumber(@Param("orderNumber") String orderNumber);
 
     @Query("SELECT a FROM SalesOrder a WHERE a.processId = :processId")
-    Optional<SalesOrder> getOrderByProcessId(@Param("processId") UUID processId);
+    Optional<SalesOrder> getOrderByProcessId(@Param("processId") String processId);
 }

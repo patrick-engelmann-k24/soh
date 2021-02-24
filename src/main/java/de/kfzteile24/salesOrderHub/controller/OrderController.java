@@ -26,7 +26,7 @@ public class OrderController {
     @Autowired
     private SalesOrderItemService orderItemService;
 
-    @PutMapping("/{orderNumber}/billingAdresss")
+    @PutMapping("/{orderNumber}/billingAddress")
     public ResponseEntity<Address> updateBillingAddress(@PathVariable String orderNumber, @RequestBody final Address address) {
         return orderAddressService.updateBillingAddress(orderNumber, address);
     }
@@ -43,9 +43,7 @@ public class OrderController {
     public ResponseEntity cancelOrder(
             @PathVariable("orderNumber") final String orderNumber
     ) {
-        //ToDo hier weiter machen
-        salesOrderService.cancelOrder(orderNumber);
-        return ResponseEntity.ok().build();
+        return salesOrderService.cancelOrder(orderNumber);
     }
 
     @PutMapping("/{orderNumber}/cancelItem/{orderItemId}")

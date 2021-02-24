@@ -28,7 +28,7 @@ public class SalesOrder extends AbstractBaseEntity {
 
     @Basic
     @Column(name = "process_id")
-    private UUID processId;
+    private String processId;
 
     @Column(name = "original_order", columnDefinition = "json")
     @Convert(converter = OrderJsonConverter.class)

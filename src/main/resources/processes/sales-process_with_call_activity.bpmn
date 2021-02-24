@@ -97,10 +97,16 @@
       <bpmn:messageEventDefinition id="MessageEventDefinition_0razo0j" camunda:delegateExpression="${orderCompletedDelegate}" />
     </bpmn:endEvent>
     <bpmn:startEvent id="eventStartMsgOrderReceivedFromMarketplace" name="order received from marketplaces" camunda:asyncBefore="true">
+      <bpmn:extensionElements>
+        <camunda:executionListener delegateExpression="${updateOrderEntityListener}" event="start" />
+      </bpmn:extensionElements>
       <bpmn:outgoing>Flow_0ywvexv</bpmn:outgoing>
       <bpmn:messageEventDefinition id="MessageEventDefinition_1265x2l" messageRef="Message_0ixpcjn" />
     </bpmn:startEvent>
     <bpmn:startEvent id="eventStartMsgOrderReceivedFromECP" name="order received from ecp" camunda:asyncBefore="true">
+      <bpmn:extensionElements>
+        <camunda:executionListener delegateExpression="${updateOrderEntityListener}" event="start" />
+      </bpmn:extensionElements>
       <bpmn:outgoing>Flow_0ve7lq3</bpmn:outgoing>
       <bpmn:messageEventDefinition id="MessageEventDefinition_0sg5os6" messageRef="Message_07x4crw" />
     </bpmn:startEvent>
@@ -128,19 +134,55 @@
       <bpmn:multiInstanceLoopCharacteristics camunda:collection="orderItems" camunda:elementVariable="orderItem" />
     </bpmn:callActivity>
     <bpmn:subProcess id="Activity_0h6r060" triggeredByEvent="true">
-      <bpmn:startEvent id="eventOrderCancellationReceived" name="Order cancellation received">
-        <bpmn:outgoing>Flow_0yo7e7b</bpmn:outgoing>
-        <bpmn:messageEventDefinition id="MessageEventDefinition_186m1rh" messageRef="Message_0u9ctv5" />
-      </bpmn:startEvent>
-      <bpmn:task id="Activity_03ico7x" name="Handle order cancellation">
+      <bpmn:sequenceFlow id="Flow_0yo7e7b" sourceRef="eventOrderCancellationReceived" targetRef="activityCheckCompleteOrderCancellationPossible" />
+      <bpmn:sequenceFlow id="Flow_1a4ul6f" sourceRef="activityCheckCompleteOrderCancellationPossible" targetRef="Gateway_1r1bunx" />
+      <bpmn:serviceTask id="activityCheckCompleteOrderCancellationPossible" name="Check complete order cancellation possible" camunda:delegateExpression="${checkCompleteOrderCancelPossibleDelegate}">
         <bpmn:incoming>Flow_0yo7e7b</bpmn:incoming>
         <bpmn:outgoing>Flow_1a4ul6f</bpmn:outgoing>
-      </bpmn:task>
-      <bpmn:sequenceFlow id="Flow_0yo7e7b" sourceRef="eventOrderCancellationReceived" targetRef="Activity_03ico7x" />
-      <bpmn:sequenceFlow id="Flow_1a4ul6f" sourceRef="Activity_03ico7x" targetRef="eventEndMsgOrderCancelled" />
-      <bpmn:endEvent id="eventEndMsgOrderCancelled" name="Order cancelled">
+      </bpmn:serviceTask>
+      <bpmn:exclusiveGateway id="Gateway_1r1bunx" name="Can order cancelled completely?">
         <bpmn:incoming>Flow_1a4ul6f</bpmn:incoming>
-        <bpmn:messageEventDefinition id="MessageEventDefinition_1kwzu0f" camunda:delegateExpression="${orderCancelledDelegate}" />
+        <bpmn:outgoing>Flow_17hhkas</bpmn:outgoing>
+        <bpmn:outgoing>Flow_19o4nlh</bpmn:outgoing>
+      </bpmn:exclusiveGateway>
+      <bpmn:sequenceFlow id="Flow_17hhkas" name="Yes" sourceRef="Gateway_1r1bunx" targetRef="Activity_18fl4gz">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${orderCancelPossible}</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="Flow_19o4nlh" name="No" sourceRef="Gateway_1r1bunx" targetRef="Activity_0hxil38">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${not orderCancelPossible}</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:endEvent id="Event_0tbdkio" name="Order item cancelled">
+        <bpmn:incoming>Flow_0mjuwlj</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_0mjuwlj" sourceRef="Activity_0hxil38" targetRef="Event_0tbdkio" />
+      <bpmn:serviceTask id="Activity_0hxil38" name="Handle item deletion" camunda:delegateExpression="${handleItemDeletionDelegate}">
+        <bpmn:incoming>Flow_19o4nlh</bpmn:incoming>
+        <bpmn:outgoing>Flow_0mjuwlj</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:startEvent id="eventOrderCancellationReceived" name="Possible order cancellation received" isInterrupting="false">
+        <bpmn:outgoing>Flow_0yo7e7b</bpmn:outgoing>
+        <bpmn:messageEventDefinition id="MessageEventDefinition_0haczqj" messageRef="Message_0u9ctv5" />
+      </bpmn:startEvent>
+      <bpmn:sequenceFlow id="Flow_08evzqu" sourceRef="Activity_18fl4gz" targetRef="eventEndMsgOrderCancelled" />
+      <bpmn:serviceTask id="Activity_18fl4gz" name="Handle order cancellation" camunda:delegateExpression="${handleOrderCancellationDelegate}">
+        <bpmn:incoming>Flow_17hhkas</bpmn:incoming>
+        <bpmn:outgoing>Flow_08evzqu</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:endEvent id="eventEndMsgOrderCancelled" name="Order cancelled">
+        <bpmn:incoming>Flow_08evzqu</bpmn:incoming>
+      </bpmn:endEvent>
+    </bpmn:subProcess>
+    <bpmn:subProcess id="Activity_0ozurae" triggeredByEvent="true">
+      <bpmn:startEvent id="Event_13e2fv7" name="Order cancellation received">
+        <bpmn:outgoing>Flow_1uyjkr9</bpmn:outgoing>
+        <bpmn:conditionalEventDefinition id="ConditionalEventDefinition_0n0726x" camunda:variableName="orderCancelled" camunda:variableEvents="create">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">${orderCancelled}</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:startEvent>
+      <bpmn:sequenceFlow id="Flow_1uyjkr9" sourceRef="Event_13e2fv7" targetRef="Event_0ntun0j" />
+      <bpmn:endEvent id="Event_0ntun0j" name="Order cancelled">
+        <bpmn:incoming>Flow_1uyjkr9</bpmn:incoming>
+        <bpmn:messageEventDefinition id="MessageEventDefinition_110gcwt" camunda:delegateExpression="${orderCancelledDelegate}" />
       </bpmn:endEvent>
     </bpmn:subProcess>
     <bpmn:textAnnotation id="TextAnnotation_124vwel">
@@ -151,10 +193,6 @@
       <bpmn:text>This call activity creates for every orderline/orderitem a new subprocess (OrderItemFulfillment)</bpmn:text>
     </bpmn:textAnnotation>
     <bpmn:association id="Association_0bzrkcg" sourceRef="activityOrderItemFulfillmentProcess" targetRef="TextAnnotation_08nju3g" />
-    <bpmn:textAnnotation id="TextAnnotation_1q57ikg">
-      <bpmn:text>is not finally discussed, but is necessary if a customer will cancel the order before the order is payed</bpmn:text>
-    </bpmn:textAnnotation>
-    <bpmn:association id="Association_13pw6ym" sourceRef="Activity_0h6r060" targetRef="TextAnnotation_1q57ikg" />
   </bpmn:process>
   <bpmn:message id="Message_00gxny4" name="msgOrderReceivedPaymentSecured" />
   <bpmn:message id="Message_0c0nntq" name="msg_itemTransmitted" />
@@ -168,7 +206,7 @@
   <bpmn:message id="Message_0mtsn9u" name="msg_dropshipmentCancellationReceived" />
   <bpmn:message id="Message_1o2idhb" name="msg_deliveryAddressChange" />
   <bpmn:message id="Message_0yk7q6d" name="msg_invoiceCreated" />
-  <bpmn:message id="Message_1rxhtzg" name="msg_invoiceAddressChangeReceived" />
+  <bpmn:message id="Message_1rxhtzg" name="msgInvoiceAddressChangeReceived" />
   <bpmn:message id="Message_0ixpcjn" name="msgOrderReceivedMarketplace" />
   <bpmn:message id="Message_07x4crw" name="msgOrderReceivedEcp" />
   <bpmn:message id="Message_0rbxapr" name="msgOrderReceivedCustomerCare" />
@@ -176,7 +214,7 @@
   <bpmn:message id="Message_0qljm9c" name="msgOrderReceivedGarage" />
   <bpmn:escalation id="Escalation_1vowjkp" name="escaltionOrderItemFullfilmentCancelled" escalationCode="1234567890" />
   <bpmn:escalation id="Escalation_0v7r5ct" name="escalationOrderCancelled" escalationCode="1234567890" />
-  <bpmn:message id="Message_0u9ctv5" name="msg_orderCancellationReceived" />
+  <bpmn:message id="Message_0u9ctv5" name="msgOrderCancellationReceived" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="SalesOrderProcess_v2">
       <bpmndi:BPMNEdge id="Flow_0ero9gg_di" bpmnElement="Flow_0ero9gg">
@@ -378,29 +416,70 @@
         <dc:Bounds x="1220" y="190" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_0fd0s8t_di" bpmnElement="Activity_0h6r060" isExpanded="true">
-        <dc:Bounds x="490" y="660" width="350" height="200" />
+        <dc:Bounds x="490" y="660" width="630" height="310" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_1a4ul6f_di" bpmnElement="Flow_1a4ul6f">
         <di:waypoint x="720" y="760" />
-        <di:waypoint x="782" y="760" />
+        <di:waypoint x="755" y="760" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0yo7e7b_di" bpmnElement="Flow_0yo7e7b">
         <di:waypoint x="566" y="760" />
         <di:waypoint x="620" y="760" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="Event_05vsmac_di" bpmnElement="eventOrderCancellationReceived" bioc:stroke="#000" bioc:fill="#fff">
-        <dc:Bounds x="530" y="742" width="36" height="36" />
+      <bpmndi:BPMNEdge id="Flow_17hhkas_di" bpmnElement="Flow_17hhkas">
+        <di:waypoint x="805" y="760" />
+        <di:waypoint x="860" y="760" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="503" y="785" width="90" height="27" />
+          <dc:Bounds x="821" y="738" width="18" height="14" />
         </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_03ico7x_di" bpmnElement="Activity_03ico7x">
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_19o4nlh_di" bpmnElement="Flow_19o4nlh">
+        <di:waypoint x="780" y="785" />
+        <di:waypoint x="780" y="870" />
+        <di:waypoint x="860" y="870" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="788" y="825" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0mjuwlj_di" bpmnElement="Flow_0mjuwlj">
+        <di:waypoint x="960" y="870" />
+        <di:waypoint x="1022" y="870" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_08evzqu_di" bpmnElement="Flow_08evzqu">
+        <di:waypoint x="960" y="760" />
+        <di:waypoint x="1022" y="760" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Activity_1j4yh7e_di" bpmnElement="activityCheckCompleteOrderCancellationPossible">
         <dc:Bounds x="620" y="720" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_1h14aic_di" bpmnElement="eventEndMsgOrderCancelled" bioc:stroke="#000" bioc:fill="#fff">
-        <dc:Bounds x="782" y="742" width="36" height="36" />
+      <bpmndi:BPMNShape id="Gateway_1r1bunx_di" bpmnElement="Gateway_1r1bunx" isMarkerVisible="true">
+        <dc:Bounds x="755" y="735" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="761" y="785" width="78" height="14" />
+          <dc:Bounds x="750" y="685" width="59" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1j4f480_di" bpmnElement="eventOrderCancellationReceived" bioc:stroke="#000" bioc:fill="#fff">
+        <dc:Bounds x="530" y="742" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="513" y="785" width="71" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0tbdkio_di" bpmnElement="Event_0tbdkio">
+        <dc:Bounds x="1022" y="852" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1014" y="895" width="52" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0f0qpz6_di" bpmnElement="Activity_18fl4gz">
+        <dc:Bounds x="860" y="720" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0afbt81_di" bpmnElement="Activity_0hxil38">
+        <dc:Bounds x="860" y="830" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0fvvouh_di" bpmnElement="eventEndMsgOrderCancelled" bioc:stroke="#000" bioc:fill="#fff">
+        <dc:Bounds x="1022" y="742" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1001" y="785" width="78" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="TextAnnotation_124vwel_di" bpmnElement="TextAnnotation_124vwel">
@@ -408,9 +487,6 @@
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="TextAnnotation_08nju3g_di" bpmnElement="TextAnnotation_08nju3g">
         <dc:Bounds x="1194" y="81" width="190" height="68" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="TextAnnotation_1q57ikg_di" bpmnElement="TextAnnotation_1q57ikg">
-        <dc:Bounds x="900" y="690" width="100" height="110" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Association_1cn4wni_di" bpmnElement="Association_1cn4wni">
         <di:waypoint x="470" y="215" />
@@ -420,10 +496,25 @@
         <di:waypoint x="1256" y="190" />
         <di:waypoint x="1242" y="149" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Association_13pw6ym_di" bpmnElement="Association_13pw6ym">
-        <di:waypoint x="840" y="726" />
-        <di:waypoint x="900" y="715" />
+      <bpmndi:BPMNShape id="Activity_1hy0b4a_di" bpmnElement="Activity_0ozurae" isExpanded="true">
+        <dc:Bounds x="1160" y="670" width="350" height="200" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1uyjkr9_di" bpmnElement="Flow_1uyjkr9">
+        <di:waypoint x="1268" y="760" />
+        <di:waypoint x="1402" y="760" />
       </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_0tjh8fv_di" bpmnElement="Event_13e2fv7">
+        <dc:Bounds x="1232" y="742" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1205" y="785" width="90" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_18os5tq_di" bpmnElement="Event_0ntun0j">
+        <dc:Bounds x="1402" y="742" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1381" y="785" width="78" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>

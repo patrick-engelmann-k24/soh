@@ -99,4 +99,10 @@ public class CamundaHelper {
         return (Boolean) runtimeService.getVariable(execution.getId(), ItemVariables.DELIVERY_ADDRESS_CHANGE_POSSIBLE.getName());
     }
 
+    public ProcessInstance getOrderProcess(String processId) {
+        return runtimeService.createProcessInstanceQuery()
+                .processInstanceId(processId)
+                .singleResult();
+    }
+
 }

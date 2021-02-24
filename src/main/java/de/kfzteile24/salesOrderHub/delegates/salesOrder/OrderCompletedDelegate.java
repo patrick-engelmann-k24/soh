@@ -25,7 +25,7 @@ public class OrderCompletedDelegate implements JavaDelegate {
 
     @Override
     public void execute(DelegateExecution delegateExecution) throws Exception {
-        log.info("SNS-Topic: " + config.getSnsOrderCreatedTopic());
+        log.info("SNS-Topic: " + config.getSnsOrderCompletedTopic());
 
         String orderNumber = (String) delegateExecution.getVariable(Variables.ORDER_NUMBER.getName());
         snsPublishService.sendOrder(config.getSnsOrderCompletedTopic(), "Sales Order Completed", orderNumber);
