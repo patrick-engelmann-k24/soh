@@ -309,7 +309,7 @@ class OrderControllerTest {
         util.sendMessage(util._N(ItemMessages.TRACKING_ID_RECEIVED), orderNumber, orderItems.get(0));
 
         final var result = controller.cancelOrder(orderNumber);
-        assertThat(result.getStatusCodeValue()).isEqualTo(404);
+        assertThat(result.getStatusCodeValue()).isEqualTo(400);
     }
 
 }

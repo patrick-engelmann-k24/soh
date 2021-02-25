@@ -68,7 +68,7 @@ public class SalesOrderService {
                 if (!helper.checkIfProcessExists(orderNumber)) {
                     return ResponseEntity.ok().build();
                 } else {
-                    return ResponseEntity.notFound().build();
+                    return ResponseEntity.badRequest().build();
                 }
             } else {
                 return ResponseEntity.notFound().build();
