@@ -168,40 +168,6 @@ Pickup: n/a</bpmn:text>
       <bpmn:outgoing>Flow_1vg64vz</bpmn:outgoing>
       <bpmn:messageEventDefinition id="MessageEventDefinition_1a3zv9j" messageRef="Message_0bo9dny" />
     </bpmn:intermediateCatchEvent>
-    <bpmn:subProcess id="Activity_0e0nrhj" triggeredByEvent="true">
-      <bpmn:startEvent id="eventSignalReceiveOrderItemCancellation" name="Parent process order item cancellation received" isInterrupting="false">
-        <bpmn:outgoing>Flow_16iumd1</bpmn:outgoing>
-        <bpmn:signalEventDefinition id="SignalEventDefinition_0gfvgdf" signalRef="Signal_15vsfg9" />
-      </bpmn:startEvent>
-      <bpmn:sequenceFlow id="Flow_16iumd1" sourceRef="eventSignalReceiveOrderItemCancellation" targetRef="activityCheckCancellationPossibleFromSignal" />
-      <bpmn:exclusiveGateway id="Gateway_0xqp7vo" name="Cancellation possible?">
-        <bpmn:incoming>Flow_1u7qyju</bpmn:incoming>
-        <bpmn:outgoing>Flow_06ujgit</bpmn:outgoing>
-        <bpmn:outgoing>Flow_0kok7l1</bpmn:outgoing>
-      </bpmn:exclusiveGateway>
-      <bpmn:sequenceFlow id="Flow_1u7qyju" sourceRef="activityCheckCancellationPossibleFromSignal" targetRef="Gateway_0xqp7vo" />
-      <bpmn:sequenceFlow id="Flow_06ujgit" name="Yes" sourceRef="Gateway_0xqp7vo" targetRef="activityHandleCancellationShipmentFromSignal">
-        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${itemCancellationPossible}</bpmn:conditionExpression>
-      </bpmn:sequenceFlow>
-      <bpmn:endEvent id="Event_1m24bil" name="Cancellation handled">
-        <bpmn:incoming>Flow_0wudkgu</bpmn:incoming>
-      </bpmn:endEvent>
-      <bpmn:sequenceFlow id="Flow_0wudkgu" sourceRef="activityHandleCancellationShipmentFromSignal" targetRef="Event_1m24bil" />
-      <bpmn:serviceTask id="activityHandleCancellationShipmentFromSignal" name="Handle cancellation" camunda:delegateExpression="${handleOrderItemCancellation}">
-        <bpmn:incoming>Flow_06ujgit</bpmn:incoming>
-        <bpmn:outgoing>Flow_0wudkgu</bpmn:outgoing>
-      </bpmn:serviceTask>
-      <bpmn:serviceTask id="activityCheckCancellationPossibleFromSignal" name="Check cancellation possible" camunda:delegateExpression="${checkItemCancellationPossible}">
-        <bpmn:incoming>Flow_16iumd1</bpmn:incoming>
-        <bpmn:outgoing>Flow_1u7qyju</bpmn:outgoing>
-      </bpmn:serviceTask>
-      <bpmn:endEvent id="Event_170pyxo" name="Cancellation not handled">
-        <bpmn:incoming>Flow_0kok7l1</bpmn:incoming>
-      </bpmn:endEvent>
-      <bpmn:sequenceFlow id="Flow_0kok7l1" name="No" sourceRef="Gateway_0xqp7vo" targetRef="Event_170pyxo">
-        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${not itemCancellationPossible}</bpmn:conditionExpression>
-      </bpmn:sequenceFlow>
-    </bpmn:subProcess>
     <bpmn:textAnnotation id="TextAnnotation_0jme5a7">
       <bpmn:text>Batch creation in fullfilment</bpmn:text>
     </bpmn:textAnnotation>
@@ -366,6 +332,12 @@ Pickup: only before "Item picked up"</bpmn:text>
           <dc:Bounds x="741" y="725" width="79" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_17o77dv_di" bpmnElement="eventMsgShipmentCancellationReceived">
+        <dc:Bounds x="222" y="602" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="202" y="645" width="79" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0ukdtbc_di" bpmnElement="eventOrderItemShipmentCancelled">
         <dc:Bounds x="762" y="602" width="36" height="36" />
         <bpmndi:BPMNLabel>
@@ -377,12 +349,6 @@ Pickup: only before "Item picked up"</bpmn:text>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_1dvh9m7_di" bpmnElement="activityCheckCancellationPossible">
         <dc:Bounds x="340" y="580" width="100" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_17o77dv_di" bpmnElement="eventMsgShipmentCancellationReceived">
-        <dc:Bounds x="222" y="602" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="202" y="645" width="79" height="40" />
-        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_0ivluh2_di" bpmnElement="gwXORShipmentMethod" isMarkerVisible="true">
         <dc:Bounds x="425" y="155" width="50" height="50" />
@@ -520,66 +486,6 @@ Pickup: only before "Item picked up"</bpmn:text>
         <di:waypoint x="382" y="580" />
         <di:waypoint x="269" y="426" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="Activity_1i4jcop_di" bpmnElement="Activity_0e0nrhj" isExpanded="true">
-        <dc:Bounds x="190" y="800" width="638" height="290" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="Flow_16iumd1_di" bpmnElement="Flow_16iumd1">
-        <di:waypoint x="266" y="900" />
-        <di:waypoint x="320" y="900" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_1u7qyju_di" bpmnElement="Flow_1u7qyju">
-        <di:waypoint x="420" y="900" />
-        <di:waypoint x="475" y="900" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_06ujgit_di" bpmnElement="Flow_06ujgit">
-        <di:waypoint x="525" y="900" />
-        <di:waypoint x="580" y="900" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="544" y="882" width="18" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0wudkgu_di" bpmnElement="Flow_0wudkgu">
-        <di:waypoint x="680" y="900" />
-        <di:waypoint x="742" y="900" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0kok7l1_di" bpmnElement="Flow_0kok7l1">
-        <di:waypoint x="500" y="925" />
-        <di:waypoint x="500" y="1000" />
-        <di:waypoint x="742" y="1000" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="508" y="960" width="15" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="Event_0hih2l4_di" bpmnElement="eventSignalReceiveOrderItemCancellation">
-        <dc:Bounds x="230" y="882" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="213" y="925" width="74" height="53" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Gateway_0xqp7vo_di" bpmnElement="Gateway_0xqp7vo" isMarkerVisible="true">
-        <dc:Bounds x="475" y="875" width="50" height="50" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="470" y="845" width="61" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_1m24bil_di" bpmnElement="Event_1m24bil">
-        <dc:Bounds x="742" y="882" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="730" y="925" width="61" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_13k8q5r_di" bpmnElement="activityHandleCancellationShipmentFromSignal">
-        <dc:Bounds x="580" y="860" width="100" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1b3c3sm_di" bpmnElement="activityCheckCancellationPossibleFromSignal">
-        <dc:Bounds x="320" y="860" width="100" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_170pyxo_di" bpmnElement="Event_170pyxo">
-        <dc:Bounds x="742" y="982" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="721" y="1025" width="79" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>
