@@ -49,7 +49,7 @@ public class OrderController {
      */
     @ApiOperation(value = "Change billing address if there no invoice exists")
     @PutMapping("/{orderNumber}/billingAddress")
-    public ResponseEntity<Address> updateBillingAddress(@PathVariable String orderNumber, @RequestBody final Address address) {
+    public ResponseEntity<String> updateBillingAddress(@PathVariable String orderNumber, @RequestBody final Address address) {
         return orderAddressService.updateBillingAddress(orderNumber, address);
     }
 
@@ -68,7 +68,7 @@ public class OrderController {
     @ApiOperation(value = "Change delivery address for the order row if this is not over an defined state")
     @PutMapping("/{orderNumber}/{orderItemId}/deliveryAddress")
     @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<Address> updateDeliveryAddress(
+    public ResponseEntity<String> updateDeliveryAddress(
             @PathVariable("orderNumber") final String orderNumber, @PathVariable("orderItemId") final String orderItemId, @RequestBody final Address address) {
         return orderAddressService.updateDeliveryAddress(orderNumber, orderItemId, address);
     }
@@ -109,8 +109,8 @@ public class OrderController {
     @ResponseBody
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Success|OK"),
-            @ApiResponse(code = 400, message = "Failed|Not possible"),
-            @ApiResponse(code = 404, message = "Not found")
+            @ApiResponse(code = 404, message = "Not found"),
+            @ApiResponse(code = 409, message = "Failed|Not possible")
     })
     public ResponseEntity<String> cancelOrderItem(
             @PathVariable("orderNumber") final String orderNumber,

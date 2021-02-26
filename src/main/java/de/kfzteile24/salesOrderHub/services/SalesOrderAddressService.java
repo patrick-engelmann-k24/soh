@@ -22,6 +22,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_ITEM_FULFILLMENT_PROCESS;
@@ -44,15 +45,22 @@ public class SalesOrderAddressService {
     private Gson gson;
 
     @SneakyThrows
-    public ResponseEntity<Address> updateBillingAddress(final String orderNumber, final Address newBillingAddress) {
+    public ResponseEntity<String> updateBillingAddress(final String orderNumber, final Address newBillingAddress) {
         final Optional<SalesOrder> soOpt = orderRepository.getOrderByOrderNumber(orderNumber);
         if (soOpt.isPresent()) {
             if (helper.checkIfProcessExists(orderNumber)) {
                 sendMessageForUpdateBillingAddress(orderNumber, newBillingAddress);
                 final var newOrder = orderRepository.getOrderByOrderNumber(orderNumber);
-                return newOrder.map(salesOrder -> ResponseEntity.ok(salesOrder.getOriginalOrder().getOrderHeader().getBillingAddress())).orElseGet(() -> ResponseEntity.notFound().build());
+                if (newOrder.isPresent()) {
+                    SalesOrder updatedOrder = newOrder.get();
+                    if (updatedOrder.getOriginalOrder().getOrderHeader().getBillingAddress().equals(newBillingAddress)) {
+                        return new ResponseEntity<>("", HttpStatus.OK);
+                    } else {
+                        return new ResponseEntity<>("Not possible to update invoice", HttpStatus.CONFLICT);
+                    }
+                }
             } else {
-                return ResponseEntity.status(HttpStatus.CONFLICT).build();
+                return new ResponseEntity<>("Order not found", HttpStatus.NOT_FOUND);
             }
         }
 
@@ -60,7 +68,7 @@ public class SalesOrderAddressService {
     }
 
     @SneakyThrows
-    public ResponseEntity<Address> updateDeliveryAddress(final String orderNumber, final String orderItemId, final Address newDeliveryAddress) {
+    public ResponseEntity<String> updateDeliveryAddress(final String orderNumber, final String orderItemId, final Address newDeliveryAddress) {
         final Optional<SalesOrder> soOpt = orderRepository.getOrderByOrderNumber(orderNumber);
 
         if (soOpt.isPresent()) {
@@ -69,12 +77,23 @@ public class SalesOrderAddressService {
                         ItemMessages.DELIVERY_ADDRESS_CHANGE,
                         orderNumber, orderItemId, newDeliveryAddress);
                 final Optional<SalesOrder> newOrder = orderRepository.getOrderByOrderNumber(orderNumber);
-                return newOrder.map(salesOrder -> ResponseEntity.ok(salesOrder.getOriginalOrder().getOrderHeader().getBillingAddress())).orElseGet(() -> ResponseEntity.notFound().build());
+                if (newOrder.isPresent()) {
+                    SalesOrder updatedOrder = newOrder.get();
+                    List<Address> shippingAddresses = updatedOrder.getOriginalOrder().getOrderHeader().getShippingAddresses();
+                    for(Address shippingAddress : shippingAddresses) {
+                        if (shippingAddress.equals(newDeliveryAddress)) {
+                            return new ResponseEntity<>("", HttpStatus.OK);
+                        }
+                    }
+
+                    return new ResponseEntity<>("Update not possible ", HttpStatus.CONFLICT);
+                }
+
             } else if (helper.checkIfProcessExists(orderNumber)) {
                 // todo change main delivery address (order lvl)
 
             } else {
-                return ResponseEntity.status(HttpStatus.CONFLICT).build();
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }
         }
         return ResponseEntity.notFound().build();

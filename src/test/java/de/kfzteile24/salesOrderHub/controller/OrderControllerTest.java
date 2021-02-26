@@ -163,8 +163,6 @@ class OrderControllerTest {
         }
         final var result = controller.updateBillingAddress(orderNumber, address);
         assertThat(result.getStatusCodeValue()).isEqualTo(200);
-        assertThat(result.getBody().getStreet1()).isEqualTo(address.getStreet1());
-        assertThat(result.getBody().getZipCode()).isEqualTo(address.getZipCode());
     }
 
     @Test
@@ -224,7 +222,7 @@ class OrderControllerTest {
         util.sendMessage(util._N(ItemMessages.TRACKING_ID_RECEIVED), orderNumber);
 
         final var result = controller.cancelOrderItem(orderNumber, orderItems.get(0));
-        assertThat(result.getStatusCodeValue()).isEqualTo(400);
+        assertThat(result.getStatusCodeValue()).isEqualTo(409);
     }
 
     @Test
