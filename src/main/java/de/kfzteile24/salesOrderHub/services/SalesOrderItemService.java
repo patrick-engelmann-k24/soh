@@ -7,15 +7,14 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemVariable
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import lombok.SneakyThrows;
-import lombok.extern.log4j.Log4j;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.HistoryService;
 import org.camunda.bpm.engine.RuntimeService;
-import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.history.HistoricProcessInstance;
 import org.camunda.bpm.engine.history.HistoricVariableInstance;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -59,7 +58,7 @@ public class SalesOrderItemService {
                 if (cancellationPossible) {
                     return ResponseEntity.ok(orderItemId);
                 } else {
-                    return ResponseEntity.badRequest().build();
+                    return new ResponseEntity<>("Deletion of item not possible", HttpStatus.BAD_REQUEST);
                 }
             } else {
                 log.debug("More then one instances found " + String.valueOf(queryResult.size()));
