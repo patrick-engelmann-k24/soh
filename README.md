@@ -92,5 +92,11 @@ Further you must add this part under **settings** tag directly:
 </activeProfiles>
 ```
 
+## Swagger RestApi Documentation
+```
+http(s)://<host>:<port>/swagger-ui.html
+```
+
+
 
 
