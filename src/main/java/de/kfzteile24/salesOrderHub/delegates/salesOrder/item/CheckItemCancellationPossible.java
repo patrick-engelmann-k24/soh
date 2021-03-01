@@ -16,7 +16,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 public class CheckItemCancellationPossible implements JavaDelegate {
 
     @Autowired
-    SalesOrderItemService itemService;
+    private SalesOrderItemService itemService;
 
     /**
      * Check if process (item) cancellation is possible

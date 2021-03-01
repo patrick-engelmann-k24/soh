@@ -19,13 +19,13 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 public class CheckOrderCancelPossibleDelegate implements JavaDelegate {
 
     @Autowired
-    CamundaHelper camundaHelper;
+    private CamundaHelper camundaHelper;
 
     @Autowired
-    RuntimeService runtimeService;
+    private RuntimeService runtimeService;
 
     @Autowired
-    SalesOrderItemService itemService;
+    private SalesOrderItemService itemService;
 
     @Override
     public void execute(DelegateExecution delegateExecution) throws Exception {

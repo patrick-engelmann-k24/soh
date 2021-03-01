@@ -16,9 +16,6 @@ import java.util.Optional;
 public class UpdateOrderEntityListener implements ExecutionListener {
 
     @Autowired
-    private CamundaHelper helper;
-
-    @Autowired
     private SalesOrderService salesOrderService;
 
     @Override

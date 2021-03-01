@@ -9,9 +9,7 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
-import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import org.camunda.bpm.engine.ProcessEngine;
-import org.camunda.bpm.engine.RepositoryService;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.junit.Before;
@@ -41,22 +39,16 @@ public class ChangeInvoiceAddressDelegatePossibleDelegateTest {
     public ProcessEngine processEngine;
 
     @Autowired
-    RuntimeService runtimeService;
+    private RuntimeService runtimeService;
 
     @Autowired
-    RepositoryService repositoryService;
+    private BpmUtil util;
 
     @Autowired
-    BpmUtil util;
+    private SalesOrderInvoiceRepository invoiceRepository;
 
     @Autowired
-    SalesOrderService salesOrderService;
-
-    @Autowired
-    SalesOrderInvoiceRepository invoiceRepository;
-
-    @Autowired
-    SalesOrderUtil salesOrderUtil;
+    private SalesOrderUtil salesOrderUtil;
 
     @Before
     public void setUp() {
@@ -144,7 +136,7 @@ public class ChangeInvoiceAddressDelegatePossibleDelegateTest {
 
     }
 
-    ProcessInstance createOrderProcess(SalesOrder salesOrder) {
+    private ProcessInstance createOrderProcess(SalesOrder salesOrder) {
         final String orderNumber = salesOrder.getOrderNumber();
         final List<String> orderItems = util.getOrderItems(orderNumber, 5);
 
