@@ -25,8 +25,6 @@ import org.springframework.cloud.aws.messaging.listener.annotation.SqsListener;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
-
 @Service
 @Slf4j
 @RequiredArgsConstructor
