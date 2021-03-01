@@ -96,7 +96,3 @@ Further you must add this part under **settings** tag directly:
 ```
 http(s)://<host>:<port>/swagger-ui.html
 ```
-
-
-
-

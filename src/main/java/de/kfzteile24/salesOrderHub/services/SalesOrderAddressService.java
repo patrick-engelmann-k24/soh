@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemEvents;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemMessages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemVariables;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
@@ -14,7 +13,6 @@ import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import lombok.SneakyThrows;
 import lombok.extern.java.Log;
 import org.camunda.bpm.engine.RuntimeService;
-import org.camunda.bpm.engine.runtime.Execution;
 import org.camunda.bpm.engine.runtime.MessageCorrelationBuilder;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,9 +22,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
-
-import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_ITEM_FULFILLMENT_PROCESS;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
 
 @Service
 @Log
