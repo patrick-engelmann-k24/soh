@@ -44,7 +44,6 @@ public class OrderController {
      * Change billing address if there no invoice exists
      *
      * @param orderNumber The order number from the order where to change the billing address
-     * @param address The new billing address
      * @return ResponseEntity with Address
      */
     @ApiOperation(value = "Change billing address if there no invoice exists")
