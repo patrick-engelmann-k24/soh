@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_0csmsqq" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.3.0">
-  <bpmn:process id="OrderItemFulfillmentProcess" name="Orderitem fulfillment process" isExecutable="true">
-    <bpmn:startEvent id="eventStartOrderItemFulfillmentProcess">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_0csmsqq" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.5.0">
+  <bpmn:process id="OrderItemFulfillmentProcess" name="Orderitem fulfillment process" isExecutable="true" camunda:isStartableInTasklist="false">
+    <bpmn:startEvent id="eventStartOrderItemFulfillmentProcess" name="Order item received">
       <bpmn:extensionElements>
         <camunda:executionListener expression="${execution.setVariableLocal(&#39;trackingIdReceived&#39;,false)}" event="start" />
       </bpmn:extensionElements>
       <bpmn:outgoing>Flow_1vsuxx8</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:endEvent id="eventOrderItemFulfillmentProcessFinished">
+    <bpmn:endEvent id="eventOrderItemFulfillmentProcessFinished" name="Order item delivered">
       <bpmn:incoming>Flow_0pptdh1</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:intermediateCatchEvent id="eventItemTransmittedToLogistics" name="Item transmitted to logistics">
@@ -34,7 +34,7 @@
       <bpmn:endEvent id="eventOrderItemShipmentNotHandled" name="Cancellation not handled">
         <bpmn:incoming>Flow_0f8i3w6</bpmn:incoming>
       </bpmn:endEvent>
-      <bpmn:startEvent id="eventMsgShipmentCancellationReceived" name="Order item cancellation received" isInterrupting="false">
+      <bpmn:startEvent id="eventMsgShipmentCancellationReceived" name="Possible order row cancellation received" isInterrupting="false">
         <bpmn:outgoing>Flow_05u4xge</bpmn:outgoing>
         <bpmn:messageEventDefinition id="MessageEventDefinition_06a9137" messageRef="Message_0co8mn0" />
       </bpmn:startEvent>
@@ -133,7 +133,7 @@ Pickup: n/a</bpmn:text>
       </bpmn:endEvent>
       <bpmn:startEvent id="eventOrderItemCancellationReceived" name="Order Item cancellation received">
         <bpmn:outgoing>Flow_1acb332</bpmn:outgoing>
-        <bpmn:conditionalEventDefinition id="ConditionalEventDefinition_0novxw8" camunda:variableName="itemCancelled" camunda:variableEvent="create">
+        <bpmn:conditionalEventDefinition id="ConditionalEventDefinition_0novxw8" camunda:variableName="itemCancelled" camunda:variableEvents="create">
           <bpmn:condition xsi:type="bpmn:tFormalExpression">${itemCancelled}</bpmn:condition>
         </bpmn:conditionalEventDefinition>
       </bpmn:startEvent>
@@ -192,8 +192,13 @@ Pickup: only before "Item picked up"</bpmn:text>
   <bpmn:escalation id="Escalation_09qfsfl" name="escalationOrderCancelled" escalationCode="1234567890" />
   <bpmn:message id="Message_1sm0n67" name="msgDeliveryAddressChange" />
   <bpmn:message id="Message_0bo9dny" name="msgItemShipped" />
+  <bpmn:signal id="Signal_15vsfg9" name="signalReceiveOrderItemCancellation" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="OrderItemFulfillmentProcess">
+      <bpmndi:BPMNEdge id="Flow_1vg64vz_di" bpmnElement="Flow_1vg64vz">
+        <di:waypoint x="768" y="180" />
+        <di:waypoint x="825" y="180" />
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0pptdh1_di" bpmnElement="Flow_0pptdh1">
         <di:waypoint x="1065" y="180" />
         <di:waypoint x="1172" y="180" />
@@ -255,15 +260,17 @@ Pickup: only before "Item picked up"</bpmn:text>
         <di:waypoint x="288" y="180" />
         <di:waypoint x="332" y="180" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_1vg64vz_di" bpmnElement="Flow_1vg64vz">
-        <di:waypoint x="768" y="180" />
-        <di:waypoint x="825" y="180" />
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="Event_1wtixd7_di" bpmnElement="eventStartOrderItemFulfillmentProcess">
         <dc:Bounds x="252" y="162" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="245" y="205" width="52" height="27" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0s8tnw6_di" bpmnElement="eventOrderItemFulfillmentProcessFinished">
         <dc:Bounds x="1172" y="162" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1165" y="205" width="52" height="27" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_1naphn8_di" bpmnElement="eventItemTransmittedToLogistics">
         <dc:Bounds x="332" y="162" width="36" height="36" />
@@ -283,20 +290,11 @@ Pickup: only before "Item picked up"</bpmn:text>
           <dc:Bounds x="517" y="205" width="76" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Gateway_01vbda1_di" bpmnElement="gwXORTourStarted" isMarkerVisible="true">
-        <dc:Bounds x="825" y="155" width="50" height="50" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_10vc6q0_di" bpmnElement="itemShipped">
-        <dc:Bounds x="732" y="162" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="719" y="205" width="63" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_0yx3m7q_di" bpmnElement="subProcessOrderItemCancellationShipment" isExpanded="true">
-        <dc:Bounds x="240" y="500" width="588" height="270" />
+        <dc:Bounds x="190" y="500" width="638" height="280" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_05u4xge_di" bpmnElement="Flow_05u4xge">
-        <di:waypoint x="308" y="620" />
+        <di:waypoint x="258" y="620" />
         <di:waypoint x="340" y="620" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_13ibsm9_di" bpmnElement="Flow_13ibsm9">
@@ -335,9 +333,9 @@ Pickup: only before "Item picked up"</bpmn:text>
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_17o77dv_di" bpmnElement="eventMsgShipmentCancellationReceived">
-        <dc:Bounds x="272" y="602" width="36" height="36" />
+        <dc:Bounds x="222" y="602" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="262" y="645" width="59" height="40" />
+          <dc:Bounds x="202" y="645" width="79" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0ukdtbc_di" bpmnElement="eventOrderItemShipmentCancelled">
@@ -375,6 +373,9 @@ Pickup: only before "Item picked up"</bpmn:text>
         <bpmndi:BPMNLabel>
           <dc:Bounds x="815" y="395" width="72" height="14" />
         </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_01vbda1_di" bpmnElement="gwXORTourStarted" isMarkerVisible="true">
+        <dc:Bounds x="825" y="155" width="50" height="50" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_1r18tfj_di" bpmnElement="subProcessOrderItemDeliveryAddressChange" isExpanded="true">
         <dc:Bounds x="880" y="690" width="520" height="240" />
@@ -464,6 +465,12 @@ Pickup: only before "Item picked up"</bpmn:text>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_0b3ilgy_di" bpmnElement="gwXORClickAndCollect" isMarkerVisible="true">
         <dc:Bounds x="1015" y="155" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_10vc6q0_di" bpmnElement="itemShipped">
+        <dc:Bounds x="732" y="162" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="719" y="205" width="63" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="TextAnnotation_0jme5a7_di" bpmnElement="TextAnnotation_0jme5a7">
         <dc:Bounds x="350" y="80" width="120" height="41" />

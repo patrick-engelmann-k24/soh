@@ -38,6 +38,13 @@ springdoc:
   api-docs:
     path: /api-docs
 
+swagger:
+  api:
+    title: Sales Order Hub - API Doc
+    description: API documentation of Sales Order Hub for direct requests
+    version: 1.0
+    controller:
+      basepackage: de.kfzteile24.salesOrderHub
 
 kfzteile:
   #

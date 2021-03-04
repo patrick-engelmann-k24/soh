@@ -28,5 +28,5 @@ public class Header {
     List<Discount> discounts;
     List<Payment> payments;
     Address billingAddress;
-    Address shippingAddress;
+    List<Address> shippingAddresses;
 }

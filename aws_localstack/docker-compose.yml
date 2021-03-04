@@ -7,9 +7,9 @@ services:
     network_mode: bridge
     ports:
       - "4566:4566"
-      - "${PORT_WEB_UI-8081}:8080"
+      - "${PORT_WEB_UI-8081}:8081"
     environment:
-      - SERVICES=sns,sqs
+      - SERVICES=sns,sqs,lambda
       - DEFAULT_REGION=eu-central-1
       - DOCKER_HOST=unix:///var/run/docker.sock
       - HOSTNAME_EXTERNAL=${HOSTNAME_EXTERNAL- }

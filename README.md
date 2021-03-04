@@ -68,3 +68,31 @@ cloud:
 ```
 
 Further instructions you can find [here](aws_localstack/README.md)
+
+## Github Package Repo configuration
+To reach out the maven github for kfzteile24 you must add  
+the following part to the **profiles** sections in .m2/settings.xml file in your home folder:
+```
+<profile>
+   <id>github</id>
+   <repositories>
+       <repository>
+           <id>github</id>
+           <name>GitHub kfzteile24 Apache Maven Packages</name>
+           <url>https://maven.pkg.github.com/kfzteile24/json-schema-java-bundle</url>
+       </repository>
+   </repositories>
+</profile>
+```
+
+Further you must add this part under **settings** tag directly:
+```
+<activeProfiles>
+  <activeProfile>github</activeProfile>
+</activeProfiles>
+```
+
+## Swagger RestApi Documentation
+```
+http(s)://<host>:<port>/swagger-ui.html
+```

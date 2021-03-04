@@ -1,8 +1,6 @@
 package de.kfzteile24.salesOrderHub.helper;
 
-import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderItem;
 import de.kfzteile24.salesOrderHub.dto.OrderJSON;
@@ -21,7 +19,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
-import java.text.DateFormat;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;

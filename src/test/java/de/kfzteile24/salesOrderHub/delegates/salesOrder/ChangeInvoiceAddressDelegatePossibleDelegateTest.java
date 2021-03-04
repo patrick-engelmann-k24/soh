@@ -6,12 +6,10 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemMessages
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
-import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
+import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
-import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import org.camunda.bpm.engine.ProcessEngine;
-import org.camunda.bpm.engine.RepositoryService;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.junit.Before;
@@ -36,24 +34,21 @@ import static org.junit.Assert.assertTrue;
         classes = SalesOrderHubProcessApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.NONE
 )
-public class ChangeInvoiceAddressPossibleDelegateTest {
+public class ChangeInvoiceAddressDelegatePossibleDelegateTest {
     @Autowired
     public ProcessEngine processEngine;
 
     @Autowired
-    RuntimeService runtimeService;
+    private RuntimeService runtimeService;
 
     @Autowired
-    RepositoryService repositoryService;
+    private BpmUtil util;
 
     @Autowired
-    BpmUtil util;
+    private SalesOrderInvoiceRepository invoiceRepository;
 
     @Autowired
-    SalesOrderService salesOrderService;
-
-    @Autowired
-    SalesOrderInvoiceRepository invoiceRepository;
+    private SalesOrderUtil salesOrderUtil;
 
     @Before
     public void setUp() {
@@ -62,12 +57,18 @@ public class ChangeInvoiceAddressPossibleDelegateTest {
 
     @Test
     public void testChangeInvoiceAddressPossible() {
-        final SalesOrder testOrder = getSalesOrder();
+        final SalesOrder testOrder = salesOrderUtil.createNewSalesOrder();
         final ProcessInstance orderProcess = createOrderProcess(testOrder);
         final String orderNumber = testOrder.getOrderNumber();
 
+        try {
+            Thread.sleep(400);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
         assertThat(orderProcess).isWaitingAt(util._N(Events.MSG_ORDER_PAYMENT_SECURED));
-        util.sendMessage(Messages.ORDER_INVOICE_ADDESS_CHANGE_RECEIVED, orderNumber);
+        util.sendMessage(Messages.ORDER_INVOICE_ADDRESS_CHANGE_RECEIVED, orderNumber);
 
         // check if the delegate sets the variable
         assertThat(orderProcess)
@@ -93,7 +94,7 @@ public class ChangeInvoiceAddressPossibleDelegateTest {
 
     @Test
     public void testChangeInvoiceAddressPossibleNotPossible() {
-        final SalesOrder testOrder = getSalesOrder();
+        final SalesOrder testOrder = salesOrderUtil.createNewSalesOrder();
         final ProcessInstance orderProcess = createOrderProcess(testOrder);
         final String orderNumber = testOrder.getOrderNumber();
 
@@ -103,8 +104,14 @@ public class ChangeInvoiceAddressPossibleDelegateTest {
                 .build();
         invoiceRepository.save(orderInvoice);
 
+        try {
+            Thread.sleep(400);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
         assertThat(orderProcess).isWaitingAt(util._N(Events.MSG_ORDER_PAYMENT_SECURED));
-        util.sendMessage(Messages.ORDER_INVOICE_ADDESS_CHANGE_RECEIVED, orderNumber);
+        util.sendMessage(Messages.ORDER_INVOICE_ADDRESS_CHANGE_RECEIVED, orderNumber);
 
         // check if the delegate sets the variable
         assertThat(orderProcess)
@@ -129,7 +136,7 @@ public class ChangeInvoiceAddressPossibleDelegateTest {
 
     }
 
-    ProcessInstance createOrderProcess(SalesOrder salesOrder) {
+    private ProcessInstance createOrderProcess(SalesOrder salesOrder) {
         final String orderNumber = salesOrder.getOrderNumber();
         final List<String> orderItems = util.getOrderItems(orderNumber, 5);
 
@@ -157,15 +164,5 @@ public class ChangeInvoiceAddressPossibleDelegateTest {
         util.sendMessage(util._N(ItemMessages.ITEM_SHIPPED), orderNumber);
 
         assertThat(orderProcess).isEnded();
-    }
-
-    SalesOrder getSalesOrder() {
-        final OrderJSON order = util.getRandomOrder();
-        SalesOrder so = SalesOrder.builder()
-                .salesLocale(order.getOrderHeader().getOrigin().getLocale())
-                .originalOrder(order)
-                .orderNumber(order.getOrderHeader().getOrderNumber())
-                .build();
-        return salesOrderService.createOrder(so);
     }
 }
