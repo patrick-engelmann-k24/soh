@@ -1,11 +1,11 @@
-package de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item;
+package de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 
 /**
  * All Gateways from the Order Item Fulfillment process
  */
-public enum ItemGateways implements BpmItem {
+public enum RowGateways implements BpmItem {
     XOR_CANCELLATION_POSSIBLE("gwXORCancellationPossible"),
     XOR_DELIVERY_ADRESS_CHANGE_POSSIBLE("gwXORDeliveryAdressChangePossible"),
     XOR_DROP_SHIPMENT("gwXORDropShipment"),
@@ -17,7 +17,7 @@ public enum ItemGateways implements BpmItem {
 
     private final String name;
 
-    ItemGateways(final String name) {
+    RowGateways(final String name) {
         this.name = name;
     }
 

@@ -7,7 +7,7 @@ public enum Variables implements BpmItem {
     PAYMENT_TYPE("paymentType"),
     PAYMENT_STATUS("paymentStatus"),
     ORDER_VALID("orderValid"),
-    ORDER_ITEMS("orderItems"),
+    ORDER_ROWS("orderRows"),
     SHIPMENT_METHOD("shipmentMethod"),
     INVOICE_EXISTS("invoiceExist"),
     INVOICE_ADDRESS_CHANGE_REQUEST("invoiceAddressChangeRequest"),

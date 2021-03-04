@@ -1,9 +1,9 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder.item;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemEvents;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemVariables;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ShipmentMethod;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.delegates.CommonDelegate;
 import lombok.extern.java.Log;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
@@ -13,7 +13,7 @@ import static java.lang.String.format;
 
 @Component
 @Log
-public class CheckItemChangePossible extends CommonDelegate {
+public class CheckRowDeliveryAddressChangePossible extends CommonDelegate {
 
     public void execute(DelegateExecution delegateExecution) {
         final String shipmentMethod = (String) delegateExecution.getVariable(Variables.SHIPMENT_METHOD.getName());
@@ -22,7 +22,7 @@ public class CheckItemChangePossible extends CommonDelegate {
     }
 
     void setResultVariable(DelegateExecution delegateExecution, boolean checkResult) {
-        setResultVariable(delegateExecution, ItemVariables.DELIVERY_ADDRESS_CHANGE_POSSIBLE, checkResult);
+        setResultVariable(delegateExecution, RowVariables.DELIVERY_ADDRESS_CHANGE_POSSIBLE, checkResult);
     }
 
     public Boolean itemChangeable(String processInstanceId, String shipmentMethod) {
@@ -43,11 +43,11 @@ public class CheckItemChangePossible extends CommonDelegate {
     }
 
     protected boolean checkOnShipmentMethodParcel(String processInstanceId) {
-        return helper.hasNotPassed(processInstanceId, ItemEvents.PACKING_STARTED.getName());
+        return helper.hasNotPassed(processInstanceId, RowEvents.PACKING_STARTED.getName());
     }
 
     protected boolean checkOnShipmentMethodOwnDelivery(String processInstanceId) {
-        return helper.hasNotPassed(processInstanceId, ItemEvents.TOUR_STARTED.getName());
+        return helper.hasNotPassed(processInstanceId, RowEvents.TOUR_STARTED.getName());
     }
 
 }

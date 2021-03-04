@@ -3,7 +3,7 @@ package de.kfzteile24.salesOrderHub.helper;
 import com.google.gson.Gson;
 import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemVariables;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
 import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import de.kfzteile24.salesOrderHub.dto.sqs.EcpOrder;
 import lombok.SneakyThrows;
@@ -61,7 +61,7 @@ public class BpmUtil {
                                                       final Map<String, Object> processVariables) {
         MessageCorrelationBuilder builder = runtimeService.createMessageCorrelation(message)
                 .processInstanceVariableEquals(_N(Variables.ORDER_NUMBER), orderNumber)
-                .processInstanceVariableEquals(_N(ItemVariables.ORDER_ITEM_ID), orderItem);
+                .processInstanceVariableEquals(_N(RowVariables.ORDER_ROW_ID), orderItem);
         if (!processVariables.isEmpty())
             builder.setVariables(processVariables);
 
@@ -96,10 +96,10 @@ public class BpmUtil {
         return orderJSON;
     }
 
-    public final List<String> getOrderItems(final String orderNumber, final int number) {
+    public final List<String> getOrderRows(final String orderNumber, final int number) {
         final List<String> result = new ArrayList<>();
         for (int i = 0; i < number; i++) {
-            result.add(orderNumber + "-item-" + i);
+            result.add(orderNumber + "-row-" + i);
         }
         return result;
     }

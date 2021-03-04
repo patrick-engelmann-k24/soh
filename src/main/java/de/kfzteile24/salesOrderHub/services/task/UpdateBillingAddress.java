@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemVariables;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
 import de.kfzteile24.salesOrderHub.dto.order.customer.Address;
 import lombok.SneakyThrows;
 import org.camunda.bpm.engine.RuntimeService;
@@ -50,7 +50,7 @@ public class UpdateBillingAddress implements Runnable {
     protected MessageCorrelationResult sendMessage(BpmItem message, String orderNumber, Address newDeliveryAdress) {
         MessageCorrelationBuilder builder = runtimeService.createMessageCorrelation(message.getName())
                 .processInstanceVariableEquals(Variables.ORDER_NUMBER.getName(), orderNumber)
-                .setVariable(ItemVariables.DELIVERY_ADDRESS_CHANGE_REQUEST.getName(), gson.toJson(newDeliveryAdress));
+                .setVariable(RowVariables.DELIVERY_ADDRESS_CHANGE_REQUEST.getName(), gson.toJson(newDeliveryAdress));
 
         return builder.correlateWithResultAndVariables(true);
     }

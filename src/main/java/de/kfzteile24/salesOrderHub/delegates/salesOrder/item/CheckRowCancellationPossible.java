@@ -1,6 +1,6 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder.item;
 
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemVariables;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
 import de.kfzteile24.salesOrderHub.services.SalesOrderItemService;
 import lombok.extern.java.Log;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
@@ -13,7 +13,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 
 @Component
 @Log
-public class CheckItemCancellationPossible implements JavaDelegate {
+public class CheckRowCancellationPossible implements JavaDelegate {
 
     @Autowired
     private SalesOrderItemService itemService;
@@ -28,6 +28,6 @@ public class CheckItemCancellationPossible implements JavaDelegate {
         final String shipmentMethod = (String) delegateExecution.getVariable(SHIPMENT_METHOD.getName());
         Boolean checkResult = itemService.checkItemCancellationPossible(delegateExecution.getProcessInstanceId(), shipmentMethod);
 
-        delegateExecution.setVariable(ItemVariables.ITEM_CANCELLATION_POSSIBLE.getName(), checkResult);
+        delegateExecution.setVariable(RowVariables.ROW_CANCELLATION_POSSIBLE.getName(), checkResult);
     }
 }
