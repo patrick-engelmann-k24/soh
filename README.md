@@ -1,5 +1,7 @@
 ## Sales-Order-Hub
 
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/27d09ee13f4240c196b26c0525954c45)](https://www.codacy.com?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=kfzteile24/soh-business-processing-engine&amp;utm_campaign=Badge_Grade)
+
 ### Consumed & Published Events 
 
 A list of Events that this projects publishes or consumes are [here](https://kfzteile24.atlassian.net/wiki/x/NgB9Y).
@@ -42,6 +44,12 @@ Password: demo
 [SNS-Topics](https://github.com/kfzteile24/soh-sns-topics)
 
 ## Documentation
+
+### Architecture
+
+![Architecture_pic](doc/img/Architecture_pic_soh_business_process_engine.png)
+
+Link to [miro board](https://miro.com/app/board/o9J_lRPP23M=/) 
 
 [Confluence](https://kfzteile24.atlassian.net/wiki/spaces/IT/pages/574554350/Sales+Order+Hub)
 
