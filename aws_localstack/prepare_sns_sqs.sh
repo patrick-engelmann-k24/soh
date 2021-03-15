@@ -5,6 +5,9 @@ set -e
 
 #set -x # print commands for debugging purposes
 export AWS_PAGER=""
+export AWS_DEFAULT_REGION=eu-central-1
+export AWS_SECRET_ACCESS_KEY=000000000000
+export AWS_ACCESS_KEY_ID=000000000000
 
 TOPICS="
     soh-delivery-address-changed
