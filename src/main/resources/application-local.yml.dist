@@ -13,39 +13,39 @@ spring:
     #       SPRING_PROFILES_ACTIVE=default,local
     # then it takes this value
     jdbcUrl: jdbc:postgresql://your-server:5432/your-database?currentSchema=public
-    username: postgres
-    password: postgres
+    username: your_db_user
+    password: your_db_user_password
 
-  cloud:
-    aws:
-#      endpoint:
-#        url: http://your-docker.host:4566
-      region:
-        static: eu-central-1
-      stack:
-        auto: false
-      credentials:
-        access-key: your-access-key
-        secret-key: your-secret-key
+cloud:
+  aws:
+    endpoint:
+      url: http://your-docker.host:4566
+    region:
+      static: eu-central-1
+    stack:
+      auto: false
+    credentials:
+      access-key: any-access-key
+      secret-key: any-secret-key
 
-  #AWS
-  soh:
-    sns:
-      topic:
-      orderCreated: arn:aws:sns:eu-central-1:000000000000:soh-order-created
-      orderCompleted: arn:aws:sns:eu-central-1:000000000000:soh-order-completed
-      orderCancelled: arn:aws:sns:eu-central-1:000000000000:soh-order-cancelled
-      orderItemCancelled: arn:aws:sns:eu-central-1:000000000000:soh-order-item-cancelled
-      invoiceAddressChanged: arn:aws:sns:eu-central-1:000000000000:soh-invoice-address-changed
-      deliveryAddressChanged: arn:aws:sns:eu-central-1:000000000000:soh-delivery-address-changed
-    sqs:
-      queue:
-        ecpShopOrders:                http://localhost:4566/000000000000/soh-ecp-shop-orders-queue
-        orderItemShipped:             http://localhost:4566/000000000000/soh-order-item-shipped-queue
-        orderPaymentSecured:          http://localhost:4566/000000000000/soh-order-payment-secured-queue
-        orderItemTransmittedToLogistic: http://localhost:4566/000000000000/soh-order-item-transmitted-to-logistic-queue
-        orderItemPackingStarted:      http://localhost:4566/000000000000/soh-order-item-packing-started-queue
-        orderItemTrackingIdReceived:  http://localhost:4566/000000000000/soh-order-item-tracking-id-received-queue
-        orderItemTourStarted:         http://localhost:4566/000000000000/soh-order-item-tour-started-queue
+#AWS
+soh:
+  sns:
+    topic:
+    orderCreated: arn:aws:sns:eu-central-1:000000000000:soh-order-created
+    orderCompleted: arn:aws:sns:eu-central-1:000000000000:soh-order-completed
+    orderCancelled: arn:aws:sns:eu-central-1:000000000000:soh-order-cancelled
+    orderItemCancelled: arn:aws:sns:eu-central-1:000000000000:soh-order-item-cancelled
+    invoiceAddressChanged: arn:aws:sns:eu-central-1:000000000000:soh-invoice-address-changed
+    deliveryAddressChanged: arn:aws:sns:eu-central-1:000000000000:soh-delivery-address-changed
+  sqs:
+    queue:
+      ecpShopOrders:                http://localhost:4566/000000000000/soh-ecp-shop-orders-queue
+      orderItemShipped:             http://localhost:4566/000000000000/soh-order-item-shipped-queue
+      orderPaymentSecured:          http://localhost:4566/000000000000/soh-order-payment-secured-queue
+      orderItemTransmittedToLogistic: http://localhost:4566/000000000000/soh-order-item-transmitted-to-logistic-queue
+      orderItemPackingStarted:      http://localhost:4566/000000000000/soh-order-item-packing-started-queue
+      orderItemTrackingIdReceived:  http://localhost:4566/000000000000/soh-order-item-tracking-id-received-queue
+      orderItemTourStarted:         http://localhost:4566/000000000000/soh-order-item-tour-started-queue
 
 
