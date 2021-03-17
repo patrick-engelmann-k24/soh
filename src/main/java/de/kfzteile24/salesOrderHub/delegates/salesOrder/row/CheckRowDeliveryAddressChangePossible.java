@@ -1,4 +1,4 @@
-package de.kfzteile24.salesOrderHub.delegates.salesOrder.item;
+package de.kfzteile24.salesOrderHub.delegates.salesOrder.row;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
@@ -21,7 +21,7 @@ public class CheckRowDeliveryAddressChangePossible extends CommonDelegate {
                 itemChangeable(delegateExecution.getProcessInstanceId(), shipmentMethod));
     }
 
-    void setResultVariable(DelegateExecution delegateExecution, boolean checkResult) {
+    private void setResultVariable(DelegateExecution delegateExecution, boolean checkResult) {
         setResultVariable(delegateExecution, RowVariables.DELIVERY_ADDRESS_CHANGE_POSSIBLE, checkResult);
     }
 

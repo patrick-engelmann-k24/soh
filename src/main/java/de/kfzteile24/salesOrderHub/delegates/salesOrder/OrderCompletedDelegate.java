@@ -14,14 +14,15 @@ import org.springframework.stereotype.Component;
 @Log
 public class OrderCompletedDelegate implements JavaDelegate {
 
-    @Autowired
-    SnsPublishService snsPublishService;
+    private final SnsPublishService snsPublishService;
+    private final AwsSnsConfig config;
+    private final SalesOrderService salesOrderService;
 
-    @Autowired
-    AwsSnsConfig config;
-
-    @Autowired
-    SalesOrderService salesOrderService;
+    public OrderCompletedDelegate(SnsPublishService snsPublishService, AwsSnsConfig config, SalesOrderService salesOrderService) {
+        this.snsPublishService = snsPublishService;
+        this.config = config;
+        this.salesOrderService = salesOrderService;
+    }
 
     @Override
     public void execute(DelegateExecution delegateExecution) throws Exception {

@@ -1,4 +1,4 @@
-package de.kfzteile24.salesOrderHub.delegates.salesOrder.item;
+package de.kfzteile24.salesOrderHub.delegates.salesOrder.row;
 
 import de.kfzteile24.salesOrderHub.configuration.AwsSnsConfig;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
@@ -15,14 +15,15 @@ import org.springframework.stereotype.Component;
 public class OrderItemCancelledDelegate implements JavaDelegate {
 
 
-    @Autowired
-    SnsPublishService snsPublishService;
+    private final SnsPublishService snsPublishService;
+    private final SalesOrderService salesOrderService;
+    private final AwsSnsConfig config;
 
-    @Autowired
-    SalesOrderService salesOrderService;
-
-    @Autowired
-    AwsSnsConfig config;
+    public OrderItemCancelledDelegate(SnsPublishService snsPublishService, SalesOrderService salesOrderService, AwsSnsConfig config) {
+        this.snsPublishService = snsPublishService;
+        this.salesOrderService = salesOrderService;
+        this.config = config;
+    }
 
     @Override
     public void execute(DelegateExecution delegateExecution) throws Exception {

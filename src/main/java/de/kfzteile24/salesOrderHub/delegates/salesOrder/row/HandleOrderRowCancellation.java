@@ -1,4 +1,4 @@
-package de.kfzteile24.salesOrderHub.delegates.salesOrder.item;
+package de.kfzteile24.salesOrderHub.delegates.salesOrder.row;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
 import lombok.extern.java.Log;

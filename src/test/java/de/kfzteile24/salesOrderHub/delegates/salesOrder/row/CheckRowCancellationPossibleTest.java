@@ -1,4 +1,4 @@
-package de.kfzteile24.salesOrderHub.delegates.salesOrder.item;
+package de.kfzteile24.salesOrderHub.delegates.salesOrder.row;
 
 import de.kfzteile24.salesOrderHub.SalesOrderHubProcessApplication;
 import de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition;
@@ -30,20 +30,21 @@ import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.ini
         webEnvironment = SpringBootTest.WebEnvironment.NONE
 )
 public class CheckRowCancellationPossibleTest {
+
     @Autowired
     public ProcessEngine processEngine;
 
     @Autowired
-    RuntimeService runtimeService;
+    private RuntimeService runtimeService;
 
     @Autowired
-    RepositoryService repositoryService;
+    private RepositoryService repositoryService;
 
     @Autowired
-    BpmUtil util;
+    private BpmUtil util;
 
     @Autowired
-    SalesOrderUtil salesOrderUtil;
+    private SalesOrderUtil salesOrderUtil;
 
     @Before
     public void setUp() {

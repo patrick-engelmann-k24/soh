@@ -1,4 +1,4 @@
-package de.kfzteile24.salesOrderHub.delegates.salesOrder.item;
+package de.kfzteile24.salesOrderHub.delegates.salesOrder.row;
 
 import de.kfzteile24.salesOrderHub.configuration.AwsSnsConfig;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
@@ -14,14 +14,17 @@ import org.springframework.stereotype.Component;
 @Log
 public class DeliveryAddressChangedDelegate extends CommonDelegate {
 
-    @Autowired
-    SnsPublishService snsPublishService;
+    private final SnsPublishService snsPublishService;
+    private final AwsSnsConfig config;
+    private final SalesOrderService salesOrderService;
 
-    @Autowired
-    AwsSnsConfig config;
-
-    @Autowired
-    SalesOrderService salesOrderService;
+    public DeliveryAddressChangedDelegate(SnsPublishService snsPublishService,
+                                          AwsSnsConfig config,
+                                          SalesOrderService salesOrderService) {
+        this.snsPublishService = snsPublishService;
+        this.config = config;
+        this.salesOrderService = salesOrderService;
+    }
 
     @Override
     public void execute(DelegateExecution delegateExecution) throws Exception {

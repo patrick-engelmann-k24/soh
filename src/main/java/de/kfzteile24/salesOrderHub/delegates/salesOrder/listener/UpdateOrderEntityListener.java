@@ -15,8 +15,11 @@ import java.util.Optional;
 @Component
 public class UpdateOrderEntityListener implements ExecutionListener {
 
-    @Autowired
-    private SalesOrderService salesOrderService;
+    private final SalesOrderService salesOrderService;
+
+    public UpdateOrderEntityListener(SalesOrderService salesOrderService) {
+        this.salesOrderService = salesOrderService;
+    }
 
     @Override
     public void notify(DelegateExecution delegateExecution) throws Exception {

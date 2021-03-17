@@ -1,4 +1,4 @@
-package de.kfzteile24.salesOrderHub.delegates.salesOrder.item;
+package de.kfzteile24.salesOrderHub.delegates.salesOrder.row;
 
 import com.google.gson.Gson;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
@@ -17,11 +17,14 @@ import java.util.List;
 
 @Component
 public class ChangeDeliveryAddress extends AbstractDelegate {
-    @Autowired
-    private Gson gson;
 
-    @Autowired
-    private SalesOrderRepository orderRepository;
+    private final Gson gson;
+    private final SalesOrderRepository orderRepository;
+
+    public ChangeDeliveryAddress(Gson gson, SalesOrderRepository orderRepository) {
+        this.gson = gson;
+        this.orderRepository = orderRepository;
+    }
 
     @Override
     public void execute(DelegateExecution execution) throws Exception {
