@@ -5,8 +5,6 @@
 #
 ---
 spring:
-  profiles: local
-
   datasource:
     # overwrite your datasource connection here.
     # start the app with environment

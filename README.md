@@ -79,7 +79,10 @@ User: demo
 
 Password: demo
 
-(these settings are defined in src/main/resources/application-default.yml)
+### Run from IDE
+To run this service, or the tests locally from Idea select ```Edit Configurations...``` and add
+this environment variable:
+SPRING_PROFILES_ACTIVE=local
 
 ### Repo for prepare sns topics in aws with terraform
 

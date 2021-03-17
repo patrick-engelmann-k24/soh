@@ -2,14 +2,50 @@
 # Profile documentation: https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-profiles
 #
 spring:
-  # Per default the application starts with the default,local profile. This is good for local development.
-  # You can override this with the
-  # a)  commandline option
-  #      java -jar application.jar -Dspring.profiles.active=default,local or default,production
-  #  b) via environment variable
-  #      export SPRING_PROFILES_ACTIVE=default,local or default,production
-  #      java -jar application.jar
-  profiles.active: default,local
+  datasource:
+    jdbcUrl: jdbc:postgresql://${soh_db_host}:${soh_db_port}/${soh_db_database}?currentSchema=public
+    username: ${soh_db_username}
+    password: ${soh_db_password}
+    poolName: sales-order-hub
+    data-source-properties:
+      stringtype: unspecified
+
+  jpa:
+    open-in-view: false
+
+  management:
+    endpoints:
+      web:
+        exposure:
+          include: info, health,configprops
+
+cloud:
+  aws:
+    region:
+      static: eu-central-1
+    stack:
+      auto: false
+
+#AWS
+soh:
+  sns:
+    topic:
+      orderCreated: ${soh_order_created}
+      orderCompleted: ${soh_order_completed}
+      orderCancelled: ${soh_order_cancelled}
+      orderItemCancelled: ${soh_order_item_cancelled}
+      invoiceAddressChanged: ${soh_invoice_address_changed}
+      deliveryAddressChanged: ${soh_delivery_address_changed}
+  sqs:
+    maxMessageRetrieves: 5
+    queue:
+      ecpShopOrders: ${soh_sqs_ecp_shop_orders}
+      orderItemShipped: ${soh_sqs_order_item_shipped}
+      orderPaymentSecured: ${soh_sqs_order_payment_secured}
+      orderItemTransmittedToLogistic: ${soh_sqs_order_item_transmitted_to_logistic}
+      orderItemPackingStarted: ${soh_sqs_order_item_packing_started}
+      orderItemTrackingIdReceived: ${soh_sqs_order_item_tracking_id_received}
+      orderItemTourStarted: ${soh_sqs_order_item_tour_started}
 
 #
 # Camunda BPM configuration
