@@ -166,7 +166,8 @@ public class CheckRowCancellationPossibleTest {
         processVariables.put(util._N(Variables.ORDER_NUMBER), salesOrder.getOrderNumber());
         processVariables.put(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR));
 
-        testProcess(processVariables, salesOrder.getOrderNumber());
+        ProcessInstance processInstance = testProcess(processVariables, salesOrder.getOrderNumber());
+        assertThat(processInstance).isEnded();
     }
 
     @Test
@@ -177,7 +178,8 @@ public class CheckRowCancellationPossibleTest {
         processVariables.put(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR));
         processVariables.put(util._N(RowVariables.TRACKING_ID_RECEIVED), false);
 
-        testProcess(processVariables, salesOrder.getOrderNumber());
+        ProcessInstance processInstance = testProcess(processVariables, salesOrder.getOrderNumber());
+        assertThat(processInstance).isEnded();
     }
 
     @Test
@@ -222,7 +224,7 @@ public class CheckRowCancellationPossibleTest {
 
     }
 
-    ProcessInstance testProcess(final Map<String, Object> processVariables, String orderNumber) {
+    private ProcessInstance testProcess(final Map<String, Object> processVariables, String orderNumber) {
         final ProcessInstance orderItemFulfillmentProcess = runtimeService.startProcessInstanceByKey(
                 ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
                 processVariables);
@@ -251,8 +253,6 @@ public class CheckRowCancellationPossibleTest {
 //                util._N(ItemActivities.EVENT_TRACKING_ID_RECEIVED),
                 util._N(RowEvents.ROW_SHIPPED)
         );
-
-        assertThat(orderItemFulfillmentProcess).isEnded();
 
         return orderItemFulfillmentProcess;
     }

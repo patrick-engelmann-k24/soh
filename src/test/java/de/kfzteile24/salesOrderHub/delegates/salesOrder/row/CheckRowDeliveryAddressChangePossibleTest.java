@@ -4,13 +4,18 @@ import com.google.gson.Gson;
 import de.kfzteile24.salesOrderHub.SalesOrderHubProcessApplication;
 import de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.*;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.BPMSalesOrderRowFulfillment;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowActivities;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowGateways;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.order.customer.Address;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import org.camunda.bpm.engine.ProcessEngine;
-import org.camunda.bpm.engine.RepositoryService;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests;
@@ -40,9 +45,6 @@ public class CheckRowDeliveryAddressChangePossibleTest {
 
     @Autowired
     private RuntimeService runtimeService;
-
-    @Autowired
-    private RepositoryService repositoryService;
 
     @Autowired
     private BpmUtil util;
