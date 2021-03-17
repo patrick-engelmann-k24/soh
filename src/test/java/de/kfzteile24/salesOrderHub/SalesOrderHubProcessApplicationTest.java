@@ -130,7 +130,7 @@ public class SalesOrderHubProcessApplicationTest {
         assertThat(firstItemProcessInstance).hasPassedInOrder(util._N(RowEvents.ROW_TRANSMITTED_TO_LOGISTICS));
 
         // cancel 1st orderItem
-        final Map<String, Object> processVariables = Map.of("itemCancellationPossible", true);
+        final Map<String, Object> processVariables = Map.of(RowVariables.ROW_CANCELLATION_POSSIBLE.getName(), true);
         util.sendMessage(util._N(RowMessages.ORDER_ROW_CANCELLATION_RECEIVED), orderNumber, firstItem, processVariables);
 
         // main process should stay at the same pos
