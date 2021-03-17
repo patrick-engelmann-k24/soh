@@ -2,12 +2,10 @@ package de.kfzteile24.salesOrderHub.delegates.salesOrder.row;
 
 import de.kfzteile24.salesOrderHub.configuration.AwsSnsConfig;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
-import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import lombok.extern.java.Log;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.JavaDelegate;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -16,12 +14,10 @@ public class OrderItemCancelledDelegate implements JavaDelegate {
 
 
     private final SnsPublishService snsPublishService;
-    private final SalesOrderService salesOrderService;
     private final AwsSnsConfig config;
 
-    public OrderItemCancelledDelegate(SnsPublishService snsPublishService, SalesOrderService salesOrderService, AwsSnsConfig config) {
+    public OrderItemCancelledDelegate(SnsPublishService snsPublishService, AwsSnsConfig config) {
         this.snsPublishService = snsPublishService;
-        this.salesOrderService = salesOrderService;
         this.config = config;
     }
 

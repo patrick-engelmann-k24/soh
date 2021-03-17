@@ -8,10 +8,8 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import org.camunda.bpm.engine.ProcessEngine;
-import org.camunda.bpm.engine.RepositoryService;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
-import org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -23,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
+import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
@@ -36,9 +35,6 @@ public class CheckRowCancellationPossibleTest {
 
     @Autowired
     private RuntimeService runtimeService;
-
-    @Autowired
-    private RepositoryService repositoryService;
 
     @Autowired
     private BpmUtil util;
@@ -67,7 +63,7 @@ public class CheckRowCancellationPossibleTest {
         util.sendMessage(RowMessages.TRACKING_ID_RECEIVED, orderNumber);
         util.sendMessage(RowMessages.ROW_SHIPPED, orderNumber);
 
-        BpmnAwareTests.assertThat(orderRowFulfillmentProcess).hasPassedInOrder(
+        assertThat(orderRowFulfillmentProcess).hasPassedInOrder(
                 util._N(RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS),
                 util._N(RowEvents.ROW_TRANSMITTED_TO_LOGISTICS),
                 util._N(RowGateways.XOR_SHIPMENT_METHOD),
@@ -77,7 +73,7 @@ public class CheckRowCancellationPossibleTest {
                 util._N(RowGateways.XOR_TOUR_STARTED),
                 util._N(RowEvents.ORDER_ROW_FULFILLMENT_PROCESS_FINISHED)
         );
-        BpmnAwareTests.assertThat(orderRowFulfillmentProcess).isEnded();
+        assertThat(orderRowFulfillmentProcess).isEnded();
     }
 
     @Test
@@ -96,7 +92,7 @@ public class CheckRowCancellationPossibleTest {
         util.sendMessage(RowMessages.TRACKING_ID_RECEIVED, orderNumber);
         util.sendMessage(RowMessages.ROW_SHIPPED, orderNumber);
 
-        BpmnAwareTests.assertThat(orderRowFulfillmentProcess).hasPassedInOrder(
+        assertThat(orderRowFulfillmentProcess).hasPassedInOrder(
                 util._N(RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS),
                 util._N(RowEvents.ROW_TRANSMITTED_TO_LOGISTICS),
                 util._N(RowGateways.XOR_SHIPMENT_METHOD),
@@ -106,7 +102,7 @@ public class CheckRowCancellationPossibleTest {
                 util._N(RowGateways.XOR_TOUR_STARTED),
                 util._N(RowEvents.ORDER_ROW_FULFILLMENT_PROCESS_FINISHED)
         );
-        BpmnAwareTests.assertThat(orderRowFulfillmentProcess).isEnded();
+        assertThat(orderRowFulfillmentProcess).isEnded();
     }
 
     @Test
@@ -125,7 +121,7 @@ public class CheckRowCancellationPossibleTest {
         util.sendMessage(RowMessages.TOUR_STARTED, orderNumber);
         util.sendMessage(RowMessages.ROW_SHIPPED, orderNumber);
 
-        BpmnAwareTests.assertThat(orderRowFulfillmentProcess).hasPassedInOrder(
+        assertThat(orderRowFulfillmentProcess).hasPassedInOrder(
                 util._N(RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS),
                 util._N(RowEvents.ROW_TRANSMITTED_TO_LOGISTICS),
                 util._N(RowGateways.XOR_SHIPMENT_METHOD),
@@ -133,7 +129,7 @@ public class CheckRowCancellationPossibleTest {
                 util._N(RowGateways.XOR_TOUR_STARTED),
                 util._N(RowEvents.ORDER_ROW_FULFILLMENT_PROCESS_FINISHED)
         );
-        BpmnAwareTests.assertThat(orderRowFulfillmentProcess).isEnded();
+        assertThat(orderRowFulfillmentProcess).isEnded();
     }
 
     @Test
@@ -152,7 +148,7 @@ public class CheckRowCancellationPossibleTest {
         util.sendMessage(RowMessages.ROW_PREPARED, orderNumber);
         util.sendMessage(RowMessages.ROW_PICKED_UP, orderNumber);
 
-        BpmnAwareTests.assertThat(orderRowFulfillmentProcess).hasPassedInOrder(
+        assertThat(orderRowFulfillmentProcess).hasPassedInOrder(
                 util._N(RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS),
                 util._N(RowEvents.ROW_TRANSMITTED_TO_LOGISTICS),
                 util._N(RowGateways.XOR_SHIPMENT_METHOD),
@@ -160,7 +156,7 @@ public class CheckRowCancellationPossibleTest {
                 util._N(RowEvents.ROW_PICKED_UP),
                 util._N(RowEvents.ORDER_ROW_FULFILLMENT_PROCESS_FINISHED)
         );
-        BpmnAwareTests.assertThat(orderRowFulfillmentProcess).isEnded();
+        assertThat(orderRowFulfillmentProcess).isEnded();
     }
 
     @Test
@@ -200,7 +196,7 @@ public class CheckRowCancellationPossibleTest {
         util.sendMessage(RowMessages.TRACKING_ID_RECEIVED, orderNumber);
         util.sendMessage(RowMessages.ORDER_ROW_CANCELLATION_RECEIVED, orderNumber);
 
-        BpmnAwareTests.assertThat(orderRowFulfillmentProcess).hasPassedInOrder(
+        assertThat(orderRowFulfillmentProcess).hasPassedInOrder(
                 util._N(RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS),
                 util._N(RowEvents.ROW_TRANSMITTED_TO_LOGISTICS),
                 util._N(RowGateways.XOR_SHIPMENT_METHOD),
@@ -210,19 +206,19 @@ public class CheckRowCancellationPossibleTest {
                 util._N(RowGateways.XOR_CANCELLATION_POSSIBLE)
         );
 
-        BpmnAwareTests.assertThat(orderRowFulfillmentProcess).hasPassed(
+        assertThat(orderRowFulfillmentProcess).hasPassed(
                 util._N(RowEvents.ORDER_ROW_CANCELLATION_NOT_HANDLED),
                 util._N(BPMSalesOrderRowFulfillment.SUB_PROCESS_ORDER_ROW_CANCELLATION_SHIPMENT)
         );
 
-        BpmnAwareTests.assertThat(orderRowFulfillmentProcess).isWaitingAt(util._N(RowEvents.ROW_SHIPPED));
+        assertThat(orderRowFulfillmentProcess).isWaitingAt(util._N(RowEvents.ROW_SHIPPED));
         util.sendMessage(RowMessages.ROW_SHIPPED, orderNumber);
 
-        BpmnAwareTests.assertThat(orderRowFulfillmentProcess).hasPassed(
+        assertThat(orderRowFulfillmentProcess).hasPassed(
                 util._N(RowEvents.TRACKING_ID_RECEIVED),
                 util._N(RowEvents.ROW_SHIPPED)
         );
-        BpmnAwareTests.assertThat(orderRowFulfillmentProcess).isEnded();
+        assertThat(orderRowFulfillmentProcess).isEnded();
 
     }
 
@@ -234,7 +230,7 @@ public class CheckRowCancellationPossibleTest {
         util.sendMessage(RowMessages.PACKING_STARTED, orderNumber);
         util.sendMessage(RowMessages.ORDER_ROW_CANCELLATION_RECEIVED, orderNumber);
 
-        BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
+        assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
                 util._N(RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS),
                 util._N(RowEvents.ROW_TRANSMITTED_TO_LOGISTICS),
                 util._N(RowGateways.XOR_SHIPMENT_METHOD),
@@ -246,17 +242,17 @@ public class CheckRowCancellationPossibleTest {
                 util._N(RowEvents.ORDER_ROW_CANCELLATION_RECEIVED)
         );
 
-        BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassed(
+        assertThat(orderItemFulfillmentProcess).hasPassed(
                 util._N(RowEvents.ORDER_ROW_CANCELLED),
                 util._N(BPMSalesOrderRowFulfillment.SUB_PROCESS_HANDLE_ORDER_ROW_CANCELLATION)
         );
 
-        BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasNotPassed(
+        assertThat(orderItemFulfillmentProcess).hasNotPassed(
 //                util._N(ItemActivities.EVENT_TRACKING_ID_RECEIVED),
                 util._N(RowEvents.ROW_SHIPPED)
         );
 
-        BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isEnded();
+        assertThat(orderItemFulfillmentProcess).isEnded();
 
         return orderItemFulfillmentProcess;
     }
