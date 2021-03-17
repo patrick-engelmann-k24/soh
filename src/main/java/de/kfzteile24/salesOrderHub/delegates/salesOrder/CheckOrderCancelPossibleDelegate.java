@@ -3,7 +3,7 @@ package de.kfzteile24.salesOrderHub.delegates.salesOrder;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
-import de.kfzteile24.salesOrderHub.services.SalesOrderItemService;
+import de.kfzteile24.salesOrderHub.services.SalesOrderRowService;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.JavaDelegate;
@@ -25,7 +25,7 @@ public class CheckOrderCancelPossibleDelegate implements JavaDelegate {
     private RuntimeService runtimeService;
 
     @Autowired
-    private SalesOrderItemService itemService;
+    private SalesOrderRowService itemService;
 
     @Override
     public void execute(DelegateExecution delegateExecution) throws Exception {

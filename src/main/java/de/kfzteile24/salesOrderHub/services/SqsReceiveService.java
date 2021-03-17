@@ -89,7 +89,7 @@ public class SqsReceiveService {
         FulfillmentMessage fulfillmentMessage = gson.fromJson(messageHeader.fromJson(rawMessage, EcpOrder.class).getMessage(), FulfillmentMessage.class);
 
         try {
-            MessageCorrelationResult result = sendOrderItemMessage(
+            MessageCorrelationResult result = sendOrderRowMessage(
                     RowMessages.ROW_SHIPPED,
                     fulfillmentMessage.getOrderNumber(),
                     fulfillmentMessage.getOrderItemSku()
@@ -157,7 +157,7 @@ public class SqsReceiveService {
         FulfillmentMessage fulfillmentMessage = gson.fromJson(messageHeader.fromJson(rawMessage, EcpOrder.class).getMessage(), FulfillmentMessage.class);
 
         try {
-            MessageCorrelationResult result = sendOrderItemMessage(
+            MessageCorrelationResult result = sendOrderRowMessage(
                     RowMessages.ROW_TRANSMITTED_TO_LOGISTICS,
                     fulfillmentMessage.getOrderNumber(),
                     fulfillmentMessage.getOrderItemSku()
@@ -191,7 +191,7 @@ public class SqsReceiveService {
         FulfillmentMessage fulfillmentMessage = gson.fromJson(messageHeader.fromJson(rawMessage, EcpOrder.class).getMessage(), FulfillmentMessage.class);
 
         try {
-            MessageCorrelationResult result = sendOrderItemMessage(
+            MessageCorrelationResult result = sendOrderRowMessage(
                     RowMessages.PACKING_STARTED,
                     fulfillmentMessage.getOrderNumber(),
                     fulfillmentMessage.getOrderItemSku()
@@ -225,7 +225,7 @@ public class SqsReceiveService {
         FulfillmentMessage fulfillmentMessage = gson.fromJson(messageHeader.fromJson(rawMessage, EcpOrder.class).getMessage(), FulfillmentMessage.class);
 
         try {
-            MessageCorrelationResult result = sendOrderItemMessage(
+            MessageCorrelationResult result = sendOrderRowMessage(
                     RowMessages.TRACKING_ID_RECEIVED,
                     fulfillmentMessage.getOrderNumber(),
                     fulfillmentMessage.getOrderItemSku()
@@ -259,7 +259,7 @@ public class SqsReceiveService {
         FulfillmentMessage fulfillmentMessage = gson.fromJson(messageHeader.fromJson(rawMessage, EcpOrder.class).getMessage(), FulfillmentMessage.class);
 
         try {
-            MessageCorrelationResult result = sendOrderItemMessage(
+            MessageCorrelationResult result = sendOrderRowMessage(
                     RowMessages.TOUR_STARTED,
                     fulfillmentMessage.getOrderNumber(),
                     fulfillmentMessage.getOrderItemSku()
@@ -286,7 +286,7 @@ public class SqsReceiveService {
      * @param orderItemSku
      * @return
      */
-    private MessageCorrelationResult sendOrderItemMessage(RowMessages itemMessages, String orderNumber, String orderItemSku) {
+    private MessageCorrelationResult sendOrderRowMessage(RowMessages itemMessages, String orderNumber, String orderItemSku) {
         MessageCorrelationResult result = runtimeService.createMessageCorrelation(itemMessages.getName())
                 .processInstanceVariableEquals(Variables.ORDER_NUMBER.getName(), orderNumber)
                 .processInstanceVariableEquals(RowVariables.ORDER_ROW_ID.getName(), orderItemSku)

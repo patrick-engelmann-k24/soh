@@ -4,7 +4,7 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import de.kfzteile24.salesOrderHub.dto.order.customer.Address;
 import de.kfzteile24.salesOrderHub.services.SalesOrderAddressService;
-import de.kfzteile24.salesOrderHub.services.SalesOrderItemService;
+import de.kfzteile24.salesOrderHub.services.SalesOrderRowService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -37,7 +37,7 @@ public class OrderController {
     private SalesOrderAddressService orderAddressService;
 
     @Autowired
-    private SalesOrderItemService orderItemService;
+    private SalesOrderRowService orderItemService;
 
 
     /**

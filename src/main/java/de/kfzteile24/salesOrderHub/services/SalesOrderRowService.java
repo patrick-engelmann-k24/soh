@@ -26,7 +26,7 @@ import static java.lang.String.format;
 
 @Service
 @Slf4j
-public class SalesOrderItemService {
+public class SalesOrderRowService {
 
     @Autowired
     CamundaHelper helper;
@@ -40,7 +40,7 @@ public class SalesOrderItemService {
     @SneakyThrows
     public ResponseEntity<String> cancelOrderItem(String orderNumber, String orderItemId) {
         if (helper.checkIfItemProcessExists(orderNumber, orderItemId)) {
-            sendMessageForOrderItemCancel(orderNumber, orderItemId);
+            sendMessageForOrderRowCancel(orderNumber, orderItemId);
 
             List<HistoricProcessInstance> queryResult = historyService.createHistoricProcessInstanceQuery()
                     .processDefinitionKey(SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName())
@@ -88,7 +88,7 @@ public class SalesOrderItemService {
         return false;
     }
 
-    protected MessageCorrelationResult sendMessageForOrderItemCancel(String orderNumber, String orderItemId) {
+    protected MessageCorrelationResult sendMessageForOrderRowCancel(String orderNumber, String orderItemId) {
         return runtimeService.createMessageCorrelation(RowMessages.ORDER_ROW_CANCELLATION_RECEIVED.getName())
                 .processInstanceVariableEquals(Variables.ORDER_NUMBER.getName(), orderNumber)
                 .processInstanceVariableEquals(RowVariables.ORDER_ROW_ID.getName(), orderItemId)
