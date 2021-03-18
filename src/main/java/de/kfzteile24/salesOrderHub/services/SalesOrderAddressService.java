@@ -4,8 +4,8 @@ import com.google.gson.Gson;
 import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemMessages;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemVariables;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.order.customer.Address;
@@ -69,7 +69,7 @@ public class SalesOrderAddressService {
         if (soOpt.isPresent()) {
             if (helper.checkIfItemProcessExists(orderNumber, orderItemId)) {
                 sendMessageForUpdateDeliveryAddress(
-                        ItemMessages.DELIVERY_ADDRESS_CHANGE,
+                        RowMessages.DELIVERY_ADDRESS_CHANGE,
                         orderNumber, orderItemId, newDeliveryAddress);
                 final Optional<SalesOrder> newOrder = orderRepository.getOrderByOrderNumber(orderNumber);
                 if (newOrder.isPresent()) {
@@ -105,7 +105,7 @@ public class SalesOrderAddressService {
 //    }
 
     protected boolean tryUpdateDeliveryAddress(String orderNumber, String orderItemId, Address newDeliveryAddress) {
-        final MessageCorrelationResult result = sendMessageForUpdateDeliveryAddress(ItemMessages.DELIVERY_ADDRESS_CHANGE, orderNumber, orderItemId, newDeliveryAddress);
+        final MessageCorrelationResult result = sendMessageForUpdateDeliveryAddress(RowMessages.DELIVERY_ADDRESS_CHANGE, orderNumber, orderItemId, newDeliveryAddress);
 
         return helper.getProcessStatus(result.getExecution());
     }
@@ -113,8 +113,8 @@ public class SalesOrderAddressService {
     protected MessageCorrelationResult sendMessageForUpdateDeliveryAddress(BpmItem message, String orderNumber, String orderItemId, Address newDeliveryAddress) {
         MessageCorrelationBuilder builder = runtimeService.createMessageCorrelation(message.getName())
                 .processInstanceVariableEquals(Variables.ORDER_NUMBER.getName(), orderNumber)
-                .processInstanceVariableEquals(ItemVariables.ORDER_ITEM_ID.getName(), orderItemId)
-                .setVariable(ItemVariables.DELIVERY_ADDRESS_CHANGE_REQUEST.getName(), gson.toJson(newDeliveryAddress));
+                .processInstanceVariableEquals(RowVariables.ORDER_ROW_ID.getName(), orderItemId)
+                .setVariable(RowVariables.DELIVERY_ADDRESS_CHANGE_REQUEST.getName(), gson.toJson(newDeliveryAddress));
 
         return builder.correlateWithResultAndVariables(true);
     }

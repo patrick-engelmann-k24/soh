@@ -1,7 +1,7 @@
-package de.kfzteile24.salesOrderHub.delegates.salesOrder.item;
+package de.kfzteile24.salesOrderHub.delegates.salesOrder.row;
 
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemVariables;
-import de.kfzteile24.salesOrderHub.services.SalesOrderItemService;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
+import de.kfzteile24.salesOrderHub.services.SalesOrderRowService;
 import lombok.extern.java.Log;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.JavaDelegate;
@@ -13,10 +13,10 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 
 @Component
 @Log
-public class CheckItemCancellationPossible implements JavaDelegate {
+public class CheckRowCancellationPossible implements JavaDelegate {
 
     @Autowired
-    private SalesOrderItemService itemService;
+    private SalesOrderRowService rowService;
 
     /**
      * Check if process (item) cancellation is possible
@@ -26,8 +26,8 @@ public class CheckItemCancellationPossible implements JavaDelegate {
     @Override
     public void execute(DelegateExecution delegateExecution) {
         final String shipmentMethod = (String) delegateExecution.getVariable(SHIPMENT_METHOD.getName());
-        Boolean checkResult = itemService.checkItemCancellationPossible(delegateExecution.getProcessInstanceId(), shipmentMethod);
+        Boolean checkResult = rowService.checkItemCancellationPossible(delegateExecution.getProcessInstanceId(), shipmentMethod);
 
-        delegateExecution.setVariable(ItemVariables.ITEM_CANCELLATION_POSSIBLE.getName(), checkResult);
+        delegateExecution.setVariable(RowVariables.ROW_CANCELLATION_POSSIBLE.getName(), checkResult);
     }
 }

@@ -1,26 +1,26 @@
-package de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item;
+package de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 
 /**
  * All Activities, Gateways, Events from the Order Item Fullfilment process
  */
-public enum ItemVariables implements BpmItem {
+public enum RowVariables implements BpmItem {
     // process variables
     DELIVERY_ADDRESS_CHANGE_POSSIBLE("deliveryAddressChangePossible"),
     // new delivery address, if change is possible
     DELIVERY_ADDRESS_CHANGE_REQUEST("deliveryAddressChangeRequest"),
-    ITEM_CANCELLED("itemCancelled"),
-    ITEM_CANCELLATION_POSSIBLE("itemCancellationPossible"),
-    ITEM_DELIVERED("itemDelivered"),
-    ITEM_PICKED_UP("itemDelivered"),
-    ORDER_ITEM_ID("orderItemId"),
+    ROW_CANCELLED("rowCancelled"),
+    ROW_CANCELLATION_POSSIBLE("rowCancellationPossible"),
+    ROW_DELIVERED("rowDelivered"),
+    ROW_PICKED_UP("rowPickedUp"),
+    ORDER_ROW_ID("orderRowId"),
     TRACKING_ID_RECEIVED("trackingIdReceived"),
     ;
 
     private final String name;
 
-    ItemVariables(final String name) {
+    RowVariables(final String name) {
         this.name = name;
     }
 

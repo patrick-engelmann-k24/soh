@@ -1,8 +1,8 @@
-package de.kfzteile24.salesOrderHub.delegates.salesOrder.item;
+package de.kfzteile24.salesOrderHub.delegates.salesOrder.row;
 
 import com.google.gson.Gson;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemVariables;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
 import de.kfzteile24.salesOrderHub.delegates.AbstractDelegate;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.order.LogisticalUnits;
@@ -17,17 +17,20 @@ import java.util.List;
 
 @Component
 public class ChangeDeliveryAddress extends AbstractDelegate {
-    @Autowired
-    private Gson gson;
 
-    @Autowired
-    private SalesOrderRepository orderRepository;
+    private final Gson gson;
+    private final SalesOrderRepository orderRepository;
+
+    public ChangeDeliveryAddress(Gson gson, SalesOrderRepository orderRepository) {
+        this.gson = gson;
+        this.orderRepository = orderRepository;
+    }
 
     @Override
     public void execute(DelegateExecution execution) throws Exception {
-        var newAddressStr = (String)execution.getVariable(ItemVariables.DELIVERY_ADDRESS_CHANGE_REQUEST.getName());
+        var newAddressStr = (String)execution.getVariable(RowVariables.DELIVERY_ADDRESS_CHANGE_REQUEST.getName());
         var orderNumber = (String)execution.getVariable(Variables.ORDER_NUMBER.getName());
-        var orderItemId = (String)execution.getVariable(ItemVariables.ORDER_ITEM_ID.getName());
+        var orderItemId = (String)execution.getVariable(RowVariables.ORDER_ROW_ID.getName());
 
         final Address address = gson.fromJson(newAddressStr, Address.class);
 

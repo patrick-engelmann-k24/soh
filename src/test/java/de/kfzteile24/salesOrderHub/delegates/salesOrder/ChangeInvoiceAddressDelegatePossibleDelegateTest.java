@@ -2,8 +2,8 @@ package de.kfzteile24.salesOrderHub.delegates.salesOrder;
 
 import de.kfzteile24.salesOrderHub.SalesOrderHubProcessApplication;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.*;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemMessages;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ShipmentMethod;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
@@ -23,7 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.PaymentType.CREDIT_CARD;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
 import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
 import static org.junit.Assert.assertFalse;
@@ -138,14 +138,14 @@ public class ChangeInvoiceAddressDelegatePossibleDelegateTest {
 
     private ProcessInstance createOrderProcess(SalesOrder salesOrder) {
         final String orderNumber = salesOrder.getOrderNumber();
-        final List<String> orderItems = util.getOrderItems(orderNumber, 5);
+        final List<String> orderItems = util.getOrderRows(orderNumber, 5);
 
         final Map<String, Object> processVariables = new HashMap<>();
         processVariables.put(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR));
         processVariables.put(util._N(Variables.ORDER_NUMBER), orderNumber);
         processVariables.put(util._N(Variables.PAYMENT_TYPE), util._N(CREDIT_CARD));
         processVariables.put(util._N(Variables.ORDER_VALID), true);
-        processVariables.put(util._N(Variables.ORDER_ITEMS), orderItems);
+        processVariables.put(util._N(Variables.ORDER_ROWS), orderItems);
 
         return runtimeService.createMessageCorrelation(util._N(Messages.ORDER_RECEIVED_MARKETPLACE))
                 .processInstanceBusinessKey(orderNumber)
@@ -158,10 +158,10 @@ public class ChangeInvoiceAddressDelegatePossibleDelegateTest {
         util.sendMessage(util._N(Messages.ORDER_RECEIVED_PAYMENT_SECURED), orderNumber);
 
         // send items thru
-        util.sendMessage(util._N(ItemMessages.ITEM_TRANSMITTED_TO_LOGISTICS), orderNumber);
-        util.sendMessage(util._N(ItemMessages.PACKING_STARTED), orderNumber);
-        util.sendMessage(util._N(ItemMessages.TRACKING_ID_RECEIVED), orderNumber);
-        util.sendMessage(util._N(ItemMessages.ITEM_SHIPPED), orderNumber);
+        util.sendMessage(util._N(RowMessages.ROW_TRANSMITTED_TO_LOGISTICS), orderNumber);
+        util.sendMessage(util._N(RowMessages.PACKING_STARTED), orderNumber);
+        util.sendMessage(util._N(RowMessages.TRACKING_ID_RECEIVED), orderNumber);
+        util.sendMessage(util._N(RowMessages.ROW_SHIPPED), orderNumber);
 
         assertThat(orderProcess).isEnded();
     }

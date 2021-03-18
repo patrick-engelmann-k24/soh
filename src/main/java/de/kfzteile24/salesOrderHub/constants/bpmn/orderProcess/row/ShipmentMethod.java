@@ -1,4 +1,4 @@
-package de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item;
+package de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 

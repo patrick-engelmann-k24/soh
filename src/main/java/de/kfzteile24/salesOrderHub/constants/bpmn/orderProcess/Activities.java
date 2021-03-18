@@ -5,7 +5,7 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 public enum Activities implements BpmItem {
     CHANGE_INVOICE_ADDRESS("activityChangeInvoiceAddress"),
     CHANGE_INVOICE_ADDRESS_POSSIBLE("activityChangeInvoiceAddressPossible"),
-    ORDER_ITEM_FULFILLMENT_PROCESS("activityOrderItemFulfillmentProcess"),
+    ORDER_ROW_FULFILLMENT_PROCESS("activityOrderRowFulfillmentProcess"),
     SUB_PROCESS_INVOICE_ADDRESS_CHANGE("activitySubProcessInvoiceAddressChange"),
     ;
 

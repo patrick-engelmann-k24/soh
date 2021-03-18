@@ -4,8 +4,8 @@ import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemMessages;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemVariables;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.OrderJSON;
@@ -89,8 +89,8 @@ public class SqsReceiveService {
         FulfillmentMessage fulfillmentMessage = gson.fromJson(messageHeader.fromJson(rawMessage, EcpOrder.class).getMessage(), FulfillmentMessage.class);
 
         try {
-            MessageCorrelationResult result = sendOrderItemMessage(
-                    ItemMessages.ITEM_SHIPPED,
+            MessageCorrelationResult result = sendOrderRowMessage(
+                    RowMessages.ROW_SHIPPED,
                     fulfillmentMessage.getOrderNumber(),
                     fulfillmentMessage.getOrderItemSku()
             );
@@ -157,8 +157,8 @@ public class SqsReceiveService {
         FulfillmentMessage fulfillmentMessage = gson.fromJson(messageHeader.fromJson(rawMessage, EcpOrder.class).getMessage(), FulfillmentMessage.class);
 
         try {
-            MessageCorrelationResult result = sendOrderItemMessage(
-                    ItemMessages.ITEM_TRANSMITTED_TO_LOGISTICS,
+            MessageCorrelationResult result = sendOrderRowMessage(
+                    RowMessages.ROW_TRANSMITTED_TO_LOGISTICS,
                     fulfillmentMessage.getOrderNumber(),
                     fulfillmentMessage.getOrderItemSku()
             );
@@ -191,8 +191,8 @@ public class SqsReceiveService {
         FulfillmentMessage fulfillmentMessage = gson.fromJson(messageHeader.fromJson(rawMessage, EcpOrder.class).getMessage(), FulfillmentMessage.class);
 
         try {
-            MessageCorrelationResult result = sendOrderItemMessage(
-                    ItemMessages.PACKING_STARTED,
+            MessageCorrelationResult result = sendOrderRowMessage(
+                    RowMessages.PACKING_STARTED,
                     fulfillmentMessage.getOrderNumber(),
                     fulfillmentMessage.getOrderItemSku()
             );
@@ -225,8 +225,8 @@ public class SqsReceiveService {
         FulfillmentMessage fulfillmentMessage = gson.fromJson(messageHeader.fromJson(rawMessage, EcpOrder.class).getMessage(), FulfillmentMessage.class);
 
         try {
-            MessageCorrelationResult result = sendOrderItemMessage(
-                    ItemMessages.TRACKING_ID_RECEIVED,
+            MessageCorrelationResult result = sendOrderRowMessage(
+                    RowMessages.TRACKING_ID_RECEIVED,
                     fulfillmentMessage.getOrderNumber(),
                     fulfillmentMessage.getOrderItemSku()
                     );
@@ -259,8 +259,8 @@ public class SqsReceiveService {
         FulfillmentMessage fulfillmentMessage = gson.fromJson(messageHeader.fromJson(rawMessage, EcpOrder.class).getMessage(), FulfillmentMessage.class);
 
         try {
-            MessageCorrelationResult result = sendOrderItemMessage(
-                    ItemMessages.TOUR_STARTED,
+            MessageCorrelationResult result = sendOrderRowMessage(
+                    RowMessages.TOUR_STARTED,
                     fulfillmentMessage.getOrderNumber(),
                     fulfillmentMessage.getOrderItemSku()
             );
@@ -286,10 +286,10 @@ public class SqsReceiveService {
      * @param orderItemSku
      * @return
      */
-    private MessageCorrelationResult sendOrderItemMessage(ItemMessages itemMessages, String orderNumber, String orderItemSku) {
+    private MessageCorrelationResult sendOrderRowMessage(RowMessages itemMessages, String orderNumber, String orderItemSku) {
         MessageCorrelationResult result = runtimeService.createMessageCorrelation(itemMessages.getName())
                 .processInstanceVariableEquals(Variables.ORDER_NUMBER.getName(), orderNumber)
-                .processInstanceVariableEquals(ItemVariables.ORDER_ITEM_ID.getName(), orderItemSku)
+                .processInstanceVariableEquals(RowVariables.ORDER_ROW_ID.getName(), orderItemSku)
                 .correlateWithResult();
 
         return result;

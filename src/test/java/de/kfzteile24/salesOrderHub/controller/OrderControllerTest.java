@@ -4,9 +4,9 @@ import de.kfzteile24.salesOrderHub.SalesOrderHubProcessApplication;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemMessages;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.PaymentType;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ShipmentMethod;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.order.customer.Address;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
@@ -61,7 +61,7 @@ class OrderControllerTest {
     void updateShippingAddressForOrder() {
         var testOrder = salesOrderUtil.createNewSalesOrder();
         final String orderNumber = testOrder.getOrderNumber();
-        final List<String> orderItems = util.getOrderItems(orderNumber, 5);
+        final List<String> orderItems = util.getOrderRows(orderNumber, 5);
 
         final Address address = Address.builder()
                 .firstName("Max")
@@ -78,7 +78,7 @@ class OrderControllerTest {
                 .setVariable(util._N(Variables.ORDER_NUMBER), orderNumber)
                 .setVariable(util._N(Variables.PAYMENT_TYPE), util._N(PaymentType.CREDIT_CARD))
                 .setVariable(util._N(Variables.ORDER_VALID), true)
-                .setVariable(util._N(Variables.ORDER_ITEMS), orderItems)
+                .setVariable(util._N(Variables.ORDER_ROWS), orderItems)
                 .setVariable(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
                 .startBeforeActivity(Events.MSG_ORDER_PAYMENT_SECURED.getName())
                 .execute();
@@ -109,7 +109,7 @@ class OrderControllerTest {
     //@Test
     void updateShippingAddressForOrderExistingButIncorrectState() {
         final String orderNumber = testOrder.getOrderNumber();
-        final List<String> orderItems = util.getOrderItems(orderNumber, 5);
+        final List<String> orderItems = util.getOrderRows(orderNumber, 5);
 
         final String orderItemId = orderItems.get(0);
         final Address address = Address.builder()
@@ -121,7 +121,7 @@ class OrderControllerTest {
                         .setVariable(util._N(Variables.ORDER_NUMBER), orderNumber)
                         .setVariable(util._N(Variables.PAYMENT_TYPE), util._N(PaymentType.CREDIT_CARD))
                         .setVariable(util._N(Variables.ORDER_VALID), true)
-                        .setVariable(util._N(Variables.ORDER_ITEMS), orderItems)
+                        .setVariable(util._N(Variables.ORDER_ROWS), orderItems)
                         .setVariable(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
                         .correlateWithResult().getProcessInstance();
         try {
@@ -138,7 +138,7 @@ class OrderControllerTest {
     void updateBillingAddressForExistingOrder() {
         var testOrder = salesOrderUtil.createNewSalesOrder();
         final String orderNumber = testOrder.getOrderNumber();
-        final List<String> orderItems = util.getOrderItems(orderNumber, 5);
+        final List<String> orderItems = util.getOrderRows(orderNumber, 5);
 
         final Address address = Address.builder()
                 .street1("Unit")
@@ -153,7 +153,7 @@ class OrderControllerTest {
                         .setVariable(util._N(Variables.ORDER_NUMBER), orderNumber)
                         .setVariable(util._N(Variables.PAYMENT_TYPE), util._N(PaymentType.CREDIT_CARD))
                         .setVariable(util._N(Variables.ORDER_VALID), true)
-                        .setVariable(util._N(Variables.ORDER_ITEMS), orderItems)
+                        .setVariable(util._N(Variables.ORDER_ROWS), orderItems)
                         .setVariable(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
                         .correlateWithResult().getProcessInstance();
         try {
@@ -169,7 +169,7 @@ class OrderControllerTest {
     void cancelOrderItemForExistingOrder() {
         var testOrder = salesOrderUtil.createNewSalesOrder();
         final String orderNumber = testOrder.getOrderNumber();
-        final List<String> orderItems = util.getOrderItems(orderNumber, 5);
+        final List<String> orderItems = util.getOrderRows(orderNumber, 5);
 
         ProcessInstance salesOrderProcessInstance =
                 runtimeService.createMessageCorrelation(util._N(Messages.ORDER_RECEIVED_MARKETPLACE))
@@ -177,7 +177,7 @@ class OrderControllerTest {
                         .setVariable(util._N(Variables.ORDER_NUMBER), orderNumber)
                         .setVariable(util._N(Variables.PAYMENT_TYPE), util._N(PaymentType.CREDIT_CARD))
                         .setVariable(util._N(Variables.ORDER_VALID), true)
-                        .setVariable(util._N(Variables.ORDER_ITEMS), orderItems)
+                        .setVariable(util._N(Variables.ORDER_ROWS), orderItems)
                         .setVariable(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
                         .correlateWithResult().getProcessInstance();
         try {
@@ -197,7 +197,7 @@ class OrderControllerTest {
     void cancelOrderItemNotPossibleState() {
         var testOrder = salesOrderUtil.createNewSalesOrder();
         final String orderNumber = testOrder.getOrderNumber();
-        final List<String> orderItems = util.getOrderItems(orderNumber, 5);
+        final List<String> orderItems = util.getOrderRows(orderNumber, 5);
 
         ProcessInstance salesOrderProcessInstance =
                 runtimeService.createMessageCorrelation(util._N(Messages.ORDER_RECEIVED_MARKETPLACE))
@@ -205,7 +205,7 @@ class OrderControllerTest {
                         .setVariable(util._N(Variables.ORDER_NUMBER), orderNumber)
                         .setVariable(util._N(Variables.PAYMENT_TYPE), util._N(PaymentType.CREDIT_CARD))
                         .setVariable(util._N(Variables.ORDER_VALID), true)
-                        .setVariable(util._N(Variables.ORDER_ITEMS), orderItems)
+                        .setVariable(util._N(Variables.ORDER_ROWS), orderItems)
                         .setVariable(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
                         .correlateWithResult().getProcessInstance();
         try {
@@ -217,9 +217,9 @@ class OrderControllerTest {
         BpmnAwareTests.assertThat(salesOrderProcessInstance).isWaitingAt(util._N(Events.MSG_ORDER_PAYMENT_SECURED));
         util.sendMessage(util._N(Messages.ORDER_RECEIVED_PAYMENT_SECURED), orderNumber);
 
-        util.sendMessage(util._N(ItemMessages.ITEM_TRANSMITTED_TO_LOGISTICS), orderNumber);
-        util.sendMessage(util._N(ItemMessages.PACKING_STARTED), orderNumber);
-        util.sendMessage(util._N(ItemMessages.TRACKING_ID_RECEIVED), orderNumber);
+        util.sendMessage(util._N(RowMessages.ROW_TRANSMITTED_TO_LOGISTICS), orderNumber);
+        util.sendMessage(util._N(RowMessages.PACKING_STARTED), orderNumber);
+        util.sendMessage(util._N(RowMessages.TRACKING_ID_RECEIVED), orderNumber);
 
         final var result = controller.cancelOrderItem(orderNumber, orderItems.get(0));
         assertThat(result.getStatusCodeValue()).isEqualTo(409);
@@ -229,7 +229,7 @@ class OrderControllerTest {
     void cancelOrderPossibleTest() {
         var testOrder = salesOrderUtil.createNewSalesOrder();
         final String orderNumber = testOrder.getOrderNumber();
-        final List<String> orderItems = util.getOrderItems(orderNumber, 5);
+        final List<String> orderItems = util.getOrderRows(orderNumber, 5);
 
         ProcessInstance salesOrderProcessInstance =
                 runtimeService.createMessageCorrelation(util._N(Messages.ORDER_RECEIVED_MARKETPLACE))
@@ -237,7 +237,7 @@ class OrderControllerTest {
                         .setVariable(util._N(Variables.ORDER_NUMBER), orderNumber)
                         .setVariable(util._N(Variables.PAYMENT_TYPE), util._N(PaymentType.CREDIT_CARD))
                         .setVariable(util._N(Variables.ORDER_VALID), true)
-                        .setVariable(util._N(Variables.ORDER_ITEMS), orderItems)
+                        .setVariable(util._N(Variables.ORDER_ROWS), orderItems)
                         .setVariable(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
                         .correlateWithResult().getProcessInstance();
         try {
@@ -255,7 +255,7 @@ class OrderControllerTest {
     void cancelOrderPossibleWithOrderRowProcessesTest() {
         var testOrder = salesOrderUtil.createNewSalesOrder();
         final String orderNumber = testOrder.getOrderNumber();
-        final List<String> orderItems = util.getOrderItems(orderNumber, 5);
+        final List<String> orderItems = util.getOrderRows(orderNumber, 5);
 
         ProcessInstance salesOrderProcessInstance =
                 runtimeService.createMessageCorrelation(util._N(Messages.ORDER_RECEIVED_MARKETPLACE))
@@ -263,7 +263,7 @@ class OrderControllerTest {
                         .setVariable(util._N(Variables.ORDER_NUMBER), orderNumber)
                         .setVariable(util._N(Variables.PAYMENT_TYPE), util._N(PaymentType.CREDIT_CARD))
                         .setVariable(util._N(Variables.ORDER_VALID), true)
-                        .setVariable(util._N(Variables.ORDER_ITEMS), orderItems)
+                        .setVariable(util._N(Variables.ORDER_ROWS), orderItems)
                         .setVariable(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
                         .correlateWithResult().getProcessInstance();
         try {
@@ -282,7 +282,7 @@ class OrderControllerTest {
     void orderCancelNotPossibleOrderRowsDeliveredTest() {
         var testOrder = salesOrderUtil.createNewSalesOrder();
         final String orderNumber = testOrder.getOrderNumber();
-        final List<String> orderItems = util.getOrderItems(orderNumber, 5);
+        final List<String> orderItems = util.getOrderRows(orderNumber, 5);
 
         ProcessInstance salesOrderProcessInstance =
                 runtimeService.createMessageCorrelation(util._N(Messages.ORDER_RECEIVED_MARKETPLACE))
@@ -290,7 +290,7 @@ class OrderControllerTest {
                         .setVariable(util._N(Variables.ORDER_NUMBER), orderNumber)
                         .setVariable(util._N(Variables.PAYMENT_TYPE), util._N(PaymentType.CREDIT_CARD))
                         .setVariable(util._N(Variables.ORDER_VALID), true)
-                        .setVariable(util._N(Variables.ORDER_ITEMS), orderItems)
+                        .setVariable(util._N(Variables.ORDER_ROWS), orderItems)
                         .setVariable(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
                         .correlateWithResult().getProcessInstance();
         try {
@@ -302,9 +302,9 @@ class OrderControllerTest {
         BpmnAwareTests.assertThat(salesOrderProcessInstance).isWaitingAt(util._N(Events.MSG_ORDER_PAYMENT_SECURED));
         util.sendMessage(util._N(Messages.ORDER_RECEIVED_PAYMENT_SECURED), orderNumber);
 
-        util.sendMessage(util._N(ItemMessages.ITEM_TRANSMITTED_TO_LOGISTICS), orderNumber, orderItems.get(0));
-        util.sendMessage(util._N(ItemMessages.PACKING_STARTED), orderNumber, orderItems.get(0));
-        util.sendMessage(util._N(ItemMessages.TRACKING_ID_RECEIVED), orderNumber, orderItems.get(0));
+        util.sendMessage(util._N(RowMessages.ROW_TRANSMITTED_TO_LOGISTICS), orderNumber, orderItems.get(0));
+        util.sendMessage(util._N(RowMessages.PACKING_STARTED), orderNumber, orderItems.get(0));
+        util.sendMessage(util._N(RowMessages.TRACKING_ID_RECEIVED), orderNumber, orderItems.get(0));
 
         final var result = controller.cancelOrder(orderNumber);
         assertThat(result.getStatusCodeValue()).isEqualTo(400);
