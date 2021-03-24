@@ -12,36 +12,46 @@ import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
 import de.kfzteile24.salesOrderHub.dto.sns.FulfillmentMessage;
 import de.kfzteile24.salesOrderHub.dto.sqs.EcpOrder;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy;
 import org.springframework.cloud.aws.messaging.listener.annotation.SqsListener;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
 
+import static org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy.ON_SUCCESS;
+
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class SqsReceiveService {
 
-    @Autowired
-    final Gson gson;
+    private final Gson gson;
+    private final Gson messageHeader;
 
-    @Autowired
-    @Qualifier("messageHeader")
-    final Gson messageHeader;
-    final RuntimeService runtimeService;
-    final SalesOrderService salesOrderService;
-    final CamundaHelper camundaHelper;
+    private final RuntimeService runtimeService;
+    private final SalesOrderService salesOrderService;
+    private final CamundaHelper camundaHelper;
 
-    @Value("${soh.sqs.maxMessageRetrieves}")
     private Integer maxMessageRetrieves;
+
+    public SqsReceiveService(
+        final Gson gson,
+        final RuntimeService runtimeService,
+        final SalesOrderService salesOrderService,
+        final CamundaHelper camundaHelper,
+        final @Value("${soh.sqs.maxMessageRetrieves}") Integer maxMessageRetrieves,
+        final @Qualifier("messageHeader") Gson messageHeader
+    ) {
+        this.gson = gson;
+        this.runtimeService = runtimeService;
+        this.salesOrderService = salesOrderService;
+        this.camundaHelper = camundaHelper;
+        this.maxMessageRetrieves = maxMessageRetrieves;
+        this.messageHeader = messageHeader;
+    }
 
     /**
      * Consume sqs for new orders from ecp shop
@@ -81,11 +91,9 @@ public class SqsReceiveService {
      * @param senderId
      * @param receiveCount
      */
-    @SqsListener(value = "${soh.sqs.queue.orderItemShipped}", deletionPolicy = SqsMessageDeletionPolicy.ON_SUCCESS)
+    @SqsListener(value = "${soh.sqs.queue.orderItemShipped}", deletionPolicy = ON_SUCCESS)
     public void queueListenerItemShipped(String rawMessage, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
-        log.info("message received: " + senderId);
-        log.info("message receive count: " + receiveCount.toString());
-        log.info("message content: " + rawMessage);
+        logReceivedMessage(rawMessage, senderId, receiveCount);
         FulfillmentMessage fulfillmentMessage = gson.fromJson(messageHeader.fromJson(rawMessage, EcpOrder.class).getMessage(), FulfillmentMessage.class);
 
         try {
@@ -101,10 +109,7 @@ public class SqsReceiveService {
         } catch (Exception e) {
             log.error("Order item shipped message error - OrderNumber " + fulfillmentMessage.getOrderNumber() + ", OrderItem: " + fulfillmentMessage.getOrderItemSku());
             log.error(e.getMessage());
-            if (receiveCount < maxMessageRetrieves) {
-                //ToDo handle dead letter queue sending
-                throw e;
-            }
+            throw e;
         }
 
     }
@@ -116,11 +121,9 @@ public class SqsReceiveService {
      * @param senderId
      * @param receiveCount
      */
-    @SqsListener(value = "${soh.sqs.queue.orderPaymentSecured}", deletionPolicy = SqsMessageDeletionPolicy.ON_SUCCESS)
+    @SqsListener(value = "${soh.sqs.queue.orderPaymentSecured}", deletionPolicy = ON_SUCCESS)
     public void queueListenerOrderPaymentSecured(String rawMessage, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
-        log.info("message received: " + senderId);
-        log.info("message receive count: " + receiveCount.toString());
-        log.info("message content: " + rawMessage);
+        logReceivedMessage(rawMessage, senderId, receiveCount);
         CoreDataReaderEvent coreDataReaderEvent = gson.fromJson(messageHeader.fromJson(rawMessage, EcpOrder.class).getMessage(), CoreDataReaderEvent.class);
 
         try {
@@ -134,10 +137,7 @@ public class SqsReceiveService {
         } catch (Exception e) {
             log.error("Order payment secured message error - OrderNumber " + coreDataReaderEvent.getOrderNumber());
             log.error(e.getMessage());
-            if (receiveCount < maxMessageRetrieves) {
-                //ToDo handle dead letter queue sending
-                throw e;
-            }
+            throw e;
         }
 
     }
@@ -149,11 +149,9 @@ public class SqsReceiveService {
      * @param senderId
      * @param receiveCount
      */
-    @SqsListener(value = "${soh.sqs.queue.orderItemTransmittedToLogistic}", deletionPolicy = SqsMessageDeletionPolicy.ON_SUCCESS)
+    @SqsListener(value = "${soh.sqs.queue.orderItemTransmittedToLogistic}", deletionPolicy = ON_SUCCESS)
     public void queueListenerOrderItemTransmittedToLogistic(String rawMessage, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
-        log.info("message received: " + senderId);
-        log.info("message receive count: " + receiveCount.toString());
-        log.info("message content: " + rawMessage);
+        logReceivedMessage(rawMessage, senderId, receiveCount);
         FulfillmentMessage fulfillmentMessage = gson.fromJson(messageHeader.fromJson(rawMessage, EcpOrder.class).getMessage(), FulfillmentMessage.class);
 
         try {
@@ -169,10 +167,7 @@ public class SqsReceiveService {
         } catch (Exception e) {
             log.error("Order item transmitted to logistic message error - OrderNumber " + fulfillmentMessage.getOrderNumber());
             log.error(e.getMessage());
-            if (receiveCount < maxMessageRetrieves) {
-                //ToDo handle dead letter queue sending
-                throw e;
-            }
+            throw e;
         }
     }
 
@@ -183,11 +178,9 @@ public class SqsReceiveService {
      * @param senderId
      * @param receiveCount
      */
-    @SqsListener(value = "${soh.sqs.queue.orderItemPackingStarted}", deletionPolicy = SqsMessageDeletionPolicy.ON_SUCCESS)
+    @SqsListener(value = "${soh.sqs.queue.orderItemPackingStarted}", deletionPolicy = ON_SUCCESS)
     public void queueListenerOrderItemPackingStarted(String rawMessage, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
-        log.info("message received: " + senderId);
-        log.info("message receive count: " + receiveCount.toString());
-        log.info("message content: " + rawMessage);
+        logReceivedMessage(rawMessage, senderId, receiveCount);
         FulfillmentMessage fulfillmentMessage = gson.fromJson(messageHeader.fromJson(rawMessage, EcpOrder.class).getMessage(), FulfillmentMessage.class);
 
         try {
@@ -203,10 +196,7 @@ public class SqsReceiveService {
         } catch (Exception e) {
             log.error("Order item packing started message error - OrderNumber " + fulfillmentMessage.getOrderNumber());
             log.error(e.getMessage());
-            if (receiveCount < maxMessageRetrieves) {
-                //ToDo handle dead letter queue sending
-                throw e;
-            }
+            throw e;
         }
     }
 
@@ -217,11 +207,9 @@ public class SqsReceiveService {
      * @param senderId
      * @param receiveCount
      */
-    @SqsListener(value = "${soh.sqs.queue.orderItemTrackingIdReceived}", deletionPolicy = SqsMessageDeletionPolicy.ON_SUCCESS)
+    @SqsListener(value = "${soh.sqs.queue.orderItemTrackingIdReceived}", deletionPolicy = ON_SUCCESS)
     public void queueListenerOrderItemTrackingIdReceived(String rawMessage, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
-        log.info("message received: " + senderId);
-        log.info("message receive count: " + receiveCount.toString());
-        log.info("message content: " + rawMessage);
+        logReceivedMessage(rawMessage, senderId, receiveCount);
         FulfillmentMessage fulfillmentMessage = gson.fromJson(messageHeader.fromJson(rawMessage, EcpOrder.class).getMessage(), FulfillmentMessage.class);
 
         try {
@@ -237,10 +225,7 @@ public class SqsReceiveService {
         } catch (Exception e) {
             log.error("Order item tracking id received message error - OrderNumber " + fulfillmentMessage.getOrderNumber());
             log.error(e.getMessage());
-            if (receiveCount < maxMessageRetrieves) {
-                //ToDo handle dead letter queue sending
-                throw e;
-            }
+            throw e;
         }
     }
 
@@ -251,11 +236,9 @@ public class SqsReceiveService {
      * @param senderId
      * @param receiveCount
      */
-    @SqsListener(value = "${soh.sqs.queue.orderItemTourStarted}", deletionPolicy = SqsMessageDeletionPolicy.ON_SUCCESS)
+    @SqsListener(value = "${soh.sqs.queue.orderItemTourStarted}", deletionPolicy = ON_SUCCESS)
     public void queueListenerOrderItemTourStarted(String rawMessage, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
-        log.info("message received: " + senderId);
-        log.info("message receive count: " + receiveCount.toString());
-        log.info("message content: " + rawMessage);
+        logReceivedMessage(rawMessage, senderId, receiveCount);
         FulfillmentMessage fulfillmentMessage = gson.fromJson(messageHeader.fromJson(rawMessage, EcpOrder.class).getMessage(), FulfillmentMessage.class);
 
         try {
@@ -271,11 +254,62 @@ public class SqsReceiveService {
         } catch (Exception e) {
             log.error("Order item tour started message error - OrderNumber " + fulfillmentMessage.getOrderNumber());
             log.error(e.getMessage());
-            if (receiveCount < maxMessageRetrieves) {
-                //ToDo handle dead letter queue sending
-                throw e;
-            }
+            throw e;
         }
+    }
+
+    /**
+     * Consume messages from sqs for event invoice from core
+     *
+     * @param rawMessage
+     * @param senderId
+     * @param receiveCount
+     */
+    @SqsListener(value = "${soh.sqs.queue.invoicesFromCore}", deletionPolicy = ON_SUCCESS)
+    public void queueListenerInvoiceReceivedFromCore(
+            String rawMessage,
+            @Header("SenderId") String senderId,
+            @Header("ApproximateReceiveCount") Integer receiveCount)
+    {
+        logReceivedMessage(rawMessage, senderId, receiveCount);
+        final String invoiceUrl = messageHeader.fromJson(rawMessage, EcpOrder.class).getMessage();
+
+        try {
+            final var orderNumber = extractOrderNumber(invoiceUrl);
+            log.info("Adding invoice {} to orderNumber {}", invoiceUrl, orderNumber);
+            final MessageCorrelationResult result = runtimeService
+                    .createMessageCorrelation(Messages.INVOICE_CREATED.getName())
+                    .processInstanceVariableEquals(Variables.ORDER_NUMBER.getName(), orderNumber)
+                    .setVariable(Variables.INVOICE_URL.getName(), invoiceUrl)
+                    .correlateWithResult();
+
+            if (result.getProcessInstance() != null) {
+                log.info("Invoice " + invoiceUrl + " from core successfully received");
+            }
+        } catch (Exception e) {
+            log.error("Invoice received from core message error - invoice url " + invoiceUrl);
+            log.error(e.getMessage());
+            throw e;
+        }
+    }
+
+    private String extractOrderNumber(final String invoiceUrl) {
+       final var afterLastSlash = invoiceUrl.lastIndexOf('/') + 1;
+
+       if (afterLastSlash > 0) {
+           final var minus = invoiceUrl.indexOf('-', afterLastSlash);
+           if (minus != -1) {
+               return invoiceUrl.substring(afterLastSlash, minus);
+           }
+       }
+
+        throw new IllegalArgumentException("Cannot parse OrderNumber from invoice url: " + invoiceUrl);
+    }
+
+    private void logReceivedMessage(final String rawMessage, final String senderId, final Integer receiveCount) {
+        log.info("message received: " + senderId);
+        log.info("message receive count: " + receiveCount.toString());
+        log.info("message content: " + rawMessage);
     }
 
     /**
@@ -294,6 +328,4 @@ public class SqsReceiveService {
 
         return result;
     }
-
-
 }

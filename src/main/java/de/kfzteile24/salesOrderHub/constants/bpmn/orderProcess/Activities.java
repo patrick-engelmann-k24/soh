@@ -7,6 +7,7 @@ public enum Activities implements BpmItem {
     CHANGE_INVOICE_ADDRESS_POSSIBLE("activityChangeInvoiceAddressPossible"),
     ORDER_ROW_FULFILLMENT_PROCESS("activityOrderRowFulfillmentProcess"),
     SUB_PROCESS_INVOICE_ADDRESS_CHANGE("activitySubProcessInvoiceAddressChange"),
+    SAVE_INVOICE("activitySaveInvoice")
     ;
 
     private final String name;

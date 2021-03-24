@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.5.0" camunda:diagramRelationId="06f23589-a629-45e3-92ba-b59cee025910">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.6.0" camunda:diagramRelationId="06f23589-a629-45e3-92ba-b59cee025910">
   <bpmn:process id="SalesOrderProcess_v2" name="Sales Order Process" isExecutable="true">
     <bpmn:intermediateThrowEvent id="eventThrowMsgOrderCreated" name="Order created" camunda:asyncBefore="true">
       <bpmn:incoming>Flow_0v1861j</bpmn:incoming>
@@ -82,15 +82,16 @@
         <bpmn:outgoing>Flow_05twbpu</bpmn:outgoing>
         <bpmn:messageEventDefinition id="MessageEventDefinition_1hqfy2q" messageRef="Message_0yk7q6d" />
       </bpmn:startEvent>
-      <bpmn:task id="Activity_1a5blkg" name="Save invoice">
+      <bpmn:sequenceFlow id="Flow_05twbpu" sourceRef="eventStartMsgInvoiceCreated" targetRef="activitySaveInvoice" />
+      <bpmn:sequenceFlow id="Flow_1utbsvm" sourceRef="activitySaveInvoice" targetRef="eventInvoiceSaved" />
+      <bpmn:serviceTask id="activitySaveInvoice" name="Save invoice" camunda:delegateExpression="${saveInvoiceDelegate}">
         <bpmn:incoming>Flow_05twbpu</bpmn:incoming>
         <bpmn:outgoing>Flow_1utbsvm</bpmn:outgoing>
-      </bpmn:task>
-      <bpmn:sequenceFlow id="Flow_05twbpu" sourceRef="eventStartMsgInvoiceCreated" targetRef="Activity_1a5blkg" />
+      </bpmn:serviceTask>
       <bpmn:endEvent id="eventInvoiceSaved" name="Invoice saved">
         <bpmn:incoming>Flow_1utbsvm</bpmn:incoming>
+        <bpmn:messageEventDefinition id="MessageEventDefinition_14of8u4" camunda:delegateExpression="${invoiceSavedDelegate}" />
       </bpmn:endEvent>
-      <bpmn:sequenceFlow id="Flow_1utbsvm" sourceRef="Activity_1a5blkg" targetRef="eventInvoiceSaved" />
     </bpmn:subProcess>
     <bpmn:endEvent id="eventEndMsgOrderCompleted" name="Order completed">
       <bpmn:incoming>Flow_0ero9gg</bpmn:incoming>
@@ -200,7 +201,7 @@
   <bpmn:message id="Message_0hev9we" name="msg_orderItemCancellationReceived" />
   <bpmn:message id="Message_0mtsn9u" name="msg_dropshipmentCancellationReceived" />
   <bpmn:message id="Message_1o2idhb" name="msg_deliveryAddressChange" />
-  <bpmn:message id="Message_0yk7q6d" name="msg_invoiceCreated" />
+  <bpmn:message id="Message_0yk7q6d" name="msgInvoiceCreated" />
   <bpmn:message id="Message_1rxhtzg" name="msgInvoiceAddressChangeReceived" />
   <bpmn:message id="Message_0ixpcjn" name="msgOrderReceivedMarketplace" />
   <bpmn:message id="Message_07x4crw" name="msgOrderReceivedEcp" />
@@ -362,10 +363,10 @@
           <dc:Bounds x="511" y="575" width="75" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1a5blkg_di" bpmnElement="Activity_1a5blkg">
+      <bpmndi:BPMNShape id="Activity_0ypr8nm_di" bpmnElement="activitySaveInvoice">
         <dc:Bounds x="620" y="510" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_029w133_di" bpmnElement="eventInvoiceSaved" bioc:stroke="#000" bioc:fill="#fff">
+      <bpmndi:BPMNShape id="Event_06cnxby_di" bpmnElement="eventInvoiceSaved" bioc:stroke="#000" bioc:fill="#fff">
         <dc:Bounds x="782" y="532" width="36" height="36" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="766" y="575" width="68" height="14" />

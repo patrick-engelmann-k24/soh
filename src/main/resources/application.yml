@@ -46,6 +46,7 @@ soh:
       orderItemPackingStarted: ${soh_sqs_order_item_packing_started}
       orderItemTrackingIdReceived: ${soh_sqs_order_item_tracking_id_received}
       orderItemTourStarted: ${soh_sqs_order_item_tour_started}
+      invoicesFromCore: ${soh_sqs_invoices_from_core}
 
 #
 # Camunda BPM configuration

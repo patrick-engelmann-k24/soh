@@ -41,7 +41,7 @@ module "application_module" {
     soh_sqs_order_item_packing_started = aws_sqs_queue.soh_order_item_packing_started.id
     soh_sqs_order_item_tracking_id_received = aws_sqs_queue.soh_order_item_tracking_id_received.id
     soh_sqs_order_item_tour_started = aws_sqs_queue.soh_order_item_tour_started.id
-
+    soh_sqs_invoices_from_core = aws_sqs_queue.soh_invoices_from_core.id
   }
 
   ssm_secrets_count = 7

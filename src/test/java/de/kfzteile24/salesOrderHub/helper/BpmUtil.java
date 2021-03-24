@@ -69,6 +69,18 @@ public class BpmUtil {
                 .correlateWithResult();
     }
 
+    public final MessageCorrelationResult sendMessage(final String message, final String orderNumber,
+                                                      final Map<String, Object> processVariables) {
+        MessageCorrelationBuilder builder = runtimeService.createMessageCorrelation(message)
+                .processInstanceVariableEquals(_N(Variables.ORDER_NUMBER), orderNumber);
+        if (!processVariables.isEmpty())
+            builder.setVariables(processVariables);
+
+        return builder
+                .correlateWithResult();
+    }
+
+
     public final MessageCorrelationResult sendMessage(final BpmItem message, final String orderNumber, final String orderItem,
                                                       final Map<String, Object> processVariables) {
         return sendMessage(_N(message), orderNumber, orderItem, processVariables);

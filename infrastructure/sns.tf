@@ -97,5 +97,5 @@ resource "aws_sns_topic_subscription" "sns_subscription_order_item_tour_started"
 resource "aws_sns_topic_subscription" "sns_subscription_invoices_from_core" {
   endpoint = aws_sqs_queue.soh_invoices_from_core.arn
   protocol = "sqs"
-  topic_arn = var.invoice_from_core_sns
+  topic_arn = var.invoices_from_core_sns
 }

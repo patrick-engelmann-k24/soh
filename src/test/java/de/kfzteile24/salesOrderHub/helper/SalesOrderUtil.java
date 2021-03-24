@@ -76,6 +76,7 @@ public class SalesOrderUtil {
         });
 
         testOrder.setSalesOrderItemList(testOrderItems);
+        testOrder.setSalesOrderInvoiceList(new HashSet<>());
         salesOrderService.save(testOrder);
         return testOrder;
     }

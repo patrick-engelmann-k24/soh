@@ -30,6 +30,6 @@ variable "ecp_new_order_sns" {
   type = string
 }
 
-variable "invoice_from_core_sns" {
+variable "invoices_from_core_sns" {
   type = string
 }

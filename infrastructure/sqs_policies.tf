@@ -392,7 +392,7 @@ data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_invoices_fro
       test     = "ArnEquals"
       variable = "aws:SourceArn"
       values = [
-        var.invoice_from_core_sns
+        var.invoices_from_core_sns
       ]
     }
   }

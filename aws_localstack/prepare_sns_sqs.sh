@@ -20,13 +20,16 @@ TOPICS="
     soh-order-item-tour-started
     soh-order-item-tracking-id-received
     soh-order-item-transmitted-to-logistic
-    soh-order-invoice-created
     soh-order-payment-secured
     soh-invoice-address-changed
+    soh-invoices-from-core
+    soh-ecp-shop-orders
     "
 
+# Outdated topics
+#    soh-order-invoice-created
+
 QUEUES="
-    soh-ecp-shop-orders
     soh-order-item-shipped
     soh-cdr-own-delivery-picklist-shipped
     "

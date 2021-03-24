@@ -12,7 +12,8 @@ public enum Variables implements BpmItem {
     INVOICE_EXISTS("invoiceExist"),
     INVOICE_ADDRESS_CHANGE_REQUEST("invoiceAddressChangeRequest"),
     ORDER_CANCEL_POSSIBLE("orderCancelPossible"),
-    ORDER_CANCELED("orderCancelled")
+    ORDER_CANCELED("orderCancelled"),
+    INVOICE_URL("invoiceUrl"),
     ;
 
     private final String name;

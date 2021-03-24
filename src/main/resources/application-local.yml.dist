@@ -30,12 +30,12 @@ cloud:
 soh:
   sns:
     topic:
-    orderCreated: arn:aws:sns:eu-central-1:000000000000:soh-order-created
-    orderCompleted: arn:aws:sns:eu-central-1:000000000000:soh-order-completed
-    orderCancelled: arn:aws:sns:eu-central-1:000000000000:soh-order-cancelled
-    orderItemCancelled: arn:aws:sns:eu-central-1:000000000000:soh-order-item-cancelled
-    invoiceAddressChanged: arn:aws:sns:eu-central-1:000000000000:soh-invoice-address-changed
-    deliveryAddressChanged: arn:aws:sns:eu-central-1:000000000000:soh-delivery-address-changed
+      orderCreated: arn:aws:sns:eu-central-1:000000000000:soh-order-created
+      orderCompleted: arn:aws:sns:eu-central-1:000000000000:soh-order-completed
+      orderCancelled: arn:aws:sns:eu-central-1:000000000000:soh-order-cancelled
+      orderItemCancelled: arn:aws:sns:eu-central-1:000000000000:soh-order-item-cancelled
+      invoiceAddressChanged: arn:aws:sns:eu-central-1:000000000000:soh-invoice-address-changed
+      deliveryAddressChanged: arn:aws:sns:eu-central-1:000000000000:soh-delivery-address-changed
   sqs:
     queue:
       ecpShopOrders:                http://localhost:4566/000000000000/soh-ecp-shop-orders-queue
@@ -45,5 +45,6 @@ soh:
       orderItemPackingStarted:      http://localhost:4566/000000000000/soh-order-item-packing-started-queue
       orderItemTrackingIdReceived:  http://localhost:4566/000000000000/soh-order-item-tracking-id-received-queue
       orderItemTourStarted:         http://localhost:4566/000000000000/soh-order-item-tour-started-queue
+      invoicesFromCore:      http://localhost:4566/000000000000/soh-invoices-from-core-queue
 
 
