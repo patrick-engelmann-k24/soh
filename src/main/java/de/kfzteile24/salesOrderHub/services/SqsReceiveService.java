@@ -1,7 +1,10 @@
 package de.kfzteile24.salesOrderHub.services;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_ECP;
+import static org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy.ON_SUCCESS;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
@@ -12,6 +15,10 @@ import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
 import de.kfzteile24.salesOrderHub.dto.sns.FulfillmentMessage;
 import de.kfzteile24.salesOrderHub.dto.sqs.EcpOrder;
+import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
@@ -22,36 +29,21 @@ import org.springframework.cloud.aws.messaging.listener.annotation.SqsListener;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
 
-import static org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy.ON_SUCCESS;
-
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class SqsReceiveService {
 
-    private final Gson gson;
-    private final Gson messageHeader;
-
-    private final RuntimeService runtimeService;
-    private final SalesOrderService salesOrderService;
-    private final CamundaHelper camundaHelper;
-
+    @Value("${soh.sqs.maxMessageRetrieves}")
     private Integer maxMessageRetrieves;
 
-    public SqsReceiveService(
-        final Gson gson,
-        final RuntimeService runtimeService,
-        final SalesOrderService salesOrderService,
-        final CamundaHelper camundaHelper,
-        final @Value("${soh.sqs.maxMessageRetrieves}") Integer maxMessageRetrieves,
-        final @Qualifier("messageHeader") Gson messageHeader
-    ) {
-        this.gson = gson;
-        this.runtimeService = runtimeService;
-        this.salesOrderService = salesOrderService;
-        this.camundaHelper = camundaHelper;
-        this.maxMessageRetrieves = maxMessageRetrieves;
-        this.messageHeader = messageHeader;
-    }
+    @NonNull private final RuntimeService runtimeService;
+    @NonNull private final SalesOrderService salesOrderService;
+    @NonNull private final CamundaHelper camundaHelper;
+    @NonNull private final ObjectMapper messageHeaderMapper;
+    @NonNull @Qualifier("messageBodyMapper")
+    private final ObjectMapper messageBodyMapper;
+    @NonNull private final SalesOrderRepository salesOrderRepository;
 
     /**
      * Consume sqs for new orders from ecp shop
@@ -60,27 +52,33 @@ public class SqsReceiveService {
      * @param senderId
      */
     @SqsListener("${soh.sqs.queue.ecpShopOrders}")
+    @SneakyThrows(JsonProcessingException.class)
     public void queueListenerEcpShopOrders(String rawMessage, @Header("SenderId") String senderId) {
-        log.info("message received: " + senderId);
+        log.info("Received message from ecp shop with sender id : {} ", senderId);
 
-        try {
-            String message = messageHeader.fromJson(rawMessage, EcpOrder.class).getMessage();
-            OrderJSON orderJSON = gson.fromJson(message, OrderJSON.class);
-            final SalesOrder ecpSalesOrder = de.kfzteile24.salesOrderHub.domain.SalesOrder.builder()
-                    .orderNumber(orderJSON.getOrderHeader().getOrderNumber())
-                    .salesLocale(orderJSON.getOrderHeader().getOrigin().getLocale())
-                    .originalOrder(orderJSON)
-                    .build();
+        String message = messageHeaderMapper.readValue(rawMessage, EcpOrder.class).getMessage();
+        OrderJSON orderJSON = messageBodyMapper.readValue(message, OrderJSON.class);
+        final SalesOrder ecpSalesOrder = SalesOrder.builder()
+                                                    .orderNumber(orderJSON.getOrderHeader()
+                                                        .getOrderNumber())
+                                                    .salesLocale(orderJSON.getOrderHeader()
+                                                        .getOrigin()
+                                                        .getLocale())
+                                                    .customerEmail(orderJSON.getOrderHeader()
+                                                        .getCustomer()
+                                                        .getCustomerEmail())
+                                                    .originalOrder(orderJSON)
+                                                    .build();
 
-            salesOrderService.save(ecpSalesOrder);
-            ProcessInstance result = camundaHelper.createOrderProcess(ecpSalesOrder, Messages.ORDER_RECEIVED_ECP);
+        boolean isRecurringOrder = isRecurringOrder(ecpSalesOrder);
+        if(isRecurringOrder){
+            ecpSalesOrder.setRecurringOrder(true);
+        }
+        salesOrderService.save(ecpSalesOrder);
+        ProcessInstance result = camundaHelper.createOrderProcess(ecpSalesOrder, ORDER_RECEIVED_ECP);
 
-            if (result != null) {
-                log.info("New ecp order process started: " + result.getId());
-            }
-        } catch (JsonSyntaxException e) {
-            log.error("ECP Order could not parsed from Json");
-            log.error(e.getMessage());
+        if (result != null) {
+            log.info("New ecp order process started: {} ", result.getId());
         }
     }
 
@@ -92,9 +90,14 @@ public class SqsReceiveService {
      * @param receiveCount
      */
     @SqsListener(value = "${soh.sqs.queue.orderItemShipped}", deletionPolicy = ON_SUCCESS)
-    public void queueListenerItemShipped(String rawMessage, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
+    @SneakyThrows(JsonProcessingException.class)
+    public void queueListenerItemShipped(String rawMessage,
+                                         @Header("SenderId") String senderId,
+                                         @Header("ApproximateReceiveCount") Integer receiveCount) {
         logReceivedMessage(rawMessage, senderId, receiveCount);
-        FulfillmentMessage fulfillmentMessage = gson.fromJson(messageHeader.fromJson(rawMessage, EcpOrder.class).getMessage(), FulfillmentMessage.class);
+
+        String message = messageHeaderMapper.readValue(rawMessage, EcpOrder.class).getMessage();
+        FulfillmentMessage fulfillmentMessage =  messageBodyMapper.readValue(message, FulfillmentMessage.class);
 
         try {
             MessageCorrelationResult result = sendOrderRowMessage(
@@ -122,9 +125,12 @@ public class SqsReceiveService {
      * @param receiveCount
      */
     @SqsListener(value = "${soh.sqs.queue.orderPaymentSecured}", deletionPolicy = ON_SUCCESS)
+    @SneakyThrows(JsonProcessingException.class)
     public void queueListenerOrderPaymentSecured(String rawMessage, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
         logReceivedMessage(rawMessage, senderId, receiveCount);
-        CoreDataReaderEvent coreDataReaderEvent = gson.fromJson(messageHeader.fromJson(rawMessage, EcpOrder.class).getMessage(), CoreDataReaderEvent.class);
+
+        String message = messageHeaderMapper.readValue(rawMessage, EcpOrder.class).getMessage();
+        CoreDataReaderEvent coreDataReaderEvent =  messageBodyMapper.readValue(message, CoreDataReaderEvent.class);
 
         try {
             MessageCorrelationResult result = runtimeService.createMessageCorrelation(Messages.ORDER_RECEIVED_PAYMENT_SECURED.getName())
@@ -150,9 +156,12 @@ public class SqsReceiveService {
      * @param receiveCount
      */
     @SqsListener(value = "${soh.sqs.queue.orderItemTransmittedToLogistic}", deletionPolicy = ON_SUCCESS)
+    @SneakyThrows(JsonProcessingException.class)
     public void queueListenerOrderItemTransmittedToLogistic(String rawMessage, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
         logReceivedMessage(rawMessage, senderId, receiveCount);
-        FulfillmentMessage fulfillmentMessage = gson.fromJson(messageHeader.fromJson(rawMessage, EcpOrder.class).getMessage(), FulfillmentMessage.class);
+
+        String message = messageHeaderMapper.readValue(rawMessage, EcpOrder.class).getMessage();
+        FulfillmentMessage fulfillmentMessage =  messageBodyMapper.readValue(message, FulfillmentMessage.class);
 
         try {
             MessageCorrelationResult result = sendOrderRowMessage(
@@ -179,9 +188,12 @@ public class SqsReceiveService {
      * @param receiveCount
      */
     @SqsListener(value = "${soh.sqs.queue.orderItemPackingStarted}", deletionPolicy = ON_SUCCESS)
+    @SneakyThrows(JsonProcessingException.class)
     public void queueListenerOrderItemPackingStarted(String rawMessage, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
         logReceivedMessage(rawMessage, senderId, receiveCount);
-        FulfillmentMessage fulfillmentMessage = gson.fromJson(messageHeader.fromJson(rawMessage, EcpOrder.class).getMessage(), FulfillmentMessage.class);
+
+        String message = messageHeaderMapper.readValue(rawMessage, EcpOrder.class).getMessage();
+        FulfillmentMessage fulfillmentMessage =  messageBodyMapper.readValue(message, FulfillmentMessage.class);
 
         try {
             MessageCorrelationResult result = sendOrderRowMessage(
@@ -208,9 +220,12 @@ public class SqsReceiveService {
      * @param receiveCount
      */
     @SqsListener(value = "${soh.sqs.queue.orderItemTrackingIdReceived}", deletionPolicy = ON_SUCCESS)
+    @SneakyThrows(JsonProcessingException.class)
     public void queueListenerOrderItemTrackingIdReceived(String rawMessage, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
         logReceivedMessage(rawMessage, senderId, receiveCount);
-        FulfillmentMessage fulfillmentMessage = gson.fromJson(messageHeader.fromJson(rawMessage, EcpOrder.class).getMessage(), FulfillmentMessage.class);
+
+        String message = messageHeaderMapper.readValue(rawMessage, EcpOrder.class).getMessage();
+        FulfillmentMessage fulfillmentMessage =  messageBodyMapper.readValue(message, FulfillmentMessage.class);
 
         try {
             MessageCorrelationResult result = sendOrderRowMessage(
@@ -237,9 +252,12 @@ public class SqsReceiveService {
      * @param receiveCount
      */
     @SqsListener(value = "${soh.sqs.queue.orderItemTourStarted}", deletionPolicy = ON_SUCCESS)
+    @SneakyThrows(JsonProcessingException.class)
     public void queueListenerOrderItemTourStarted(String rawMessage, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
         logReceivedMessage(rawMessage, senderId, receiveCount);
-        FulfillmentMessage fulfillmentMessage = gson.fromJson(messageHeader.fromJson(rawMessage, EcpOrder.class).getMessage(), FulfillmentMessage.class);
+
+        String message = messageHeaderMapper.readValue(rawMessage, EcpOrder.class).getMessage();
+        FulfillmentMessage fulfillmentMessage = messageBodyMapper.readValue(message, FulfillmentMessage.class);
 
         try {
             MessageCorrelationResult result = sendOrderRowMessage(
@@ -266,13 +284,13 @@ public class SqsReceiveService {
      * @param receiveCount
      */
     @SqsListener(value = "${soh.sqs.queue.invoicesFromCore}", deletionPolicy = ON_SUCCESS)
-    public void queueListenerInvoiceReceivedFromCore(
-            String rawMessage,
-            @Header("SenderId") String senderId,
-            @Header("ApproximateReceiveCount") Integer receiveCount)
+    @SneakyThrows(JsonProcessingException.class)
+    public void queueListenerInvoiceReceivedFromCore(String rawMessage,
+                                                     @Header("SenderId") String senderId,
+                                                     @Header("ApproximateReceiveCount") Integer receiveCount)
     {
         logReceivedMessage(rawMessage, senderId, receiveCount);
-        final String invoiceUrl = messageHeader.fromJson(rawMessage, EcpOrder.class).getMessage();
+        final String invoiceUrl = messageHeaderMapper.readValue(rawMessage, EcpOrder.class).getMessage();
 
         try {
             final var orderNumber = extractOrderNumber(invoiceUrl);
@@ -328,4 +346,18 @@ public class SqsReceiveService {
 
         return result;
     }
+
+    /**
+     * checks if there is any order in the past for this customer. If yes then sets the status
+     * of the order to recurring.
+     * @param salesOrder
+     */
+    private boolean isRecurringOrder(SalesOrder salesOrder){
+        var salesOrders = salesOrderRepository.countByCustomerEmail(salesOrder.getCustomerEmail());
+        if (salesOrders > 0) {
+            return true;
+        }
+        return false;
+    }
+
 }

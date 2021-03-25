@@ -1,0 +1,1 @@
+ALTER TABLE "public".sales_order ADD COLUMN recurring_order boolean DEFAULT false NOT NULL;

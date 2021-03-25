@@ -41,6 +41,9 @@ public class SalesOrder extends AbstractBaseEntity {
     @Column(name = "customer_number")
     private String customerNumber;
 
+    @Column(name = "recurring_order")
+    private boolean recurringOrder;
+
     @Basic
     @Column(name = "sales_channel")
     private String salesChannel;

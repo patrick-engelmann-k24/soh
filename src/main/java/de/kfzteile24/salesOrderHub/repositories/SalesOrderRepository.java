@@ -15,4 +15,6 @@ public interface SalesOrderRepository extends JpaRepository<SalesOrder, UUID> {
 
     @Query("SELECT a FROM SalesOrder a WHERE a.processId = :processId")
     Optional<SalesOrder> getOrderByProcessId(@Param("processId") String processId);
+
+    long countByCustomerEmail(String customerEmail);
 }

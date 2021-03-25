@@ -1,33 +1,32 @@
 package de.kfzteile24.salesOrderHub.dto.order.header;
 
+import java.math.BigDecimal;
 import lombok.Data;
 
 @Data
 public class PaymentProviderData {
-    String code;
-    String promotionIdentifier;
-    String externalId;
-    Number transactionAmount;
-    String billingAgreement;
-    String paymentProviderTransactionId;
-    String paymentProviderPaymentId;
-    String paymentProviderStatus;
-    String paymentProviderOrderDescription;
-    String paymentProviderDescription;
-    String paymentProviderCode;
-    String pseudoCardNumber;
-    String cardExpiryDate;
-    String cardBrand;
-    String orderDescription;
-    String senderHolder;
-    String accountNumber;
-    String bankCode;
-    String bankName;
-    String bic;
-    String countryCode;
-    String request;
-    String response;
-    String matchingId;
-
-
+    private String code;
+    private String promotionIdentifier;
+    private String externalId;
+    private BigDecimal transactionAmount;
+    private String billingAgreement;
+    private String paymentProviderTransactionId;
+    private String paymentProviderPaymentId;
+    private String paymentProviderStatus;
+    private String paymentProviderOrderDescription;
+    private String paymentProviderDescription;
+    private String paymentProviderCode;
+    private String pseudoCardNumber;
+    private String cardExpiryDate;
+    private String cardBrand;
+    private String orderDescription;
+    private String senderHolder;
+    private String accountNumber;
+    private String bankCode;
+    private String bankName;
+    private String bic;
+    private String countryCode;
+    private String request;
+    private String response;
+    private String matchingId;
 }

@@ -4,12 +4,11 @@ import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import de.kfzteile24.salesOrderHub.configuration.gson.LocalDateTimeAdapter;
+import java.text.DateFormat;
+import java.time.LocalDateTime;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
-
-import java.text.DateFormat;
-import java.time.LocalDateTime;
 
 @Configuration
 public class GsonConfig {
