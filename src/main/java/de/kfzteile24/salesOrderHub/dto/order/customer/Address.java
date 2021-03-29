@@ -1,25 +1,32 @@
 package de.kfzteile24.salesOrderHub.dto.order.customer;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class Address {
-    String addressKey;
-    String addressFormat;
-    String addressType;
-    String company;
-    String salutation;
-    String firstName;
-    String lastName;
-    String phoneNumber;
-    String street1;
-    String street2;
-    String street3;
-    String street4;
-    String city;
-    String zipCode;
-    String countryRegionCode;
-    String countryCode;
-    String taxNumber;
-    Boolean hasValidTaxNumber;
+    private String addressKey;
+    private String addressFormat;
+    private String addressType;
+    private String company;
+    private String salutation;
+    private String firstName;
+    private String lastName;
+    private String phoneNumber;
+    private String street1;
+    private String street2;
+    private String street3;
+    private String street4;
+    private String city;
+    private String zipCode;
+    private String countryRegionCode;
+    private String countryCode;
+    private String taxNumber;
+    private Boolean hasValidTaxNumber;
 }
+

@@ -3,23 +3,18 @@ package de.kfzteile24.salesOrderHub.helper;
 import com.google.gson.Gson;
 import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.item.ItemVariables;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
 import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import de.kfzteile24.salesOrderHub.dto.sqs.EcpOrder;
 import lombok.SneakyThrows;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.MessageCorrelationBuilder;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
-import org.junit.jupiter.api.Order;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileReader;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.util.*;
 
 @Component
@@ -66,13 +61,25 @@ public class BpmUtil {
                                                       final Map<String, Object> processVariables) {
         MessageCorrelationBuilder builder = runtimeService.createMessageCorrelation(message)
                 .processInstanceVariableEquals(_N(Variables.ORDER_NUMBER), orderNumber)
-                .processInstanceVariableEquals(_N(ItemVariables.ORDER_ITEM_ID), orderItem);
+                .processInstanceVariableEquals(_N(RowVariables.ORDER_ROW_ID), orderItem);
         if (!processVariables.isEmpty())
             builder.setVariables(processVariables);
 
         return builder
                 .correlateWithResult();
     }
+
+    public final MessageCorrelationResult sendMessage(final String message, final String orderNumber,
+                                                      final Map<String, Object> processVariables) {
+        MessageCorrelationBuilder builder = runtimeService.createMessageCorrelation(message)
+                .processInstanceVariableEquals(_N(Variables.ORDER_NUMBER), orderNumber);
+        if (!processVariables.isEmpty())
+            builder.setVariables(processVariables);
+
+        return builder
+                .correlateWithResult();
+    }
+
 
     public final MessageCorrelationResult sendMessage(final BpmItem message, final String orderNumber, final String orderItem,
                                                       final Map<String, Object> processVariables) {
@@ -101,10 +108,10 @@ public class BpmUtil {
         return orderJSON;
     }
 
-    public final List<String> getOrderItems(final String orderNumber, final int number) {
+    public final List<String> getOrderRows(final String orderNumber, final int number) {
         final List<String> result = new ArrayList<>();
         for (int i = 0; i < number; i++) {
-            result.add(orderNumber + "-item-" + i);
+            result.add(orderNumber + "-row-" + i);
         }
         return result;
     }

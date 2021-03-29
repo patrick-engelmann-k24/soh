@@ -5,30 +5,33 @@ set -e
 
 #set -x # print commands for debugging purposes
 export AWS_PAGER=""
+export AWS_DEFAULT_REGION=eu-central-1
+export AWS_SECRET_ACCESS_KEY=000000000000
+export AWS_ACCESS_KEY_ID=000000000000
 
 TOPICS="
+    soh-delivery-address-changed
     soh-order-created
     soh-order-completed
     soh-order-cancelled
     soh-order-item-cancelled
-    soh-order-invoice-created
-    soh-invoice-address-changed
-    soh-delivery-address-changed
-    order-item-transmitted-to-logistics
-    order-item-packing-started
-    order-item-tracking-id-received
-    order-item-delivered
-    order-item-tour-started
+    soh-order-item-delivered
+    soh-order-item-packing-started
+    soh-order-item-tour-started
+    soh-order-item-tracking-id-received
+    soh-order-item-transmitted-to-logistic
     soh-order-payment-secured
+    soh-invoice-address-changed
+    soh-invoices-from-core
+    soh-ecp-shop-orders
     "
 
+# Outdated topics
+#    soh-order-invoice-created
+
 QUEUES="
-    soh-ecp-shop-orders
     soh-order-item-shipped
-    soh-order-payment-secured
-    soh-order-item-transmitted-to-logistic
-    soh-order-item-packing-started
-    soh-order-item-tracking-id-received
+    soh-cdr-own-delivery-picklist-shipped
     "
 
 INT_AWS_HOST=${AWS_HOST:-http://localhost:4566}

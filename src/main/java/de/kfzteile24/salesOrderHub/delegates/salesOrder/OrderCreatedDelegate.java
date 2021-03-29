@@ -13,11 +13,13 @@ import org.springframework.stereotype.Component;
 @Log
 public class OrderCreatedDelegate implements JavaDelegate {
 
-    @Autowired
-    SnsPublishService snsPublishService;
+    private final SnsPublishService snsPublishService;
+    private final AwsSnsConfig config;
 
-    @Autowired
-    AwsSnsConfig config;
+    public OrderCreatedDelegate(SnsPublishService snsPublishService, AwsSnsConfig config) {
+        this.snsPublishService = snsPublishService;
+        this.config = config;
+    }
 
     @Override
     public void execute(DelegateExecution delegateExecution) throws Exception {

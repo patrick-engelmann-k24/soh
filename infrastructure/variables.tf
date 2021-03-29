@@ -29,3 +29,7 @@ variable "github_token" {
 variable "ecp_new_order_sns" {
   type = string
 }
+
+variable "invoices_from_core_sns" {
+  type = string
+}

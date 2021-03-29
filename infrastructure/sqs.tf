@@ -14,7 +14,9 @@ locals {
     order_item_tracking_id_received = "${var.environment}-${local.service_prefix}-order-item-tracking-id-received-${local.version}"
     order_item_tracking_id_received_dlq = "${var.environment}-${local.service_prefix}-order-item-tracking-id-received-${local.version}-dlq"
     order_item_tour_started = "${var.environment}-${local.service_prefix}-order-item-tour-started-${local.version}"
-    order_item_tour_started_dlq = "${var.environment}-${local.service_prefix}-order-item-tour-started-${local.version}-dlq"
+    order_item_tour_started_dlq = "${var.environment}-${local.service_prefix}-order-item-tour-started-${local.version}-dlq",
+    invoices_from_core = "${var.environment}-${local.service_prefix}-invoices-from-core-${local.version}",
+    invoices_from_core_dlq = "${var.environment}-${local.service_prefix}-invoices-from-core-${local.version}-dlq"
   }
 }
 
@@ -79,4 +81,13 @@ resource "aws_sqs_queue" "soh_order_item_tour_started_dlq" {
 resource "aws_sqs_queue" "soh_order_item_tour_started" {
   name = local.sqs_queues.order_item_tour_started
   redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.soh_order_item_tour_started_dlq.arn}\",\"maxReceiveCount\":4}"
+}
+
+resource "aws_sqs_queue" "soh_invoices_from_core_dlq" {
+  name = local.sqs_queues.invoices_from_core_dlq
+}
+
+resource "aws_sqs_queue" "soh_invoices_from_core" {
+  name = local.sqs_queues.invoices_from_core
+  redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.soh_invoices_from_core_dlq.arn}\",\"maxReceiveCount\":4}"
 }

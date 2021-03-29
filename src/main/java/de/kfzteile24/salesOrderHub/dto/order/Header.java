@@ -1,6 +1,7 @@
 package de.kfzteile24.salesOrderHub.dto.order;
 
 import de.kfzteile24.salesOrderHub.dto.order.customer.Address;
+import de.kfzteile24.salesOrderHub.dto.order.customer.Customer;
 import de.kfzteile24.salesOrderHub.dto.order.header.Creator;
 import de.kfzteile24.salesOrderHub.dto.order.header.Discount;
 import de.kfzteile24.salesOrderHub.dto.order.header.Origin;
@@ -13,20 +14,21 @@ import java.util.UUID;
 
 @Data
 public class Header {
-    UUID orderId;
-    String orderNumber;
-    Date orderDatetime;
-    String orderTimezone;
-    String orderCurrency;
-    String orderReferenceId;
-    String orderReferenceOrderNumber;
-    String orderReferenceReason;
-    String offerId;
-    String offerReferenceNumber;
-    Origin origin;
-    Creator creator;
-    List<Discount> discounts;
-    List<Payment> payments;
-    Address billingAddress;
-    Address shippingAddress;
+    private UUID orderId;
+    private String orderNumber;
+    private Date orderDatetime;
+    private String orderTimezone;
+    private String orderCurrency;
+    private String orderReferenceId;
+    private String orderReferenceOrderNumber;
+    private String orderReferenceReason;
+    private String offerId;
+    private String offerReferenceNumber;
+    private Origin origin;
+    private Creator creator;
+    private Customer customer;
+    private List<Discount> discounts;
+    private List<Payment> payments;
+    private Address billingAddress;
+    private List<Address> shippingAddresses;
 }

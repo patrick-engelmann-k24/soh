@@ -9,7 +9,6 @@ import org.springframework.data.annotation.LastModifiedDate;
 import javax.persistence.*;
 import java.time.LocalDateTime;
 import java.util.Set;
-import java.util.UUID;
 
 @Entity
 @Table(name = "sales_order", schema = "public", catalog = "soh")
@@ -28,7 +27,7 @@ public class SalesOrder extends AbstractBaseEntity {
 
     @Basic
     @Column(name = "process_id")
-    private UUID processId;
+    private String processId;
 
     @Column(name = "original_order", columnDefinition = "json")
     @Convert(converter = OrderJsonConverter.class)
@@ -41,6 +40,9 @@ public class SalesOrder extends AbstractBaseEntity {
     @Basic
     @Column(name = "customer_number")
     private String customerNumber;
+
+    @Column(name = "recurring_order")
+    private boolean recurringOrder;
 
     @Basic
     @Column(name = "sales_channel")
@@ -71,7 +73,7 @@ public class SalesOrder extends AbstractBaseEntity {
 
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
-    @OneToMany(mappedBy = "salesOrder", targetEntity = SalesOrderInvoice.class, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "salesOrder", targetEntity = SalesOrderInvoice.class, fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private Set<SalesOrderInvoice> salesOrderInvoiceList;
 
     @ToString.Exclude
