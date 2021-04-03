@@ -117,7 +117,7 @@ public class AwsConfig {
         SimpleMessageListenerContainerFactory factory = new SimpleMessageListenerContainerFactory();
         factory.setAmazonSqs(amazonSqs);
         factory.setMaxNumberOfMessages(10);
-        factory.setWaitTimeOut(20);
+        factory.setWaitTimeOut(10);
         return factory;
     }
 }

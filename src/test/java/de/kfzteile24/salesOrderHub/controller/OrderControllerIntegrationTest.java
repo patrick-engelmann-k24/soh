@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.List;
@@ -26,12 +27,13 @@ import java.util.List;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @RunWith(SpringRunner.class)
 @SpringBootTest(
         classes = SalesOrderHubProcessApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
-class OrderControllerTest {
+class OrderControllerIntegrationTest {
 
     @Autowired
     RuntimeService runtimeService;

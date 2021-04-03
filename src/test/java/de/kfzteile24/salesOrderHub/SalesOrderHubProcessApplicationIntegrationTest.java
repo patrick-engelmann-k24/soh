@@ -38,16 +38,18 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import org.springframework.test.annotation.DirtiesContext;
 
 import static org.camunda.bpm.engine.test.assertions.ProcessEngineTests.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @SpringBootTest(
         classes = SalesOrderHubProcessApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.NONE
 )
-public class SalesOrderHubProcessApplicationTest {
+public class SalesOrderHubProcessApplicationIntegrationTest {
 
     @Autowired
     public ProcessEngine processEngine;
