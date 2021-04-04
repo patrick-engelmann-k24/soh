@@ -41,11 +41,20 @@ import java.util.Random;
 import org.springframework.test.annotation.DirtiesContext;
 
 import static org.camunda.bpm.engine.test.assertions.ProcessEngineTests.assertThat;
+import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @SpringBootTest(
+        //https://docs.camunda.org/manual/7.14/user-guide/spring-boot-integration/testing/#using-unique-process-engine-application-names
+        properties = {
+            "camunda.bpm.generate-unique-process-engine-name=true",
+            // this is only needed if a SpringBootProcessApplication
+            // is used for the test
+            "camunda.bpm.generate-unique-process-application-name=true",
+            "spring.datasource.generate-unique-name=true",
+        },
         classes = SalesOrderHubProcessApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.NONE
 )
@@ -70,14 +79,15 @@ public class SalesOrderHubProcessApplicationIntegrationTest {
 
     @BeforeEach
     public void setup() {
+        init(processEngine);
         testOrder = salesOrderUtil.createNewSalesOrder();
     }
 
     @Test
     public void startUpTest() {
         // context init test
-        // test if the processEngine is configured correct and we can use it here.
-        assertEquals("default", processEngine.getName());
+        // test if the processEngine is ready to use.
+        assertNotNull(processEngine.getName());
         assertNotNull(runtimeService);
     }
 
