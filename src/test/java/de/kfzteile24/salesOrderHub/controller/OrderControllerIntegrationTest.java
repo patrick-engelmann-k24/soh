@@ -2,6 +2,7 @@ package de.kfzteile24.salesOrderHub.controller;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
 
 import de.kfzteile24.salesOrderHub.SalesOrderHubProcessApplication;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
@@ -15,10 +16,12 @@ import de.kfzteile24.salesOrderHub.dto.order.customer.Address;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import java.util.List;
+import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests;
 import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +47,8 @@ import org.springframework.test.context.junit4.SpringRunner;
 class OrderControllerIntegrationTest {
 
     @Autowired
+    public ProcessEngine processEngine;
+    @Autowired
     RuntimeService runtimeService;
     @Autowired
     BpmUtil util;
@@ -53,8 +58,9 @@ class OrderControllerIntegrationTest {
     private OrderController controller;
     private SalesOrder testOrder;
 
-    @Before
+    @BeforeEach
     public void setup() {
+        init(processEngine);
         testOrder = salesOrderUtil.createNewSalesOrder();
     }
 
