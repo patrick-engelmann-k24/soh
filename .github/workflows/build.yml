@@ -34,16 +34,6 @@ on: [push]
 #      - 'develop'
 #      -  'master'
 jobs:
-  set-vars:
-    runs-on: ubuntu-latest
-    outputs:
-      postgres_version: ${{ steps.vars.outputs.postgres_version }}
-      integration_test_db_port: ${{ steps.vars.outputs.integration_test_db_port }}
-    steps:
-      - uses: actions/checkout@v2
-      - id: vars
-        run: |
-          bash ./.github/scripts/vars.sh
   unit-test:
     runs-on: ubuntu-latest
     steps:
@@ -70,7 +60,7 @@ jobs:
           path: target/site/jacoco/jacoco.xml
 
   codacy-coverage-reporter:
-    needs: unit-test
+    needs: [ unit-test, integration-test ]
     runs-on: ubuntu-latest
     name: Codacy code coverage upload
     steps:
@@ -87,7 +77,6 @@ jobs:
 
   integration-test:
     runs-on: ubuntu-latest
-    needs: [ set-vars ]
     services:
       postgres:
         image: postgres:11
