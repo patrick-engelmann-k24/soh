@@ -1,5 +1,5 @@
 terraform_role_arn         = "arn:aws:iam::967623133951:role/K24.Terraform"
-source_repo_branch         = "develop"
+source_repo_branch         = "DEV-25013-soh-setup-git-actions"
 db_instance_class          = "db.t3.medium"
 domain_name                = "dev.kfzteile24.io"
 environment                = "dev"
