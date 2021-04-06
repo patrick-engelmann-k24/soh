@@ -16,6 +16,10 @@
  */
 package de.kfzteile24.salesOrderHub;
 
+import static org.camunda.bpm.engine.test.assertions.ProcessEngineTests.assertThat;
+import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
+import static org.junit.Assert.*;
+
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
@@ -24,6 +28,9 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.*;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RepositoryService;
 import org.camunda.bpm.engine.RuntimeService;
@@ -34,16 +41,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
 import org.springframework.test.annotation.DirtiesContext;
-
-import static org.camunda.bpm.engine.test.assertions.ProcessEngineTests.assertThat;
-import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @SpringBootTest(
@@ -78,8 +76,8 @@ public class SalesOrderHubProcessApplicationIntegrationTest {
     @Test
     public void startUpTest() {
         // context init test
-        // test if the processEngine is ready to use.
-        assertNotNull(processEngine.getName());
+        // test if the processEngine is configured correct and we can use it here.
+        assertEquals("default", processEngine.getName());
         assertNotNull(runtimeService);
     }
 

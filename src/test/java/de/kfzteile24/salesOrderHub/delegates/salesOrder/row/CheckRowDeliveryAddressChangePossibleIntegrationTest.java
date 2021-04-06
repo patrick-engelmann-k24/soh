@@ -1,20 +1,26 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder.row;
 
+import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.*;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.BPMSalesOrderRowFulfillment.SUB_PROCESS_ORDER_ROW_DELIVERY_ADDRESS_CHANGE;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowActivities.*;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowGateways.*;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.*;
+import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
+import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.withVariables;
+
 import com.google.gson.Gson;
 import de.kfzteile24.salesOrderHub.SalesOrderHubProcessApplication;
-import de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.BPMSalesOrderRowFulfillment;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowActivities;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowGateways;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.order.customer.Address;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
@@ -26,13 +32,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringRunner;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
-import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.withVariables;
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @RunWith(SpringRunner.class)
@@ -66,39 +65,39 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
     public void testChangeAddressNotPossibleOnParcelShipmentAfterPackingStarted() {
         final Map<String, Object> processVariables = new HashMap<>();
         String orderNumber = util.getRandomOrderNumber();
-        processVariables.put(util._N(Variables.ORDER_NUMBER), orderNumber);
-        processVariables.put(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR));
+        processVariables.put(util._N(ORDER_NUMBER), orderNumber);
+        processVariables.put(util._N(SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR));
 
         final ProcessInstance orderItemFulfillmentProcess = runtimeService.startProcessInstanceByKey(
-                ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
+                SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
                 processVariables);
-        util.sendMessage(RowMessages.ROW_TRANSMITTED_TO_LOGISTICS, orderNumber);
-        util.sendMessage(RowMessages.PACKING_STARTED, orderNumber);
-        util.sendMessage(RowMessages.DELIVERY_ADDRESS_CHANGE, orderNumber);
+        util.sendMessage(ROW_TRANSMITTED_TO_LOGISTICS, orderNumber);
+        util.sendMessage(PACKING_STARTED, orderNumber);
+        util.sendMessage(DELIVERY_ADDRESS_CHANGE, orderNumber);
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
                 util._N(RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS),
                 util._N(RowEvents.ROW_TRANSMITTED_TO_LOGISTICS),
-                util._N(RowGateways.XOR_SHIPMENT_METHOD),
+                util._N(XOR_SHIPMENT_METHOD),
                 util._N(RowEvents.PACKING_STARTED),
                 util._N(RowEvents.MSG_DELIVERY_ADDRESS_CHANGE),
-                util._N(RowActivities.CHECK_DELIVERY_ADDRESS_CHANGE_POSSIBLE),
-                util._N(RowGateways.XOR_DELIVERY_ADRESS_CHANGE_POSSIBLE)
+                util._N(CHECK_DELIVERY_ADDRESS_CHANGE_POSSIBLE),
+                util._N(XOR_DELIVERY_ADRESS_CHANGE_POSSIBLE)
         );
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassed(
-                util._N(BPMSalesOrderRowFulfillment.SUB_PROCESS_ORDER_ROW_DELIVERY_ADDRESS_CHANGE),
+                util._N(SUB_PROCESS_ORDER_ROW_DELIVERY_ADDRESS_CHANGE),
                 util._N(RowEvents.DELIVERY_ADDRESS_NOT_CHANGED)
         );
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasNotPassed(
-                util._N(RowActivities.CHANGE_DELIVERY_ADDRESS)
+                util._N(CHANGE_DELIVERY_ADDRESS)
         );
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isWaitingAt(util._N(RowEvents.TRACKING_ID_RECEIVED));
 
-        util.sendMessage(RowMessages.TRACKING_ID_RECEIVED, orderNumber);
-        util.sendMessage(RowMessages.ROW_SHIPPED, orderNumber);
+        util.sendMessage(TRACKING_ID_RECEIVED, orderNumber);
+        util.sendMessage(ROW_SHIPPED, orderNumber);
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isEnded();
     }
@@ -111,26 +110,26 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
         final List<String> orderItems = util.getOrderRows(orderNumber, 5);
         final String orderItemId = orderItems.get(0);
 
-        processVariables.put(util._N(Variables.ORDER_NUMBER), orderNumber);
-        processVariables.put(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR));
+        processVariables.put(util._N(ORDER_NUMBER), orderNumber);
+        processVariables.put(util._N(SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR));
         processVariables.put(util._N(RowVariables.ORDER_ROW_ID), orderItemId);
 
         final ProcessInstance orderItemFulfillmentProcess = runtimeService.startProcessInstanceByKey(
-                ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
+                SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
                 processVariables);
-        util.sendMessage(RowMessages.ROW_TRANSMITTED_TO_LOGISTICS, orderNumber);
+        util.sendMessage(ROW_TRANSMITTED_TO_LOGISTICS, orderNumber);
 
         final Address address = Address.builder()
-                .firstName("Max")
-                .lastName("Mustermann")
-                .street1("Unit")
-                .street2("Test")
-                .city("Javaland")
-                .zipCode("12345")
-                .build();
+                                        .firstName("Max")
+                                        .lastName("Mustermann")
+                                        .street1("Unit")
+                                        .street2("Test")
+                                        .city("Javaland")
+                                        .zipCode("12345")
+                                        .build();
 
         util.sendMessage(
-                RowMessages.DELIVERY_ADDRESS_CHANGE,
+                DELIVERY_ADDRESS_CHANGE,
                 orderNumber,
                 orderItemId,
                 withVariables(RowVariables.DELIVERY_ADDRESS_CHANGE_REQUEST.getName(), gson.toJson(address))
@@ -139,15 +138,15 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
                 util._N(RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS),
                 util._N(RowEvents.ROW_TRANSMITTED_TO_LOGISTICS),
-                util._N(RowGateways.XOR_SHIPMENT_METHOD),
+                util._N(XOR_SHIPMENT_METHOD),
                 util._N(RowEvents.MSG_DELIVERY_ADDRESS_CHANGE),
-                util._N(RowActivities.CHECK_DELIVERY_ADDRESS_CHANGE_POSSIBLE),
-                util._N(RowGateways.XOR_DELIVERY_ADRESS_CHANGE_POSSIBLE),
-                util._N(RowActivities.CHANGE_DELIVERY_ADDRESS)
+                util._N(CHECK_DELIVERY_ADDRESS_CHANGE_POSSIBLE),
+                util._N(XOR_DELIVERY_ADRESS_CHANGE_POSSIBLE),
+                util._N(CHANGE_DELIVERY_ADDRESS)
         );
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassed(
-                util._N(BPMSalesOrderRowFulfillment.SUB_PROCESS_ORDER_ROW_DELIVERY_ADDRESS_CHANGE),
+                util._N(SUB_PROCESS_ORDER_ROW_DELIVERY_ADDRESS_CHANGE),
                 util._N(RowEvents.DELIVERY_ADDRESS_CHANGED)
         );
 
@@ -156,12 +155,12 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
         );
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isWaitingAt(util._N(RowEvents.PACKING_STARTED));
-        util.sendMessage(RowMessages.PACKING_STARTED, orderNumber);
+        util.sendMessage(PACKING_STARTED, orderNumber);
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isWaitingAt(util._N(RowEvents.TRACKING_ID_RECEIVED));
 
-        util.sendMessage(RowMessages.TRACKING_ID_RECEIVED, orderNumber);
-        util.sendMessage(RowMessages.ROW_SHIPPED, orderNumber);
+        util.sendMessage(TRACKING_ID_RECEIVED, orderNumber);
+        util.sendMessage(ROW_SHIPPED, orderNumber);
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isEnded();
 
@@ -171,27 +170,27 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
     public void testChangeAddressNotPossibleOnOwnDeliveryShipmentAfterTourStarted() {
         final Map<String, Object> processVariables = new HashMap<>();
         String orderNumber = util.getRandomOrderNumber();
-        processVariables.put(util._N(Variables.ORDER_NUMBER), orderNumber);
-        processVariables.put(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.OWN_DELIVERY));
+        processVariables.put(util._N(ORDER_NUMBER), orderNumber);
+        processVariables.put(util._N(SHIPMENT_METHOD), util._N(ShipmentMethod.OWN_DELIVERY));
 
         final ProcessInstance orderItemFulfillmentProcess = runtimeService.startProcessInstanceByKey(
-                ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
+                SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
                 processVariables);
-        util.sendMessage(RowMessages.ROW_TRANSMITTED_TO_LOGISTICS, orderNumber);
-        util.sendMessage(RowMessages.TOUR_STARTED, orderNumber);
-        util.sendMessage(RowMessages.DELIVERY_ADDRESS_CHANGE, orderNumber);
+        util.sendMessage(ROW_TRANSMITTED_TO_LOGISTICS, orderNumber);
+        util.sendMessage(TOUR_STARTED, orderNumber);
+        util.sendMessage(DELIVERY_ADDRESS_CHANGE, orderNumber);
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
                 util._N(RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS),
                 util._N(RowEvents.ROW_TRANSMITTED_TO_LOGISTICS),
-                util._N(RowGateways.XOR_SHIPMENT_METHOD),
+                util._N(XOR_SHIPMENT_METHOD),
                 util._N(RowEvents.TOUR_STARTED),
-                util._N(RowGateways.XOR_CLICK_AND_COLLECT),
+                util._N(XOR_CLICK_AND_COLLECT),
                 util._N(RowEvents.ORDER_ROW_FULFILLMENT_PROCESS_FINISHED)
         );
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasNotPassed(
-                util._N(RowActivities.CHANGE_DELIVERY_ADDRESS)
+                util._N(CHANGE_DELIVERY_ADDRESS)
         );
 
 
@@ -206,26 +205,26 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
         final List<String> orderItems = util.getOrderRows(orderNumber, 5);
         final String orderItemId = orderItems.get(0);
 
-        processVariables.put(util._N(Variables.ORDER_NUMBER), orderNumber);
-        processVariables.put(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.OWN_DELIVERY));
+        processVariables.put(util._N(ORDER_NUMBER), orderNumber);
+        processVariables.put(util._N(SHIPMENT_METHOD), util._N(ShipmentMethod.OWN_DELIVERY));
         processVariables.put(util._N(RowVariables.ORDER_ROW_ID), orderItemId);
 
         final Address address = Address.builder()
-                .firstName("Max")
-                .lastName("Mustermann")
-                .street1("Unit")
-                .street2("Test")
-                .city("Javaland")
-                .zipCode("12345")
-                .build();
+                                        .firstName("Max")
+                                        .lastName("Mustermann")
+                                        .street1("Unit")
+                                        .street2("Test")
+                                        .city("Javaland")
+                                        .zipCode("12345")
+                                        .build();
 
         final ProcessInstance orderItemFulfillmentProcess = runtimeService.startProcessInstanceByKey(
-                ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
+                SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
                 processVariables);
-        util.sendMessage(RowMessages.ROW_TRANSMITTED_TO_LOGISTICS, orderNumber);
+        util.sendMessage(ROW_TRANSMITTED_TO_LOGISTICS, orderNumber);
 
         util.sendMessage(
-                RowMessages.DELIVERY_ADDRESS_CHANGE,
+                DELIVERY_ADDRESS_CHANGE,
                 orderNumber,
                 orderItemId,
                 withVariables(RowVariables.DELIVERY_ADDRESS_CHANGE_REQUEST.getName(), gson.toJson(address))
@@ -234,15 +233,15 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
                 util._N(RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS),
                 util._N(RowEvents.ROW_TRANSMITTED_TO_LOGISTICS),
-                util._N(RowGateways.XOR_SHIPMENT_METHOD),
+                util._N(XOR_SHIPMENT_METHOD),
                 util._N(RowEvents.MSG_DELIVERY_ADDRESS_CHANGE),
-                util._N(RowActivities.CHECK_DELIVERY_ADDRESS_CHANGE_POSSIBLE),
-                util._N(RowGateways.XOR_DELIVERY_ADRESS_CHANGE_POSSIBLE),
-                util._N(RowActivities.CHANGE_DELIVERY_ADDRESS)
+                util._N(CHECK_DELIVERY_ADDRESS_CHANGE_POSSIBLE),
+                util._N(XOR_DELIVERY_ADRESS_CHANGE_POSSIBLE),
+                util._N(CHANGE_DELIVERY_ADDRESS)
         );
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassed(
-                util._N(BPMSalesOrderRowFulfillment.SUB_PROCESS_ORDER_ROW_DELIVERY_ADDRESS_CHANGE),
+                util._N(SUB_PROCESS_ORDER_ROW_DELIVERY_ADDRESS_CHANGE),
                 util._N(RowEvents.DELIVERY_ADDRESS_CHANGED)
         );
 
@@ -251,8 +250,8 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
         );
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isWaitingAt(util._N(RowEvents.TOUR_STARTED));
-        util.sendMessage(RowMessages.TOUR_STARTED, orderNumber);
-        util.sendMessage(RowMessages.ROW_SHIPPED, orderNumber);
+        util.sendMessage(TOUR_STARTED, orderNumber);
+        util.sendMessage(ROW_SHIPPED, orderNumber);
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isEnded();
     }
@@ -261,37 +260,37 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
     public void testChangeAddressNotPossibleOnPickup() {
         final Map<String, Object> processVariables = new HashMap<>();
         String orderNumber = util.getRandomOrderNumber();
-        processVariables.put(util._N(Variables.ORDER_NUMBER), orderNumber);
-        processVariables.put(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.CLICK_COLLECT));
+        processVariables.put(util._N(ORDER_NUMBER), orderNumber);
+        processVariables.put(util._N(SHIPMENT_METHOD), util._N(ShipmentMethod.CLICK_COLLECT));
 
         final ProcessInstance orderItemFulfillmentProcess = runtimeService.startProcessInstanceByKey(
-                ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
+                SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
                 processVariables);
-        util.sendMessage(RowMessages.ROW_TRANSMITTED_TO_LOGISTICS, orderNumber);
-        util.sendMessage(RowMessages.DELIVERY_ADDRESS_CHANGE, orderNumber);
+        util.sendMessage(ROW_TRANSMITTED_TO_LOGISTICS, orderNumber);
+        util.sendMessage(DELIVERY_ADDRESS_CHANGE, orderNumber);
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
                 util._N(RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS),
                 util._N(RowEvents.ROW_TRANSMITTED_TO_LOGISTICS),
-                util._N(RowGateways.XOR_SHIPMENT_METHOD),
+                util._N(XOR_SHIPMENT_METHOD),
                 util._N(RowEvents.MSG_DELIVERY_ADDRESS_CHANGE),
-                util._N(RowActivities.CHECK_DELIVERY_ADDRESS_CHANGE_POSSIBLE),
-                util._N(RowGateways.XOR_DELIVERY_ADRESS_CHANGE_POSSIBLE)
+                util._N(CHECK_DELIVERY_ADDRESS_CHANGE_POSSIBLE),
+                util._N(XOR_DELIVERY_ADRESS_CHANGE_POSSIBLE)
         );
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassed(
-                util._N(BPMSalesOrderRowFulfillment.SUB_PROCESS_ORDER_ROW_DELIVERY_ADDRESS_CHANGE),
+                util._N(SUB_PROCESS_ORDER_ROW_DELIVERY_ADDRESS_CHANGE),
                 util._N(RowEvents.DELIVERY_ADDRESS_NOT_CHANGED)
         );
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasNotPassed(
-                util._N(RowActivities.CHANGE_DELIVERY_ADDRESS)
+                util._N(CHANGE_DELIVERY_ADDRESS)
         );
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isWaitingAt(util._N(RowEvents.ROW_PREPARED_FOR_PICKUP));
 
-        util.sendMessage(RowMessages.ROW_PREPARED, orderNumber);
-        util.sendMessage(RowMessages.ROW_PICKED_UP, orderNumber);
+        util.sendMessage(ROW_PREPARED, orderNumber);
+        util.sendMessage(ROW_PICKED_UP, orderNumber);
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).isEnded();
     }

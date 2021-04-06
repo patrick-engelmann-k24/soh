@@ -1,15 +1,15 @@
 package de.kfzteile24.salesOrderHub.controller;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.MSG_ORDER_PAYMENT_SECURED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.*;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.*;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
 
 import de.kfzteile24.salesOrderHub.SalesOrderHubProcessApplication;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.order.customer.Address;
@@ -20,7 +20,6 @@ import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests;
-import org.junit.Before;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
@@ -32,15 +31,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-        //https://docs.camunda.org/manual/7.14/user-guide/spring-boot-integration/testing/#using-unique-process-engine-application-names
-        properties = {
-            "camunda.bpm.generate-unique-process-engine-name=true",
-            // this is only needed if a SpringBootProcessApplication
-            // is used for the test
-            "camunda.bpm.generate-unique-process-application-name=true",
-            "spring.datasource.generate-unique-name=true",
-            // additional properties...
-        },
         classes = SalesOrderHubProcessApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
@@ -80,24 +70,24 @@ class OrderControllerIntegrationTest {
         final List<String> orderItems = util.getOrderRows(orderNumber, 5);
 
         final Address address = Address.builder()
-                .firstName("Max")
-                .lastName("Mustermann")
-                .street1("Unit")
-                .street2("Test")
-                .city("Javaland")
-                .zipCode("12345")
-                .build();
+                                        .firstName("Max")
+                                        .lastName("Mustermann")
+                                        .street1("Unit")
+                                        .street2("Test")
+                                        .city("Javaland")
+                                        .zipCode("12345")
+                                        .build();
 
         ProcessInstance salesOrderProcessInstance =
         runtimeService.createProcessInstanceByKey(SALES_ORDER_PROCESS.getName())
-                .businessKey(orderNumber)
-                .setVariable(util._N(Variables.ORDER_NUMBER), orderNumber)
-                .setVariable(util._N(Variables.PAYMENT_TYPE), util._N(PaymentType.CREDIT_CARD))
-                .setVariable(util._N(Variables.ORDER_VALID), true)
-                .setVariable(util._N(Variables.ORDER_ROWS), orderItems)
-                .setVariable(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
-                .startBeforeActivity(Events.MSG_ORDER_PAYMENT_SECURED.getName())
-                .execute();
+                       .businessKey(orderNumber)
+                       .setVariable(util._N(ORDER_NUMBER), orderNumber)
+                       .setVariable(util._N(PAYMENT_TYPE), util._N(PaymentType.CREDIT_CARD))
+                       .setVariable(util._N(ORDER_VALID), true)
+                       .setVariable(util._N(ORDER_ROWS), orderItems)
+                       .setVariable(util._N(SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
+                       .startBeforeActivity(MSG_ORDER_PAYMENT_SECURED.getName())
+                       .execute();
 
         try {
             Thread.sleep(500);
@@ -105,11 +95,12 @@ class OrderControllerIntegrationTest {
             e.printStackTrace();
         }
 
-        BpmnAwareTests.assertThat(salesOrderProcessInstance).isWaitingAt(util._N(Events.MSG_ORDER_PAYMENT_SECURED));
-        util.sendMessage(util._N(Messages.ORDER_RECEIVED_PAYMENT_SECURED), orderNumber);
+        BpmnAwareTests.assertThat(salesOrderProcessInstance).isWaitingAt(util._N(
+            MSG_ORDER_PAYMENT_SECURED));
+        util.sendMessage(util._N(ORDER_RECEIVED_PAYMENT_SECURED), orderNumber);
 
         final var result = controller.updateDeliveryAddress(orderNumber, orderItems.get(0), address);
-        //TODO:fix this test
+        //TODO:this test should return 200 successful but is not.Fix this test
         assertThat(result.getStatusCode().is2xxSuccessful()).isFalse();
     }
 
@@ -129,17 +120,16 @@ class OrderControllerIntegrationTest {
         final List<String> orderItems = util.getOrderRows(orderNumber, 5);
 
         final String orderItemId = orderItems.get(0);
-        final Address address = Address.builder()
-                .build();
+        final Address address = Address.builder().build();
 
         ProcessInstance salesOrderProcessInstance =
-                runtimeService.createMessageCorrelation(util._N(Messages.ORDER_RECEIVED_MARKETPLACE))
+                runtimeService.createMessageCorrelation(util._N(ORDER_RECEIVED_MARKETPLACE))
                         .processInstanceBusinessKey(orderNumber)
-                        .setVariable(util._N(Variables.ORDER_NUMBER), orderNumber)
-                        .setVariable(util._N(Variables.PAYMENT_TYPE), util._N(PaymentType.CREDIT_CARD))
-                        .setVariable(util._N(Variables.ORDER_VALID), true)
-                        .setVariable(util._N(Variables.ORDER_ROWS), orderItems)
-                        .setVariable(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
+                        .setVariable(util._N(ORDER_NUMBER), orderNumber)
+                        .setVariable(util._N(PAYMENT_TYPE), util._N(PaymentType.CREDIT_CARD))
+                        .setVariable(util._N(ORDER_VALID), true)
+                        .setVariable(util._N(ORDER_ROWS), orderItems)
+                        .setVariable(util._N(SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
                         .correlateWithResult().getProcessInstance();
         try {
             Thread.sleep(500);
@@ -158,20 +148,20 @@ class OrderControllerIntegrationTest {
         final List<String> orderItems = util.getOrderRows(orderNumber, 5);
 
         final Address address = Address.builder()
-                .street1("Unit")
-                .street2("Test")
-                .city("Javaland")
-                .zipCode("12345")
-                .build();
+                                        .street1("Unit")
+                                        .street2("Test")
+                                        .city("Javaland")
+                                        .zipCode("12345")
+                                        .build();
 
         ProcessInstance salesOrderProcessInstance =
-                runtimeService.createMessageCorrelation(util._N(Messages.ORDER_RECEIVED_MARKETPLACE))
+                runtimeService.createMessageCorrelation(util._N(ORDER_RECEIVED_MARKETPLACE))
                         .processInstanceBusinessKey(orderNumber)
-                        .setVariable(util._N(Variables.ORDER_NUMBER), orderNumber)
-                        .setVariable(util._N(Variables.PAYMENT_TYPE), util._N(PaymentType.CREDIT_CARD))
-                        .setVariable(util._N(Variables.ORDER_VALID), true)
-                        .setVariable(util._N(Variables.ORDER_ROWS), orderItems)
-                        .setVariable(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
+                        .setVariable(util._N(ORDER_NUMBER), orderNumber)
+                        .setVariable(util._N(PAYMENT_TYPE), util._N(PaymentType.CREDIT_CARD))
+                        .setVariable(util._N(ORDER_VALID), true)
+                        .setVariable(util._N(ORDER_ROWS), orderItems)
+                        .setVariable(util._N(SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
                         .correlateWithResult().getProcessInstance();
         try {
             Thread.sleep(500);
@@ -189,13 +179,13 @@ class OrderControllerIntegrationTest {
         final List<String> orderItems = util.getOrderRows(orderNumber, 5);
 
         ProcessInstance salesOrderProcessInstance =
-                runtimeService.createMessageCorrelation(util._N(Messages.ORDER_RECEIVED_MARKETPLACE))
+                runtimeService.createMessageCorrelation(util._N(ORDER_RECEIVED_MARKETPLACE))
                         .processInstanceBusinessKey(orderNumber)
-                        .setVariable(util._N(Variables.ORDER_NUMBER), orderNumber)
-                        .setVariable(util._N(Variables.PAYMENT_TYPE), util._N(PaymentType.CREDIT_CARD))
-                        .setVariable(util._N(Variables.ORDER_VALID), true)
-                        .setVariable(util._N(Variables.ORDER_ROWS), orderItems)
-                        .setVariable(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
+                        .setVariable(util._N(ORDER_NUMBER), orderNumber)
+                        .setVariable(util._N(PAYMENT_TYPE), util._N(PaymentType.CREDIT_CARD))
+                        .setVariable(util._N(ORDER_VALID), true)
+                        .setVariable(util._N(ORDER_ROWS), orderItems)
+                        .setVariable(util._N(SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
                         .correlateWithResult().getProcessInstance();
         try {
             Thread.sleep(500);
@@ -203,8 +193,9 @@ class OrderControllerIntegrationTest {
             e.printStackTrace();
         }
 
-        BpmnAwareTests.assertThat(salesOrderProcessInstance).isWaitingAt(util._N(Events.MSG_ORDER_PAYMENT_SECURED));
-        util.sendMessage(util._N(Messages.ORDER_RECEIVED_PAYMENT_SECURED), orderNumber);
+        BpmnAwareTests.assertThat(salesOrderProcessInstance).isWaitingAt(util._N(
+            MSG_ORDER_PAYMENT_SECURED));
+        util.sendMessage(util._N(ORDER_RECEIVED_PAYMENT_SECURED), orderNumber);
 
         final var result = controller.cancelOrderItem(orderNumber, orderItems.get(0));
         assertThat(result.getStatusCodeValue()).isEqualTo(200);
@@ -217,13 +208,13 @@ class OrderControllerIntegrationTest {
         final List<String> orderItems = util.getOrderRows(orderNumber, 5);
 
         ProcessInstance salesOrderProcessInstance =
-                runtimeService.createMessageCorrelation(util._N(Messages.ORDER_RECEIVED_MARKETPLACE))
+                runtimeService.createMessageCorrelation(util._N(ORDER_RECEIVED_MARKETPLACE))
                         .processInstanceBusinessKey(orderNumber)
-                        .setVariable(util._N(Variables.ORDER_NUMBER), orderNumber)
-                        .setVariable(util._N(Variables.PAYMENT_TYPE), util._N(PaymentType.CREDIT_CARD))
-                        .setVariable(util._N(Variables.ORDER_VALID), true)
-                        .setVariable(util._N(Variables.ORDER_ROWS), orderItems)
-                        .setVariable(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
+                        .setVariable(util._N(ORDER_NUMBER), orderNumber)
+                        .setVariable(util._N(PAYMENT_TYPE), util._N(PaymentType.CREDIT_CARD))
+                        .setVariable(util._N(ORDER_VALID), true)
+                        .setVariable(util._N(ORDER_ROWS), orderItems)
+                        .setVariable(util._N(SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
                         .correlateWithResult().getProcessInstance();
         try {
             Thread.sleep(500);
@@ -231,12 +222,13 @@ class OrderControllerIntegrationTest {
             e.printStackTrace();
         }
 
-        BpmnAwareTests.assertThat(salesOrderProcessInstance).isWaitingAt(util._N(Events.MSG_ORDER_PAYMENT_SECURED));
-        util.sendMessage(util._N(Messages.ORDER_RECEIVED_PAYMENT_SECURED), orderNumber);
+        BpmnAwareTests.assertThat(salesOrderProcessInstance).isWaitingAt(util._N(
+            MSG_ORDER_PAYMENT_SECURED));
+        util.sendMessage(util._N(ORDER_RECEIVED_PAYMENT_SECURED), orderNumber);
 
-        util.sendMessage(util._N(RowMessages.ROW_TRANSMITTED_TO_LOGISTICS), orderNumber);
-        util.sendMessage(util._N(RowMessages.PACKING_STARTED), orderNumber);
-        util.sendMessage(util._N(RowMessages.TRACKING_ID_RECEIVED), orderNumber);
+        util.sendMessage(util._N(ROW_TRANSMITTED_TO_LOGISTICS), orderNumber);
+        util.sendMessage(util._N(PACKING_STARTED), orderNumber);
+        util.sendMessage(util._N(TRACKING_ID_RECEIVED), orderNumber);
 
         final var result = controller.cancelOrderItem(orderNumber, orderItems.get(0));
         assertThat(result.getStatusCodeValue()).isEqualTo(409);
@@ -249,13 +241,13 @@ class OrderControllerIntegrationTest {
         final List<String> orderItems = util.getOrderRows(orderNumber, 5);
 
         ProcessInstance salesOrderProcessInstance =
-                runtimeService.createMessageCorrelation(util._N(Messages.ORDER_RECEIVED_MARKETPLACE))
+                runtimeService.createMessageCorrelation(util._N(ORDER_RECEIVED_MARKETPLACE))
                         .processInstanceBusinessKey(orderNumber)
-                        .setVariable(util._N(Variables.ORDER_NUMBER), orderNumber)
-                        .setVariable(util._N(Variables.PAYMENT_TYPE), util._N(PaymentType.CREDIT_CARD))
-                        .setVariable(util._N(Variables.ORDER_VALID), true)
-                        .setVariable(util._N(Variables.ORDER_ROWS), orderItems)
-                        .setVariable(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
+                        .setVariable(util._N(ORDER_NUMBER), orderNumber)
+                        .setVariable(util._N(PAYMENT_TYPE), util._N(PaymentType.CREDIT_CARD))
+                        .setVariable(util._N(ORDER_VALID), true)
+                        .setVariable(util._N(ORDER_ROWS), orderItems)
+                        .setVariable(util._N(SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
                         .correlateWithResult().getProcessInstance();
         try {
             Thread.sleep(500);
@@ -263,7 +255,8 @@ class OrderControllerIntegrationTest {
             e.printStackTrace();
         }
 
-        BpmnAwareTests.assertThat(salesOrderProcessInstance).isWaitingAt(util._N(Events.MSG_ORDER_PAYMENT_SECURED));
+        BpmnAwareTests.assertThat(salesOrderProcessInstance).isWaitingAt(util._N(
+            MSG_ORDER_PAYMENT_SECURED));
         final var result = controller.cancelOrder(orderNumber);
         assertThat(result.getStatusCodeValue()).isEqualTo(200);
     }
@@ -275,13 +268,13 @@ class OrderControllerIntegrationTest {
         final List<String> orderItems = util.getOrderRows(orderNumber, 5);
 
         ProcessInstance salesOrderProcessInstance =
-                runtimeService.createMessageCorrelation(util._N(Messages.ORDER_RECEIVED_MARKETPLACE))
+                runtimeService.createMessageCorrelation(util._N(ORDER_RECEIVED_MARKETPLACE))
                         .processInstanceBusinessKey(orderNumber)
-                        .setVariable(util._N(Variables.ORDER_NUMBER), orderNumber)
-                        .setVariable(util._N(Variables.PAYMENT_TYPE), util._N(PaymentType.CREDIT_CARD))
-                        .setVariable(util._N(Variables.ORDER_VALID), true)
-                        .setVariable(util._N(Variables.ORDER_ROWS), orderItems)
-                        .setVariable(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
+                        .setVariable(util._N(ORDER_NUMBER), orderNumber)
+                        .setVariable(util._N(PAYMENT_TYPE), util._N(PaymentType.CREDIT_CARD))
+                        .setVariable(util._N(ORDER_VALID), true)
+                        .setVariable(util._N(ORDER_ROWS), orderItems)
+                        .setVariable(util._N(SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
                         .correlateWithResult().getProcessInstance();
         try {
             Thread.sleep(500);
@@ -289,8 +282,9 @@ class OrderControllerIntegrationTest {
             e.printStackTrace();
         }
 
-        BpmnAwareTests.assertThat(salesOrderProcessInstance).isWaitingAt(util._N(Events.MSG_ORDER_PAYMENT_SECURED));
-        util.sendMessage(util._N(Messages.ORDER_RECEIVED_PAYMENT_SECURED), orderNumber);
+        BpmnAwareTests.assertThat(salesOrderProcessInstance).isWaitingAt(util._N(
+            MSG_ORDER_PAYMENT_SECURED));
+        util.sendMessage(util._N(ORDER_RECEIVED_PAYMENT_SECURED), orderNumber);
         final var result = controller.cancelOrder(orderNumber);
         assertThat(result.getStatusCodeValue()).isEqualTo(200);
     }
@@ -302,13 +296,13 @@ class OrderControllerIntegrationTest {
         final List<String> orderItems = util.getOrderRows(orderNumber, 5);
 
         ProcessInstance salesOrderProcessInstance =
-                runtimeService.createMessageCorrelation(util._N(Messages.ORDER_RECEIVED_MARKETPLACE))
+                runtimeService.createMessageCorrelation(util._N(ORDER_RECEIVED_MARKETPLACE))
                         .processInstanceBusinessKey(orderNumber)
-                        .setVariable(util._N(Variables.ORDER_NUMBER), orderNumber)
-                        .setVariable(util._N(Variables.PAYMENT_TYPE), util._N(PaymentType.CREDIT_CARD))
-                        .setVariable(util._N(Variables.ORDER_VALID), true)
-                        .setVariable(util._N(Variables.ORDER_ROWS), orderItems)
-                        .setVariable(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
+                        .setVariable(util._N(ORDER_NUMBER), orderNumber)
+                        .setVariable(util._N(PAYMENT_TYPE), util._N(PaymentType.CREDIT_CARD))
+                        .setVariable(util._N(ORDER_VALID), true)
+                        .setVariable(util._N(ORDER_ROWS), orderItems)
+                        .setVariable(util._N(SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR))
                         .correlateWithResult().getProcessInstance();
         try {
             Thread.sleep(500);
@@ -316,12 +310,13 @@ class OrderControllerIntegrationTest {
             e.printStackTrace();
         }
 
-        BpmnAwareTests.assertThat(salesOrderProcessInstance).isWaitingAt(util._N(Events.MSG_ORDER_PAYMENT_SECURED));
-        util.sendMessage(util._N(Messages.ORDER_RECEIVED_PAYMENT_SECURED), orderNumber);
+        BpmnAwareTests.assertThat(salesOrderProcessInstance).isWaitingAt(util._N(
+            MSG_ORDER_PAYMENT_SECURED));
+        util.sendMessage(util._N(ORDER_RECEIVED_PAYMENT_SECURED), orderNumber);
 
-        util.sendMessage(util._N(RowMessages.ROW_TRANSMITTED_TO_LOGISTICS), orderNumber, orderItems.get(0));
-        util.sendMessage(util._N(RowMessages.PACKING_STARTED), orderNumber, orderItems.get(0));
-        util.sendMessage(util._N(RowMessages.TRACKING_ID_RECEIVED), orderNumber, orderItems.get(0));
+        util.sendMessage(util._N(ROW_TRANSMITTED_TO_LOGISTICS), orderNumber, orderItems.get(0));
+        util.sendMessage(util._N(PACKING_STARTED), orderNumber, orderItems.get(0));
+        util.sendMessage(util._N(TRACKING_ID_RECEIVED), orderNumber, orderItems.get(0));
 
         final var result = controller.cancelOrder(orderNumber);
         assertThat(result.getStatusCodeValue()).isEqualTo(400);
