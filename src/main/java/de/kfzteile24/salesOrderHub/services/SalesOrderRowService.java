@@ -58,7 +58,7 @@ public class SalesOrderRowService {
                 if (cancellationPossible) {
                     return ResponseEntity.ok(orderItemId);
                 } else {
-                    return new ResponseEntity<>("Deletion of item not possible", HttpStatus.CONFLICT);
+                    return new ResponseEntity<>("The order was found but could not changed the deliver address, because the state was not good.", HttpStatus.CONFLICT);
                 }
             } else {
                 log.debug("More then one instances found " + String.valueOf(queryResult.size()));
