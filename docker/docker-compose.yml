@@ -1,10 +1,13 @@
-version: '3.4'
+version: '3.9'
 
 services:
+# AWS localstack
   localstack:
-    container_name: "${LOCALSTACK_DOCKER_NAME-localstack_main}"
+    container_name: "localstack_main"
     image: localstack/localstack-full
     network_mode: bridge
+    healthcheck:
+      test: http://localhost:4566/health
     ports:
       - "4566:4566"
       - "${PORT_WEB_UI-8081}:8081"
@@ -17,6 +20,18 @@ services:
       - "vol_tmp:/tmp/localstack"
       - "vol_data:/tmp/localstack/data"
       - "/var/run/docker.sock:/var/run/docker.sock"
+
+# Postgres
+  postgres:
+    container_name: soh-bpmn-db
+    image: library/postgres:11
+    network_mode: bridge
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ${soh_db_database}
+      POSTGRES_USER: ${soh_db_username}
+      POSTGRES_PASSWORD: ${soh_db_password}
 
 volumes:
   vol_tmp:

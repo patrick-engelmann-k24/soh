@@ -43,8 +43,6 @@ _checkFlyWayEnvVars
 
 export FLYWAY_CONFIG_FILE_ENCODING=UTF-8
 
-cd $MVN_BASEDIR
-
 mvn flyway:migrate
 
 if [ $? -ne 0 ]
