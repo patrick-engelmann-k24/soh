@@ -1,11 +1,17 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder;
 
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.*;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.*;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.*;
+import static java.util.Collections.singletonList;
+import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
+import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
+import static org.junit.Assert.*;
+
 import de.kfzteile24.salesOrderHub.SalesOrderHubProcessApplication;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
@@ -13,6 +19,10 @@ import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
@@ -22,28 +32,19 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
-import static java.util.Collections.singletonList;
-import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
-import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
-import static org.junit.Assert.*;
-
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @RunWith(SpringRunner.class)
 @SpringBootTest(
         classes = SalesOrderHubProcessApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.NONE
 )
-public class SaveInvoiceDelegateTest {
+public class SaveInvoiceDelegateIntegrationTest {
     @Autowired
     public ProcessEngine processEngine;
 
@@ -85,15 +86,15 @@ public class SaveInvoiceDelegateTest {
         }
 
         final var expectedInvoice = createSalesOrderInvoice(orderNumber, false);
-        util.sendMessage(Messages.INVOICE_CREATED.getName(), orderNumber,
-                Map.of(Variables.INVOICE_URL.getName(), expectedInvoice.getUrl()));
+        util.sendMessage(INVOICE_CREATED.getName(), orderNumber,
+                Map.of(INVOICE_URL.getName(), expectedInvoice.getUrl()));
 
         assertInvoices(orderNumber, singletonList(expectedInvoice));
 
         // add a correction invoice
         final var expectedCorrectionInvoice = createSalesOrderInvoice(orderNumber, true);
-        util.sendMessage(Messages.INVOICE_CREATED.getName(), orderNumber,
-                Map.of(Variables.INVOICE_URL.getName(), expectedCorrectionInvoice.getUrl()));
+        util.sendMessage(INVOICE_CREATED.getName(), orderNumber,
+                Map.of(INVOICE_URL.getName(), expectedCorrectionInvoice.getUrl()));
 
         assertInvoices(orderNumber, Arrays.asList(expectedInvoice, expectedCorrectionInvoice));
 
@@ -147,13 +148,13 @@ public class SaveInvoiceDelegateTest {
         final List<String> orderItems = util.getOrderRows(orderNumber, 5);
 
         final Map<String, Object> processVariables = new HashMap<>();
-        processVariables.put(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR));
-        processVariables.put(util._N(Variables.ORDER_NUMBER), orderNumber);
-        processVariables.put(util._N(Variables.PAYMENT_TYPE), util._N(CREDIT_CARD));
-        processVariables.put(util._N(Variables.ORDER_VALID), true);
-        processVariables.put(util._N(Variables.ORDER_ROWS), orderItems);
+        processVariables.put(util._N(SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR));
+        processVariables.put(util._N(ORDER_NUMBER), orderNumber);
+        processVariables.put(util._N(PAYMENT_TYPE), util._N(CREDIT_CARD));
+        processVariables.put(util._N(ORDER_VALID), true);
+        processVariables.put(util._N(ORDER_ROWS), orderItems);
 
-        return runtimeService.createMessageCorrelation(util._N(Messages.ORDER_RECEIVED_MARKETPLACE))
+        return runtimeService.createMessageCorrelation(util._N(ORDER_RECEIVED_MARKETPLACE))
                 .processInstanceBusinessKey(orderNumber)
                 .setVariables(processVariables)
                 .correlateWithResult().getProcessInstance();
@@ -161,13 +162,13 @@ public class SaveInvoiceDelegateTest {
 
     void finishOrderProcess(final ProcessInstance orderProcess, final String orderNumber) {
         // start subprocess
-        util.sendMessage(util._N(Messages.ORDER_RECEIVED_PAYMENT_SECURED), orderNumber);
+        util.sendMessage(util._N(ORDER_RECEIVED_PAYMENT_SECURED), orderNumber);
 
         // send items thru
-        util.sendMessage(util._N(RowMessages.ROW_TRANSMITTED_TO_LOGISTICS), orderNumber);
-        util.sendMessage(util._N(RowMessages.PACKING_STARTED), orderNumber);
-        util.sendMessage(util._N(RowMessages.TRACKING_ID_RECEIVED), orderNumber);
-        util.sendMessage(util._N(RowMessages.ROW_SHIPPED), orderNumber);
+        util.sendMessage(util._N(ROW_TRANSMITTED_TO_LOGISTICS), orderNumber);
+        util.sendMessage(util._N(PACKING_STARTED), orderNumber);
+        util.sendMessage(util._N(TRACKING_ID_RECEIVED), orderNumber);
+        util.sendMessage(util._N(ROW_SHIPPED), orderNumber);
 
         assertThat(orderProcess).isEnded();
     }

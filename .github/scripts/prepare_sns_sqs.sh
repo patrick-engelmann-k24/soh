@@ -34,24 +34,24 @@ QUEUES="
     soh-cdr-own-delivery-picklist-shipped
     "
 
-INT_AWS_HOST=${AWS_HOST:-http://localhost:4566}
+INT_AWS_HOST="http://localhost:4566"
 
 createSQSSNS () {
-  aws --endpoint-url ${INT_AWS_HOST} sns create-topic --name $1
-  aws --endpoint-url ${INT_AWS_HOST} sqs create-queue --queue-name $1"-queue"
-  aws --endpoint-url ${INT_AWS_HOST} sns subscribe --topic arn:aws:sns:eu-central-1:000000000000:$1 --protocol sqs --notification-endpoint "arn:aws:sqs:eu-central-1:000000000000:$1-queue"
+  aws --cli-connect-timeout 60 --cli-read-timeout 60 --endpoint-url ${INT_AWS_HOST} sns create-topic --name $1
+  aws --cli-connect-timeout 60 --cli-read-timeout 60 --endpoint-url ${INT_AWS_HOST} sqs create-queue --queue-name $1"-queue"
+  aws --cli-connect-timeout 60 --cli-read-timeout 60 --endpoint-url ${INT_AWS_HOST} sns subscribe --topic arn:aws:sns:eu-central-1:000000000000:$1 --protocol sqs --notification-endpoint "arn:aws:sqs:eu-central-1:000000000000:$1-queue"
 }
 
 for CURRENT_TOPICS in ${TOPICS}
 do
-  echo "create SQS/SNS ${CURRENT_TOPICS}"
+  echo "creating SQS/SNS ${CURRENT_TOPICS}"
   createSQSSNS "$CURRENT_TOPICS"
   echo " .. done"; echo ""
 done;
 
 for CURRENT_QUEUE in ${QUEUES}
 do
-  echo "create SQS ${CURRENT_QUEUE}"
-  aws --endpoint-url ${INT_AWS_HOST} sqs create-queue --queue-name ${CURRENT_QUEUE}"-queue"
+  echo "creating SQS ${CURRENT_QUEUE}"
+  aws --cli-connect-timeout 60 --cli-read-timeout 60 --endpoint-url ${INT_AWS_HOST} sqs create-queue --queue-name ${CURRENT_QUEUE}"-queue"
   echo " .. done "; echo ""
 done;
