@@ -1,7 +1,7 @@
 ## Sales-Order-Hub
 
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/27d09ee13f4240c196b26c0525954c45)](https://www.codacy.com?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=kfzteile24/soh-business-processing-engine&amp;utm_campaign=Badge_Grade)
-
+[![Codacy Badge](https://app.codacy.com/project/badge/Coverage/27d09ee13f4240c196b26c0525954c45)](https://www.codacy.com?utm_source=github.com&utm_medium=referral&utm_content=kfzteile24/soh-business-processing-engine&utm_campaign=Badge_Coverage)
 ### Consumed & Published Events 
 
 A list of Events that this projects publishes or consumes are [here](https://kfzteile24.atlassian.net/wiki/x/NgB9Y).
