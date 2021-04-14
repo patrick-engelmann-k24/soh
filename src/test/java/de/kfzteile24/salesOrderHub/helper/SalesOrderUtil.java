@@ -1,5 +1,11 @@
 package de.kfzteile24.salesOrderHub.helper;
 
+import static org.junit.Assert.*;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.google.gson.Gson;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderItem;
@@ -8,23 +14,21 @@ import de.kfzteile24.salesOrderHub.dto.order.LogisticalUnits;
 import de.kfzteile24.salesOrderHub.dto.order.Rows;
 import de.kfzteile24.salesOrderHub.dto.sqs.EcpOrder;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Component;
-
-import javax.validation.constraints.NotNull;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.*;
+import javax.validation.constraints.NotNull;
+import lombok.SneakyThrows;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Component;
 
 @Component
 public class SalesOrderUtil {
@@ -97,5 +101,37 @@ public class SalesOrderUtil {
             e.printStackTrace();
             return null;
         }
+    }
+
+    @SneakyThrows({URISyntaxException.class, IOException.class})
+    public static String readResource(String path) {
+        return Files.readString(Paths.get(
+            Objects.requireNonNull(SalesOrderUtil.class.getClassLoader().getResource(path))
+                .toURI()));
+    }
+
+    public static SalesOrder getSaleOrder(String rawMessage){
+        return SalesOrder.builder()
+            .orderNumber("514000018")
+            .salesLocale(Locale.GERMANY.toString())
+            .customerEmail("test@kfzteile24.de")
+            .recurringOrder(Boolean.TRUE)
+            .originalOrder(getOrderJson(rawMessage))
+            .build();
+    }
+
+    @SneakyThrows(JsonProcessingException.class)
+    public static OrderJSON getOrderJson(String rawMessage){
+        ObjectMapper mapper = new ObjectMapper();
+        String message = configureMapperForMessageHeader(mapper).readValue(rawMessage, EcpOrder.class).getMessage();
+        mapper.setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
+        mapper.enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        return mapper.readValue(message, OrderJSON.class);
+    }
+
+    private static ObjectMapper configureMapperForMessageHeader(ObjectMapper mapper){
+        mapper.setPropertyNamingStrategy(PropertyNamingStrategy.UPPER_CAMEL_CASE);
+        return mapper;
     }
 }
