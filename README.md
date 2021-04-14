@@ -1,7 +1,7 @@
 ## Sales-Order-Hub
 
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/27d09ee13f4240c196b26c0525954c45)](https://www.codacy.com?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=kfzteile24/soh-business-processing-engine&amp;utm_campaign=Badge_Grade)
-
+[![Codacy Badge](https://app.codacy.com/project/badge/Coverage/27d09ee13f4240c196b26c0525954c45)](https://www.codacy.com?utm_source=github.com&utm_medium=referral&utm_content=kfzteile24/soh-business-processing-engine&utm_campaign=Badge_Coverage)
 ### Consumed & Published Events 
 
 A list of Events that this projects publishes or consumes are [here](https://kfzteile24.atlassian.net/wiki/x/NgB9Y).
@@ -47,18 +47,47 @@ Finally you have to provide your [github credentials](https://github.com/setting
 ```
 
 ## Start the project
+### Prerequisites
+These command line tools must be in your path:
+* curl
+* postgres-client
+* docker
+* docker-compose  
+* aws
 
-### Database
+Stop and remove all eventually existing localstack and postgres docker container.
 
-1. Create a database and edit the following files:
-    * make a copy of .env.localhost.dist to .env.localhost 
-      replace FLYWAY and db variables with your settings
-    
-2. run source .env.localhost
-3. run ./migrate.sh -> check output. Flyway should now go through all the files needed to setup the database
+#### Additional configuration on Windows
+* Export the DOCKER_HOST environment variable in your Ubuntu subsystem with the correct
+URL to the exposed docker daemon on Windows, e.g.  
+```export DOCKER_HOST=tcp://localhost:2375```
+  
+### Start script
+The script ```start.sh``` can be used to start and stop the dependencies and the service.
+Additionally it can exectute the Flyway database migration.
 
-### Localstack for local AWS using/testing
-Start localstack as described in the [README.md](./aws_localstack/README.md) in the aws_localstack directory.
+The script reads the .env.localhost file to configure the database parameter.  
+The script has the following usage:
+
+```start.sh COMMAND```
+
+These are the available commands:
+
+|Command |Description|
+|--------|-----------|
+|dependencies|Start localstack, postgres and execute the flyway migration|
+|service|Start the soh-business-processing-engine|
+|all|Start dependencies and the soh-business-processing-engine|
+|migration|Execute the flyway migration only (needs the postgres container running)|
+|shutdown|Stop all containers|
+
+For example, this command starts the dependencies:  
+```./start.sh dependencies```
+
+If you want to source in the environment variables from ```.env.localhost.dist``` into your current shell,
+use this command:  
+```source .env.localhost.dist```   
+This is also necessary, if you want to run Maven directly in your shell, e.g. ```mvn clean package```.
 
 ### Application
 
@@ -66,6 +95,9 @@ Make a copy of application-local.yml.dist to application-local.yml and replace t
 with your configuration values.
 
 The AWS ```cloud.aws.credentials``` can have any values for localstack and therefore don't have to be changed.
+
+Source in the environment variables:   
+```source .env.localhost.dist```
 
 To install the app, run ```mvn clean package```. This installs all needed dependencies.
 

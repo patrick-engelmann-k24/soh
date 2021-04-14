@@ -1,0 +1,65 @@
+#
+# This profile is used by the github actions to run the unit & integration tests
+#
+---
+spring:
+  profiles: test
+
+  flyway:
+    baselineOnMigrate: true
+    locations: classpath:/db/migration
+
+  jpa:
+    database: POSTGRESQL
+    hibernate:
+      ddl-auto: none
+  datasource:
+    jdbcUrl: jdbc:postgresql://localhost:5432/soh?currentSchema=public
+    username: soh
+    password: soh
+
+  #AWS
+soh:
+  sns:
+    topic:
+    orderCreated: arn:aws:sns:eu-central-1:000000000000:soh-order-created
+    orderCompleted: arn:aws:sns:eu-central-1:000000000000:soh-order-completed
+    orderCancelled: arn:aws:sns:eu-central-1:000000000000:soh-order-cancelled
+    orderItemCancelled: arn:aws:sns:eu-central-1:000000000000:soh-order-item-cancelled
+    invoiceAddressChanged: arn:aws:sns:eu-central-1:000000000000:soh-invoice-address-changed
+    deliveryAddressChanged: arn:aws:sns:eu-central-1:000000000000:soh-delivery-address-changed
+  sqs:
+    queue:
+      ecpShopOrders:                http://localhost:4566/000000000000/soh-ecp-shop-orders-queue
+      orderItemShipped:             http://localhost:4566/000000000000/soh-order-item-shipped-queue
+      orderPaymentSecured:          http://localhost:4566/000000000000/soh-order-payment-secured-queue
+      orderItemTransmittedToLogistic: http://localhost:4566/000000000000/soh-order-item-transmitted-to-logistic-queue
+      orderItemPackingStarted:      http://localhost:4566/000000000000/soh-order-item-packing-started-queue
+      orderItemTrackingIdReceived:  http://localhost:4566/000000000000/soh-order-item-tracking-id-received-queue
+      orderItemTourStarted:         http://localhost:4566/000000000000/soh-order-item-tour-started-queue
+
+cloud:
+  aws:
+    endpoint:
+      url: http://localhost:4566
+    region:
+      static: eu-central-1
+    stack:
+      auto: false
+    credentials:
+      access-key: "000000000000"
+      secret-key: "000000000000"
+
+camunda:
+  bpm:
+    database:
+      schema-update: true
+      schema-name: bpm
+    admin-user:
+      id: ${soh_camunda_username:demo}
+      password: ${soh_camunda_password:demo}
+      firstName: K24Admin
+    filter:
+      create: All tasks
+    history-level: FULL
+    history-level-default: FULL
