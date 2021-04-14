@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class MarketingSalesOrder {
+public class SalesOrderInfo {
 
   private OrderJSON order;
   private boolean recurringOrder;

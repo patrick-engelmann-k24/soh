@@ -3,7 +3,7 @@ package de.kfzteile24.salesOrderHub.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.dto.MarketingSalesOrder;
+import de.kfzteile24.salesOrderHub.dto.SalesOrderInfo;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import java.text.MessageFormat;
 import lombok.NonNull;
@@ -24,9 +24,10 @@ public class SnsPublishService {
     private final ObjectMapper objectMapper;
 
     @SneakyThrows({JsonProcessingException.class})
-    public void send(String snsTopic, String subject, MarketingSalesOrder marketingSalesOrder) {
+    public void send(String snsTopic, String subject, SalesOrderInfo salesOrderInfo) {
         notificationMessagingTemplate.sendNotification(snsTopic,
-                                                       objectMapper.writeValueAsString(marketingSalesOrder),
+                                                       objectMapper.writeValueAsString(
+                                                           salesOrderInfo),
                                                        subject);
     }
 
@@ -34,10 +35,10 @@ public class SnsPublishService {
         SalesOrder salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
             .orElseThrow(() -> new SalesOrderNotFoundException(MessageFormat.format(
                 "Sales order not found for the given order number {0} ", orderNumber)));
-        MarketingSalesOrder marketingSalesOrder = MarketingSalesOrder.builder()
-                                                                     .order(salesOrder.getOriginalOrder())
-                                                                     .recurringOrder(salesOrder.isRecurringOrder())
-                                                                     .build();
-        send(topic, subject, marketingSalesOrder);
+        SalesOrderInfo salesOrderInfo = SalesOrderInfo.builder()
+                                                       .order(salesOrder.getOriginalOrder())
+                                                       .recurringOrder(salesOrder.isRecurringOrder())
+                                                       .build();
+        send(topic, subject, salesOrderInfo);
         }
 }

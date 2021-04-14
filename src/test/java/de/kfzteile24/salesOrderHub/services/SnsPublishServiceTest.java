@@ -6,7 +6,7 @@ import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.dto.MarketingSalesOrder;
+import de.kfzteile24.salesOrderHub.dto.SalesOrderInfo;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import java.util.Optional;
@@ -32,7 +32,7 @@ public class SnsPublishServiceTest {
   @Spy
   private ObjectMapper objectMapper;
   @Captor
-  ArgumentCaptor<String> marketingSalesOrderArgumentCaptor;
+  ArgumentCaptor<String> salesOrderArgumentCaptor;
   @InjectMocks
   private SnsPublishService snsPublishService;
 
@@ -45,7 +45,7 @@ public class SnsPublishServiceTest {
     var orderNumber = salesOrder.getOrderNumber();
     var snsTopic = "testsnstopic";
     var subject = "publishorder";
-    MarketingSalesOrder marketingSalesOrder = MarketingSalesOrder.builder()
+    SalesOrderInfo salesOrderInfo = SalesOrderInfo.builder()
                                                                   .recurringOrder(Boolean.TRUE)
                                                                   .order(SalesOrderUtil.getOrderJson(rawMessage))
                                                                   .build();
@@ -54,12 +54,13 @@ public class SnsPublishServiceTest {
     snsPublishService.sendOrder(snsTopic, subject, orderNumber);
     //then
     verify(notificationMessagingTemplate, times(1)).sendNotification(snsTopic,
-                                                                                            objectMapper.writeValueAsString(marketingSalesOrder), subject);
+                                                                                            objectMapper.writeValueAsString(
+                                                                                                salesOrderInfo), subject);
     verify(notificationMessagingTemplate, times(1)).sendNotification(any(),
-                                                                                            marketingSalesOrderArgumentCaptor.capture(),
+                                                                                            salesOrderArgumentCaptor.capture(),
                                                                                             any());
-    MarketingSalesOrder order = objectMapper.readValue(marketingSalesOrderArgumentCaptor.getValue(),
-                                                       MarketingSalesOrder.class);
+    SalesOrderInfo order = objectMapper.readValue(salesOrderArgumentCaptor.getValue(),
+                                                       SalesOrderInfo.class);
     assertThat(order.isRecurringOrder()).isTrue();
     assertThat(order.getOrder().getVersion()).isEqualTo("2.1");
     assertThat(order.getOrder().getOrderHeader().getOrderNumber()).isEqualTo("514000016");
@@ -75,10 +76,10 @@ public class SnsPublishServiceTest {
     var orderNumber = "514000018";
     var snsTopic = "testsnstopic";
     var subject = "testsubject";
-    MarketingSalesOrder marketingSalesOrder = MarketingSalesOrder.builder()
-        .recurringOrder(Boolean.TRUE)
-        .order(SalesOrderUtil.getOrderJson(rawMessage))
-        .build();
+    SalesOrderInfo salesOrderInfo = SalesOrderInfo.builder()
+                                                  .recurringOrder(Boolean.TRUE)
+                                                  .order(SalesOrderUtil.getOrderJson(rawMessage))
+                                                  .build();
 
     //given
     given(salesOrderService.getOrderByOrderNumber(orderNumber)).willReturn(Optional.empty());
@@ -88,7 +89,7 @@ public class SnsPublishServiceTest {
         .hasMessageContaining("Sales order not found for the given order number ", orderNumber);
     //then
     verify(notificationMessagingTemplate, never()).sendNotification(snsTopic,
-        objectMapper.writeValueAsString(marketingSalesOrder), subject);
+        objectMapper.writeValueAsString(salesOrderInfo), subject);
   }
 
 }
