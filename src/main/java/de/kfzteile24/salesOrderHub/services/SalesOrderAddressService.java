@@ -51,7 +51,7 @@ public class SalesOrderAddressService {
                     if (updatedOrder.getOriginalOrder().getOrderHeader().getBillingAddress().equals(newBillingAddress)) {
                         return new ResponseEntity<>("", HttpStatus.OK);
                     } else {
-                        return new ResponseEntity<>("The order was found but could not changed the billing address, because the state was not the right one.", HttpStatus.CONFLICT);
+                        return new ResponseEntity<>("The order was found but we could not change the billing address, because the order has already a invoice.", HttpStatus.CONFLICT);
                     }
                 }
             } else {
