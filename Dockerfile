@@ -17,7 +17,7 @@ COPY --from=MAVEN entrypoint.sh /entrypoint.sh
 COPY --from=MAVEN src/main/resources/db/migration/* /migrations/
 COPY --from=MAVEN /opt/newrelic/newrelic.* /opt/newrelic/
 
-ENV NEW_RELIC_APP_NAME="SOH-business-processing-engine"
+ENV NEW_RELIC_APP_NAME="SOH-Business-Processing-Engine"
 ENV NEW_RELIC_DISTRIBUTED_TRACING_ENABLED=true
 
 ADD https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/6.5.6/flyway-commandline-6.5.6-linux-x64.tar.gz /opt
