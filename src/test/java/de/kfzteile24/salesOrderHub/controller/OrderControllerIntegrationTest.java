@@ -319,7 +319,7 @@ class OrderControllerIntegrationTest {
         util.sendMessage(util._N(TRACKING_ID_RECEIVED), orderNumber, orderItems.get(0));
 
         final var result = controller.cancelOrder(orderNumber);
-        assertThat(result.getStatusCodeValue()).isEqualTo(400);
+        assertThat(result.getStatusCodeValue()).isEqualTo(409);
     }
 
 }
