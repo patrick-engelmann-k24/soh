@@ -128,7 +128,7 @@ public class OrderController {
     public ResponseEntity<OrderJSON> getOrder(@PathVariable String orderNumber) {
         final Optional<SalesOrder> salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber);
         if (salesOrder.isEmpty()) {
-            return new ResponseEntity("", HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
 
         return ResponseEntity.ok(salesOrder.get().getOriginalOrder());
