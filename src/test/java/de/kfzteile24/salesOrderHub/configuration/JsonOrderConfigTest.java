@@ -42,11 +42,11 @@ public class JsonOrderConfigTest {
 
     @Test
     public void testEncodeAndDecodeJson() {
-        var coreDataReader = CoreDataReaderEvent.builder()
-                .createdAt(LocalDateTime.now())
-                .orderNumber("1234567890")
-                .orderItemSku("0987654321")
-                .build();
+        var coreDataReader = new CoreDataReaderEvent();
+
+        coreDataReader.setCreatedAt(LocalDateTime.now().toString());
+        coreDataReader.setOrderNumber("1234567890");
+        coreDataReader.setOrderItemSku("0987654321");
 
         final String json = gson.toJson(coreDataReader);
 

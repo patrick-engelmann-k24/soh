@@ -51,7 +51,7 @@ public class SalesOrderAddressService {
                     if (updatedOrder.getOriginalOrder().getOrderHeader().getBillingAddress().equals(newBillingAddress)) {
                         return new ResponseEntity<>("", HttpStatus.OK);
                     } else {
-                        return new ResponseEntity<>("Not possible to update invoice", HttpStatus.CONFLICT);
+                        return new ResponseEntity<>("The order was found but we could not change the billing address, because the order has already a invoice.", HttpStatus.CONFLICT);
                     }
                 }
             } else {
@@ -81,7 +81,7 @@ public class SalesOrderAddressService {
                         }
                     }
 
-                    return new ResponseEntity<>("Update not possible ", HttpStatus.CONFLICT);
+                    return new ResponseEntity<>("The order was found but could not changed the deliver address, because the state was not good.", HttpStatus.CONFLICT);
                 }
 
             } else if (helper.checkIfProcessExists(orderNumber)) {
