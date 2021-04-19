@@ -1,10 +1,14 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder.row;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.*;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SHIPMENT_METHOD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.BPMSalesOrderRowFulfillment.SUB_PROCESS_ORDER_ROW_DELIVERY_ADDRESS_CHANGE;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowActivities.*;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowGateways.*;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowActivities.CHANGE_DELIVERY_ADDRESS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowActivities.CHECK_DELIVERY_ADDRESS_CHANGE_POSSIBLE;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowGateways.XOR_CLICK_AND_COLLECT;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowGateways.XOR_DELIVERY_ADRESS_CHANGE_POSSIBLE;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowGateways.XOR_SHIPMENT_METHOD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.*;
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
 import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.withVariables;
@@ -25,16 +29,13 @@ import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.junit4.SpringRunner;
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@RunWith(SpringRunner.class)
 @SpringBootTest(
         classes = SalesOrderHubProcessApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.NONE
@@ -56,7 +57,7 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
     @Autowired
     private Gson gson;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         init(processEngine);
     }
