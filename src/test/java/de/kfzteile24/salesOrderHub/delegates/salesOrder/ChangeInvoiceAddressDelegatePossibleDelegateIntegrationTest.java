@@ -1,5 +1,11 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder;
 
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
+import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
+import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import de.kfzteile24.salesOrderHub.SalesOrderHubProcessApplication;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.*;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
@@ -9,29 +15,19 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
-import org.camunda.bpm.engine.ProcessEngine;
-import org.camunda.bpm.engine.RuntimeService;
-import org.camunda.bpm.engine.runtime.ProcessInstance;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.junit4.SpringRunner;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
-import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
-import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import org.camunda.bpm.engine.ProcessEngine;
+import org.camunda.bpm.engine.RuntimeService;
+import org.camunda.bpm.engine.runtime.ProcessInstance;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@RunWith(SpringRunner.class)
 @SpringBootTest(
         classes = SalesOrderHubProcessApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.NONE
@@ -52,7 +48,7 @@ public class ChangeInvoiceAddressDelegatePossibleDelegateIntegrationTest {
     @Autowired
     private SalesOrderUtil salesOrderUtil;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         init(processEngine);
     }
@@ -77,7 +73,7 @@ public class ChangeInvoiceAddressDelegatePossibleDelegateIntegrationTest {
                 .hasVariables(util._N(Variables.INVOICE_EXISTS));
         final Boolean invoiceExists = (Boolean) runtimeService
                 .getVariable(orderProcess.getProcessInstanceId(), util._N(Variables.INVOICE_EXISTS));
-        assertFalse("Variable invoice exists does not exist", invoiceExists);
+        assertFalse(invoiceExists, "Variable invoice exists does not exist");
 
         assertThat(orderProcess).hasPassedInOrder(
                 util._N(Events.START_MSG_INVOICE_ADDRESS_CHANGE_RECEIVED),
@@ -120,7 +116,7 @@ public class ChangeInvoiceAddressDelegatePossibleDelegateIntegrationTest {
                 .hasVariables(util._N(Variables.INVOICE_EXISTS));
         final Boolean invoiceExists = (Boolean) runtimeService
                 .getVariable(orderProcess.getProcessInstanceId(), util._N(Variables.INVOICE_EXISTS));
-        assertTrue("Variable invoice exists does not exist", invoiceExists);
+        assertTrue(invoiceExists, "Variable invoice exists does not exist");
 
         assertThat(orderProcess).hasPassedInOrder(
                 util._N(Events.START_MSG_INVOICE_ADDRESS_CHANGE_RECEIVED),

@@ -1,7 +1,10 @@
 package de.kfzteile24.salesOrderHub.services;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -22,17 +25,17 @@ import java.nio.file.Paths;
 import java.util.Locale;
 import lombok.SneakyThrows;
 import org.camunda.bpm.engine.RuntimeService;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
  * @author vinaya
  */
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class SqsReceiveServiceTest {
 
   @Spy
@@ -52,7 +55,7 @@ public class SqsReceiveServiceTest {
 
   private  ObjectMapper messageBodyMapper;
 
-  @Before
+  @BeforeEach
   public void setUp(){
     ObjectMapperConfig objectMapperConfig = new ObjectMapperConfig();
     messageBodyMapper = objectMapperConfig.getMapperForMessageBody();

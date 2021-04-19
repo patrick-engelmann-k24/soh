@@ -1,8 +1,12 @@
 package de.kfzteile24.salesOrderHub.services;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
@@ -11,18 +15,16 @@ import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import java.util.Optional;
 import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.cloud.aws.messaging.core.NotificationMessagingTemplate;
 
 /**
  * @author vinaya
  */
-@RunWith(MockitoJUnitRunner.class)
-@Slf4j
+@ExtendWith(MockitoExtension.class)
 public class SnsPublishServiceTest {
 
   @Mock
