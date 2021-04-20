@@ -2,11 +2,22 @@ package de.kfzteile24.salesOrderHub.domain;
 
 import de.kfzteile24.salesOrderHub.domain.converter.OrderJsonConverter;
 import de.kfzteile24.salesOrderHub.dto.OrderJSON;
-import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
-import javax.persistence.*;
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Convert;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.Set;
 
@@ -21,49 +32,35 @@ public class SalesOrder extends AbstractBaseEntity {
 
     private static final long serialVersionUID = 1L;
 
-    @Basic
     @Column(name = "order_number")
     private String orderNumber;
 
-    @Basic
     @Column(name = "process_id")
     private String processId;
 
-    @Column(name = "original_order", columnDefinition = "json")
+    @Column(name = "original_order", columnDefinition = "json", updatable = false)
     @Convert(converter = OrderJsonConverter.class)
     private OrderJSON originalOrder;
 
-    @Basic
+    @Column(name = "latest_json", columnDefinition = "json")
+    @Convert(converter = OrderJsonConverter.class)
+    private OrderJSON latestJson;
+
     @Column(name = "customer_email")
     private String customerEmail;
-
-    @Basic
-    @Column(name = "customer_number")
-    private String customerNumber;
 
     @Column(name = "recurring_order")
     private boolean recurringOrder;
 
-    @Basic
     @Column(name = "sales_channel")
     private String salesChannel;
 
-    @Basic
-    @Column(name = "sales_locale")
-    private String salesLocale;
-
-    @Basic
-    @Column(name = "offer_reference_number")
-    private String offerReferenceNumber;
-
-    @Basic
     @Column(name = "created_at")
-    @CreatedDate
+    @CreationTimestamp
     private LocalDateTime createdAt;
 
-    @Basic
     @Column(name = "updated_at")
-    @LastModifiedDate
+    @UpdateTimestamp
     private LocalDateTime updatedAt;
 
     @ToString.Exclude

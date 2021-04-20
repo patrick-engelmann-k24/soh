@@ -1,11 +1,5 @@
 package de.kfzteile24.salesOrderHub.services;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,17 +13,28 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import de.kfzteile24.salesOrderHub.dto.sqs.EcpOrder;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Paths;
-import java.util.Locale;
 import lombok.SneakyThrows;
 import org.camunda.bpm.engine.RuntimeService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.Paths;
+
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * @author vinaya
@@ -66,7 +71,7 @@ public class SqsReceiveServiceTest {
   public void testQueueListenerEcpShopOrdersWhenRecurringOrderReceived(){
     var senderId = "Ecp";
     String rawMessage =  readResource("examples/ecpOrderMessage.json");
-    SalesOrder salesOrder = getSaleOrder(rawMessage);
+    SalesOrder salesOrder = getSalesOrder(rawMessage);
 
     when(salesOrderRepository.countByCustomerEmail(salesOrder.getCustomerEmail())).thenReturn(2L);
 
@@ -74,7 +79,14 @@ public class SqsReceiveServiceTest {
 
     verify(salesOrderService, times(1)).save(any(SalesOrder.class));
     verify(salesOrderService, times(1)).save(salesOrderArgumentCaptor.capture());
-    assertThat(salesOrderArgumentCaptor.getValue().isRecurringOrder()).isTrue();
+
+    final var actualSalesOrder = salesOrderArgumentCaptor.getValue();
+    assertThat(actualSalesOrder.isRecurringOrder()).isTrue();
+    assertThat(actualSalesOrder.getLatestJson()).isEqualTo(actualSalesOrder.getOriginalOrder());
+    assertThat(actualSalesOrder.getCustomerEmail()).isEqualTo("test@kfzteile24.de");
+    assertThat(actualSalesOrder.getSalesChannel()).isEqualTo("www-k24-at");
+    assertThat(actualSalesOrder.getOrderNumber()).isEqualTo("514000016");
+
     verify(camundaHelper, times(1)).createOrderProcess(any(SalesOrder.class),
                                                                               any(Messages.class));
   }
@@ -83,7 +95,7 @@ public class SqsReceiveServiceTest {
   public void testQueueListenerEcpShopOrdersWhenNewOrderReceived(){
     var senderId = "Ecp";
     String rawMessage =  readResource("examples/ecpOrderMessage.json");
-    SalesOrder salesOrder = getSaleOrder(rawMessage);
+    SalesOrder salesOrder = getSalesOrder(rawMessage);
 
     when(salesOrderRepository.countByCustomerEmail(salesOrder.getCustomerEmail())).thenReturn(0L);
 
@@ -115,15 +127,6 @@ public class SqsReceiveServiceTest {
   private ObjectMapper configureMapperForMessageHeader(ObjectMapper mapper){
     mapper.setPropertyNamingStrategy(PropertyNamingStrategy.UPPER_CAMEL_CASE);
     return mapper;
-  }
-
-  private SalesOrder getSaleOrder(String rawMessage){
-   return SalesOrder.builder()
-                    .orderNumber("514000018")
-                    .salesLocale(Locale.GERMANY.toString())
-                    .customerEmail("test@kfzteile24.de")
-                    .originalOrder(getOrderJson(rawMessage))
-                    .build();
   }
 
 }

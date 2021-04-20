@@ -131,6 +131,6 @@ public class OrderController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
 
-        return ResponseEntity.ok(salesOrder.get().getOriginalOrder());
+        return ResponseEntity.ok(salesOrder.get().getLatestJson());
     }
 }

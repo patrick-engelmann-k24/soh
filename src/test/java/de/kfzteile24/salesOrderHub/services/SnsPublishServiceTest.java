@@ -1,5 +1,23 @@
 package de.kfzteile24.salesOrderHub.services;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.dto.SalesOrderInfo;
+import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
+import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
+import lombok.SneakyThrows;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.cloud.aws.messaging.core.NotificationMessagingTemplate;
+
+import java.util.Optional;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
@@ -7,19 +25,6 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.dto.SalesOrderInfo;
-import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
-import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
-import java.util.Optional;
-import lombok.SneakyThrows;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.cloud.aws.messaging.core.NotificationMessagingTemplate;
 
 /**
  * @author vinaya
@@ -42,7 +47,7 @@ public class SnsPublishServiceTest {
   @SneakyThrows(Exception.class)
   public void testSendOrder() {
     String rawMessage = SalesOrderUtil.readResource("examples/ecpOrderMessage.json");
-    SalesOrder salesOrder = SalesOrderUtil.getSaleOrder(rawMessage);
+    SalesOrder salesOrder = SalesOrderUtil.getSalesOrder(rawMessage);
     //given
     var orderNumber = salesOrder.getOrderNumber();
     var snsTopic = "testsnstopic";
@@ -72,6 +77,31 @@ public class SnsPublishServiceTest {
 
   @Test
   @SneakyThrows(Exception.class)
+  public void testThatTheLatestOrderJsonIsPublished() {
+    final var rawMessage = SalesOrderUtil.readResource("examples/ecpOrderMessage.json");
+    final var salesOrder = SalesOrderUtil.getSalesOrder(rawMessage);
+    final var salesOrderLatest = SalesOrderUtil.getSalesOrder(rawMessage);
+
+    salesOrderLatest.getLatestJson().getOrderHeader().getBillingAddress().setCity("Berlin");
+    salesOrder.setLatestJson(salesOrderLatest.getLatestJson());
+    assertThat(salesOrder.getOriginalOrder().getOrderHeader().getBillingAddress().getCity())
+            .isNotEqualTo(salesOrder.getLatestJson().getOrderHeader().getBillingAddress().getCity());
+
+    given(salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber()))
+            .willReturn(Optional.of(salesOrder));
+
+    snsPublishService.sendOrder("", "", salesOrder.getOrderNumber());
+
+    verify(notificationMessagingTemplate).sendNotification(any(), salesOrderArgumentCaptor.capture(), any());
+
+    final var salesOrderInfo = objectMapper.readValue(salesOrderArgumentCaptor.getValue(),
+            SalesOrderInfo.class);
+    assertThat(salesOrderInfo.getOrder().getOrderHeader().getBillingAddress().getCity())
+            .isEqualTo(salesOrder.getLatestJson().getOrderHeader().getBillingAddress().getCity());
+  }
+
+  @Test
+  @SneakyThrows(Exception.class)
   public void testSendOrderWhenSalesOrderNotFound() {
     String rawMessage = SalesOrderUtil.readResource("examples/ecpOrderMessage.json");
 
@@ -79,8 +109,8 @@ public class SnsPublishServiceTest {
     var snsTopic = "testsnstopic";
     var subject = "testsubject";
     SalesOrderInfo salesOrderInfo = SalesOrderInfo.builder()
-                                                  .recurringOrder(Boolean.TRUE)
-                                                  .order(SalesOrderUtil.getOrderJson(rawMessage))
+            .recurringOrder(Boolean.TRUE)
+            .order(SalesOrderUtil.getOrderJson(rawMessage))
                                                   .build();
 
     //given

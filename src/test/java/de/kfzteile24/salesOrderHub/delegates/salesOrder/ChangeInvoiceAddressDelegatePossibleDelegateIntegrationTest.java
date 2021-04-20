@@ -1,23 +1,22 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder;
 
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
-import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
-import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.SalesOrderHubProcessApplication;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.*;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Gateways;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
+import de.kfzteile24.salesOrderHub.dto.order.customer.Address;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
@@ -26,6 +25,18 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
+import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
+import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @SpringBootTest(
@@ -48,16 +59,23 @@ public class ChangeInvoiceAddressDelegatePossibleDelegateIntegrationTest {
     @Autowired
     private SalesOrderUtil salesOrderUtil;
 
+    @Autowired
+    private SalesOrderService salesOrderService;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @BeforeEach
     public void setUp() {
         init(processEngine);
     }
 
     @Test
-    public void testChangeInvoiceAddressPossible() {
+    public void testChangeInvoiceAddressPossible() throws JsonProcessingException {
         final SalesOrder testOrder = salesOrderUtil.createNewSalesOrder();
         final ProcessInstance orderProcess = createOrderProcess(testOrder);
         final String orderNumber = testOrder.getOrderNumber();
+        final var newAddress = Address.builder().city("Berlin").build();
 
         try {
             Thread.sleep(400);
@@ -66,7 +84,10 @@ public class ChangeInvoiceAddressDelegatePossibleDelegateIntegrationTest {
         }
 
         assertThat(orderProcess).isWaitingAt(util._N(Events.MSG_ORDER_PAYMENT_SECURED));
-        util.sendMessage(Messages.ORDER_INVOICE_ADDRESS_CHANGE_RECEIVED, orderNumber);
+        util.sendMessage(Messages.ORDER_INVOICE_ADDRESS_CHANGE_RECEIVED.getName(), orderNumber,
+                Map.of(
+                        Variables.INVOICE_ADDRESS_CHANGE_REQUEST.getName(), objectMapper.writeValueAsString(newAddress))
+                );
 
         // check if the delegate sets the variable
         assertThat(orderProcess)
@@ -86,6 +107,11 @@ public class ChangeInvoiceAddressDelegatePossibleDelegateIntegrationTest {
         );
 
         assertThat(orderProcess).hasNotPassed(util._N(Events.INVOICE_ADDRESS_NOT_CHANGED));
+
+        final var updatedOrderOpt = salesOrderService.getOrderByOrderNumber(orderNumber);
+        assertTrue(updatedOrderOpt.isPresent());
+        assertEquals(updatedOrderOpt.get().getLatestJson().getOrderHeader().getBillingAddress(), newAddress);
+        assertNotEquals(updatedOrderOpt.get().getOriginalOrder(), updatedOrderOpt.get().getLatestJson());
 
         finishOrderProcess(orderProcess, orderNumber);
     }

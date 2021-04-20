@@ -1,37 +1,35 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder;
 
-import com.google.gson.Gson;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.order.customer.Address;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
-import lombok.extern.java.Log;
+import lombok.RequiredArgsConstructor;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.JavaDelegate;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-@Log
+@RequiredArgsConstructor
 public class ChangeInvoiceAddressDelegate implements JavaDelegate {
 
-    @Autowired
-    private Gson gson;
+    private final ObjectMapper objectMapper;
 
-    @Autowired
-    private SalesOrderRepository orderRepository;
+    private final SalesOrderRepository orderRepository;
 
     @Override
-    public void execute(DelegateExecution delegateExecution) {
+    public void execute(DelegateExecution delegateExecution) throws JsonProcessingException {
         var newAddressStr = (String)delegateExecution.getVariable(Variables.INVOICE_ADDRESS_CHANGE_REQUEST.getName());
         var orderNumber = (String)delegateExecution.getVariable(Variables.ORDER_NUMBER.getName());
-        final Address address = gson.fromJson(newAddressStr, Address.class);
+        final Address address = objectMapper.readValue(newAddressStr, Address.class);
 
         var salesOrderOptional = orderRepository.getOrderByOrderNumber(orderNumber);
 
         if (salesOrderOptional.isPresent()) {
             final SalesOrder salesOrder = salesOrderOptional.get();
-            salesOrder.getOriginalOrder().getOrderHeader().setBillingAddress(address);
+            salesOrder.getLatestJson().getOrderHeader().setBillingAddress(address);
             orderRepository.save(salesOrder);
         }
 

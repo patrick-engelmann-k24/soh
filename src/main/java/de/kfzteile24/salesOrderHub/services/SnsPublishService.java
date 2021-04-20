@@ -5,12 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.SalesOrderInfo;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
-import java.text.MessageFormat;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.cloud.aws.messaging.core.NotificationMessagingTemplate;
 import org.springframework.stereotype.Service;
+
+import java.text.MessageFormat;
 
 @Service
 @RequiredArgsConstructor
@@ -36,7 +37,7 @@ public class SnsPublishService {
             .orElseThrow(() -> new SalesOrderNotFoundException(MessageFormat.format(
                 "Sales order not found for the given order number {0} ", orderNumber)));
         SalesOrderInfo salesOrderInfo = SalesOrderInfo.builder()
-                                                       .order(salesOrder.getOriginalOrder())
+                                                       .order(salesOrder.getLatestJson())
                                                        .recurringOrder(salesOrder.isRecurringOrder())
                                                        .build();
         send(topic, subject, salesOrderInfo);

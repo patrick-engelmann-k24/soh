@@ -1,8 +1,5 @@
 package de.kfzteile24.salesOrderHub.services;
 
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_ECP;
-import static org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy.ON_SUCCESS;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
@@ -28,6 +25,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.aws.messaging.listener.annotation.SqsListener;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
+
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_ECP;
+import static org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy.ON_SUCCESS;
 
 @Service
 @Slf4j
@@ -58,24 +58,25 @@ public class SqsReceiveService {
 
         String message = messageHeaderMapper.readValue(rawMessage, EcpOrder.class).getMessage();
         OrderJSON orderJSON = messageBodyMapper.readValue(message, OrderJSON.class);
-        final SalesOrder ecpSalesOrder = SalesOrder.builder()
+        final SalesOrder salesOrder = SalesOrder.builder()
                                                     .orderNumber(orderJSON.getOrderHeader()
                                                         .getOrderNumber())
-                                                    .salesLocale(orderJSON.getOrderHeader()
+                                                    .salesChannel(orderJSON.getOrderHeader()
                                                         .getOrigin()
-                                                        .getLocale())
+                                                        .getSalesChannel())
                                                     .customerEmail(orderJSON.getOrderHeader()
                                                         .getCustomer()
                                                         .getCustomerEmail())
                                                     .originalOrder(orderJSON)
+                                                    .latestJson(orderJSON)
                                                     .build();
 
-        boolean isRecurringOrder = isRecurringOrder(ecpSalesOrder);
+        boolean isRecurringOrder = isRecurringOrder(salesOrder);
         if(isRecurringOrder){
-            ecpSalesOrder.setRecurringOrder(true);
+            salesOrder.setRecurringOrder(true);
         }
-        salesOrderService.save(ecpSalesOrder);
-        ProcessInstance result = camundaHelper.createOrderProcess(ecpSalesOrder, ORDER_RECEIVED_ECP);
+        salesOrderService.save(salesOrder);
+        ProcessInstance result = camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
 
         if (result != null) {
             log.info("New ecp order process started: {} ", result.getId());

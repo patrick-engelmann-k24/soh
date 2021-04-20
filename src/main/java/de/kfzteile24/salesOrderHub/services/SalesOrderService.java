@@ -5,7 +5,6 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.dto.order.customer.Address;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.camunda.bpm.engine.RuntimeService;
@@ -42,14 +41,6 @@ public class SalesOrderService {
     public SalesOrder updateOrder(final SalesOrder salesOrder) {
         salesOrder.setUpdatedAt(LocalDateTime.now());
         return orderRepository.save(salesOrder);
-    }
-
-    // todo Delete this:
-    public SalesOrder updateOrderBillingAddress(SalesOrder salesOrder, Address address) {
-        // todo update SalesOrderInvoice
-        salesOrder.getOriginalOrder().getOrderHeader().setBillingAddress(address);
-        orderRepository.save(salesOrder);
-        return salesOrder;
     }
 
     public Boolean isOrderBillingAddressChangeable(String orderNumber) {
