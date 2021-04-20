@@ -19,7 +19,9 @@ ALTER TABLE "public".sales_order DROP COLUMN sales_locale;
 ALTER TABLE "public".sales_order DROP COLUMN offer_reference_number;
 
 --  Add column 'latest_json'
-ALTER TABLE "public".sales_order ADD COLUMN latest_json json NOT NULL;
+ALTER TABLE "public".sales_order ADD COLUMN latest_json json NOT NULL DEFAULT '{}';
+UPDATE "public".sales_order SET latest_json = original_order;
+ALTER TABLE "public".sales_order ALTER COLUMN latest_json DROP DEFAULT;
 
 -- Add customer_email index
 CREATE INDEX customer_email_idx ON "public".sales_order(customer_email);
