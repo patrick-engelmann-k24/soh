@@ -65,16 +65,7 @@ public class SalesOrder extends AbstractBaseEntity {
 
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
-    @OneToMany(mappedBy = "salesOrder", targetEntity = SalesOrderItem.class, fetch = FetchType.LAZY)
-    private Set<SalesOrderItem> salesOrderItemList;
-
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
     @OneToMany(mappedBy = "salesOrder", targetEntity = SalesOrderInvoice.class, fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private Set<SalesOrderInvoice> salesOrderInvoiceList;
 
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    @OneToMany(mappedBy = "salesOrder", targetEntity = SalesOrderAddress.class, fetch = FetchType.LAZY)
-    private Set<SalesOrderAddress> salesOrderAddressList;
 }
