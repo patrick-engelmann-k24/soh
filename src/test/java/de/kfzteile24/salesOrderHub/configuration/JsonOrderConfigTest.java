@@ -1,27 +1,28 @@
 package de.kfzteile24.salesOrderHub.configuration;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.google.gson.Gson;
 import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import de.kfzteile24.salesOrderHub.dto.aws.MessageHeader;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.junit4.SpringRunner;
-
-import javax.validation.constraints.NotNull;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.util.Objects;
+import javax.validation.constraints.NotNull;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.jupiter.api.Assertions.*;
-
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @Import(GsonConfig.class)
 public class JsonOrderConfigTest {
     @NotNull
@@ -42,11 +43,11 @@ public class JsonOrderConfigTest {
 
     @Test
     public void testEncodeAndDecodeJson() {
-        var coreDataReader = CoreDataReaderEvent.builder()
-                .createdAt(LocalDateTime.now())
-                .orderNumber("1234567890")
-                .orderItemSku("0987654321")
-                .build();
+        var coreDataReader = new CoreDataReaderEvent();
+
+        coreDataReader.setCreatedAt(LocalDateTime.now().toString());
+        coreDataReader.setOrderNumber("1234567890");
+        coreDataReader.setOrderItemSku("0987654321");
 
         final String json = gson.toJson(coreDataReader);
 
@@ -99,7 +100,7 @@ public class JsonOrderConfigTest {
         final String jsonString = "{\"created_at\":\"" + dateString + "\"}";
         final CoreDataReaderEvent event = testJsonDecodeForDateTime(jsonString);
 
-        assertNotNull("testing format " + dateString, event);
+        assertNotNull(event.getCreatedAt(), "testing format " + dateString);
     }
 
     private CoreDataReaderEvent testJsonDecodeForDateTime(final String json) {

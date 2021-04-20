@@ -1,13 +1,20 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder;
 
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.*;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.INVOICE_CREATED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_MARKETPLACE;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_PAYMENT_SECURED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.*;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.*;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.PACKING_STARTED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.ROW_SHIPPED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.ROW_TRANSMITTED_TO_LOGISTICS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.TRACKING_ID_RECEIVED;
 import static java.util.Collections.singletonList;
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
 import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.kfzteile24.salesOrderHub.SalesOrderHubProcessApplication;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities;
@@ -27,19 +34,16 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@RunWith(SpringRunner.class)
 @SpringBootTest(
         classes = SalesOrderHubProcessApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.NONE
@@ -66,7 +70,7 @@ public class SaveInvoiceDelegateIntegrationTest {
     @Autowired
     private TransactionTemplate txTemplate;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         init(processEngine);
         salesOrderInvoiceRepository.deleteAll();
@@ -123,9 +127,10 @@ public class SaveInvoiceDelegateIntegrationTest {
             @Override
             protected void doInTransactionWithoutResult(TransactionStatus status) {
                 final var salesOrderOpt = salesOrderRepository.getOrderByOrderNumber(orderNumber);
-                assertTrue("Sales order not found", salesOrderOpt.isPresent());
+                assertTrue( salesOrderOpt.isPresent(), "Sales order not found");
                 final var salesOrder = salesOrderOpt.get();
-                assertEquals(expectedInvoices.size(), salesOrder.getSalesOrderInvoiceList().size());
+                assertEquals(expectedInvoices.size(),
+                    salesOrder.getSalesOrderInvoiceList().size());
 
                 expectedInvoices.forEach( expected -> {
                     final var actualOpt = salesOrder.getSalesOrderInvoiceList()

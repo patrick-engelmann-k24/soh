@@ -125,12 +125,12 @@ public class OrderController {
      */
     @ApiOperation(value = "Get one order with order number")
     @GetMapping("/{orderNumber}")
-    public OrderJSON getOrder(@PathVariable String orderNumber) {
+    public ResponseEntity<OrderJSON> getOrder(@PathVariable String orderNumber) {
         final Optional<SalesOrder> salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber);
         if (salesOrder.isEmpty()) {
-            return null;
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
 
-        return salesOrder.get().getOriginalOrder();
+        return ResponseEntity.ok(salesOrder.get().getLatestJson());
     }
 }

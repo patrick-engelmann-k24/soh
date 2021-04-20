@@ -1,6 +1,5 @@
 package de.kfzteile24.salesOrderHub.delegates.helper;
 
-import de.kfzteile24.salesOrderHub.domain.SalesOrderItem;
 import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import de.kfzteile24.salesOrderHub.dto.order.Rows;
 import org.springframework.stereotype.Component;

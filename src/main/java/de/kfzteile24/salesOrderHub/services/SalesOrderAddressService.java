@@ -48,10 +48,10 @@ public class SalesOrderAddressService {
                 final var newOrder = orderRepository.getOrderByOrderNumber(orderNumber);
                 if (newOrder.isPresent()) {
                     SalesOrder updatedOrder = newOrder.get();
-                    if (updatedOrder.getOriginalOrder().getOrderHeader().getBillingAddress().equals(newBillingAddress)) {
+                    if (updatedOrder.getLatestJson().getOrderHeader().getBillingAddress().equals(newBillingAddress)) {
                         return new ResponseEntity<>("", HttpStatus.OK);
                     } else {
-                        return new ResponseEntity<>("Not possible to update invoice", HttpStatus.CONFLICT);
+                        return new ResponseEntity<>("The order was found but we could not change the billing address, because the order has already a invoice.", HttpStatus.CONFLICT);
                     }
                 }
             } else {
@@ -74,14 +74,14 @@ public class SalesOrderAddressService {
                 final Optional<SalesOrder> newOrder = orderRepository.getOrderByOrderNumber(orderNumber);
                 if (newOrder.isPresent()) {
                     SalesOrder updatedOrder = newOrder.get();
-                    List<Address> shippingAddresses = updatedOrder.getOriginalOrder().getOrderHeader().getShippingAddresses();
+                    List<Address> shippingAddresses = updatedOrder.getLatestJson().getOrderHeader().getShippingAddresses();
                     for(Address shippingAddress : shippingAddresses) {
                         if (shippingAddress.equals(newDeliveryAddress)) {
                             return new ResponseEntity<>("", HttpStatus.OK);
                         }
                     }
 
-                    return new ResponseEntity<>("Update not possible ", HttpStatus.CONFLICT);
+                    return new ResponseEntity<>("The order was found but could not changed the deliver address, because the state was not good.", HttpStatus.CONFLICT);
                 }
 
             } else if (helper.checkIfProcessExists(orderNumber)) {

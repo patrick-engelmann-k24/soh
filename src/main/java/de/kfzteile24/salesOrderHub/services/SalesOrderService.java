@@ -5,13 +5,13 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.dto.order.customer.Address;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.MessageCorrelationBuilder;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -43,14 +43,6 @@ public class SalesOrderService {
         return orderRepository.save(salesOrder);
     }
 
-    // todo Delete this:
-    public SalesOrder updateOrderBillingAddress(SalesOrder salesOrder, Address address) {
-        // todo update SalesOrderInvoice
-        salesOrder.getOriginalOrder().getOrderHeader().setBillingAddress(address);
-        orderRepository.save(salesOrder);
-        return salesOrder;
-    }
-
     public Boolean isOrderBillingAddressChangeable(String orderNumber) {
         final Optional<SalesOrder> order = this.getOrderByOrderNumber(orderNumber);
         if (order.isPresent()) {
@@ -68,7 +60,7 @@ public class SalesOrderService {
                 if (!helper.checkIfProcessExists(orderNumber)) {
                     return ResponseEntity.ok().build();
                 } else {
-                    return ResponseEntity.badRequest().build();
+                    return new ResponseEntity<>("The order was found but could not cancelled, because the order rows are already in progress.", HttpStatus.CONFLICT);
                 }
             } else {
                 return ResponseEntity.notFound().build();

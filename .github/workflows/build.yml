@@ -28,7 +28,7 @@ env:
   soh_sqs_order_item_tour_started: 'http://localhost:4566/000000000000/soh-order-item-tour-started-queue'
   soh_sqs_invoices_from_core: 'http://localhost:4566/000000000000/soh-invoices-from-core-queue'
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   unit-test:
