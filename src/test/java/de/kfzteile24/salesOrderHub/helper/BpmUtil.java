@@ -1,21 +1,25 @@
 package de.kfzteile24.salesOrderHub.helper;
 
-import com.google.gson.Gson;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
 import de.kfzteile24.salesOrderHub.dto.OrderJSON;
-import de.kfzteile24.salesOrderHub.dto.sqs.EcpOrder;
+import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import lombok.SneakyThrows;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.MessageCorrelationBuilder;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.io.FileReader;
-import java.util.*;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
 @Component
 public class BpmUtil {
@@ -24,11 +28,7 @@ public class BpmUtil {
     RuntimeService runtimeService;
 
     @Autowired
-    Gson gson;
-
-    @Autowired
-    @Qualifier("messageHeader")
-    Gson gsonMessageHeader;
+    ObjectMapper objectMapper;
 
     public final List<MessageCorrelationResult> sendMessage(BpmItem message, String orderNumber) {
         return this.sendMessage(_N(message), orderNumber);
@@ -100,9 +100,10 @@ public class BpmUtil {
         return buffer.toString();
     }
 
+    @SneakyThrows(IOException.class)
     public final OrderJSON getRandomOrder() {
-        final EcpOrder messageHeader = gsonMessageHeader.fromJson(loadOrderJson(), EcpOrder.class);
-        final OrderJSON orderJSON = gson.fromJson(messageHeader.getMessage(), OrderJSON.class);
+        final SqsMessage sqsMessage = objectMapper.readValue(loadOrderJson(), SqsMessage.class);
+        final OrderJSON orderJSON = objectMapper.readValue(sqsMessage.getBody(), OrderJSON.class);
 
         orderJSON.getOrderHeader().setOrderNumber(getRandomOrderNumber());
         return orderJSON;

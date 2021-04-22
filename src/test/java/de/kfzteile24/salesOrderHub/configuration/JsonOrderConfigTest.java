@@ -1,47 +1,37 @@
 package de.kfzteile24.salesOrderHub.configuration;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import com.google.gson.Gson;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.dto.OrderJSON;
-import de.kfzteile24.salesOrderHub.dto.aws.MessageHeader;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.time.LocalDateTime;
-import java.util.Objects;
-import javax.validation.constraints.NotNull;
+import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.Objects;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 @ExtendWith(SpringExtension.class)
-@Import(GsonConfig.class)
+@Import(ObjectMapperConfig.class)
 public class JsonOrderConfigTest {
-    @NotNull
     @Autowired
-    Gson gson;
-
-    @NotNull
-    @Autowired
-    @Qualifier("messageHeader")
-    Gson gsonMessage;
+    ObjectMapper objectMapper;
 
     @Test
-    public void testCorrectInjection() {
-        assertNotNull(gson);
-        assertNotNull(gsonMessage);
-        assertNotEquals(gson, gsonMessage);
-    }
-
-    @Test
+    @SneakyThrows(JsonProcessingException.class)
     public void testEncodeAndDecodeJson() {
         var coreDataReader = new CoreDataReaderEvent();
 
@@ -49,9 +39,9 @@ public class JsonOrderConfigTest {
         coreDataReader.setOrderNumber("1234567890");
         coreDataReader.setOrderItemSku("0987654321");
 
-        final String json = gson.toJson(coreDataReader);
+        final String json = objectMapper.writeValueAsString(coreDataReader);
 
-        final CoreDataReaderEvent event2 = gson.fromJson(json, CoreDataReaderEvent.class);
+        final CoreDataReaderEvent event2 = objectMapper.readValue(json, CoreDataReaderEvent.class);
 
         assertEquals(coreDataReader.getCreatedAt(), event2.getCreatedAt());
     }
@@ -60,31 +50,29 @@ public class JsonOrderConfigTest {
     public void orderToObject() throws IOException {
         final String orderNUmber = "504000035";
 
-        final MessageHeader messageHeader = gsonMessage.fromJson(loadJson(), MessageHeader.class);
-        assertNotNull(messageHeader);
-        assertNotNull(messageHeader.getMessageId());
-        assertNotNull(messageHeader.getMessage());
-        final OrderJSON orderJSON = gson.fromJson(messageHeader.getMessage(), OrderJSON.class);
+        final var sqsMessage = objectMapper.readValue(loadJson(), SqsMessage.class);
+        assertNotNull(sqsMessage);
+        assertNotNull(sqsMessage.getMessageId());
+        assertNotNull(sqsMessage.getBody());
+        final OrderJSON orderJSON = objectMapper.readValue(sqsMessage.getBody(), OrderJSON.class);
 
         assertEquals(orderNUmber, orderJSON.getOrderHeader().getOrderNumber());
 
-        final String json = gson.toJson(orderJSON, OrderJSON.class);
-
-        assertTrue(json.length() > 100);
+        final String json = objectMapper.writeValueAsString(orderJSON);
+        final OrderJSON deserializedOrderJson = objectMapper.readValue(json, OrderJSON.class);
+        assertEquals(orderJSON, deserializedOrderJson);
     }
 
-    private String loadJson() throws IOException {
+    @SneakyThrows({URISyntaxException.class, IOException.class})
+    private String loadJson() {
         String fileName = "examples/testmessage.json";
-        ClassLoader classLoader = getClass().getClassLoader();
-
-        File file = new File(Objects.requireNonNull(classLoader.getResource(fileName)).getFile());
-
-        //Read File Content
-        return new String(Files.readAllBytes(file.toPath()));
+        return Files.readString(Paths.get(
+                Objects.requireNonNull(getClass().getClassLoader().getResource(fileName))
+                        .toURI()));
     }
 
     @Test
-    public void JsonToLocalDateTime() {
+    public void jsonToLocalDateTime() {
         // ISO_LOCAL_DATE_TIME
         testDateString("2020-12-18T11:47:25.682190");
         testDateString("2020-12-18T11:47:25");
@@ -96,6 +84,14 @@ public class JsonOrderConfigTest {
         testDateString("2020-10-26T09:51:11.652Z");
     }
 
+    @Test
+    @SneakyThrows(JsonProcessingException.class)
+    public void localDateTimeToJson() {
+        final var time = OffsetDateTime.of(2020, 10, 26, 9, 51, 11, 0, ZoneOffset.UTC);
+        var serializedTime = objectMapper.writeValueAsString(time);
+        assertEquals("\"2020-10-26T09:51:11Z\"", serializedTime);
+    }
+
     private void testDateString(final String dateString ) {
         final String jsonString = "{\"created_at\":\"" + dateString + "\"}";
         final CoreDataReaderEvent event = testJsonDecodeForDateTime(jsonString);
@@ -103,7 +99,8 @@ public class JsonOrderConfigTest {
         assertNotNull(event.getCreatedAt(), "testing format " + dateString);
     }
 
+    @SneakyThrows(JsonProcessingException.class)
     private CoreDataReaderEvent testJsonDecodeForDateTime(final String json) {
-        return gson.fromJson(json, CoreDataReaderEvent.class);
+        return objectMapper.readValue(json, CoreDataReaderEvent.class);
     }
 }

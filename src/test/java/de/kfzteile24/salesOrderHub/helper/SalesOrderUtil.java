@@ -5,18 +5,16 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-import com.google.gson.Gson;
+import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import de.kfzteile24.salesOrderHub.dto.order.LogisticalUnits;
-import de.kfzteile24.salesOrderHub.dto.sqs.EcpOrder;
+import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import javax.validation.constraints.NotNull;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,23 +39,18 @@ public class SalesOrderUtil {
     @Autowired
     BpmUtil bpmUtil;
 
-    @NotNull
     @Autowired
-    Gson gson;
+    ObjectMapper objectMapper;
 
-    @NotNull
-    @Autowired
-    @Qualifier("messageHeader")
-    Gson gsonMessage;
-
+    @SneakyThrows(JsonProcessingException.class)
     public SalesOrder createNewSalesOrder() {
         InputStream testFileStream = getClass().getResourceAsStream("/examples/testmessage.json");
         assertNotNull(testFileStream);
 
-        EcpOrder sqsMessage = readTestFile(testFileStream);
+        SqsMessage sqsMessage = readTestFile(testFileStream);
         assertNotNull(sqsMessage);
 
-        OrderJSON orderJSON = gson.fromJson(sqsMessage.getMessage(), OrderJSON.class);
+        OrderJSON orderJSON = objectMapper.readValue(sqsMessage.getBody(), OrderJSON.class);
         orderJSON.getOrderHeader().setOrderNumber(bpmUtil.getRandomOrderNumber());
 
         final SalesOrder testOrder = de.kfzteile24.salesOrderHub.domain.SalesOrder.builder()
@@ -76,7 +69,7 @@ public class SalesOrderUtil {
         return testOrder;
     }
 
-    private EcpOrder readTestFile(InputStream testFileStream) {
+    private SqsMessage readTestFile(InputStream testFileStream) {
         StringBuilder content = new StringBuilder();
         try (InputStreamReader streamReader =
                      new InputStreamReader(testFileStream, StandardCharsets.UTF_8);
@@ -87,7 +80,7 @@ public class SalesOrderUtil {
                 content.append(line);
             }
 
-            return gsonMessage.fromJson(content.toString(), EcpOrder.class);
+            return objectMapper.readValue(content.toString(), SqsMessage.class);
         } catch (IOException e) {
             e.printStackTrace();
             return null;
@@ -115,16 +108,11 @@ public class SalesOrderUtil {
 
     @SneakyThrows(JsonProcessingException.class)
     public static OrderJSON getOrderJson(String rawMessage){
-        ObjectMapper mapper = new ObjectMapper();
-        String message = configureMapperForMessageHeader(mapper).readValue(rawMessage, EcpOrder.class).getMessage();
+        ObjectMapper mapper = new ObjectMapperConfig().objectMapper();
+        final var sqsMessage = mapper.readValue(rawMessage, SqsMessage.class);
         mapper.setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
         mapper.enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        return mapper.readValue(message, OrderJSON.class);
-    }
-
-    private static ObjectMapper configureMapperForMessageHeader(ObjectMapper mapper){
-        mapper.setPropertyNamingStrategy(PropertyNamingStrategy.UPPER_CAMEL_CASE);
-        return mapper;
+        return mapper.readValue(sqsMessage.getBody(), OrderJSON.class);
     }
 }

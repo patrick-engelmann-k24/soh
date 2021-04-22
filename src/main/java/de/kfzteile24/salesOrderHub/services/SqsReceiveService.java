@@ -11,7 +11,7 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
 import de.kfzteile24.salesOrderHub.dto.sns.FulfillmentMessage;
-import de.kfzteile24.salesOrderHub.dto.sqs.EcpOrder;
+import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -20,8 +20,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.aws.messaging.listener.annotation.SqsListener;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
@@ -34,15 +32,10 @@ import static org.springframework.cloud.aws.messaging.listener.SqsMessageDeletio
 @RequiredArgsConstructor
 public class SqsReceiveService {
 
-    @Value("${soh.sqs.maxMessageRetrieves}")
-    private Integer maxMessageRetrieves;
-
     @NonNull private final RuntimeService runtimeService;
     @NonNull private final SalesOrderService salesOrderService;
     @NonNull private final CamundaHelper camundaHelper;
-    @NonNull private final ObjectMapper messageHeaderMapper;
-    @NonNull @Qualifier("messageBodyMapper")
-    private final ObjectMapper messageBodyMapper;
+    @NonNull private final ObjectMapper objectMapper;
     @NonNull private final SalesOrderRepository salesOrderRepository;
 
     /**
@@ -56,8 +49,8 @@ public class SqsReceiveService {
     public void queueListenerEcpShopOrders(String rawMessage, @Header("SenderId") String senderId) {
         log.info("Received message from ecp shop with sender id : {} ", senderId);
 
-        String message = messageHeaderMapper.readValue(rawMessage, EcpOrder.class).getMessage();
-        OrderJSON orderJSON = messageBodyMapper.readValue(message, OrderJSON.class);
+        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+        OrderJSON orderJSON = objectMapper.readValue(body, OrderJSON.class);
         final SalesOrder salesOrder = SalesOrder.builder()
                                                     .orderNumber(orderJSON.getOrderHeader()
                                                         .getOrderNumber())
@@ -97,8 +90,8 @@ public class SqsReceiveService {
                                          @Header("ApproximateReceiveCount") Integer receiveCount) {
         logReceivedMessage(rawMessage, senderId, receiveCount);
 
-        String message = messageHeaderMapper.readValue(rawMessage, EcpOrder.class).getMessage();
-        FulfillmentMessage fulfillmentMessage =  messageBodyMapper.readValue(message, FulfillmentMessage.class);
+        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+        FulfillmentMessage fulfillmentMessage = objectMapper.readValue(body, FulfillmentMessage.class);
 
         try {
             MessageCorrelationResult result = sendOrderRowMessage(
@@ -130,8 +123,8 @@ public class SqsReceiveService {
     public void queueListenerOrderPaymentSecured(String rawMessage, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
         logReceivedMessage(rawMessage, senderId, receiveCount);
 
-        String message = messageHeaderMapper.readValue(rawMessage, EcpOrder.class).getMessage();
-        CoreDataReaderEvent coreDataReaderEvent =  messageBodyMapper.readValue(message, CoreDataReaderEvent.class);
+        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+        CoreDataReaderEvent coreDataReaderEvent = objectMapper.readValue(body, CoreDataReaderEvent.class);
 
         try {
             MessageCorrelationResult result = runtimeService.createMessageCorrelation(Messages.ORDER_RECEIVED_PAYMENT_SECURED.getName())
@@ -161,8 +154,8 @@ public class SqsReceiveService {
     public void queueListenerOrderItemTransmittedToLogistic(String rawMessage, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
         logReceivedMessage(rawMessage, senderId, receiveCount);
 
-        String message = messageHeaderMapper.readValue(rawMessage, EcpOrder.class).getMessage();
-        FulfillmentMessage fulfillmentMessage =  messageBodyMapper.readValue(message, FulfillmentMessage.class);
+        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+        FulfillmentMessage fulfillmentMessage = objectMapper.readValue(body, FulfillmentMessage.class);
 
         try {
             MessageCorrelationResult result = sendOrderRowMessage(
@@ -193,8 +186,8 @@ public class SqsReceiveService {
     public void queueListenerOrderItemPackingStarted(String rawMessage, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
         logReceivedMessage(rawMessage, senderId, receiveCount);
 
-        String message = messageHeaderMapper.readValue(rawMessage, EcpOrder.class).getMessage();
-        FulfillmentMessage fulfillmentMessage =  messageBodyMapper.readValue(message, FulfillmentMessage.class);
+        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+        FulfillmentMessage fulfillmentMessage = objectMapper.readValue(body, FulfillmentMessage.class);
 
         try {
             MessageCorrelationResult result = sendOrderRowMessage(
@@ -225,8 +218,8 @@ public class SqsReceiveService {
     public void queueListenerOrderItemTrackingIdReceived(String rawMessage, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
         logReceivedMessage(rawMessage, senderId, receiveCount);
 
-        String message = messageHeaderMapper.readValue(rawMessage, EcpOrder.class).getMessage();
-        FulfillmentMessage fulfillmentMessage =  messageBodyMapper.readValue(message, FulfillmentMessage.class);
+        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+        FulfillmentMessage fulfillmentMessage = objectMapper.readValue(body, FulfillmentMessage.class);
 
         try {
             MessageCorrelationResult result = sendOrderRowMessage(
@@ -257,8 +250,8 @@ public class SqsReceiveService {
     public void queueListenerOrderItemTourStarted(String rawMessage, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
         logReceivedMessage(rawMessage, senderId, receiveCount);
 
-        String message = messageHeaderMapper.readValue(rawMessage, EcpOrder.class).getMessage();
-        FulfillmentMessage fulfillmentMessage = messageBodyMapper.readValue(message, FulfillmentMessage.class);
+        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+        FulfillmentMessage fulfillmentMessage =objectMapper.readValue(body, FulfillmentMessage.class);
 
         try {
             MessageCorrelationResult result = sendOrderRowMessage(
@@ -291,7 +284,7 @@ public class SqsReceiveService {
                                                      @Header("ApproximateReceiveCount") Integer receiveCount)
     {
         logReceivedMessage(rawMessage, senderId, receiveCount);
-        final String invoiceUrl = messageHeaderMapper.readValue(rawMessage, EcpOrder.class).getMessage();
+        final String invoiceUrl = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
 
         try {
             final var orderNumber = extractOrderNumber(invoiceUrl);
@@ -355,10 +348,7 @@ public class SqsReceiveService {
      */
     private boolean isRecurringOrder(SalesOrder salesOrder){
         var salesOrders = salesOrderRepository.countByCustomerEmail(salesOrder.getCustomerEmail());
-        if (salesOrders > 0) {
-            return true;
-        }
-        return false;
+        return salesOrders > 0;
     }
 
 }

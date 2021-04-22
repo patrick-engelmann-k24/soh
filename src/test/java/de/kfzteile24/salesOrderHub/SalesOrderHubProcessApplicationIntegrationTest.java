@@ -16,22 +16,20 @@
  */
 package de.kfzteile24.salesOrderHub;
 
-import static org.camunda.bpm.engine.test.assertions.ProcessEngineTests.assertThat;
-import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.*;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowActivities;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowGateways;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RepositoryService;
 import org.camunda.bpm.engine.RuntimeService;
@@ -43,6 +41,15 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+
+import static org.camunda.bpm.engine.test.assertions.ProcessEngineTests.assertThat;
+import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @SpringBootTest(
