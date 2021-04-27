@@ -1,6 +1,7 @@
 package de.kfzteile24.salesOrderHub.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.SalesOrderInfo;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
@@ -37,7 +38,7 @@ public class SnsPublishServiceTest {
   @Mock
   private SalesOrderService salesOrderService;
   @Spy
-  private ObjectMapper objectMapper;
+  private final ObjectMapper objectMapper = new ObjectMapperConfig().objectMapper();
   @Captor
   ArgumentCaptor<String> salesOrderArgumentCaptor;
   @InjectMocks
@@ -71,6 +72,7 @@ public class SnsPublishServiceTest {
     assertThat(order.isRecurringOrder()).isTrue();
     assertThat(order.getOrder().getVersion()).isEqualTo("2.1");
     assertThat(order.getOrder().getOrderHeader().getOrderNumber()).isEqualTo("514000016");
+    assertThat(order.getOrder().getOrderHeader().getOrderDatetime()).isEqualTo("2021-03-16T09:54:10.162Z");
     assertThat(order.getOrder().getOrderRows().size()).isEqualTo(2);
     assertThat(order.getOrder().getLogisticalUnits().size()).isEqualTo(1);
   }

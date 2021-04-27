@@ -1,21 +1,13 @@
 package de.kfzteile24.salesOrderHub.services;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-import com.google.common.base.Charsets;
-import com.google.common.io.Files;
 import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.dto.OrderJSON;
-import de.kfzteile24.salesOrderHub.dto.sqs.EcpOrder;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import lombok.SneakyThrows;
 import org.camunda.bpm.engine.RuntimeService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -28,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
+import java.util.Objects;
 
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,7 +37,7 @@ import static org.mockito.Mockito.when;
 public class SqsReceiveServiceTest {
 
   @Spy
-  private ObjectMapper mapper;
+  private final ObjectMapper objectMapper = new ObjectMapperConfig().objectMapper();
   @Mock
   private RuntimeService runtimeService;
   @Mock
@@ -57,15 +50,6 @@ public class SqsReceiveServiceTest {
   ArgumentCaptor<SalesOrder> salesOrderArgumentCaptor;
   @InjectMocks
   private SqsReceiveService sqsReceiveService;
-
-  private  ObjectMapper messageBodyMapper;
-
-  @BeforeEach
-  public void setUp(){
-    ObjectMapperConfig objectMapperConfig = new ObjectMapperConfig();
-    messageBodyMapper = objectMapperConfig.getMapperForMessageBody();
-    sqsReceiveService = new SqsReceiveService(runtimeService, salesOrderService, camundaHelper, mapper, messageBodyMapper,salesOrderRepository);
-  }
 
   @Test
   public void testQueueListenerEcpShopOrdersWhenRecurringOrderReceived(){
@@ -110,23 +94,9 @@ public class SqsReceiveServiceTest {
 
   @SneakyThrows({URISyntaxException.class, IOException.class})
   private String readResource(String path) {
-    return Files.toString(Paths.get(getClass().getClassLoader().getResource(path).toURI()).toFile(),
-        Charsets.UTF_8);
-  }
-
-  @SneakyThrows(JsonProcessingException.class)
-  private OrderJSON getOrderJson(String rawMessage){
-    ObjectMapper mapper = new ObjectMapper();
-    String message = configureMapperForMessageHeader(mapper).readValue(rawMessage, EcpOrder.class).getMessage();
-    mapper.setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
-    mapper.enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
-    mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-    return mapper.readValue(message, OrderJSON.class);
-  }
-
-  private ObjectMapper configureMapperForMessageHeader(ObjectMapper mapper){
-    mapper.setPropertyNamingStrategy(PropertyNamingStrategy.UPPER_CAMEL_CASE);
-    return mapper;
+    return java.nio.file.Files.readString(Paths.get(
+            Objects.requireNonNull(getClass().getClassLoader().getResource(path))
+                    .toURI()));
   }
 
 }

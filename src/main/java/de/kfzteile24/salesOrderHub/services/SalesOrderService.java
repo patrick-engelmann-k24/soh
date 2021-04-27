@@ -1,6 +1,5 @@
 package de.kfzteile24.salesOrderHub.services;
 
-import com.google.gson.Gson;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
@@ -25,9 +24,6 @@ public class SalesOrderService {
 
     @Autowired
     private CamundaHelper helper;
-
-    @Autowired
-    private Gson gson;
 
     @Autowired
     private SalesOrderRepository orderRepository;

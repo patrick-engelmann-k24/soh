@@ -1,19 +1,7 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder.row;
 
-import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SHIPMENT_METHOD;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.BPMSalesOrderRowFulfillment.SUB_PROCESS_ORDER_ROW_DELIVERY_ADDRESS_CHANGE;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowActivities.CHANGE_DELIVERY_ADDRESS;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowActivities.CHECK_DELIVERY_ADDRESS_CHANGE_POSSIBLE;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowGateways.XOR_CLICK_AND_COLLECT;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowGateways.XOR_DELIVERY_ADRESS_CHANGE_POSSIBLE;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowGateways.XOR_SHIPMENT_METHOD;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.*;
-import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
-import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.withVariables;
-
-import com.google.gson.Gson;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.SalesOrderHubProcessApplication;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
@@ -22,9 +10,7 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.order.customer.Address;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import lombok.SneakyThrows;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
@@ -34,6 +20,30 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SHIPMENT_METHOD;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.BPMSalesOrderRowFulfillment.SUB_PROCESS_ORDER_ROW_DELIVERY_ADDRESS_CHANGE;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowActivities.CHANGE_DELIVERY_ADDRESS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowActivities.CHECK_DELIVERY_ADDRESS_CHANGE_POSSIBLE;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowGateways.XOR_CLICK_AND_COLLECT;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowGateways.XOR_DELIVERY_ADRESS_CHANGE_POSSIBLE;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowGateways.XOR_SHIPMENT_METHOD;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.DELIVERY_ADDRESS_CHANGE;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.PACKING_STARTED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.ROW_PICKED_UP;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.ROW_PREPARED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.ROW_SHIPPED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.ROW_TRANSMITTED_TO_LOGISTICS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.TOUR_STARTED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.TRACKING_ID_RECEIVED;
+import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
+import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.withVariables;
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @SpringBootTest(
@@ -55,7 +65,7 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
     private SalesOrderUtil salesOrderUtil;
 
     @Autowired
-    private Gson gson;
+    private ObjectMapper objectMapper;
 
     @BeforeEach
     public void setUp() {
@@ -104,6 +114,7 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
     }
 
     @Test
+    @SneakyThrows(JsonProcessingException.class)
     public void testChangeAddressPossibleOnParcelShipment() {
         final Map<String, Object> processVariables = new HashMap<>();
         SalesOrder testOrder = salesOrderUtil.createNewSalesOrder();
@@ -133,7 +144,7 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
                 DELIVERY_ADDRESS_CHANGE,
                 orderNumber,
                 orderItemId,
-                withVariables(RowVariables.DELIVERY_ADDRESS_CHANGE_REQUEST.getName(), gson.toJson(address))
+                withVariables(RowVariables.DELIVERY_ADDRESS_CHANGE_REQUEST.getName(), objectMapper.writeValueAsString(address))
         );
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
@@ -199,6 +210,7 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
     }
 
     @Test
+    @SneakyThrows(JsonProcessingException.class)
     public void testChangeAddressPossibleOnOwnDeliveryShipment() {
         final Map<String, Object> processVariables = new HashMap<>();
         SalesOrder testOrder = salesOrderUtil.createNewSalesOrder();
@@ -228,7 +240,7 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
                 DELIVERY_ADDRESS_CHANGE,
                 orderNumber,
                 orderItemId,
-                withVariables(RowVariables.DELIVERY_ADDRESS_CHANGE_REQUEST.getName(), gson.toJson(address))
+                withVariables(RowVariables.DELIVERY_ADDRESS_CHANGE_REQUEST.getName(), objectMapper.writeValueAsString(address))
         );
 
         BpmnAwareTests.assertThat(orderItemFulfillmentProcess).hasPassedInOrder(

@@ -8,7 +8,6 @@ import de.kfzteile24.salesOrderHub.dto.order.header.Origin;
 import de.kfzteile24.salesOrderHub.dto.order.header.Payment;
 import lombok.Data;
 
-import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -16,7 +15,7 @@ import java.util.UUID;
 public class Header {
     private UUID orderId;
     private String orderNumber;
-    private Date orderDatetime;
+    private String orderDatetime;
     private String orderTimezone;
     private String orderCurrency;
     private String orderReferenceId;
