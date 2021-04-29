@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.OrderJSON;
+import de.kfzteile24.salesOrderHub.dto.SalesOrderInfo;
 import de.kfzteile24.salesOrderHub.dto.order.LogisticalUnits;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
@@ -104,6 +105,13 @@ public class SalesOrderUtil {
             .originalOrder(orderJson)
             .latestJson(orderJson)
             .build();
+    }
+
+    public static SalesOrderInfo getSalesOrderInfo(String rawMessage) {
+        return SalesOrderInfo.builder()
+                .recurringOrder(Boolean.TRUE)
+                .order(SalesOrderUtil.getOrderJson(rawMessage))
+                .build();
     }
 
     @SneakyThrows(JsonProcessingException.class)
