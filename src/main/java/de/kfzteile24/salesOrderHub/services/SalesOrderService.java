@@ -51,9 +51,9 @@ public class SalesOrderService {
     public ResponseEntity<String> cancelOrder(String orderNumber) {
         final Optional<SalesOrder> orderOptional = this.getOrderByOrderNumber(orderNumber);
         if (orderOptional.isPresent()) {
-            if (helper.checkIfProcessExists(orderNumber)) {
+            if (helper.checkIfActiveProcessExists(orderNumber)) {
                 sendMessageForOrderCancellation(orderNumber);
-                if (!helper.checkIfProcessExists(orderNumber)) {
+                if (!helper.checkIfActiveProcessExists(orderNumber)) {
                     return ResponseEntity.ok().build();
                 } else {
                     return new ResponseEntity<>("The order was found but could not cancelled, because the order rows are already in progress.", HttpStatus.CONFLICT);
