@@ -1,7 +1,13 @@
 package de.kfzteile24.salesOrderHub.dto.order;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import de.kfzteile24.salesOrderHub.dto.order.rows.*;
+import de.kfzteile24.salesOrderHub.dto.order.rows.Creator;
+import de.kfzteile24.salesOrderHub.dto.order.rows.Item;
+import de.kfzteile24.salesOrderHub.dto.order.rows.ItemInformation;
+import de.kfzteile24.salesOrderHub.dto.order.rows.ItemNumbers;
+import de.kfzteile24.salesOrderHub.dto.order.rows.ItemRules;
+import de.kfzteile24.salesOrderHub.dto.order.rows.PartIdentificationProperties;
+import de.kfzteile24.salesOrderHub.dto.order.rows.SumValues;
+import de.kfzteile24.salesOrderHub.dto.order.rows.UnitValues;
 import de.kfzteile24.salesOrderHub.dto.order.total.Taxes;
 import lombok.Data;
 
@@ -21,6 +27,6 @@ public class Rows {
     Creator creator;
     Taxes tax;
     SumValues sumValues;
-    @JsonProperty("unit_values")
-    List<SumValues> items;
+    UnitValues unitValues;
+    List<Item> items;
 }
