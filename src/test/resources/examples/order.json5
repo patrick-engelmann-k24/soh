@@ -469,6 +469,10 @@
         "rrp_gross": 0.0,
         // Recommended sales price_net (UVP)
         "rrp_net": 0.0,
+        "discount_net": 0.0,
+        "discount_gross": 0.0,
+        "discounted_net": 0.0,
+        "discounted_gross": 0.0,
         "exchange_part_value_gross" : 0.0,
         "exchange_part_value_net" : 0.0,
 
