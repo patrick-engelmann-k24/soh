@@ -26,6 +26,7 @@ cloud:
     stack:
       auto: false
 
+
 #AWS
 soh:
   sns:
@@ -47,6 +48,11 @@ soh:
       orderItemTrackingIdReceived: ${soh_sqs_order_item_tracking_id_received}
       orderItemTourStarted: ${soh_sqs_order_item_tour_started}
       invoicesFromCore: ${soh_sqs_invoices_from_core}
+  aws:
+    config:
+      maxNumberOfMessages: 10
+      waitTimeOut: 10
+
 
 #
 # Camunda BPM configuration
