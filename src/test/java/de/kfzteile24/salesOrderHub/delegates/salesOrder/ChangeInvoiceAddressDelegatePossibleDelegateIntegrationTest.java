@@ -13,6 +13,7 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMetho
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.dto.order.customer.Address;
+import de.kfzteile24.salesOrderHub.helper.AuditLogUtil;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
@@ -31,6 +32,8 @@ import java.util.List;
 import java.util.Map;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.INVOICE_ADDRESS_CHANGED;
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
 import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -64,6 +67,9 @@ public class ChangeInvoiceAddressDelegatePossibleDelegateIntegrationTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private AuditLogUtil auditLogUtil;
 
     @BeforeEach
     public void setUp() {
@@ -114,6 +120,9 @@ public class ChangeInvoiceAddressDelegatePossibleDelegateIntegrationTest {
         assertNotEquals(updatedOrderOpt.get().getOriginalOrder(), updatedOrderOpt.get().getLatestJson());
 
         finishOrderProcess(orderProcess, orderNumber);
+
+        auditLogUtil.assertAuditLogExists(testOrder.getId(), ORDER_CREATED);
+        auditLogUtil.assertAuditLogExists(testOrder.getId(), INVOICE_ADDRESS_CHANGED);
     }
 
     @Test
@@ -157,6 +166,8 @@ public class ChangeInvoiceAddressDelegatePossibleDelegateIntegrationTest {
         assertThat(orderProcess).hasNotPassed(util._N(Events.END_MSG_INVOICE_ADDRESS_CHANGED));
 
         finishOrderProcess(orderProcess, orderNumber);
+        auditLogUtil.assertAuditLogExists(testOrder.getId(), ORDER_CREATED);
+        auditLogUtil.assertAuditLogDoesNotExist(testOrder.getId(), INVOICE_ADDRESS_CHANGED);
 
     }
 

@@ -12,8 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.aws.messaging.core.NotificationMessagingTemplate;
 import org.springframework.stereotype.Service;
 
-import java.text.MessageFormat;
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -53,17 +51,16 @@ public class SnsPublishService {
     }
 
     @SneakyThrows({JsonProcessingException.class})
-    void sendOrder(String topic, String subject, String orderNumber) throws Exception {
+    void sendOrder(String topic, String subject, String orderNumber) {
         final var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
-                .orElseThrow(() -> new SalesOrderNotFoundException(MessageFormat.format(
-                        "Sales order not found for the given order number {0} ", orderNumber)));
+                .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
 
         final var salesOrderInfo = SalesOrderInfo.builder()
                 .order(salesOrder.getLatestJson())
                 .recurringOrder(salesOrder.isRecurringOrder())
                 .build();
 
-        log.info("Publishing SNS-Topic: {} for order number{}", topic, orderNumber);
+        log.info("Publishing SNS-Topic: {} for order number {}", topic, orderNumber);
         notificationMessagingTemplate.sendNotification(topic,
                 objectMapper.writeValueAsString(
                         salesOrderInfo),
