@@ -12,6 +12,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.HashSet;
 
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.INVOICE_RECEIVED;
+
 @Component
 @Log
 @RequiredArgsConstructor
@@ -37,7 +39,7 @@ public class SaveInvoiceDelegate implements JavaDelegate {
                 salesOrder.setSalesOrderInvoiceList(new HashSet<>());
             }
             salesOrder.getSalesOrderInvoiceList().add(invoice);
-            salesOrderService.save(salesOrder);
+            salesOrderService.save(salesOrder, INVOICE_RECEIVED);
         }
     }
 

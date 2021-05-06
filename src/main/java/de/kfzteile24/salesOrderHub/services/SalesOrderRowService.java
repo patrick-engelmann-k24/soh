@@ -64,7 +64,7 @@ public class SalesOrderRowService {
                 log.debug("More then one instances found " + String.valueOf(queryResult.size()));
             }
             return ResponseEntity.notFound().build();
-        } else if (helper.checkIfProcessExists(orderNumber)) {
+        } else if (helper.checkIfActiveProcessExists(orderNumber)) {
             return ResponseEntity.notFound().build();
         } else {
             return ResponseEntity.notFound().build();

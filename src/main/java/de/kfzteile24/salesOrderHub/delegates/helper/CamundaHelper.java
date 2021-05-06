@@ -1,16 +1,7 @@
 package de.kfzteile24.salesOrderHub.delegates.helper;
 
-import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.*;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.*;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.*;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.*;
-
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 import org.camunda.bpm.engine.HistoryService;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.history.HistoricActivityInstance;
@@ -19,6 +10,23 @@ import org.camunda.bpm.engine.runtime.Execution;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.RECURRING;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.CUSTOMER_TYPE;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROWS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.PAYMENT_TYPE;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SHIPMENT_METHOD;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.DELIVERY_ADDRESS_CHANGE_POSSIBLE;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.ORDER_ROW_ID;
 
 @Component
 public class CamundaHelper {
@@ -96,7 +104,13 @@ public class CamundaHelper {
         return !result;
     }
 
-    public boolean checkIfProcessExists(String orderNumber) {
+    /**
+     * Test if an active process instance for the given order number exists.
+     *
+     * @param orderNumber the order number to test
+     * @return true if an active process instance with the given order number exists false otherwise
+     */
+    public boolean checkIfActiveProcessExists(String orderNumber) {
         var result = runtimeService.createProcessInstanceQuery()
                                            .processDefinitionKey(SALES_ORDER_PROCESS.getName())
                                            .processInstanceBusinessKey(orderNumber)

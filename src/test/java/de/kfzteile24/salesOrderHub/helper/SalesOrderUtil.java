@@ -2,12 +2,11 @@ package de.kfzteile24.salesOrderHub.helper;
 
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.OrderJSON;
+import de.kfzteile24.salesOrderHub.dto.SalesOrderInfo;
 import de.kfzteile24.salesOrderHub.dto.order.LogisticalUnits;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
@@ -27,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -65,7 +65,7 @@ public class SalesOrderUtil {
         assertEquals(1, logisticalUnits.size());
 
         testOrder.setSalesOrderInvoiceList(new HashSet<>());
-        salesOrderService.save(testOrder);
+        salesOrderService.save(testOrder, ORDER_CREATED);
         return testOrder;
     }
 
@@ -97,7 +97,7 @@ public class SalesOrderUtil {
     public static SalesOrder getSalesOrder(String rawMessage){
         final var orderJson = getOrderJson(rawMessage);
         return SalesOrder.builder()
-            .orderNumber("514000018")
+            .orderNumber("514000016")
             .salesChannel("www-k24-at")
             .customerEmail("test@kfzteile24.de")
             .recurringOrder(Boolean.TRUE)
@@ -106,13 +106,17 @@ public class SalesOrderUtil {
             .build();
     }
 
+    public static SalesOrderInfo getSalesOrderInfo(String rawMessage) {
+        return SalesOrderInfo.builder()
+                .recurringOrder(Boolean.TRUE)
+                .order(SalesOrderUtil.getOrderJson(rawMessage))
+                .build();
+    }
+  
     @SneakyThrows(JsonProcessingException.class)
     public static OrderJSON getOrderJson(String rawMessage){
         ObjectMapper mapper = new ObjectMapperConfig().objectMapper();
         final var sqsMessage = mapper.readValue(rawMessage, SqsMessage.class);
-        mapper.setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
-        mapper.enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         return mapper.readValue(sqsMessage.getBody(), OrderJSON.class);
     }
 }

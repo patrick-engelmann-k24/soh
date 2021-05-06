@@ -12,7 +12,6 @@ import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
 import de.kfzteile24.salesOrderHub.dto.sns.FulfillmentMessage;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
-import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -25,6 +24,7 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_ECP;
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
 import static org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy.ON_SUCCESS;
 
 @Service
@@ -36,7 +36,6 @@ public class SqsReceiveService {
     @NonNull private final SalesOrderService salesOrderService;
     @NonNull private final CamundaHelper camundaHelper;
     @NonNull private final ObjectMapper objectMapper;
-    @NonNull private final SalesOrderRepository salesOrderRepository;
 
     /**
      * Consume sqs for new orders from ecp shop
@@ -52,23 +51,23 @@ public class SqsReceiveService {
         String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
         OrderJSON orderJSON = objectMapper.readValue(body, OrderJSON.class);
         final SalesOrder salesOrder = SalesOrder.builder()
-                                                    .orderNumber(orderJSON.getOrderHeader()
-                                                        .getOrderNumber())
-                                                    .salesChannel(orderJSON.getOrderHeader()
-                                                        .getOrigin()
-                                                        .getSalesChannel())
-                                                    .customerEmail(orderJSON.getOrderHeader()
-                                                        .getCustomer()
-                                                        .getCustomerEmail())
-                                                    .originalOrder(orderJSON)
-                                                    .latestJson(orderJSON)
-                                                    .build();
+                .orderNumber(orderJSON.getOrderHeader()
+                    .getOrderNumber())
+                .salesChannel(orderJSON.getOrderHeader()
+                    .getOrigin()
+                    .getSalesChannel())
+                .customerEmail(orderJSON.getOrderHeader()
+                    .getCustomer()
+                    .getCustomerEmail())
+                .originalOrder(orderJSON)
+                .latestJson(orderJSON)
+                .build();
 
-        boolean isRecurringOrder = isRecurringOrder(salesOrder);
+        boolean isRecurringOrder = salesOrderService.isRecurringOrder(salesOrder);
         if(isRecurringOrder){
             salesOrder.setRecurringOrder(true);
         }
-        salesOrderService.save(salesOrder);
+        salesOrderService.save(salesOrder, ORDER_CREATED);
         ProcessInstance result = camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
 
         if (result != null) {
@@ -340,15 +339,4 @@ public class SqsReceiveService {
 
         return result;
     }
-
-    /**
-     * checks if there is any order in the past for this customer. If yes then sets the status
-     * of the order to recurring.
-     * @param salesOrder
-     */
-    private boolean isRecurringOrder(SalesOrder salesOrder){
-        var salesOrders = salesOrderRepository.countByCustomerEmail(salesOrder.getCustomerEmail());
-        return salesOrders > 0;
-    }
-
 }

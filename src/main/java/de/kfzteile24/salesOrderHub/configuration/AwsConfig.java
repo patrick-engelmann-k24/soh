@@ -41,6 +41,12 @@ public class AwsConfig {
     @Value("${cloud.aws.region.static}")
     protected String awsRegion;
 
+    @Value("${soh.aws.config.maxNumberOfMessages}")
+    protected Integer maxNumberOfMessages;
+
+    @Value("${soh.aws.config.waitTimeOut}")
+    protected Integer waitTimeOut;
+
     @Bean
     public NotificationMessagingTemplate notificationMessagingTemplate(AmazonSNS amazonSns) {
         return new NotificationMessagingTemplate(amazonSns);
@@ -116,8 +122,8 @@ public class AwsConfig {
     public SimpleMessageListenerContainerFactory simpleMessageListenerContainerFactory(AmazonSQSAsync amazonSqs) {
         SimpleMessageListenerContainerFactory factory = new SimpleMessageListenerContainerFactory();
         factory.setAmazonSqs(amazonSqs);
-        factory.setMaxNumberOfMessages(10);
-        factory.setWaitTimeOut(10);
+        factory.setMaxNumberOfMessages(maxNumberOfMessages);
+        factory.setWaitTimeOut(waitTimeOut);
         return factory;
     }
 }

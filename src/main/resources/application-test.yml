@@ -37,6 +37,10 @@ soh:
       orderItemPackingStarted:      http://localhost:4566/000000000000/soh-order-item-packing-started-queue
       orderItemTrackingIdReceived:  http://localhost:4566/000000000000/soh-order-item-tracking-id-received-queue
       orderItemTourStarted:         http://localhost:4566/000000000000/soh-order-item-tour-started-queue
+  aws:
+    config:
+      maxNumberOfMessages: 10
+      waitTimeOut: 10
 
 cloud:
   aws:

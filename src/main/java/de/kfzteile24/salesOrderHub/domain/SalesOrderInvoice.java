@@ -1,12 +1,20 @@
 package de.kfzteile24.salesOrderHub.domain;
 
-import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import javax.persistence.*;
-import java.time.LocalDateTime;
+import javax.persistence.Basic;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.EntityListeners;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.Table;
 
 @Entity
 @Table(name = "sales_order_invoice", schema = "public", catalog = "soh")
@@ -36,13 +44,4 @@ public class SalesOrderInvoice extends AbstractBaseEntity {
     @Column(name = "customer_access_token")
     private String customerAccessToken;
 
-    @Basic
-    @Column(name = "created_at", nullable = false, updatable = false)
-    @CreatedDate
-    private LocalDateTime createdAt;
-
-    @Basic
-    @Column(name = "updated_at", nullable = false)
-    @LastModifiedDate
-    private LocalDateTime updatedAt;
 }

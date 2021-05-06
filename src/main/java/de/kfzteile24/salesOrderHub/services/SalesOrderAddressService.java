@@ -39,7 +39,7 @@ public class SalesOrderAddressService {
     public ResponseEntity<String> updateBillingAddress(final String orderNumber, final Address newBillingAddress) {
         final Optional<SalesOrder> soOpt = orderRepository.getOrderByOrderNumber(orderNumber);
         if (soOpt.isPresent()) {
-            if (helper.checkIfProcessExists(orderNumber)) {
+            if (helper.checkIfActiveProcessExists(orderNumber)) {
                 sendMessageForUpdateBillingAddress(orderNumber, newBillingAddress);
                 final var newOrder = orderRepository.getOrderByOrderNumber(orderNumber);
                 if (newOrder.isPresent()) {
@@ -80,7 +80,7 @@ public class SalesOrderAddressService {
                     return new ResponseEntity<>("The order was found but could not changed the deliver address, because the state was not good.", HttpStatus.CONFLICT);
                 }
 
-            } else if (helper.checkIfProcessExists(orderNumber)) {
+            } else if (helper.checkIfActiveProcessExists(orderNumber)) {
                 // todo change main delivery address (order lvl)
 
             } else {

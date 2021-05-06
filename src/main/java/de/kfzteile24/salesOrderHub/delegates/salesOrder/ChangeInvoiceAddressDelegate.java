@@ -3,13 +3,15 @@ package de.kfzteile24.salesOrderHub.delegates.salesOrder;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
-import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.order.customer.Address;
-import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
+import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
+import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import lombok.RequiredArgsConstructor;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.JavaDelegate;
 import org.springframework.stereotype.Component;
+
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.INVOICE_ADDRESS_CHANGED;
 
 @Component
 @RequiredArgsConstructor
@@ -17,7 +19,7 @@ public class ChangeInvoiceAddressDelegate implements JavaDelegate {
 
     private final ObjectMapper objectMapper;
 
-    private final SalesOrderRepository orderRepository;
+    private final SalesOrderService salesOrderService;
 
     @Override
     public void execute(DelegateExecution delegateExecution) throws JsonProcessingException {
@@ -25,13 +27,10 @@ public class ChangeInvoiceAddressDelegate implements JavaDelegate {
         var orderNumber = (String)delegateExecution.getVariable(Variables.ORDER_NUMBER.getName());
         final Address address = objectMapper.readValue(newAddressStr, Address.class);
 
-        var salesOrderOptional = orderRepository.getOrderByOrderNumber(orderNumber);
+        var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
+                .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
 
-        if (salesOrderOptional.isPresent()) {
-            final SalesOrder salesOrder = salesOrderOptional.get();
-            salesOrder.getLatestJson().getOrderHeader().setBillingAddress(address);
-            orderRepository.save(salesOrder);
-        }
-
+        salesOrder.getLatestJson().getOrderHeader().setBillingAddress(address);
+        salesOrderService.save(salesOrder, INVOICE_ADDRESS_CHANGED);
     }
 }
