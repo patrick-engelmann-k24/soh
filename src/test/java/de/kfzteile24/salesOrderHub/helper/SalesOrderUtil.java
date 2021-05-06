@@ -112,7 +112,7 @@ public class SalesOrderUtil {
                 .order(SalesOrderUtil.getOrderJson(rawMessage))
                 .build();
     }
-
+  
     @SneakyThrows(JsonProcessingException.class)
     public static OrderJSON getOrderJson(String rawMessage){
         ObjectMapper mapper = new ObjectMapperConfig().objectMapper();

@@ -69,7 +69,7 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
 
     @Autowired
     private ObjectMapper objectMapper;
-
+    
     @Autowired
     private AuditLogUtil auditLogUtil;
 

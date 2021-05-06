@@ -339,5 +339,4 @@ public class SqsReceiveService {
 
         return result;
     }
-
 }
