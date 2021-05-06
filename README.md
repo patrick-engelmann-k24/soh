@@ -122,6 +122,9 @@ SPRING_PROFILES_ACTIVE=local
 
 ## Documentation
 
+### Terraform
+Please follow the steps described in this guide to set up Terraform: [Terraform Setup](https://kfzteile24.atlassian.net/wiki/spaces/IT/pages/2595782861/Terraform+Setup)
+
 ### Architecture
 
 ![Architecture_pic](doc/img/Architecture_pic_soh_business_process_engine.png)
