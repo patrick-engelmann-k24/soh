@@ -4,7 +4,7 @@ import lombok.Data;
 
 @Data
 public class Taxes {
-    String type;
-    String value;
-    String rate;
+    private String type;
+    private String value;
+    private String rate;
 }

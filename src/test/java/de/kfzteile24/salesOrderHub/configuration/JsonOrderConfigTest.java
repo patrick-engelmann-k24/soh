@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @Import(ObjectMapperConfig.class)
 public class JsonOrderConfigTest {
     @Autowired
-    ObjectMapper objectMapper;
+    private ObjectMapper objectMapper;
 
     @Test
     @SneakyThrows(JsonProcessingException.class)
@@ -74,14 +74,14 @@ public class JsonOrderConfigTest {
     @Test
     public void jsonToLocalDateTime() {
         // ISO_LOCAL_DATE_TIME
-        testDateString("2020-12-18T11:47:25.682190");
-        testDateString("2020-12-18T11:47:25");
+        assertDateString("2020-12-18T11:47:25.682190");
+        assertDateString("2020-12-18T11:47:25");
 
         // ISO_ZONED_DATE_TIME
-        testDateString("2020-12-18T11:47:25+01:00");
+        assertDateString("2020-12-18T11:47:25+01:00");
         // RabbitMQ from fulfillment (ISO_ZONED_DATE_TIME)
-        testDateString("2021-01-14T10:03:11.4588345+01:00");
-        testDateString("2020-10-26T09:51:11.652Z");
+        assertDateString("2021-01-14T10:03:11.4588345+01:00");
+        assertDateString("2020-10-26T09:51:11.652Z");
     }
 
     @Test
@@ -92,7 +92,7 @@ public class JsonOrderConfigTest {
         assertEquals("\"2020-10-26T09:51:11Z\"", serializedTime);
     }
 
-    private void testDateString(final String dateString ) {
+    private void assertDateString(final String dateString ) {
         final String jsonString = "{\"created_at\":\"" + dateString + "\"}";
         final CoreDataReaderEvent event = testJsonDecodeForDateTime(jsonString);
 

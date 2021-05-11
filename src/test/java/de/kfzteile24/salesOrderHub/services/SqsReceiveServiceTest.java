@@ -35,6 +35,7 @@ import static org.mockito.Mockito.when;
  */
 
 @ExtendWith(MockitoExtension.class)
+@SuppressWarnings("PMD.UnusedPrivateField")
 public class SqsReceiveServiceTest {
 
   @Spy
@@ -46,7 +47,7 @@ public class SqsReceiveServiceTest {
   @Mock
   private CamundaHelper camundaHelper;
   @Captor
-  ArgumentCaptor<SalesOrder> salesOrderArgumentCaptor;
+  private ArgumentCaptor<SalesOrder> salesOrderArgumentCaptor;
   @InjectMocks
   private SqsReceiveService sqsReceiveService;
 

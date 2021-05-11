@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class Item {
-    String rowKey;
-    Number quantity;
+    private String rowKey;
+    private Number quantity;
 }

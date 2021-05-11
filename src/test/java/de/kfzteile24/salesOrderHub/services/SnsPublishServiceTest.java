@@ -46,7 +46,7 @@ public class SnsPublishServiceTest {
     private AwsSnsConfig awsSnsConfig;
 
     @Captor
-    ArgumentCaptor<String> salesOrderArgumentCaptor;
+    private ArgumentCaptor<String> salesOrderArgumentCaptor;
 
     @InjectMocks
     private SnsPublishService snsPublishService;
@@ -226,12 +226,12 @@ public class SnsPublishServiceTest {
         void accept(String t) throws Exception;
     }
 
-    static Consumer<String> throwingConsumerWrapper(ThrowingConsumer throwingConsumer) {
+    private static Consumer<String> throwingConsumerWrapper(ThrowingConsumer throwingConsumer) {
         return orderNumber -> {
             try {
                 throwingConsumer.accept(orderNumber);
             } catch (Exception ex) {
-                throw new RuntimeException(ex);
+                throw new IllegalStateException(ex);
             }
         };
     }

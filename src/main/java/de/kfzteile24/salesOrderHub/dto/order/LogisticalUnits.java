@@ -8,20 +8,20 @@ import java.util.List;
 
 @Data
 public class LogisticalUnits {
-    String shippingAddressKey;
-    String contactSalutation;
-    String contactFirstName;
-    String contactLastName;
-    String contactPhoneName;
-    String contactEmail;
-    String customerComment;
-    SelfPickup selfPickup;
-    String shippingAdvice;
-    String shippingProvider;
-    String ShippingType;
-    String expectedDeliveryDate;
-    String expectedDeliveryMessage;
-    String trackingNumber;
-    String trackingLink;
-    List<Item> logisticalItems;
+    private String shippingAddressKey;
+    private String contactSalutation;
+    private String contactFirstName;
+    private String contactLastName;
+    private String contactPhoneName;
+    private String contactEmail;
+    private String customerComment;
+    private SelfPickup selfPickup;
+    private String shippingAdvice;
+    private String shippingProvider;
+    private String ShippingType;
+    private String expectedDeliveryDate;
+    private String expectedDeliveryMessage;
+    private String trackingNumber;
+    private String trackingLink;
+    private List<Item> logisticalItems;
 }

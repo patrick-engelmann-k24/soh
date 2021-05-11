@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class SelfPickup {
-    String storeLocationCode;
-    String storeLocationName;
+    private String storeLocationCode;
+    private String storeLocationName;
 }

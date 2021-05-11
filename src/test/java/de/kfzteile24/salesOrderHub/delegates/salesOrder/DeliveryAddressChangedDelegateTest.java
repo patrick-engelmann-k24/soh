@@ -23,7 +23,7 @@ class DeliveryAddressChangedDelegateTest {
     private DeliveryAddressChangedDelegate deliveryAddressChangedDelegate;
 
     @Mock
-    DelegateExecution delegateExecution;
+    private DelegateExecution delegateExecution;
 
     @Test
     @SneakyThrows(Exception.class)

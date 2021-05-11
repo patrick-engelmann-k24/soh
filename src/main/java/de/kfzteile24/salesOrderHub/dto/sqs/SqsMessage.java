@@ -8,14 +8,14 @@ import lombok.Data;
 @Data
 @JsonNaming(value = PropertyNamingStrategy.UpperCamelCaseStrategy.class)
 public class SqsMessage {
-    String type;
-    String messageId;
-    String topicArn;
+    private String type;
+    private String messageId;
+    private String topicArn;
     @JsonProperty("Message")
-    String body;
-    String timestamp;
-    String signatureVersion;
-    String signature;
-    String signingCertURL;
-    String unsubscribeURL;
+    private String body;
+    private String timestamp;
+    private String signatureVersion;
+    private String signature;
+    private String signingCertURL;
+    private String unsubscribeURL;
 }

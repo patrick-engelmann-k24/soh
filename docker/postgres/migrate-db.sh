@@ -9,8 +9,6 @@
 # set -x # print commands for debugging purposes
 echo "Performing database update"
 
-MVN_BASEDIR="$(cd "`dirname "$0"`" ; pwd)"
-
 function _checkFlyWayEnvVars {
     if [ -z ${FLYWAY_URL} ]
     then

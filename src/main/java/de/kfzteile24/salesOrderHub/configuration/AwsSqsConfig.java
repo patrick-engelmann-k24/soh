@@ -9,5 +9,5 @@ import org.springframework.stereotype.Component;
 public class AwsSqsConfig {
 
     @Value("${soh.sqs.queue.ecpShopOrders}")
-    String sqsEcpShopOrders;
+    private String sqsEcpShopOrders;
 }

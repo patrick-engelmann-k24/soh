@@ -9,12 +9,13 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
 import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.MessageCorrelationBuilder;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.FileReader;
@@ -28,13 +29,14 @@ import java.util.Random;
 import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
 
 @Component
+@RequiredArgsConstructor
 public class BpmUtil {
 
-    @Autowired
-    RuntimeService runtimeService;
+    @NonNull
+    private final RuntimeService runtimeService;
 
-    @Autowired
-    ObjectMapper objectMapper;
+    @NonNull
+    private final ObjectMapper objectMapper;
 
     public final List<MessageCorrelationResult> sendMessage(BpmItem message, String orderNumber) {
         return this.sendMessage(_N(message), orderNumber);

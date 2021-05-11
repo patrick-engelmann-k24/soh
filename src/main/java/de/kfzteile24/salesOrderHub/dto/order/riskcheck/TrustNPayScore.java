@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class TrustNPayScore {
-    String communicationToken;
-    String result;
+    private String communicationToken;
+    private String result;
 }

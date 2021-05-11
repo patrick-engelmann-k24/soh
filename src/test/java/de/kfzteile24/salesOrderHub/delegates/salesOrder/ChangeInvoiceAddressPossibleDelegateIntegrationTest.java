@@ -47,7 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 )
 public class ChangeInvoiceAddressPossibleDelegateIntegrationTest {
     @Autowired
-    public ProcessEngine processEngine;
+    private ProcessEngine processEngine;
 
     @Autowired
     private RuntimeService runtimeService;

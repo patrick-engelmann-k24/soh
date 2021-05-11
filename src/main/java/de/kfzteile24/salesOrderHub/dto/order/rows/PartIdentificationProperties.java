@@ -4,10 +4,10 @@ import lombok.Data;
 
 @Data
 public class PartIdentificationProperties {
-    String carTypeNumber;
-    String prNumber;
-    String oeNumber;
-    String carSelectionType;
-    String hsn;
-    String tsn;
+    private String carTypeNumber;
+    private String prNumber;
+    private String oeNumber;
+    private String carSelectionType;
+    private String hsn;
+    private String tsn;
 }

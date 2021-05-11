@@ -10,8 +10,9 @@ import de.kfzteile24.salesOrderHub.dto.SalesOrderInfo;
 import de.kfzteile24.salesOrderHub.dto.order.LogisticalUnits;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
@@ -31,16 +32,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @Component
+@RequiredArgsConstructor
 public class SalesOrderUtil {
 
-    @Autowired
-    SalesOrderService salesOrderService;
+    @NonNull
+    private final SalesOrderService salesOrderService;
 
-    @Autowired
-    BpmUtil bpmUtil;
+    @NonNull
+    private final BpmUtil bpmUtil;
 
-    @Autowired
-    ObjectMapper objectMapper;
+    @NonNull
+    private final ObjectMapper objectMapper;
 
     @SneakyThrows(JsonProcessingException.class)
     public SalesOrder createNewSalesOrder() {
@@ -53,7 +55,7 @@ public class SalesOrderUtil {
         OrderJSON orderJSON = objectMapper.readValue(sqsMessage.getBody(), OrderJSON.class);
         orderJSON.getOrderHeader().setOrderNumber(bpmUtil.getRandomOrderNumber());
 
-        final SalesOrder testOrder = de.kfzteile24.salesOrderHub.domain.SalesOrder.builder()
+        final SalesOrder testOrder = SalesOrder.builder()
                 .orderNumber(orderJSON.getOrderHeader().getOrderNumber())
                 .salesChannel(orderJSON.getOrderHeader().getOrigin().getSalesChannel())
                 .originalOrder(orderJSON)

@@ -4,8 +4,8 @@ import lombok.Data;
 
 @Data
 public class Shipping {
-    String standard;
-    String express;
-    String bulkyGoods;
-    String dangerousGoods;
+    private String standard;
+    private String express;
+    private String bulkyGoods;
+    private String dangerousGoods;
 }

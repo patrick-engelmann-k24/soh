@@ -22,7 +22,7 @@ class OrderCancelledDelegateTest {
     private OrderCancelledDelegate orderCancelledDelegate;
 
     @Mock
-    DelegateExecution delegateExecution;
+    private DelegateExecution delegateExecution;
 
     @Test
     @SneakyThrows(Exception.class)

@@ -9,20 +9,20 @@ import org.springframework.stereotype.Component;
 public class AwsSnsConfig {
 
     @Value("${soh.sns.topic.orderCreated}")
-    String snsOrderCreatedTopic;
+    private String snsOrderCreatedTopic;
 
     @Value("${soh.sns.topic.orderCompleted}")
-    String snsOrderCompletedTopic;
+    private String snsOrderCompletedTopic;
 
     @Value("${soh.sns.topic.orderCancelled}")
-    String snsOrderCancelledTopic;
+    private String snsOrderCancelledTopic;
 
     @Value("${soh.sns.topic.orderItemCancelled}")
-    String snsOrderItemCancelledTopic;
+    private String snsOrderItemCancelledTopic;
 
     @Value("${soh.sns.topic.invoiceAddressChanged}")
-    String snsInvoiceAddressChangedTopic;
+    private String snsInvoiceAddressChangedTopic;
 
     @Value("${soh.sns.topic.deliveryAddressChanged}")
-    String snsDeliveryAddressChanged;
+    private String snsDeliveryAddressChanged;
 }

@@ -3,7 +3,6 @@ package de.kfzteile24.salesOrderHub.delegates.salesOrder;
 import de.kfzteile24.salesOrderHub.SalesOrderHubProcessApplication;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
@@ -57,7 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 )
 public class SaveInvoiceDelegateIntegrationTest {
     @Autowired
-    public ProcessEngine processEngine;
+    private ProcessEngine processEngine;
 
     @Autowired
     private RuntimeService runtimeService;
@@ -250,7 +249,7 @@ public class SaveInvoiceDelegateIntegrationTest {
         processVariables.put(util._N(ORDER_NUMBER), orderNumber);
 
         return runtimeService.createMessageCorrelation(util._N(INVOICE_CREATED))
-                             .processInstanceVariableEquals(util._N(Variables.ORDER_NUMBER), orderNumber)
+                             .processInstanceVariableEquals(util._N(ORDER_NUMBER), orderNumber)
                              .setVariables(processVariables)
                              .correlateWithResult()
                              .getProcessInstance();
