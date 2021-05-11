@@ -3,18 +3,21 @@ package de.kfzteile24.salesOrderHub.delegates.salesOrder;
 import de.kfzteile24.salesOrderHub.SalesOrderHubProcessApplication;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.helper.AuditLogUtil;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
+import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +34,6 @@ import java.util.Map;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.INVOICE_CREATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_MARKETPLACE;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_PAYMENT_SECURED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.INVOICE_URL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROWS;
@@ -39,10 +41,6 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.PAYMENT_TYPE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SHIPMENT_METHOD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.PACKING_STARTED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.ROW_SHIPPED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.ROW_TRANSMITTED_TO_LOGISTICS;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.TRACKING_ID_RECEIVED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.INVOICE_RECEIVED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
 import static java.util.Collections.singletonList;
@@ -74,6 +72,9 @@ public class SaveInvoiceDelegateIntegrationTest {
     private SalesOrderInvoiceRepository salesOrderInvoiceRepository;
 
     @Autowired
+    private AuditLogRepository auditLogRepository;
+
+    @Autowired
     private SalesOrderUtil salesOrderUtil;
 
     @Autowired
@@ -89,9 +90,13 @@ public class SaveInvoiceDelegateIntegrationTest {
 
     @Test
     public void testInvoiceIsStoredCorrectlyWithSubsequentInvoice() {
-        final SalesOrder testOrder = salesOrderUtil.createNewSalesOrder();
-        final ProcessInstance orderProcess = createOrderProcess(testOrder);
-        final String orderNumber = testOrder.getOrderNumber();
+        final var testOrder = salesOrderUtil.createNewSalesOrder();
+        final var orderProcess = createOrderProcess(testOrder);
+        final var orderNumber = testOrder.getOrderNumber();
+
+        final var expectedInvoice = createSalesOrderInvoice(orderNumber, false);
+
+        var firstInvoiceProcess = createSaveInvoiceProcess(orderNumber, expectedInvoice);
 
         try {
             Thread.sleep(400);
@@ -99,26 +104,86 @@ public class SaveInvoiceDelegateIntegrationTest {
             e.printStackTrace();
         }
 
-        final var expectedInvoice = createSalesOrderInvoice(orderNumber, false);
-        util.sendMessage(INVOICE_CREATED.getName(), orderNumber,
-                Map.of(INVOICE_URL.getName(), expectedInvoice.getUrl()));
-
         assertInvoices(orderNumber, singletonList(expectedInvoice));
+
+        assertThat(firstInvoiceProcess).isEnded()
+                                       .hasPassedInOrder(util._N(Events.START_MSG_INVOICE_CREATED),
+                                                         util._N(Activities.SAVE_INVOICE),
+                                                         util._N(Events.INVOICE_SAVED));
 
         // add a correction invoice
         final var expectedCorrectionInvoice = createSalesOrderInvoice(orderNumber, true);
-        util.sendMessage(INVOICE_CREATED.getName(), orderNumber,
-                Map.of(INVOICE_URL.getName(), expectedCorrectionInvoice.getUrl()));
+
+        var correctedInvoiceProcess = createSaveInvoiceProcess(orderNumber, expectedCorrectionInvoice);
+
+        try {
+            Thread.sleep(400);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
         assertInvoices(orderNumber, Arrays.asList(expectedInvoice, expectedCorrectionInvoice));
 
-        assertThat(orderProcess).hasPassedInOrder(
-                util._N(Events.START_MSG_INVOICE_CREATED),
-                util._N(Activities.SAVE_INVOICE),
-                util._N(Events.INVOICE_SAVED)
-        );
+        assertThat(correctedInvoiceProcess).isEnded()
+                                           .hasPassedInOrder(util._N(Events.START_MSG_INVOICE_CREATED),
+                                                             util._N(Activities.SAVE_INVOICE),
+                                                             util._N(Events.INVOICE_SAVED));
 
-        finishOrderProcess(orderProcess, orderNumber);
+
+        util.finishOrderProcess(orderProcess, orderNumber);
+
+        auditLogUtil.assertAuditLogExists(testOrder.getId(), ORDER_CREATED);
+        auditLogUtil.assertAuditLogExists(testOrder.getId(), INVOICE_RECEIVED, 2);
+    }
+
+    @Test
+    public void testInvoiceIsStoredCorrectlyWithSubsequentInvoiceAfterOrderProcessIsCompleted() {
+        final var testOrder = salesOrderUtil.createNewSalesOrder();
+        final var orderProcess = createOrderProcess(testOrder);
+        final var orderNumber = testOrder.getOrderNumber();
+
+        try {
+            Thread.sleep(400);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        util.finishOrderProcess(orderProcess, orderNumber);
+
+        final var expectedInvoice = createSalesOrderInvoice(orderNumber, false);
+
+        var firstInvoiceProcess = createSaveInvoiceProcess(orderNumber, expectedInvoice);
+
+        try {
+            Thread.sleep(400);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        assertInvoices(orderNumber, singletonList(expectedInvoice));
+
+        assertThat(firstInvoiceProcess).isEnded()
+                                       .hasPassedInOrder(util._N(Events.START_MSG_INVOICE_CREATED),
+                                                         util._N(Activities.SAVE_INVOICE),
+                                                         util._N(Events.INVOICE_SAVED));
+
+        // add a correction invoice
+        final var expectedCorrectionInvoice = createSalesOrderInvoice(orderNumber, true);
+
+        var correctedInvoiceProcess = createSaveInvoiceProcess(orderNumber, expectedCorrectionInvoice);
+
+        try {
+            Thread.sleep(400);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        assertInvoices(orderNumber, Arrays.asList(expectedInvoice, expectedCorrectionInvoice));
+
+        assertThat(correctedInvoiceProcess).isEnded()
+                                           .hasPassedInOrder(util._N(Events.START_MSG_INVOICE_CREATED),
+                                                             util._N(Activities.SAVE_INVOICE),
+                                                             util._N(Events.INVOICE_SAVED));
 
         auditLogUtil.assertAuditLogExists(testOrder.getId(), ORDER_CREATED);
         auditLogUtil.assertAuditLogExists(testOrder.getId(), INVOICE_RECEIVED, 2);
@@ -129,9 +194,9 @@ public class SaveInvoiceDelegateIntegrationTest {
         final var invoiceNumber = RandomStringUtils.randomNumeric(10);
         final var invoiceUrl = "s3://k24-invoices/www-k24-at/2020/08/12/" + orderNumber + sep + invoiceNumber + ".pdf";
         return SalesOrderInvoice.builder()
-                .invoiceNumber(invoiceNumber)
-                .url(invoiceUrl)
-                .build();
+                                .invoiceNumber(invoiceNumber)
+                                .url(invoiceUrl)
+                                .build();
     }
 
     private void assertInvoices(final String orderNumber, final List<SalesOrderInvoice> expectedInvoices) {
@@ -140,15 +205,15 @@ public class SaveInvoiceDelegateIntegrationTest {
             @Override
             protected void doInTransactionWithoutResult(TransactionStatus status) {
                 final var salesOrderOpt = salesOrderRepository.getOrderByOrderNumber(orderNumber);
-                assertTrue( salesOrderOpt.isPresent(), "Sales order not found");
+                assertTrue(salesOrderOpt.isPresent(), "Sales order not found");
                 final var salesOrder = salesOrderOpt.get();
                 assertEquals(expectedInvoices.size(),
-                    salesOrder.getSalesOrderInvoiceList().size());
+                             salesOrder.getSalesOrderInvoiceList().size());
 
-                expectedInvoices.forEach( expected -> {
+                expectedInvoices.forEach(expected -> {
                     final var actualOpt = salesOrder.getSalesOrderInvoiceList()
-                            .stream().filter(i -> i.getInvoiceNumber().equals(expected.getInvoiceNumber()))
-                            .findAny();
+                                                    .stream().filter(i -> i.getInvoiceNumber().equals(expected.getInvoiceNumber()))
+                                                    .findAny();
                     assertTrue(actualOpt.isPresent());
 
                     final var actual = actualOpt.get();
@@ -173,21 +238,28 @@ public class SaveInvoiceDelegateIntegrationTest {
         processVariables.put(util._N(ORDER_ROWS), orderItems);
 
         return runtimeService.createMessageCorrelation(util._N(ORDER_RECEIVED_MARKETPLACE))
-                .processInstanceBusinessKey(orderNumber)
-                .setVariables(processVariables)
-                .correlateWithResult().getProcessInstance();
+                             .processInstanceBusinessKey(orderNumber)
+                             .setVariables(processVariables)
+                             .correlateWithResult()
+                             .getProcessInstance();
     }
 
-    void finishOrderProcess(final ProcessInstance orderProcess, final String orderNumber) {
-        // start subprocess
-        util.sendMessage(util._N(ORDER_RECEIVED_PAYMENT_SECURED), orderNumber);
+    private ProcessInstance createSaveInvoiceProcess(String orderNumber, SalesOrderInvoice expectedInvoice) {
+        final Map<String, Object> processVariables = new HashMap<>();
+        processVariables.put(util._N(INVOICE_URL), expectedInvoice.getUrl());
+        processVariables.put(util._N(ORDER_NUMBER), orderNumber);
 
-        // send items thru
-        util.sendMessage(util._N(ROW_TRANSMITTED_TO_LOGISTICS), orderNumber);
-        util.sendMessage(util._N(PACKING_STARTED), orderNumber);
-        util.sendMessage(util._N(TRACKING_ID_RECEIVED), orderNumber);
-        util.sendMessage(util._N(ROW_SHIPPED), orderNumber);
+        return runtimeService.createMessageCorrelation(util._N(INVOICE_CREATED))
+                             .processInstanceVariableEquals(util._N(Variables.ORDER_NUMBER), orderNumber)
+                             .setVariables(processVariables)
+                             .correlateWithResult()
+                             .getProcessInstance();
+    }
 
-        assertThat(orderProcess).isEnded();
+    @AfterEach
+    public void cleanup() {
+        salesOrderInvoiceRepository.deleteAll();
+        salesOrderRepository.deleteAll();
+        auditLogRepository.deleteAll();
     }
 }

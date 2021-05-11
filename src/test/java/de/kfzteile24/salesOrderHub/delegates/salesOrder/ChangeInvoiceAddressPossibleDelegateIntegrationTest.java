@@ -8,7 +8,6 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Gateways;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
@@ -46,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
         classes = SalesOrderHubProcessApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.NONE
 )
-public class ChangeInvoiceAddressDelegatePossibleDelegateIntegrationTest {
+public class ChangeInvoiceAddressPossibleDelegateIntegrationTest {
     @Autowired
     public ProcessEngine processEngine;
 
@@ -119,7 +118,7 @@ public class ChangeInvoiceAddressDelegatePossibleDelegateIntegrationTest {
         assertEquals(updatedOrderOpt.get().getLatestJson().getOrderHeader().getBillingAddress(), newAddress);
         assertNotEquals(updatedOrderOpt.get().getOriginalOrder(), updatedOrderOpt.get().getLatestJson());
 
-        finishOrderProcess(orderProcess, orderNumber);
+        util.finishOrderProcess(orderProcess, orderNumber);
 
         auditLogUtil.assertAuditLogExists(testOrder.getId(), ORDER_CREATED);
         auditLogUtil.assertAuditLogExists(testOrder.getId(), INVOICE_ADDRESS_CHANGED);
@@ -165,7 +164,7 @@ public class ChangeInvoiceAddressDelegatePossibleDelegateIntegrationTest {
         );
         assertThat(orderProcess).hasNotPassed(util._N(Events.END_MSG_INVOICE_ADDRESS_CHANGED));
 
-        finishOrderProcess(orderProcess, orderNumber);
+        util.finishOrderProcess(orderProcess, orderNumber);
         auditLogUtil.assertAuditLogExists(testOrder.getId(), ORDER_CREATED);
         auditLogUtil.assertAuditLogDoesNotExist(testOrder.getId(), INVOICE_ADDRESS_CHANGED);
 
@@ -186,18 +185,5 @@ public class ChangeInvoiceAddressDelegatePossibleDelegateIntegrationTest {
                 .processInstanceBusinessKey(orderNumber)
                 .setVariables(processVariables)
                 .correlateWithResult().getProcessInstance();
-    }
-
-    void finishOrderProcess(final ProcessInstance orderProcess, final String orderNumber) {
-        // start subprocess
-        util.sendMessage(util._N(Messages.ORDER_RECEIVED_PAYMENT_SECURED), orderNumber);
-
-        // send items thru
-        util.sendMessage(util._N(RowMessages.ROW_TRANSMITTED_TO_LOGISTICS), orderNumber);
-        util.sendMessage(util._N(RowMessages.PACKING_STARTED), orderNumber);
-        util.sendMessage(util._N(RowMessages.TRACKING_ID_RECEIVED), orderNumber);
-        util.sendMessage(util._N(RowMessages.ROW_SHIPPED), orderNumber);
-
-        assertThat(orderProcess).isEnded();
     }
 }
