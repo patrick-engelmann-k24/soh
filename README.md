@@ -49,16 +49,16 @@ Finally you have to provide your [github credentials](https://github.com/setting
 ## Start the project
 ### Prerequisites
 These command line tools must be in your path:
-* curl
-* postgres-client
-* docker
-* docker-compose  
-* aws
+*   curl
+*   postgres-client
+*   docker
+*   docker-compose  
+*   aws
 
 Stop and remove all eventually existing localstack and postgres docker container.
 
 #### Additional configuration on Windows
-* Export the DOCKER_HOST environment variable in your Ubuntu subsystem with the correct
+*   Export the DOCKER_HOST environment variable in your Ubuntu subsystem with the correct
 URL to the exposed docker daemon on Windows, e.g.  
 ```export DOCKER_HOST=tcp://localhost:2375```
   

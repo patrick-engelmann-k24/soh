@@ -4,9 +4,9 @@ import lombok.Data;
 
 @Data
 public class Discount {
-    String discountName;
-    String displayName;
-    String discountCode;
-    String discountType;
-    String promotionIdentifier;
+    private String discountName;
+    private String displayName;
+    private String discountCode;
+    private String discountType;
+    private String promotionIdentifier;
 }

@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class RiskCheck {
-    TrustNPayScore trustNPayScore;
-    String levenshteinScore;
+    private TrustNPayScore trustNPayScore;
+    private String levenshteinScore;
 }

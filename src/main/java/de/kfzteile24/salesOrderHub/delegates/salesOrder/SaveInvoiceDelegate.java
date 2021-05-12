@@ -1,11 +1,11 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
-import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
+import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.java.Log;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.JavaDelegate;
 import org.springframework.stereotype.Component;
@@ -15,7 +15,7 @@ import java.util.HashSet;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.INVOICE_RECEIVED;
 
 @Component
-@Log
+@Slf4j
 @RequiredArgsConstructor
 public class SaveInvoiceDelegate implements JavaDelegate {
     private final SalesOrderService salesOrderService;
@@ -26,21 +26,21 @@ public class SaveInvoiceDelegate implements JavaDelegate {
         final var invoiceUrl = (String) delegateExecution.getVariable(Variables.INVOICE_URL.getName());
         final var invoiceNumber = extractInvoiceNumber(invoiceUrl);
 
-        var salesOrderOptional = salesOrderService.getOrderByOrderNumber(orderNumber);
+        final var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
+                                                .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
 
-        if (salesOrderOptional.isPresent()) {
-            final SalesOrder salesOrder = salesOrderOptional.get();
-            final var invoice = SalesOrderInvoice.builder()
-                    .salesOrder(salesOrder)
-                    .invoiceNumber(invoiceNumber)
-                    .url(invoiceUrl)
-                    .build();
-            if (salesOrder.getSalesOrderInvoiceList() == null) {
-                salesOrder.setSalesOrderInvoiceList(new HashSet<>());
-            }
-            salesOrder.getSalesOrderInvoiceList().add(invoice);
-            salesOrderService.save(salesOrder, INVOICE_RECEIVED);
+        final var invoice = SalesOrderInvoice.builder()
+                                             .salesOrder(salesOrder)
+                                             .invoiceNumber(invoiceNumber)
+                                             .url(invoiceUrl)
+                                             .build();
+
+        if (salesOrder.getSalesOrderInvoiceList() == null) {
+            salesOrder.setSalesOrderInvoiceList(new HashSet<>());
         }
+
+        salesOrder.getSalesOrderInvoiceList().add(invoice);
+        salesOrderService.save(salesOrder, INVOICE_RECEIVED);
     }
 
     private String extractInvoiceNumber(final String invoiceUrl) {

@@ -12,6 +12,7 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
+@SuppressWarnings("PMD.UnusedPrivateMethod")
 class AuditActionConverterTest {
 
     private final AuditActionConverter auditActionConverter = new AuditActionConverter();

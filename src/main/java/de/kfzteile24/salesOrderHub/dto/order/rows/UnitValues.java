@@ -4,24 +4,24 @@ import lombok.Data;
 
 @Data
 public class UnitValues {
-    Number salesValueGross;
-    Number salesValueNet;
-    Number goodsValueGross;
-    Number goodsValueNet;
-    Number depositGross;
-    Number depositNet;
-    Number bulkyGoodsGross;
-    Number bulkyGoodsNet;
-    Number riskyGoodsGross;
-    Number riskyGoodsNet;
-    Number rrpNet;
-    Number rrpGross;
-    Number discountGross;
-    Number discountNet;
-    Number discountedGross;
-    Number discountedNet;
-    Number undiscountedSalesValueGross;
-    Number undiscountedSalesValueNet;
-    Number exchangePartValueGross;
-    Number exchangePartValueNet;
+    private Number salesValueGross;
+    private Number salesValueNet;
+    private Number goodsValueGross;
+    private Number goodsValueNet;
+    private Number depositGross;
+    private Number depositNet;
+    private Number bulkyGoodsGross;
+    private Number bulkyGoodsNet;
+    private Number riskyGoodsGross;
+    private Number riskyGoodsNet;
+    private Number rrpNet;
+    private Number rrpGross;
+    private Number discountGross;
+    private Number discountNet;
+    private Number discountedGross;
+    private Number discountedNet;
+    private Number undiscountedSalesValueGross;
+    private Number undiscountedSalesValueNet;
+    private Number exchangePartValueGross;
+    private Number exchangePartValueNet;
 }

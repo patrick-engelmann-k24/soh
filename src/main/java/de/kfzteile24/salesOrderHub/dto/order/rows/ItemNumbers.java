@@ -6,7 +6,7 @@ import java.util.List;
 
 @Data
 public class ItemNumbers {
-    List<String> ean;
-    String dataSupplierNumber;
-    String manufacturerProductNumber;
+    private List<String> ean;
+    private String dataSupplierNumber;
+    private String manufacturerProductNumber;
 }

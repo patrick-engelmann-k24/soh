@@ -6,6 +6,6 @@ import java.util.List;
 
 @Data
 public class ItemRules {
-    String identifier;
-    List<String> relatedSkus;
+    private String identifier;
+    private List<String> relatedSkus;
 }

@@ -2,18 +2,18 @@ package de.kfzteile24.salesOrderHub.services;
 
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
-import lombok.extern.java.Log;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
-@Log
+@RequiredArgsConstructor
 public class InvoiceService {
 
-    @Autowired
-    SalesOrderInvoiceRepository invoiceRepository;
+    @NonNull
+    private final SalesOrderInvoiceRepository invoiceRepository;
 
     /**
      * If we find an invoice, there are already invoice(s) created

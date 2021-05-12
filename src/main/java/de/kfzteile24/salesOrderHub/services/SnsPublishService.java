@@ -51,7 +51,7 @@ public class SnsPublishService {
     }
 
     @SneakyThrows({JsonProcessingException.class})
-    void sendOrder(String topic, String subject, String orderNumber) {
+    protected void sendOrder(String topic, String subject, String orderNumber) {
         final var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
 

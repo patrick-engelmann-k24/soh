@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class FulfillmentMessage {
-    String orderNumber;
-    String orderItemSku;
+    private String orderNumber;
+    private String orderItemSku;
 }

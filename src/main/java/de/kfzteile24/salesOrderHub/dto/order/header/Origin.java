@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class Origin {
-    String salesChannel;
-    String locale;
+    private String salesChannel;
+    private String locale;
 }

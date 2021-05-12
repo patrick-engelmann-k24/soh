@@ -4,7 +4,7 @@ import lombok.Data;
 
 @Data
 public class Creator {
-    String type;
-    String creatorId;
-    String creatorName;
+    private String type;
+    private String creatorId;
+    private String creatorName;
 }

@@ -15,18 +15,18 @@ import java.util.List;
 
 @Data
 public class Rows {
-    String position;
-    String rowKey;
-    String sku;
-    Number quantity;
-    String quantityUnitType;
-    PartIdentificationProperties partIdentificationProperties;
-    ItemNumbers itemNumbers;
-    ItemInformation itemInformation;
-    List<ItemRules> itemRules;
-    Creator creator;
-    Taxes tax;
-    SumValues sumValues;
-    UnitValues unitValues;
-    List<Item> items;
+    private String position;
+    private String rowKey;
+    private String sku;
+    private Number quantity;
+    private String quantityUnitType;
+    private PartIdentificationProperties partIdentificationProperties;
+    private ItemNumbers itemNumbers;
+    private ItemInformation itemInformation;
+    private List<ItemRules> itemRules;
+    private Creator creator;
+    private Taxes tax;
+    private SumValues sumValues;
+    private UnitValues unitValues;
+    private List<Item> items;
 }

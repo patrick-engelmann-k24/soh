@@ -4,15 +4,15 @@ import lombok.Data;
 
 @Data
 public class ItemInformation {
-    String imageUrl;
-    String thumbnailUrl;
-    String brand;
-    Boolean isBulkyGood;
-    Boolean isRiskyGood;
-    Boolean isHazardousGood;
-    String legalNotice;
-    Boolean pricehammer;
-    ArticleInfo offer;
-    ArticleInfo order;
-    ArticleInfo invoice;
+    private String imageUrl;
+    private String thumbnailUrl;
+    private String brand;
+    private Boolean isBulkyGood;
+    private Boolean isRiskyGood;
+    private Boolean isHazardousGood;
+    private String legalNotice;
+    private Boolean pricehammer;
+    private ArticleInfo offer;
+    private ArticleInfo order;
+    private ArticleInfo invoice;
 }

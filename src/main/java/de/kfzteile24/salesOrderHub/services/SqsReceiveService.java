@@ -23,7 +23,11 @@ import org.springframework.cloud.aws.messaging.listener.annotation.SqsListener;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_ECP;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
 import static org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy.ON_SUCCESS;
 
@@ -280,18 +284,22 @@ public class SqsReceiveService {
     @SneakyThrows(JsonProcessingException.class)
     public void queueListenerInvoiceReceivedFromCore(String rawMessage,
                                                      @Header("SenderId") String senderId,
-                                                     @Header("ApproximateReceiveCount") Integer receiveCount)
-    {
+                                                     @Header("ApproximateReceiveCount") Integer receiveCount) {
         logReceivedMessage(rawMessage, senderId, receiveCount);
-        final String invoiceUrl = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+        final var invoiceUrl = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
 
         try {
             final var orderNumber = extractOrderNumber(invoiceUrl);
             log.info("Adding invoice {} to orderNumber {}", invoiceUrl, orderNumber);
-            final MessageCorrelationResult result = runtimeService
+
+            final Map<String, Object> processVariables = new HashMap<>();
+            processVariables.put(ORDER_NUMBER.getName(), orderNumber);
+            processVariables.put(Variables.INVOICE_URL.getName(), invoiceUrl);
+
+            final var result = runtimeService
                     .createMessageCorrelation(Messages.INVOICE_CREATED.getName())
-                    .processInstanceVariableEquals(Variables.ORDER_NUMBER.getName(), orderNumber)
-                    .setVariable(Variables.INVOICE_URL.getName(), invoiceUrl)
+                    .processInstanceBusinessKey(orderNumber)
+                    .setVariables(processVariables)
                     .correlateWithResult();
 
             if (result.getProcessInstance() != null) {

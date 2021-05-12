@@ -13,6 +13,7 @@ import static java.lang.String.format;
 
 @Component
 @Log
+@SuppressWarnings("PMD.MissingBreakInSwitch")
 public class CheckRowDeliveryAddressChangePossible extends CommonDelegate {
 
     public void execute(DelegateExecution delegateExecution) {

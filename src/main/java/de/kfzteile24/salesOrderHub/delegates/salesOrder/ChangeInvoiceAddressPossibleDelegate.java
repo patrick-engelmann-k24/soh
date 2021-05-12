@@ -4,19 +4,19 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.delegates.CommonDelegate;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
-import lombok.extern.java.Log;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 
 @Component
-@Log
+@RequiredArgsConstructor
 public class ChangeInvoiceAddressPossibleDelegate extends CommonDelegate {
 
-    @Autowired
-    SalesOrderInvoiceRepository invoiceRepository;
+    @NonNull
+    private final SalesOrderInvoiceRepository invoiceRepository;
 
     @Override
     public void execute(DelegateExecution delegateExecution) {
@@ -30,7 +30,7 @@ public class ChangeInvoiceAddressPossibleDelegate extends CommonDelegate {
      * @param orderNumber
      * @return
      */
-    Boolean checkInvoiceExistentForOrder(final String orderNumber) {
+    private Boolean checkInvoiceExistentForOrder(final String orderNumber) {
         final List<SalesOrderInvoice> orderInvoiceList = invoiceRepository.getInvoicesByOrderNumber(orderNumber);
         return orderInvoiceList.size() > 0;
     }

@@ -6,6 +6,8 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.HistoryService;
@@ -13,7 +15,6 @@ import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.history.HistoricProcessInstance;
 import org.camunda.bpm.engine.history.HistoricVariableInstance;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -26,16 +27,18 @@ import static java.lang.String.format;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
+@SuppressWarnings("PMD.MissingBreakInSwitch")
 public class SalesOrderRowService {
 
-    @Autowired
-    CamundaHelper helper;
+    @NonNull
+    private final CamundaHelper helper;
 
-    @Autowired
-    private RuntimeService runtimeService;
+    @NonNull
+    private final RuntimeService runtimeService;
 
-    @Autowired
-    private HistoryService historyService;
+    @NonNull
+    private final HistoryService historyService;
 
     @SneakyThrows
     public ResponseEntity<String> cancelOrderItem(String orderNumber, String orderItemId) {

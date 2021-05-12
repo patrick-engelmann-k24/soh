@@ -4,10 +4,10 @@ import lombok.Data;
 
 @Data
 public class Customer {
-    String customerNumber;
-    String customerId;
-    String customerType;
-    String customerEmail;
-    String contactId;
-    String contactEmail;
+    private String customerNumber;
+    private String customerId;
+    private String customerType;
+    private String customerEmail;
+    private String contactId;
+    private String contactEmail;
 }

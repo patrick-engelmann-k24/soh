@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class PaymentExpenses {
-    String cashOnDelivery;
-    String creditCardPayment;
+    private String cashOnDelivery;
+    private String creditCardPayment;
 }

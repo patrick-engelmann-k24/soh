@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class ArticleInfo {
-    String name;
-    String infoText;
+    private String name;
+    private String infoText;
 }

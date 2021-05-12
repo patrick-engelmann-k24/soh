@@ -26,6 +26,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+@SuppressWarnings({"PMD.UnusedPrivateField", "PMD.UnusedPrivateMethod"})
 class SalesOrderServiceTest {
     @Mock
     private CamundaHelper camundaHelper;

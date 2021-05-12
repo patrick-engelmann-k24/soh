@@ -2,15 +2,20 @@ package de.kfzteile24.salesOrderHub.helper;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
 import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.MessageCorrelationBuilder;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Component;
 
 import java.io.FileReader;
@@ -21,14 +26,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
+
 @Component
+@RequiredArgsConstructor
 public class BpmUtil {
 
-    @Autowired
-    RuntimeService runtimeService;
+    @NonNull
+    private final RuntimeService runtimeService;
 
-    @Autowired
-    ObjectMapper objectMapper;
+    @NonNull
+    private final ObjectMapper objectMapper;
 
     public final List<MessageCorrelationResult> sendMessage(BpmItem message, String orderNumber) {
         return this.sendMessage(_N(message), orderNumber);
@@ -125,6 +133,19 @@ public class BpmUtil {
     protected FileReader loadOrderJson() {
         String fileName = "examples/testmessage.json";
         return new FileReader(getClass().getResource(fileName).getFile());
+    }
+
+   public void finishOrderProcess(final ProcessInstance orderProcess, final String orderNumber) {
+        // start subprocess
+        sendMessage(_N(Messages.ORDER_RECEIVED_PAYMENT_SECURED), orderNumber);
+
+        // send items thru
+        sendMessage(_N(RowMessages.ROW_TRANSMITTED_TO_LOGISTICS), orderNumber);
+        sendMessage(_N(RowMessages.PACKING_STARTED), orderNumber);
+        sendMessage(_N(RowMessages.TRACKING_ID_RECEIVED), orderNumber);
+        sendMessage(_N(RowMessages.ROW_SHIPPED), orderNumber);
+
+       assertThat(orderProcess).isEnded().hasPassed(_N(Events.END_MSG_ORDER_COMPLETED));
     }
 
 }

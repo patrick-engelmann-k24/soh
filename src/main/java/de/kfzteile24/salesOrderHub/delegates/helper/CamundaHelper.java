@@ -2,13 +2,14 @@ package de.kfzteile24.salesOrderHub.delegates.helper;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import org.camunda.bpm.engine.HistoryService;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.history.HistoricActivityInstance;
 import org.camunda.bpm.engine.history.HistoricActivityInstanceQuery;
 import org.camunda.bpm.engine.runtime.Execution;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -29,17 +30,17 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVar
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.ORDER_ROW_ID;
 
 @Component
+@RequiredArgsConstructor
 public class CamundaHelper {
 
+    @NonNull
+    private final HistoryService historyService;
 
-    @Autowired
-    HistoryService historyService;
+    @NonNull
+    private final RuntimeService runtimeService;
 
-    @Autowired
-    RuntimeService runtimeService;
-
-    @Autowired
-    JsonHelper jsonHelper;
+    @NonNull
+    private final JsonHelper jsonHelper;
 
     public boolean hasPassed(final String processInstance, final String activityId) {
         final List<HistoricActivityInstance> finishedInstances = historicActivityInstanceQuery(processInstance)

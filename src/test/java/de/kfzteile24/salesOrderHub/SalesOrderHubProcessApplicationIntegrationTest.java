@@ -31,7 +31,6 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import org.camunda.bpm.engine.ProcessEngine;
-import org.camunda.bpm.engine.RepositoryService;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
@@ -44,7 +43,6 @@ import org.springframework.test.annotation.DirtiesContext;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
 import static org.camunda.bpm.engine.test.assertions.ProcessEngineTests.assertThat;
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
@@ -59,19 +57,16 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 public class SalesOrderHubProcessApplicationIntegrationTest {
 
     @Autowired
-    public ProcessEngine processEngine;
+    private ProcessEngine processEngine;
 
     @Autowired
-    RuntimeService runtimeService;
+    private RuntimeService runtimeService;
 
     @Autowired
-    RepositoryService repositoryService;
+    private BpmUtil util;
 
     @Autowired
-    BpmUtil util;
-
-    @Autowired
-    SalesOrderUtil salesOrderUtil;
+    private SalesOrderUtil salesOrderUtil;
 
     private SalesOrder testOrder;
 
@@ -250,21 +245,7 @@ public class SalesOrderHubProcessApplicationIntegrationTest {
         return salesOrderProcessInstance;
     }
 
-    final String getOrderNumber() {
-        int leftLimit = 97; // letter 'a'
-        int rightLimit = 122; // letter 'z'
-        int targetStringLength = 8;
-        Random random = new Random();
-        StringBuilder buffer = new StringBuilder(targetStringLength);
-        for (int i = 0; i < targetStringLength; i++) {
-            int randomLimitedInt = leftLimit + (int)
-                    (random.nextFloat() * (rightLimit - leftLimit + 1));
-            buffer.append((char) randomLimitedInt);
-        }
-        return buffer.toString();
-    }
-
-    final ProcessInstanceQuery getProcessInstanceQuery() {
+    private final ProcessInstanceQuery getProcessInstanceQuery() {
         return runtimeService.createProcessInstanceQuery();
     }
 
