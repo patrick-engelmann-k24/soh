@@ -5,7 +5,7 @@ RUN mkdir ~/.m2 && echo "<settings xmlns=\"http://maven.apache.org/SETTINGS/1.0.
 
 # add newrelic zip (unzip not in slim build, therefore we must extract it here and copy to final container)
 ADD https://download.newrelic.com/newrelic/java-agent/newrelic-agent/current/newrelic-java.zip /opt
-RUN apt-get -qq update && apt-get -qq install -y zip && \
+RUN apt-get -qq update && apt-get -qq install -y --no-install-recommends unzip && \
     mvn clean install -DskipTests --batch-mode --no-transfer-progress && \
     unzip -qq /opt/newrelic-java.zip -d /opt && rm /opt/newrelic-java.zip
 
