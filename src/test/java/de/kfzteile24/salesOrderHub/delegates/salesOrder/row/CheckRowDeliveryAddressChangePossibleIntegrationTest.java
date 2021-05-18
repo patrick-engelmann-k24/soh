@@ -83,8 +83,8 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
         final SalesOrder testOrder = salesOrderUtil.createNewSalesOrder();
         final Map<String, Object> processVariables = new HashMap<>();
         final String orderNumber = testOrder.getOrderNumber();
-        processVariables.put(util._N(ORDER_NUMBER), orderNumber);
-        processVariables.put(util._N(SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR));
+        processVariables.put(ORDER_NUMBER.getName(), orderNumber);
+        processVariables.put(SHIPMENT_METHOD.getName(), ShipmentMethod.REGULAR.getName());
 
         final ProcessInstance orderItemFulfillmentProcess = runtimeService.startProcessInstanceByKey(
                 SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
@@ -94,25 +94,23 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
         util.sendMessage(DELIVERY_ADDRESS_CHANGE, orderNumber);
 
         assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
-                util._N(RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS),
-                util._N(RowEvents.ROW_TRANSMITTED_TO_LOGISTICS),
-                util._N(XOR_SHIPMENT_METHOD),
-                util._N(RowEvents.PACKING_STARTED),
-                util._N(RowEvents.MSG_DELIVERY_ADDRESS_CHANGE),
-                util._N(CHECK_DELIVERY_ADDRESS_CHANGE_POSSIBLE),
-                util._N(XOR_DELIVERY_ADRESS_CHANGE_POSSIBLE)
+                RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
+                RowEvents.ROW_TRANSMITTED_TO_LOGISTICS.getName(),
+                XOR_SHIPMENT_METHOD.getName(),
+                RowEvents.PACKING_STARTED.getName(),
+                RowEvents.MSG_DELIVERY_ADDRESS_CHANGE.getName(),
+                CHECK_DELIVERY_ADDRESS_CHANGE_POSSIBLE.getName(),
+                XOR_DELIVERY_ADRESS_CHANGE_POSSIBLE.getName()
         );
 
         assertThat(orderItemFulfillmentProcess).hasPassed(
-                util._N(SUB_PROCESS_ORDER_ROW_DELIVERY_ADDRESS_CHANGE),
-                util._N(RowEvents.DELIVERY_ADDRESS_NOT_CHANGED)
+                SUB_PROCESS_ORDER_ROW_DELIVERY_ADDRESS_CHANGE.getName(),
+                RowEvents.DELIVERY_ADDRESS_NOT_CHANGED.getName()
         );
 
-        assertThat(orderItemFulfillmentProcess).hasNotPassed(
-                util._N(CHANGE_DELIVERY_ADDRESS)
-        );
+        assertThat(orderItemFulfillmentProcess).hasNotPassed(CHANGE_DELIVERY_ADDRESS.getName());
 
-        assertThat(orderItemFulfillmentProcess).isWaitingAt(util._N(RowEvents.TRACKING_ID_RECEIVED));
+        assertThat(orderItemFulfillmentProcess).isWaitingAt(RowEvents.TRACKING_ID_RECEIVED.getName());
 
         util.sendMessage(TRACKING_ID_RECEIVED, orderNumber);
         util.sendMessage(ROW_SHIPPED, orderNumber);
@@ -132,9 +130,9 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
         final List<String> orderItems = util.getOrderRows(orderNumber, 5);
         final String orderItemId = orderItems.get(0);
 
-        processVariables.put(util._N(ORDER_NUMBER), orderNumber);
-        processVariables.put(util._N(SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR));
-        processVariables.put(util._N(RowVariables.ORDER_ROW_ID), orderItemId);
+        processVariables.put(ORDER_NUMBER.getName(), orderNumber);
+        processVariables.put(SHIPMENT_METHOD.getName(), ShipmentMethod.REGULAR.getName());
+        processVariables.put(RowVariables.ORDER_ROW_ID.getName(), orderItemId);
 
         final ProcessInstance orderItemFulfillmentProcess = runtimeService.startProcessInstanceByKey(
                 SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
@@ -158,28 +156,28 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
         );
 
         assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
-                util._N(RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS),
-                util._N(RowEvents.ROW_TRANSMITTED_TO_LOGISTICS),
-                util._N(XOR_SHIPMENT_METHOD),
-                util._N(RowEvents.MSG_DELIVERY_ADDRESS_CHANGE),
-                util._N(CHECK_DELIVERY_ADDRESS_CHANGE_POSSIBLE),
-                util._N(XOR_DELIVERY_ADRESS_CHANGE_POSSIBLE),
-                util._N(CHANGE_DELIVERY_ADDRESS)
+                RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
+                RowEvents.ROW_TRANSMITTED_TO_LOGISTICS.getName(),
+                XOR_SHIPMENT_METHOD.getName(),
+                RowEvents.MSG_DELIVERY_ADDRESS_CHANGE.getName(),
+                CHECK_DELIVERY_ADDRESS_CHANGE_POSSIBLE.getName(),
+                XOR_DELIVERY_ADRESS_CHANGE_POSSIBLE.getName(),
+                CHANGE_DELIVERY_ADDRESS.getName()
         );
 
         assertThat(orderItemFulfillmentProcess).hasPassed(
-                util._N(SUB_PROCESS_ORDER_ROW_DELIVERY_ADDRESS_CHANGE),
-                util._N(RowEvents.DELIVERY_ADDRESS_CHANGED)
+                SUB_PROCESS_ORDER_ROW_DELIVERY_ADDRESS_CHANGE.getName(),
+                RowEvents.DELIVERY_ADDRESS_CHANGED.getName()
         );
 
         assertThat(orderItemFulfillmentProcess).hasNotPassed(
-                util._N(RowEvents.DELIVERY_ADDRESS_NOT_CHANGED)
+                RowEvents.DELIVERY_ADDRESS_NOT_CHANGED.getName()
         );
 
-        assertThat(orderItemFulfillmentProcess).isWaitingAt(util._N(RowEvents.PACKING_STARTED));
+        assertThat(orderItemFulfillmentProcess).isWaitingAt(RowEvents.PACKING_STARTED.getName());
         util.sendMessage(PACKING_STARTED, orderNumber);
 
-        assertThat(orderItemFulfillmentProcess).isWaitingAt(util._N(RowEvents.TRACKING_ID_RECEIVED));
+        assertThat(orderItemFulfillmentProcess).isWaitingAt(RowEvents.TRACKING_ID_RECEIVED.getName());
 
         util.sendMessage(TRACKING_ID_RECEIVED, orderNumber);
         util.sendMessage(ROW_SHIPPED, orderNumber);
@@ -195,8 +193,8 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
         final Map<String, Object> processVariables = new HashMap<>();
         final SalesOrder testOrder = salesOrderUtil.createNewSalesOrder();
         final String orderNumber = testOrder.getOrderNumber();
-        processVariables.put(util._N(ORDER_NUMBER), orderNumber);
-        processVariables.put(util._N(SHIPMENT_METHOD), util._N(ShipmentMethod.OWN_DELIVERY));
+        processVariables.put(ORDER_NUMBER.getName(), orderNumber);
+        processVariables.put(SHIPMENT_METHOD.getName(), ShipmentMethod.OWN_DELIVERY.getName());
 
         final ProcessInstance orderItemFulfillmentProcess = runtimeService.startProcessInstanceByKey(
                 SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
@@ -206,17 +204,15 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
         util.sendMessage(DELIVERY_ADDRESS_CHANGE, orderNumber);
 
         assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
-                util._N(RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS),
-                util._N(RowEvents.ROW_TRANSMITTED_TO_LOGISTICS),
-                util._N(XOR_SHIPMENT_METHOD),
-                util._N(RowEvents.TOUR_STARTED),
-                util._N(XOR_CLICK_AND_COLLECT),
-                util._N(RowEvents.ORDER_ROW_FULFILLMENT_PROCESS_FINISHED)
+                RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
+                RowEvents.ROW_TRANSMITTED_TO_LOGISTICS.getName(),
+                XOR_SHIPMENT_METHOD.getName(),
+                RowEvents.TOUR_STARTED.getName(),
+                XOR_CLICK_AND_COLLECT.getName(),
+                RowEvents.ORDER_ROW_FULFILLMENT_PROCESS_FINISHED.getName()
         );
 
-        assertThat(orderItemFulfillmentProcess).hasNotPassed(
-                util._N(CHANGE_DELIVERY_ADDRESS)
-        );
+        assertThat(orderItemFulfillmentProcess).hasNotPassed(CHANGE_DELIVERY_ADDRESS.getName());
 
         assertThat(orderItemFulfillmentProcess).isEnded();
 
@@ -233,9 +229,9 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
         final List<String> orderItems = util.getOrderRows(orderNumber, 5);
         final String orderItemId = orderItems.get(0);
 
-        processVariables.put(util._N(ORDER_NUMBER), orderNumber);
-        processVariables.put(util._N(SHIPMENT_METHOD), util._N(ShipmentMethod.OWN_DELIVERY));
-        processVariables.put(util._N(RowVariables.ORDER_ROW_ID), orderItemId);
+        processVariables.put(ORDER_NUMBER.getName(), orderNumber);
+        processVariables.put(SHIPMENT_METHOD.getName(), ShipmentMethod.OWN_DELIVERY.getName());
+        processVariables.put(RowVariables.ORDER_ROW_ID.getName(), orderItemId);
 
         final Address address = Address.builder()
                                         .firstName("Max")
@@ -259,25 +255,23 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
         );
 
         assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
-                util._N(RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS),
-                util._N(RowEvents.ROW_TRANSMITTED_TO_LOGISTICS),
-                util._N(XOR_SHIPMENT_METHOD),
-                util._N(RowEvents.MSG_DELIVERY_ADDRESS_CHANGE),
-                util._N(CHECK_DELIVERY_ADDRESS_CHANGE_POSSIBLE),
-                util._N(XOR_DELIVERY_ADRESS_CHANGE_POSSIBLE),
-                util._N(CHANGE_DELIVERY_ADDRESS)
+                RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
+                RowEvents.ROW_TRANSMITTED_TO_LOGISTICS.getName(),
+                XOR_SHIPMENT_METHOD.getName(),
+                RowEvents.MSG_DELIVERY_ADDRESS_CHANGE.getName(),
+                CHECK_DELIVERY_ADDRESS_CHANGE_POSSIBLE.getName(),
+                XOR_DELIVERY_ADRESS_CHANGE_POSSIBLE.getName(),
+                CHANGE_DELIVERY_ADDRESS.getName()
         );
 
         assertThat(orderItemFulfillmentProcess).hasPassed(
-                util._N(SUB_PROCESS_ORDER_ROW_DELIVERY_ADDRESS_CHANGE),
-                util._N(RowEvents.DELIVERY_ADDRESS_CHANGED)
+                SUB_PROCESS_ORDER_ROW_DELIVERY_ADDRESS_CHANGE.getName(),
+                RowEvents.DELIVERY_ADDRESS_CHANGED.getName()
         );
 
-        assertThat(orderItemFulfillmentProcess).hasNotPassed(
-                util._N(RowEvents.DELIVERY_ADDRESS_NOT_CHANGED)
-        );
+        assertThat(orderItemFulfillmentProcess).hasNotPassed(RowEvents.DELIVERY_ADDRESS_NOT_CHANGED.getName());
 
-        assertThat(orderItemFulfillmentProcess).isWaitingAt(util._N(RowEvents.TOUR_STARTED));
+        assertThat(orderItemFulfillmentProcess).isWaitingAt(RowEvents.TOUR_STARTED.getName());
         util.sendMessage(TOUR_STARTED, orderNumber);
         util.sendMessage(ROW_SHIPPED, orderNumber);
 
@@ -292,8 +286,8 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
         final Map<String, Object> processVariables = new HashMap<>();
         final SalesOrder testOrder = salesOrderUtil.createNewSalesOrder();
         final String orderNumber = testOrder.getOrderNumber();
-        processVariables.put(util._N(ORDER_NUMBER), orderNumber);
-        processVariables.put(util._N(SHIPMENT_METHOD), util._N(ShipmentMethod.CLICK_COLLECT));
+        processVariables.put(ORDER_NUMBER.getName(), orderNumber);
+        processVariables.put(SHIPMENT_METHOD.getName(), ShipmentMethod.CLICK_COLLECT.getName());
 
         final ProcessInstance orderItemFulfillmentProcess = runtimeService.startProcessInstanceByKey(
                 SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
@@ -302,24 +296,24 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
         util.sendMessage(DELIVERY_ADDRESS_CHANGE, orderNumber);
 
         assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
-                util._N(RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS),
-                util._N(RowEvents.ROW_TRANSMITTED_TO_LOGISTICS),
-                util._N(XOR_SHIPMENT_METHOD),
-                util._N(RowEvents.MSG_DELIVERY_ADDRESS_CHANGE),
-                util._N(CHECK_DELIVERY_ADDRESS_CHANGE_POSSIBLE),
-                util._N(XOR_DELIVERY_ADRESS_CHANGE_POSSIBLE)
+                RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
+                RowEvents.ROW_TRANSMITTED_TO_LOGISTICS.getName(),
+                XOR_SHIPMENT_METHOD.getName(),
+                RowEvents.MSG_DELIVERY_ADDRESS_CHANGE.getName(),
+                CHECK_DELIVERY_ADDRESS_CHANGE_POSSIBLE.getName(),
+                XOR_DELIVERY_ADRESS_CHANGE_POSSIBLE.getName()
         );
 
         assertThat(orderItemFulfillmentProcess).hasPassed(
-                util._N(SUB_PROCESS_ORDER_ROW_DELIVERY_ADDRESS_CHANGE),
-                util._N(RowEvents.DELIVERY_ADDRESS_NOT_CHANGED)
+                SUB_PROCESS_ORDER_ROW_DELIVERY_ADDRESS_CHANGE.getName(),
+                RowEvents.DELIVERY_ADDRESS_NOT_CHANGED.getName()
         );
 
         assertThat(orderItemFulfillmentProcess).hasNotPassed(
-                util._N(CHANGE_DELIVERY_ADDRESS)
+                CHANGE_DELIVERY_ADDRESS.getName()
         );
 
-        assertThat(orderItemFulfillmentProcess).isWaitingAt(util._N(RowEvents.ROW_PREPARED_FOR_PICKUP));
+        assertThat(orderItemFulfillmentProcess).isWaitingAt(RowEvents.ROW_PREPARED_FOR_PICKUP.getName());
 
         util.sendMessage(ROW_PREPARED, orderNumber);
         util.sendMessage(ROW_PICKED_UP, orderNumber);

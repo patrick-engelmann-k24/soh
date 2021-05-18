@@ -2,13 +2,11 @@ package de.kfzteile24.salesOrderHub.delegates.salesOrder.row;
 
 import de.kfzteile24.salesOrderHub.SalesOrderHubProcessApplication;
 import de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.BPMSalesOrderRowFulfillment;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowActivities;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowGateways;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
@@ -25,6 +23,10 @@ import org.springframework.test.annotation.DirtiesContext;
 import java.util.HashMap;
 import java.util.Map;
 
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SHIPMENT_METHOD;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.TRACKING_ID_RECEIVED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
 import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
 
@@ -56,8 +58,8 @@ public class CheckRowCancellationPossibleIntegrationTest {
     public void testPassThruOnParcelShipmentRegular() {
         final Map<String, Object> processVariables = new HashMap<>();
         String orderNumber = util.getRandomOrderNumber();
-        processVariables.put(util._N(Variables.ORDER_NUMBER), orderNumber);
-        processVariables.put(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR));
+        processVariables.put(ORDER_NUMBER.getName(), orderNumber);
+        processVariables.put(SHIPMENT_METHOD.getName(), REGULAR.getName());
         
         final ProcessInstance orderRowFulfillmentProcess = runtimeService.startProcessInstanceByKey(
                 ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
@@ -69,14 +71,14 @@ public class CheckRowCancellationPossibleIntegrationTest {
         util.sendMessage(RowMessages.ROW_SHIPPED, orderNumber);
 
         assertThat(orderRowFulfillmentProcess).hasPassedInOrder(
-                util._N(RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS),
-                util._N(RowEvents.ROW_TRANSMITTED_TO_LOGISTICS),
-                util._N(RowGateways.XOR_SHIPMENT_METHOD),
-                util._N(RowEvents.PACKING_STARTED),
-                util._N(RowEvents.TRACKING_ID_RECEIVED),
-                util._N(RowEvents.ROW_SHIPPED),
-                util._N(RowGateways.XOR_TOUR_STARTED),
-                util._N(RowEvents.ORDER_ROW_FULFILLMENT_PROCESS_FINISHED)
+                RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
+                RowEvents.ROW_TRANSMITTED_TO_LOGISTICS.getName(),
+                RowGateways.XOR_SHIPMENT_METHOD.getName(),
+                RowEvents.PACKING_STARTED.getName(),
+                RowEvents.TRACKING_ID_RECEIVED.getName(),
+                RowEvents.ROW_SHIPPED.getName(),
+                RowGateways.XOR_TOUR_STARTED.getName(),
+                RowEvents.ORDER_ROW_FULFILLMENT_PROCESS_FINISHED.getName()
         );
         assertThat(orderRowFulfillmentProcess).isEnded();
     }
@@ -85,8 +87,8 @@ public class CheckRowCancellationPossibleIntegrationTest {
     public void testPassThruOnParcelShipmentExpress() {
         final Map<String, Object> processVariables = new HashMap<>();
         String orderNumber = util.getRandomOrderNumber();
-        processVariables.put(util._N(Variables.ORDER_NUMBER), orderNumber);
-        processVariables.put(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.EXPRESS));
+        processVariables.put(ORDER_NUMBER.getName(), orderNumber);
+        processVariables.put(SHIPMENT_METHOD.getName(), ShipmentMethod.EXPRESS.getName());
 
         final ProcessInstance orderRowFulfillmentProcess = runtimeService.startProcessInstanceByKey(
                 ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
@@ -98,14 +100,14 @@ public class CheckRowCancellationPossibleIntegrationTest {
         util.sendMessage(RowMessages.ROW_SHIPPED, orderNumber);
 
         assertThat(orderRowFulfillmentProcess).hasPassedInOrder(
-                util._N(RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS),
-                util._N(RowEvents.ROW_TRANSMITTED_TO_LOGISTICS),
-                util._N(RowGateways.XOR_SHIPMENT_METHOD),
-                util._N(RowEvents.PACKING_STARTED),
-                util._N(RowEvents.TRACKING_ID_RECEIVED),
-                util._N(RowEvents.ROW_SHIPPED),
-                util._N(RowGateways.XOR_TOUR_STARTED),
-                util._N(RowEvents.ORDER_ROW_FULFILLMENT_PROCESS_FINISHED)
+                RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
+                RowEvents.ROW_TRANSMITTED_TO_LOGISTICS.getName(),
+                RowGateways.XOR_SHIPMENT_METHOD.getName(),
+                RowEvents.PACKING_STARTED.getName(),
+                RowEvents.TRACKING_ID_RECEIVED.getName(),
+                RowEvents.ROW_SHIPPED.getName(),
+                RowGateways.XOR_TOUR_STARTED.getName(),
+                RowEvents.ORDER_ROW_FULFILLMENT_PROCESS_FINISHED.getName()
         );
         assertThat(orderRowFulfillmentProcess).isEnded();
     }
@@ -114,8 +116,8 @@ public class CheckRowCancellationPossibleIntegrationTest {
     public void testPassThruOnParcelOwnDelivery() {
         final Map<String, Object> processVariables = new HashMap<>();
         String orderNumber = util.getRandomOrderNumber();
-        processVariables.put(util._N(Variables.ORDER_NUMBER), orderNumber);
-        processVariables.put(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.OWN_DELIVERY));
+        processVariables.put(ORDER_NUMBER.getName(), orderNumber);
+        processVariables.put(SHIPMENT_METHOD.getName(), ShipmentMethod.OWN_DELIVERY.getName());
 
         final ProcessInstance orderRowFulfillmentProcess = runtimeService.startProcessInstanceByKey(
                 ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
@@ -127,12 +129,12 @@ public class CheckRowCancellationPossibleIntegrationTest {
         util.sendMessage(RowMessages.ROW_SHIPPED, orderNumber);
 
         assertThat(orderRowFulfillmentProcess).hasPassedInOrder(
-                util._N(RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS),
-                util._N(RowEvents.ROW_TRANSMITTED_TO_LOGISTICS),
-                util._N(RowGateways.XOR_SHIPMENT_METHOD),
-                util._N(RowEvents.TOUR_STARTED),
-                util._N(RowGateways.XOR_TOUR_STARTED),
-                util._N(RowEvents.ORDER_ROW_FULFILLMENT_PROCESS_FINISHED)
+                RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
+                RowEvents.ROW_TRANSMITTED_TO_LOGISTICS.getName(),
+                RowGateways.XOR_SHIPMENT_METHOD.getName(),
+                RowEvents.TOUR_STARTED.getName(),
+                RowGateways.XOR_TOUR_STARTED.getName(),
+                RowEvents.ORDER_ROW_FULFILLMENT_PROCESS_FINISHED.getName()
         );
         assertThat(orderRowFulfillmentProcess).isEnded();
     }
@@ -141,8 +143,8 @@ public class CheckRowCancellationPossibleIntegrationTest {
     public void testPassThruOnParcelClickCollect() {
         final Map<String, Object> processVariables = new HashMap<>();
         String orderNumber = util.getRandomOrderNumber();
-        processVariables.put(util._N(Variables.ORDER_NUMBER), orderNumber);
-        processVariables.put(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.CLICK_COLLECT));
+        processVariables.put(ORDER_NUMBER.getName(), orderNumber);
+        processVariables.put(SHIPMENT_METHOD.getName(), ShipmentMethod.CLICK_COLLECT.getName());
 
         final ProcessInstance orderRowFulfillmentProcess = runtimeService.startProcessInstanceByKey(
                 ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
@@ -154,12 +156,12 @@ public class CheckRowCancellationPossibleIntegrationTest {
         util.sendMessage(RowMessages.ROW_PICKED_UP, orderNumber);
 
         assertThat(orderRowFulfillmentProcess).hasPassedInOrder(
-                util._N(RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS),
-                util._N(RowEvents.ROW_TRANSMITTED_TO_LOGISTICS),
-                util._N(RowGateways.XOR_SHIPMENT_METHOD),
-                util._N(RowEvents.ROW_PREPARED_FOR_PICKUP),
-                util._N(RowEvents.ROW_PICKED_UP),
-                util._N(RowEvents.ORDER_ROW_FULFILLMENT_PROCESS_FINISHED)
+                RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
+                RowEvents.ROW_TRANSMITTED_TO_LOGISTICS.getName(),
+                RowGateways.XOR_SHIPMENT_METHOD.getName(),
+                RowEvents.ROW_PREPARED_FOR_PICKUP.getName(),
+                RowEvents.ROW_PICKED_UP.getName(),
+                RowEvents.ORDER_ROW_FULFILLMENT_PROCESS_FINISHED.getName()
         );
         assertThat(orderRowFulfillmentProcess).isEnded();
     }
@@ -168,8 +170,8 @@ public class CheckRowCancellationPossibleIntegrationTest {
     public void testCancellationPossibleOnParcelShipmentAfterPackingStartedTrackingIdNOTSet() {
         final Map<String, Object> processVariables = new HashMap<>();
         SalesOrder salesOrder = salesOrderUtil.createNewSalesOrder();
-        processVariables.put(util._N(Variables.ORDER_NUMBER), salesOrder.getOrderNumber());
-        processVariables.put(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR));
+        processVariables.put(ORDER_NUMBER.getName(), salesOrder.getOrderNumber());
+        processVariables.put(SHIPMENT_METHOD.getName(), REGULAR.getName());
 
         ProcessInstance processInstance = testProcess(processVariables, salesOrder.getOrderNumber());
         assertThat(processInstance).isEnded();
@@ -179,9 +181,9 @@ public class CheckRowCancellationPossibleIntegrationTest {
     public void testCancellationPossibleOnParcelShipmentAfterPackingStartedTrackingIdIsSet() {
         final Map<String, Object> processVariables = new HashMap<>();
         SalesOrder salesOrder = salesOrderUtil.createNewSalesOrder();
-        processVariables.put(util._N(Variables.ORDER_NUMBER), salesOrder.getOrderNumber());
-        processVariables.put(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR));
-        processVariables.put(util._N(RowVariables.TRACKING_ID_RECEIVED), false);
+        processVariables.put(ORDER_NUMBER.getName(), salesOrder.getOrderNumber());
+        processVariables.put(SHIPMENT_METHOD.getName(), REGULAR.getName());
+        processVariables.put(TRACKING_ID_RECEIVED.getName(), false);
 
         ProcessInstance processInstance = testProcess(processVariables, salesOrder.getOrderNumber());
         assertThat(processInstance).isEnded();
@@ -191,8 +193,8 @@ public class CheckRowCancellationPossibleIntegrationTest {
     public void testCancellationNotPossibleOnParcelShipmentAfterTrackingIdReceived() {
         final Map<String, Object> processVariables = new HashMap<>();
         String orderNumber = util.getRandomOrderNumber();
-        processVariables.put(util._N(Variables.ORDER_NUMBER), orderNumber);
-        processVariables.put(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR));
+        processVariables.put(ORDER_NUMBER.getName(), orderNumber);
+        processVariables.put(SHIPMENT_METHOD.getName(), REGULAR.getName());
 //        processVariables.put(util._N(ItemVariables.TRACKING_ID_RECEIVED), true);
 
         final ProcessInstance orderRowFulfillmentProcess = runtimeService.startProcessInstanceByKey(
@@ -204,26 +206,26 @@ public class CheckRowCancellationPossibleIntegrationTest {
         util.sendMessage(RowMessages.ORDER_ROW_CANCELLATION_RECEIVED, orderNumber);
 
         assertThat(orderRowFulfillmentProcess).hasPassedInOrder(
-                util._N(RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS),
-                util._N(RowEvents.ROW_TRANSMITTED_TO_LOGISTICS),
-                util._N(RowGateways.XOR_SHIPMENT_METHOD),
-                util._N(RowEvents.PACKING_STARTED),
-                util._N(RowEvents.TRACKING_ID_RECEIVED),
-                util._N(RowActivities.CHECK_CANCELLATION_POSSIBLE),
-                util._N(RowGateways.XOR_CANCELLATION_POSSIBLE)
+                RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
+                RowEvents.ROW_TRANSMITTED_TO_LOGISTICS.getName(),
+                RowGateways.XOR_SHIPMENT_METHOD.getName(),
+                RowEvents.PACKING_STARTED.getName(),
+                RowEvents.TRACKING_ID_RECEIVED.getName(),
+                RowActivities.CHECK_CANCELLATION_POSSIBLE.getName(),
+                RowGateways.XOR_CANCELLATION_POSSIBLE.getName()
         );
 
         assertThat(orderRowFulfillmentProcess).hasPassed(
-                util._N(RowEvents.ORDER_ROW_CANCELLATION_NOT_HANDLED),
-                util._N(BPMSalesOrderRowFulfillment.SUB_PROCESS_ORDER_ROW_CANCELLATION_SHIPMENT)
+                RowEvents.ORDER_ROW_CANCELLATION_NOT_HANDLED.getName(),
+                BPMSalesOrderRowFulfillment.SUB_PROCESS_ORDER_ROW_CANCELLATION_SHIPMENT.getName()
         );
 
-        assertThat(orderRowFulfillmentProcess).isWaitingAt(util._N(RowEvents.ROW_SHIPPED));
+        assertThat(orderRowFulfillmentProcess).isWaitingAt(RowEvents.ROW_SHIPPED.getName());
         util.sendMessage(RowMessages.ROW_SHIPPED, orderNumber);
 
         assertThat(orderRowFulfillmentProcess).hasPassed(
-                util._N(RowEvents.TRACKING_ID_RECEIVED),
-                util._N(RowEvents.ROW_SHIPPED)
+                RowEvents.TRACKING_ID_RECEIVED.getName(),
+                RowEvents.ROW_SHIPPED.getName()
         );
         assertThat(orderRowFulfillmentProcess).isEnded();
 
@@ -238,25 +240,25 @@ public class CheckRowCancellationPossibleIntegrationTest {
         util.sendMessage(RowMessages.ORDER_ROW_CANCELLATION_RECEIVED, orderNumber);
 
         assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
-                util._N(RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS),
-                util._N(RowEvents.ROW_TRANSMITTED_TO_LOGISTICS),
-                util._N(RowGateways.XOR_SHIPMENT_METHOD),
-                util._N(RowEvents.PACKING_STARTED),
-                util._N(RowEvents.MSG_ROW_CANCELLATION_RECEIVED),
-                util._N(RowActivities.CHECK_CANCELLATION_POSSIBLE),
-                util._N(RowGateways.XOR_CANCELLATION_POSSIBLE),
-                util._N(BPMSalesOrderRowFulfillment.SUB_PROCESS_ORDER_ROW_CANCELLATION_SHIPMENT),
-                util._N(RowEvents.ORDER_ROW_CANCELLATION_RECEIVED)
+                RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
+                RowEvents.ROW_TRANSMITTED_TO_LOGISTICS.getName(),
+                RowGateways.XOR_SHIPMENT_METHOD.getName(),
+                RowEvents.PACKING_STARTED.getName(),
+                RowEvents.MSG_ROW_CANCELLATION_RECEIVED.getName(),
+                RowActivities.CHECK_CANCELLATION_POSSIBLE.getName(),
+                RowGateways.XOR_CANCELLATION_POSSIBLE.getName(),
+                BPMSalesOrderRowFulfillment.SUB_PROCESS_ORDER_ROW_CANCELLATION_SHIPMENT.getName(),
+                RowEvents.ORDER_ROW_CANCELLATION_RECEIVED.getName()
         );
 
         assertThat(orderItemFulfillmentProcess).hasPassed(
-                util._N(RowEvents.ORDER_ROW_CANCELLED),
-                util._N(BPMSalesOrderRowFulfillment.SUB_PROCESS_HANDLE_ORDER_ROW_CANCELLATION)
+                RowEvents.ORDER_ROW_CANCELLED.getName(),
+                BPMSalesOrderRowFulfillment.SUB_PROCESS_HANDLE_ORDER_ROW_CANCELLATION.getName()
         );
 
         assertThat(orderItemFulfillmentProcess).hasNotPassed(
 //                util._N(ItemActivities.EVENT_TRACKING_ID_RECEIVED),
-                util._N(RowEvents.ROW_SHIPPED)
+                RowEvents.ROW_SHIPPED.getName()
         );
 
         return orderItemFulfillmentProcess;
