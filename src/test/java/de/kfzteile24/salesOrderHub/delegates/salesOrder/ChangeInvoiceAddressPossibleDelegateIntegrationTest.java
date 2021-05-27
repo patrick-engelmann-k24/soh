@@ -88,30 +88,30 @@ public class ChangeInvoiceAddressPossibleDelegateIntegrationTest {
             e.printStackTrace();
         }
 
-        assertThat(orderProcess).isWaitingAt(util._N(Events.MSG_ORDER_PAYMENT_SECURED));
-        util.sendMessage(Messages.ORDER_INVOICE_ADDRESS_CHANGE_RECEIVED.getName(), orderNumber,
+        assertThat(orderProcess).isWaitingAt(Events.MSG_ORDER_PAYMENT_SECURED.getName());
+        util.sendMessage(Messages.ORDER_INVOICE_ADDRESS_CHANGE_RECEIVED, orderNumber,
                 Map.of(
                         Variables.INVOICE_ADDRESS_CHANGE_REQUEST.getName(), objectMapper.writeValueAsString(newAddress))
                 );
 
         // check if the delegate sets the variable
         assertThat(orderProcess)
-                .hasVariables(util._N(Variables.INVOICE_EXISTS));
+                .hasVariables(Variables.INVOICE_EXISTS.getName());
         final Boolean invoiceExists = (Boolean) runtimeService
-                .getVariable(orderProcess.getProcessInstanceId(), util._N(Variables.INVOICE_EXISTS));
+                .getVariable(orderProcess.getProcessInstanceId(), Variables.INVOICE_EXISTS.getName());
         assertFalse(invoiceExists, "Variable invoice exists does not exist");
 
         assertThat(orderProcess).hasPassedInOrder(
-                util._N(Events.START_MSG_INVOICE_ADDRESS_CHANGE_RECEIVED),
-                util._N(Activities.CHANGE_INVOICE_ADDRESS_POSSIBLE),
-                util._N(Gateways.XOR_INVOICE_EXIST)
+                Events.START_MSG_INVOICE_ADDRESS_CHANGE_RECEIVED.getName(),
+                Activities.CHANGE_INVOICE_ADDRESS_POSSIBLE.getName(),
+                Gateways.XOR_INVOICE_EXIST.getName()
         );
         assertThat(orderProcess).hasPassed(
-                util._N(Activities.CHANGE_INVOICE_ADDRESS),
-                util._N(Activities.SUB_PROCESS_INVOICE_ADDRESS_CHANGE)
+                Activities.CHANGE_INVOICE_ADDRESS.getName(),
+                Activities.SUB_PROCESS_INVOICE_ADDRESS_CHANGE.getName()
         );
 
-        assertThat(orderProcess).hasNotPassed(util._N(Events.INVOICE_ADDRESS_NOT_CHANGED));
+        assertThat(orderProcess).hasNotPassed(Events.INVOICE_ADDRESS_NOT_CHANGED.getName());
 
         final var updatedOrderOpt = salesOrderService.getOrderByOrderNumber(orderNumber);
         assertTrue(updatedOrderOpt.isPresent());
@@ -142,27 +142,27 @@ public class ChangeInvoiceAddressPossibleDelegateIntegrationTest {
             e.printStackTrace();
         }
 
-        assertThat(orderProcess).isWaitingAt(util._N(Events.MSG_ORDER_PAYMENT_SECURED));
+        assertThat(orderProcess).isWaitingAt(Events.MSG_ORDER_PAYMENT_SECURED.getName());
         util.sendMessage(Messages.ORDER_INVOICE_ADDRESS_CHANGE_RECEIVED, orderNumber);
 
         // check if the delegate sets the variable
         assertThat(orderProcess)
-                .hasVariables(util._N(Variables.INVOICE_EXISTS));
+                .hasVariables(Variables.INVOICE_EXISTS.getName());
         final Boolean invoiceExists = (Boolean) runtimeService
-                .getVariable(orderProcess.getProcessInstanceId(), util._N(Variables.INVOICE_EXISTS));
+                .getVariable(orderProcess.getProcessInstanceId(), Variables.INVOICE_EXISTS.getName());
         assertTrue(invoiceExists, "Variable invoice exists does not exist");
 
         assertThat(orderProcess).hasPassedInOrder(
-                util._N(Events.START_MSG_INVOICE_ADDRESS_CHANGE_RECEIVED),
-                util._N(Activities.CHANGE_INVOICE_ADDRESS_POSSIBLE),
-                util._N(Gateways.XOR_INVOICE_EXIST)
+                Events.START_MSG_INVOICE_ADDRESS_CHANGE_RECEIVED.getName(),
+                Activities.CHANGE_INVOICE_ADDRESS_POSSIBLE.getName(),
+                Gateways.XOR_INVOICE_EXIST.getName()
         );
 
         assertThat(orderProcess).hasPassed(
-                util._N(Activities.SUB_PROCESS_INVOICE_ADDRESS_CHANGE),
-                util._N(Events.INVOICE_ADDRESS_NOT_CHANGED)
+                Activities.SUB_PROCESS_INVOICE_ADDRESS_CHANGE.getName(),
+                Events.INVOICE_ADDRESS_NOT_CHANGED.getName()
         );
-        assertThat(orderProcess).hasNotPassed(util._N(Events.END_MSG_INVOICE_ADDRESS_CHANGED));
+        assertThat(orderProcess).hasNotPassed(Events.END_MSG_INVOICE_ADDRESS_CHANGED.getName());
 
         util.finishOrderProcess(orderProcess, orderNumber);
         auditLogUtil.assertAuditLogExists(testOrder.getId(), ORDER_CREATED);
@@ -175,13 +175,13 @@ public class ChangeInvoiceAddressPossibleDelegateIntegrationTest {
         final List<String> orderItems = util.getOrderRows(orderNumber, 5);
 
         final Map<String, Object> processVariables = new HashMap<>();
-        processVariables.put(util._N(Variables.SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR));
-        processVariables.put(util._N(Variables.ORDER_NUMBER), orderNumber);
-        processVariables.put(util._N(Variables.PAYMENT_TYPE), util._N(CREDIT_CARD));
-        processVariables.put(util._N(Variables.ORDER_VALID), true);
-        processVariables.put(util._N(Variables.ORDER_ROWS), orderItems);
+        processVariables.put(Variables.SHIPMENT_METHOD.getName(), ShipmentMethod.REGULAR.getName());
+        processVariables.put(Variables.ORDER_NUMBER.getName(), orderNumber);
+        processVariables.put(Variables.PAYMENT_TYPE.getName(), CREDIT_CARD.getName());
+        processVariables.put(Variables.ORDER_VALID.getName(), true);
+        processVariables.put(Variables.ORDER_ROWS.getName(), orderItems);
 
-        return runtimeService.createMessageCorrelation(util._N(Messages.ORDER_RECEIVED_MARKETPLACE))
+        return runtimeService.createMessageCorrelation(Messages.ORDER_RECEIVED_MARKETPLACE.getName())
                 .processInstanceBusinessKey(orderNumber)
                 .setVariables(processVariables)
                 .correlateWithResult().getProcessInstance();

@@ -3,10 +3,6 @@ package de.kfzteile24.salesOrderHub.helper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
 import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import lombok.NonNull;
@@ -26,6 +22,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_PAYMENT_SECURED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.PACKING_STARTED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.ROW_SHIPPED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.ROW_TRANSMITTED_TO_LOGISTICS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.TRACKING_ID_RECEIVED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.ORDER_ROW_ID;
 import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
 
 @Component
@@ -39,37 +42,29 @@ public class BpmUtil {
     private final ObjectMapper objectMapper;
 
     public final List<MessageCorrelationResult> sendMessage(BpmItem message, String orderNumber) {
-        return this.sendMessage(_N(message), orderNumber);
+        return this.sendMessage(message.getName(), orderNumber);
     }
 
     public final List<MessageCorrelationResult> sendMessage(String message, String orderNumber) {
         return runtimeService.createMessageCorrelation(message)
-                .processInstanceVariableEquals(_N(Variables.ORDER_NUMBER), orderNumber)
+                .processInstanceVariableEquals(ORDER_NUMBER.getName(), orderNumber)
                 .correlateAllWithResult();
     }
 
-    public final List<MessageCorrelationResult> sendMessage(BpmItem message) {
-        return this.sendMessage(_N(message));
-    }
-
-    public final List<MessageCorrelationResult> sendMessage(String message) {
-        return runtimeService.createMessageCorrelation(message)
-                .correlateAllWithResult();
-    }
-
-    public final MessageCorrelationResult sendMessage(final String message, final String orderNumber, final String orderItem) {
-        return sendMessage(message, orderNumber, orderItem, Collections.emptyMap());
+    public final MessageCorrelationResult sendMessage(final BpmItem message, final String orderNumber, final String orderItem,
+                                                      final Map<String, Object> processVariables) {
+        return sendMessage(message.getName(), orderNumber, orderItem, processVariables);
     }
 
     public final MessageCorrelationResult sendMessage(final BpmItem message, final String orderNumber, final String orderItem) {
-        return sendMessage(_N(message), orderNumber, orderItem, Collections.emptyMap());
+        return sendMessage(message.getName(), orderNumber, orderItem, Collections.emptyMap());
     }
 
     public final MessageCorrelationResult sendMessage(final String message, final String orderNumber, final String orderItem,
                                                       final Map<String, Object> processVariables) {
         MessageCorrelationBuilder builder = runtimeService.createMessageCorrelation(message)
-                .processInstanceVariableEquals(_N(Variables.ORDER_NUMBER), orderNumber)
-                .processInstanceVariableEquals(_N(RowVariables.ORDER_ROW_ID), orderItem);
+                .processInstanceVariableEquals(ORDER_NUMBER.getName(), orderNumber)
+                .processInstanceVariableEquals(ORDER_ROW_ID.getName(), orderItem);
         if (!processVariables.isEmpty())
             builder.setVariables(processVariables);
 
@@ -77,21 +72,15 @@ public class BpmUtil {
                 .correlateWithResult();
     }
 
-    public final MessageCorrelationResult sendMessage(final String message, final String orderNumber,
+    public final MessageCorrelationResult sendMessage(final BpmItem message, final String orderNumber,
                                                       final Map<String, Object> processVariables) {
-        MessageCorrelationBuilder builder = runtimeService.createMessageCorrelation(message)
-                .processInstanceVariableEquals(_N(Variables.ORDER_NUMBER), orderNumber);
+        MessageCorrelationBuilder builder = runtimeService.createMessageCorrelation(message.getName())
+                .processInstanceVariableEquals(ORDER_NUMBER.getName(), orderNumber);
         if (!processVariables.isEmpty())
             builder.setVariables(processVariables);
 
         return builder
                 .correlateWithResult();
-    }
-
-
-    public final MessageCorrelationResult sendMessage(final BpmItem message, final String orderNumber, final String orderItem,
-                                                      final Map<String, Object> processVariables) {
-        return sendMessage(_N(message), orderNumber, orderItem, processVariables);
     }
 
     public final String getRandomOrderNumber() {
@@ -125,10 +114,6 @@ public class BpmUtil {
         return result;
     }
 
-    public final String _N(BpmItem item) {
-        return item.getName();
-    }
-
     @SneakyThrows
     protected FileReader loadOrderJson() {
         String fileName = "examples/testmessage.json";
@@ -137,15 +122,15 @@ public class BpmUtil {
 
    public void finishOrderProcess(final ProcessInstance orderProcess, final String orderNumber) {
         // start subprocess
-        sendMessage(_N(Messages.ORDER_RECEIVED_PAYMENT_SECURED), orderNumber);
+        sendMessage(ORDER_RECEIVED_PAYMENT_SECURED, orderNumber);
 
         // send items thru
-        sendMessage(_N(RowMessages.ROW_TRANSMITTED_TO_LOGISTICS), orderNumber);
-        sendMessage(_N(RowMessages.PACKING_STARTED), orderNumber);
-        sendMessage(_N(RowMessages.TRACKING_ID_RECEIVED), orderNumber);
-        sendMessage(_N(RowMessages.ROW_SHIPPED), orderNumber);
+        sendMessage(ROW_TRANSMITTED_TO_LOGISTICS, orderNumber);
+        sendMessage(PACKING_STARTED, orderNumber);
+        sendMessage(TRACKING_ID_RECEIVED, orderNumber);
+        sendMessage(ROW_SHIPPED, orderNumber);
 
-       assertThat(orderProcess).isEnded().hasPassed(_N(Events.END_MSG_ORDER_COMPLETED));
+       assertThat(orderProcess).isEnded().hasPassed(Events.END_MSG_ORDER_COMPLETED.getName());
     }
 
 }

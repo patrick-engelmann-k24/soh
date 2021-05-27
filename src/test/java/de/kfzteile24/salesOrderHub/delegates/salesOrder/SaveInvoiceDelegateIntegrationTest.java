@@ -106,9 +106,9 @@ public class SaveInvoiceDelegateIntegrationTest {
         assertInvoices(orderNumber, singletonList(expectedInvoice));
 
         assertThat(firstInvoiceProcess).isEnded()
-                                       .hasPassedInOrder(util._N(Events.START_MSG_INVOICE_CREATED),
-                                                         util._N(Activities.SAVE_INVOICE),
-                                                         util._N(Events.INVOICE_SAVED));
+                                       .hasPassedInOrder(Events.START_MSG_INVOICE_CREATED.getName(),
+                                                         Activities.SAVE_INVOICE.getName(),
+                                                         Events.INVOICE_SAVED.getName());
 
         // add a correction invoice
         final var expectedCorrectionInvoice = createSalesOrderInvoice(orderNumber, true);
@@ -124,9 +124,9 @@ public class SaveInvoiceDelegateIntegrationTest {
         assertInvoices(orderNumber, Arrays.asList(expectedInvoice, expectedCorrectionInvoice));
 
         assertThat(correctedInvoiceProcess).isEnded()
-                                           .hasPassedInOrder(util._N(Events.START_MSG_INVOICE_CREATED),
-                                                             util._N(Activities.SAVE_INVOICE),
-                                                             util._N(Events.INVOICE_SAVED));
+                                           .hasPassedInOrder(Events.START_MSG_INVOICE_CREATED.getName(),
+                                                             Activities.SAVE_INVOICE.getName(),
+                                                             Events.INVOICE_SAVED.getName());
 
 
         util.finishOrderProcess(orderProcess, orderNumber);
@@ -162,9 +162,9 @@ public class SaveInvoiceDelegateIntegrationTest {
         assertInvoices(orderNumber, singletonList(expectedInvoice));
 
         assertThat(firstInvoiceProcess).isEnded()
-                                       .hasPassedInOrder(util._N(Events.START_MSG_INVOICE_CREATED),
-                                                         util._N(Activities.SAVE_INVOICE),
-                                                         util._N(Events.INVOICE_SAVED));
+                                       .hasPassedInOrder(Events.START_MSG_INVOICE_CREATED.getName(),
+                                                         Activities.SAVE_INVOICE.getName(),
+                                                         Events.INVOICE_SAVED.getName());
 
         // add a correction invoice
         final var expectedCorrectionInvoice = createSalesOrderInvoice(orderNumber, true);
@@ -180,9 +180,9 @@ public class SaveInvoiceDelegateIntegrationTest {
         assertInvoices(orderNumber, Arrays.asList(expectedInvoice, expectedCorrectionInvoice));
 
         assertThat(correctedInvoiceProcess).isEnded()
-                                           .hasPassedInOrder(util._N(Events.START_MSG_INVOICE_CREATED),
-                                                             util._N(Activities.SAVE_INVOICE),
-                                                             util._N(Events.INVOICE_SAVED));
+                                           .hasPassedInOrder(Events.START_MSG_INVOICE_CREATED.getName(),
+                                                             Activities.SAVE_INVOICE.getName(),
+                                                             Events.INVOICE_SAVED.getName());
 
         auditLogUtil.assertAuditLogExists(testOrder.getId(), ORDER_CREATED);
         auditLogUtil.assertAuditLogExists(testOrder.getId(), INVOICE_RECEIVED, 2);
@@ -230,13 +230,13 @@ public class SaveInvoiceDelegateIntegrationTest {
         final List<String> orderItems = util.getOrderRows(orderNumber, 5);
 
         final Map<String, Object> processVariables = new HashMap<>();
-        processVariables.put(util._N(SHIPMENT_METHOD), util._N(ShipmentMethod.REGULAR));
-        processVariables.put(util._N(ORDER_NUMBER), orderNumber);
-        processVariables.put(util._N(PAYMENT_TYPE), util._N(CREDIT_CARD));
-        processVariables.put(util._N(ORDER_VALID), true);
-        processVariables.put(util._N(ORDER_ROWS), orderItems);
+        processVariables.put(SHIPMENT_METHOD.getName(), ShipmentMethod.REGULAR.getName());
+        processVariables.put(ORDER_NUMBER.getName(), orderNumber);
+        processVariables.put(PAYMENT_TYPE.getName(), CREDIT_CARD.getName());
+        processVariables.put(ORDER_VALID.getName(), true);
+        processVariables.put(ORDER_ROWS.getName(), orderItems);
 
-        return runtimeService.createMessageCorrelation(util._N(ORDER_RECEIVED_MARKETPLACE))
+        return runtimeService.createMessageCorrelation(ORDER_RECEIVED_MARKETPLACE.getName())
                              .processInstanceBusinessKey(orderNumber)
                              .setVariables(processVariables)
                              .correlateWithResult()
@@ -245,11 +245,11 @@ public class SaveInvoiceDelegateIntegrationTest {
 
     private ProcessInstance createSaveInvoiceProcess(String orderNumber, SalesOrderInvoice expectedInvoice) {
         final Map<String, Object> processVariables = new HashMap<>();
-        processVariables.put(util._N(INVOICE_URL), expectedInvoice.getUrl());
-        processVariables.put(util._N(ORDER_NUMBER), orderNumber);
+        processVariables.put(INVOICE_URL.getName(), expectedInvoice.getUrl());
+        processVariables.put(ORDER_NUMBER.getName(), orderNumber);
 
-        return runtimeService.createMessageCorrelation(util._N(INVOICE_CREATED))
-                             .processInstanceVariableEquals(util._N(ORDER_NUMBER), orderNumber)
+        return runtimeService.createMessageCorrelation(INVOICE_CREATED.getName())
+                             .processInstanceVariableEquals(ORDER_NUMBER.getName(), orderNumber)
                              .setVariables(processVariables)
                              .correlateWithResult()
                              .getProcessInstance();
