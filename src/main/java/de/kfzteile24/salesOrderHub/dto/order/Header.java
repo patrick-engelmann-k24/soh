@@ -6,6 +6,7 @@ import de.kfzteile24.salesOrderHub.dto.order.header.Creator;
 import de.kfzteile24.salesOrderHub.dto.order.header.Discount;
 import de.kfzteile24.salesOrderHub.dto.order.header.Origin;
 import de.kfzteile24.salesOrderHub.dto.order.header.Payment;
+import de.kfzteile24.salesOrderHub.dto.order.header.Totals;
 import lombok.Data;
 
 import java.util.List;
@@ -30,4 +31,5 @@ public class Header {
     private List<Payment> payments;
     private Address billingAddress;
     private List<Address> shippingAddresses;
+    private Totals totals;
 }

@@ -2,25 +2,27 @@ package de.kfzteile24.salesOrderHub.dto.order.rows;
 
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Data
 public class SumValues {
-    private Number salesValueGross;
-    private Number salesValueNet;
-    private Number goodsValueGross;
-    private Number goodsValueNet;
-    private Number depositGross;
-    private Number depositNet;
-    private Number bulkyGoodsGross;
-    private Number bulkyGoodsNet;
-    private Number riskyGoodsGross;
-    private Number riskyGoodsNet;
-    private Number discountGross;
-    private Number discountNet;
-    private Number totalDiscountedNet;
-    private Number exchangePartValueGross;
-    private Number exchangePartValueNet;
-    private Number rrpGross;
-    private Number rrpNet;
-    private Number undiscountedSalesValueGross;
-    private Number undiscountedSalesValueNet;
+    private BigDecimal salesValueGross;
+    private BigDecimal salesValueNet;
+    private BigDecimal goodsValueGross;
+    private BigDecimal goodsValueNet;
+    private BigDecimal depositGross;
+    private BigDecimal depositNet;
+    private BigDecimal bulkyGoodsGross;
+    private BigDecimal bulkyGoodsNet;
+    private BigDecimal riskyGoodsGross;
+    private BigDecimal riskyGoodsNet;
+    private BigDecimal discountGross;
+    private BigDecimal discountNet;
+    private BigDecimal totalDiscountedNet;
+    private BigDecimal exchangePartValueGross;
+    private BigDecimal exchangePartValueNet;
+    private BigDecimal rrpGross;
+    private BigDecimal rrpNet;
+    private BigDecimal undiscountedSalesValueGross;
+    private BigDecimal undiscountedSalesValueNet;
 }

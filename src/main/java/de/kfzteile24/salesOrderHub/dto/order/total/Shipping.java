@@ -2,10 +2,13 @@ package de.kfzteile24.salesOrderHub.dto.order.total;
 
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Data
 public class Shipping {
-    private String standard;
-    private String express;
-    private String bulkyGoods;
-    private String dangerousGoods;
+    private BigDecimal standard;
+    private BigDecimal express;
+    private BigDecimal bulkyGoods;
+    private BigDecimal dangerousGoods;
+    private BigDecimal total;
 }
