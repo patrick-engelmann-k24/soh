@@ -94,8 +94,8 @@ resource "aws_sns_topic_subscription" "sns_subscription_order_item_tour_started"
 }
 
 // subscribe for invoices
-resource "aws_sns_topic_subscription" "sns_subscription_invoices_from_core" {
-  endpoint = aws_sqs_queue.soh_invoices_from_core.arn
-  protocol = "sqs"
-  topic_arn = var.invoices_from_core_sns
-}
+//resource "aws_sns_topic_subscription" "sns_subscription_invoices_from_core" {
+//  endpoint = aws_sqs_queue.soh_invoices_from_core.arn
+//  protocol = "sqs"
+//  topic_arn = var.invoices_from_core_sns
+//}
