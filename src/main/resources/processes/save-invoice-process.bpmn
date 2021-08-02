@@ -13,7 +13,7 @@
     <bpmn:sequenceFlow id="Flow_0yaacm3" sourceRef="activitySaveInvoice" targetRef="eventInvoiceSaved" />
     <bpmn:startEvent id="eventStartMsgInvoiceCreated" name="Invoice created" camunda:asyncBefore="true">
       <bpmn:outgoing>Flow_0q3ejcb</bpmn:outgoing>
-      <bpmn:messageEventDefinition id="MessageEventDefinition_1o8vrsp" />
+      <bpmn:messageEventDefinition id="MessageEventDefinition_1o8vrsp" messageRef="Message_0yxirzj" />
     </bpmn:startEvent>
   </bpmn:process>
   <bpmn:message id="Message_0yxirzj" name="msgInvoiceCreated" />
