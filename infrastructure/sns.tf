@@ -50,12 +50,23 @@ data "aws_sns_topic" "sns_soh_order_item_tour_started" {
   name = "soh-order-item-tour-started"
 }
 
+data "aws_sns_topic" "sns_braincraft_order_received" {
+  name = "braincraft-order-received-v1"
+}
+
 # subscriptions of sqs to sns
 //resource "aws_sns_topic_subscription" "sns_subscription_ecp_orders" {
 //  endpoint = aws_sqs_queue.ecp_shop_orders.arn
 //  protocol = "sqs"
 //  topic_arn = var.ecp_new_order_sns
 //}
+
+# subscription for de-shop orders
+resource "aws_sns_topic_subscription" "sns_subscription_braincraft_orders" {
+  endpoint = aws_sqs_queue.ecp_shop_orders.arn
+  protocol = "sqs"
+  topic_arn = data.aws_sns_topic.sns_braincraft_order_received.arn
+}
 
 resource "aws_sns_topic_subscription" "sns_subscription_order_item_shipped" {
   endpoint = aws_sqs_queue.soh_order_item_shipped.arn
@@ -94,8 +105,8 @@ resource "aws_sns_topic_subscription" "sns_subscription_order_item_tour_started"
 }
 
 // subscribe for invoices
-resource "aws_sns_topic_subscription" "sns_subscription_invoices_from_core" {
-  endpoint = aws_sqs_queue.soh_invoices_from_core.arn
-  protocol = "sqs"
-  topic_arn = var.invoices_from_core_sns
-}
+//resource "aws_sns_topic_subscription" "sns_subscription_invoices_from_core" {
+//  endpoint = aws_sqs_queue.soh_invoices_from_core.arn
+//  protocol = "sqs"
+//  topic_arn = var.invoices_from_core_sns
+//}
