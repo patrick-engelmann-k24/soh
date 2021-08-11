@@ -20,6 +20,7 @@ TOPICS="
     soh-order-item-tour-started
     soh-order-item-tracking-id-received
     soh-order-item-transmitted-to-logistic
+    soh-order-item-shipped
     soh-order-payment-secured
     soh-invoice-address-changed
     soh-invoices-from-core
@@ -30,7 +31,6 @@ TOPICS="
 #    soh-order-invoice-created
 
 QUEUES="
-    soh-order-item-shipped
     soh-cdr-own-delivery-picklist-shipped
     "
 
