@@ -1,11 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" id="Definitions_18ip853" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.6.0">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" id="Definitions_18ip853" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.9.0">
   <bpmn:process id="SaveInvoiceProcess" name="Save Invoice Process" isExecutable="true">
-    <bpmn:startEvent id="eventStartMsgInvoiceCreated" name="Invoice created" camunda:asyncBefore="true" isInterrupting="false">
-      <bpmn:outgoing>Flow_0q3ejcb</bpmn:outgoing>
-      <bpmn:messageEventDefinition id="MessageEventDefinition_0cdnnd1" messageRef="Message_0yxirzj" />
-    </bpmn:startEvent>
-    <bpmn:serviceTask id="activitySaveInvoice" name="Save invoice" camunda:delegateExpression="${saveInvoiceDelegate}">
+    <bpmn:serviceTask id="activitySaveInvoice" name="Save invoice" camunda:asyncBefore="true" camunda:delegateExpression="${saveInvoiceDelegate}">
       <bpmn:incoming>Flow_0q3ejcb</bpmn:incoming>
       <bpmn:outgoing>Flow_0yaacm3</bpmn:outgoing>
     </bpmn:serviceTask>
@@ -15,23 +11,24 @@
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_0q3ejcb" sourceRef="eventStartMsgInvoiceCreated" targetRef="activitySaveInvoice" />
     <bpmn:sequenceFlow id="Flow_0yaacm3" sourceRef="activitySaveInvoice" targetRef="eventInvoiceSaved" />
+    <bpmn:startEvent id="eventStartMsgInvoiceCreated" name="Invoice created" camunda:asyncBefore="true">
+      <bpmn:outgoing>Flow_0q3ejcb</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_1o8vrsp" messageRef="Message_0yxirzj" />
+    </bpmn:startEvent>
   </bpmn:process>
   <bpmn:message id="Message_0yxirzj" name="msgInvoiceCreated" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="SaveInvoiceProcess">
-      <bpmndi:BPMNEdge id="Flow_0q3ejcb_di" bpmnElement="Flow_0q3ejcb">
-        <di:waypoint x="208" y="120" />
-        <di:waypoint x="310" y="120" />
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0yaacm3_di" bpmnElement="Flow_0yaacm3">
         <di:waypoint x="410" y="120" />
         <di:waypoint x="532" y="120" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="Event_1am9zxo_di" bpmnElement="eventStartMsgInvoiceCreated" bioc:stroke="#000" bioc:fill="#fff">
-        <dc:Bounds x="172" y="102" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="153" y="145" width="75" height="14" />
-        </bpmndi:BPMNLabel>
+      <bpmndi:BPMNEdge id="Flow_0q3ejcb_di" bpmnElement="Flow_0q3ejcb">
+        <di:waypoint x="208" y="120" />
+        <di:waypoint x="310" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Activity_1i0tjug_di" bpmnElement="activitySaveInvoice">
+        <dc:Bounds x="310" y="80" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_09rl6ug_di" bpmnElement="eventInvoiceSaved" bioc:stroke="#000" bioc:fill="#fff">
         <dc:Bounds x="532" y="102" width="36" height="36" />
@@ -39,8 +36,11 @@
           <dc:Bounds x="516" y="145" width="68" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1i0tjug_di" bpmnElement="activitySaveInvoice">
-        <dc:Bounds x="310" y="80" width="100" height="80" />
+      <bpmndi:BPMNShape id="Event_1oa04zj_di" bpmnElement="eventStartMsgInvoiceCreated" bioc:stroke="#000" bioc:fill="#fff">
+        <dc:Bounds x="172" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="153" y="145" width="75" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
