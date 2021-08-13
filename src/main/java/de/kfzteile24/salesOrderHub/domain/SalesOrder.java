@@ -1,7 +1,7 @@
 package de.kfzteile24.salesOrderHub.domain;
 
 import de.kfzteile24.salesOrderHub.domain.converter.OrderJsonConverter;
-import de.kfzteile24.salesOrderHub.dto.OrderJSON;
+import de.kfzteile24.soh.order.dto.Order;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -37,11 +37,11 @@ public class SalesOrder extends AbstractBaseEntity {
 
     @Column(name = "original_order", columnDefinition = "json", updatable = false)
     @Convert(converter = OrderJsonConverter.class)
-    private OrderJSON originalOrder;
+    private Object originalOrder;
 
     @Column(name = "latest_json", columnDefinition = "json")
     @Convert(converter = OrderJsonConverter.class)
-    private OrderJSON latestJson;
+    private Order latestJson;
 
     @Column(name = "customer_email")
     private String customerEmail;

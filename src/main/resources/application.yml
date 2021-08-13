@@ -32,6 +32,7 @@ soh:
   sns:
     topic:
       orderCreated: ${soh_order_created}
+      orderCreatedV2: ${soh_order_created_v2}
       orderCompleted: ${soh_order_completed}
       orderCancelled: ${soh_order_cancelled}
       orderItemCancelled: ${soh_order_item_cancelled}

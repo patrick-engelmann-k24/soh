@@ -1,11 +1,11 @@
 package de.kfzteile24.salesOrderHub.controller;
 
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.dto.OrderJSON;
-import de.kfzteile24.salesOrderHub.dto.order.customer.Address;
 import de.kfzteile24.salesOrderHub.services.SalesOrderAddressService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderRowService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
+import de.kfzteile24.soh.order.dto.Address;
+import de.kfzteile24.soh.order.dto.Order;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -132,7 +132,7 @@ public class OrderController {
      */
     @ApiOperation(value = "Get one order with order number")
     @GetMapping("/{orderNumber}")
-    public ResponseEntity<OrderJSON> getOrder(@PathVariable String orderNumber) {
+    public ResponseEntity<Order> getOrder(@PathVariable String orderNumber) {
         final Optional<SalesOrder> salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber);
         if (salesOrder.isEmpty()) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);

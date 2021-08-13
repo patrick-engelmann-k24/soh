@@ -11,6 +11,9 @@ public class AwsSnsConfig {
     @Value("${soh.sns.topic.orderCreated}")
     private String snsOrderCreatedTopic;
 
+    @Value("${soh.sns.topic.orderCreatedV2}")
+    private String snsOrderCreatedTopicV2;
+
     @Value("${soh.sns.topic.orderCompleted}")
     private String snsOrderCompletedTopic;
 

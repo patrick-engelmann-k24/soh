@@ -9,8 +9,9 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.dto.order.customer.Address;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
+import de.kfzteile24.soh.order.dto.Address;
+import de.kfzteile24.soh.order.dto.Order;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.camunda.bpm.engine.RuntimeService;
@@ -43,8 +44,8 @@ public class SalesOrderAddressService {
                 sendMessageForUpdateBillingAddress(orderNumber, newBillingAddress);
                 final var newOrder = orderRepository.getOrderByOrderNumber(orderNumber);
                 if (newOrder.isPresent()) {
-                    SalesOrder updatedOrder = newOrder.get();
-                    if (updatedOrder.getLatestJson().getOrderHeader().getBillingAddress().equals(newBillingAddress)) {
+                    final var latestJson = (Order) newOrder.get().getLatestJson();
+                    if (latestJson.getOrderHeader().getBillingAddress().equals(newBillingAddress)) {
                         return new ResponseEntity<>("", HttpStatus.OK);
                     } else {
                         return new ResponseEntity<>("The order was found but we could not change the billing address, because the order has already a invoice.", HttpStatus.CONFLICT);
@@ -69,8 +70,8 @@ public class SalesOrderAddressService {
                         orderNumber, orderItemId, newDeliveryAddress);
                 final Optional<SalesOrder> newOrder = orderRepository.getOrderByOrderNumber(orderNumber);
                 if (newOrder.isPresent()) {
-                    SalesOrder updatedOrder = newOrder.get();
-                    List<Address> shippingAddresses = updatedOrder.getLatestJson().getOrderHeader().getShippingAddresses();
+                    final var latestJson = (Order) newOrder.get().getLatestJson();
+                    List<Address> shippingAddresses = latestJson.getOrderHeader().getShippingAddresses();
                     for(Address shippingAddress : shippingAddresses) {
                         if (shippingAddress.equals(newDeliveryAddress)) {
                             return new ResponseEntity<>("", HttpStatus.OK);

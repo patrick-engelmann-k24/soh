@@ -11,6 +11,7 @@ import de.kfzteile24.salesOrderHub.dto.order.rows.UnitValues;
 import de.kfzteile24.salesOrderHub.dto.order.total.Taxes;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Data
@@ -18,7 +19,7 @@ public class Rows {
     private String position;
     private String rowKey;
     private String sku;
-    private Number quantity;
+    private BigDecimal quantity;
     private String quantityUnitType;
     private PartIdentificationProperties partIdentificationProperties;
     private ItemNumbers itemNumbers;

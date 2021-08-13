@@ -29,6 +29,7 @@ module "application_module" {
     soh_db_port                = module.aurora.this_rds_cluster_port
     soh_db_database            = "sales_order_hub"
     soh_order_created          = data.aws_sns_topic.sns_soh_order_created_topic.arn
+    soh_order_created_v2       = data.aws_sns_topic.sns_soh_order_created_v2_topic.arn
     soh_order_completed        = data.aws_sns_topic.sns_soh_order_completed_topic.arn
     soh_order_item_cancelled   = data.aws_sns_topic.sns_soh_order_item_cancelled_topic.arn
     soh_order_cancelled        = data.aws_sns_topic.sns_soh_order_cancelled_topic.arn

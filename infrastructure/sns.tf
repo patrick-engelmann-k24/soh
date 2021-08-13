@@ -2,6 +2,10 @@ data "aws_sns_topic" "sns_soh_order_created_topic" {
   name = "soh-order-created"
 }
 
+data "aws_sns_topic" "sns_soh_order_created_v2_topic" {
+  name = "soh-order-created-v2"
+}
+
 data "aws_sns_topic" "sns_soh_sales_order_canceled_topic" {
   name = "soh-sales-order-canceled"
 }

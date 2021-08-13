@@ -18,6 +18,7 @@ public class SumValues {
     private BigDecimal riskyGoodsNet;
     private BigDecimal discountGross;
     private BigDecimal discountNet;
+    private BigDecimal totalDiscountedGross;
     private BigDecimal totalDiscountedNet;
     private BigDecimal exchangePartValueGross;
     private BigDecimal exchangePartValueNet;

@@ -6,12 +6,15 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
+import de.kfzteile24.salesOrderHub.converter.OrderJsonConverter;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.domain.converter.OrderJsonVersionDetector;
 import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
 import de.kfzteile24.salesOrderHub.dto.sns.FulfillmentMessage;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
+import de.kfzteile24.soh.order.dto.Order;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -40,6 +43,8 @@ public class SqsReceiveService {
     @NonNull private final SalesOrderService salesOrderService;
     @NonNull private final CamundaHelper camundaHelper;
     @NonNull private final ObjectMapper objectMapper;
+    @NonNull private final OrderJsonConverter orderJsonConverter;
+    @NonNull private final OrderJsonVersionDetector orderJsonVersionDetector;
 
     /**
      * Consume sqs for new orders from ecp shop
@@ -53,24 +58,37 @@ public class SqsReceiveService {
         log.info("Received message from ecp shop with sender id : {} ", senderId);
 
         String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-        OrderJSON orderJSON = objectMapper.readValue(body, OrderJSON.class);
-        final SalesOrder salesOrder = SalesOrder.builder()
-                .orderNumber(orderJSON.getOrderHeader()
-                    .getOrderNumber())
-                .salesChannel(orderJSON.getOrderHeader()
-                    .getOrigin()
-                    .getSalesChannel())
-                .customerEmail(orderJSON.getOrderHeader()
-                    .getCustomer()
-                    .getCustomerEmail())
-                .originalOrder(orderJSON)
-                .latestJson(orderJSON)
-                .build();
-
-        boolean isRecurringOrder = salesOrderService.isRecurringOrder(salesOrder);
-        if(isRecurringOrder){
-            salesOrder.setRecurringOrder(true);
+        SalesOrder salesOrder;
+        if (orderJsonVersionDetector.isVersion2(body)) {
+            OrderJSON orderJSON = objectMapper.readValue(body, OrderJSON.class);
+            salesOrder = SalesOrder.builder()
+                    .orderNumber(orderJSON.getOrderHeader()
+                            .getOrderNumber())
+                    .salesChannel(orderJSON.getOrderHeader()
+                            .getOrigin()
+                            .getSalesChannel())
+                    .customerEmail(orderJSON.getOrderHeader()
+                            .getCustomer()
+                            .getCustomerEmail())
+                    .originalOrder(orderJSON)
+                    .latestJson(orderJsonConverter.convert(orderJSON))
+                    .build();
+        } else {
+            Order order = objectMapper.readValue(body, Order.class);
+            salesOrder = SalesOrder.builder()
+                    .orderNumber(order.getOrderHeader()
+                            .getOrderNumber())
+                    .salesChannel(order.getOrderHeader()
+                            .getSalesChannel())
+                    .customerEmail(order.getOrderHeader()
+                            .getCustomer()
+                            .getCustomerEmail())
+                    .originalOrder(order)
+                    .latestJson(order)
+                    .build();
         }
+
+        salesOrder.setRecurringOrder(salesOrderService.isRecurringOrder(salesOrder));
         salesOrderService.save(salesOrder, ORDER_CREATED);
         ProcessInstance result = camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
 

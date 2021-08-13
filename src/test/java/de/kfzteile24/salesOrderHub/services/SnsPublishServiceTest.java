@@ -10,8 +10,6 @@ import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
@@ -21,14 +19,11 @@ import org.springframework.cloud.aws.messaging.core.NotificationMessagingTemplat
 import java.util.Optional;
 import java.util.function.Consumer;
 
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrderInfo;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 /**
  * @author vinaya
@@ -45,68 +40,69 @@ public class SnsPublishServiceTest {
     @Mock
     private AwsSnsConfig awsSnsConfig;
 
-    @Captor
-    private ArgumentCaptor<String> salesOrderArgumentCaptor;
-
     @InjectMocks
     private SnsPublishService snsPublishService;
 
     @Test
     @SneakyThrows(Exception.class)
-    public void testSendOrder() {
+    public void testPublishOrderCreatedPublishesBothOrderCreatedEventsIfTheOriginalOrderJsonIsV21() {
+        final var expectedTopic1 = "order-created";
+        final var expectedSubject1 = "Sales order created";
+        final var expectedTopic2 = "order-created-v2";
+        final var expectedSubject2 = "Sales order created V2";
         String rawMessage = SalesOrderUtil.readResource("examples/ecpOrderMessage.json");
         SalesOrder salesOrder = SalesOrderUtil.getSalesOrder(rawMessage);
+
         //given
         var orderNumber = salesOrder.getOrderNumber();
-        var snsTopic = "testsnstopic";
-        var subject = "publishorder";
-        SalesOrderInfo salesOrderInfo = SalesOrderInfo.builder()
-                .recurringOrder(Boolean.TRUE)
-                .order(SalesOrderUtil.getOrderJson(rawMessage))
-                .build();
         given(salesOrderService.getOrderByOrderNumber(orderNumber)).willReturn(Optional.of(salesOrder));
+        given(awsSnsConfig.getSnsOrderCreatedTopic()).willReturn(expectedTopic1);
+        given(awsSnsConfig.getSnsOrderCreatedTopicV2()).willReturn(expectedTopic2);
+
         //when
-        snsPublishService.sendOrder(snsTopic, subject, orderNumber);
+        snsPublishService.publishOrderCreated(orderNumber);
+
         //then
-        verify(notificationMessagingTemplate, times(1)).sendNotification(snsTopic,
-                objectMapper.writeValueAsString(
-                        salesOrderInfo), subject);
-        verify(notificationMessagingTemplate, times(1)).sendNotification(any(),
-                salesOrderArgumentCaptor.capture(),
-                any());
-        SalesOrderInfo order = objectMapper.readValue(salesOrderArgumentCaptor.getValue(),
-                SalesOrderInfo.class);
-        assertThat(order.isRecurringOrder()).isTrue();
-        assertThat(order.getOrder().getVersion()).isEqualTo("2.1");
-        assertThat(order.getOrder().getOrderHeader().getOrderNumber()).isEqualTo("514000016");
-        assertThat(order.getOrder().getOrderHeader().getOrderDatetime()).isEqualTo("2021-03-16T09:54:10.162Z");
-        assertThat(order.getOrder().getOrderRows().size()).isEqualTo(2);
-        assertThat(order.getOrder().getLogisticalUnits().size()).isEqualTo(1);
+        final var expectedSalesOrderInfoV1 = SalesOrderInfo.builder()
+                .recurringOrder(Boolean.TRUE)
+                .order(salesOrder.getOriginalOrder())
+                .build();
+        verify(notificationMessagingTemplate).sendNotification(expectedTopic1,
+                objectMapper.writeValueAsString(expectedSalesOrderInfoV1), expectedSubject1);
+        final var expectedSalesOrderInfoV2 = SalesOrderInfo.builder()
+                .recurringOrder(Boolean.TRUE)
+                .order(salesOrder.getLatestJson())
+                .build();
+        verify(notificationMessagingTemplate).sendNotification(expectedTopic2,
+                objectMapper.writeValueAsString(expectedSalesOrderInfoV2), expectedSubject2);
     }
+
 
     @Test
     @SneakyThrows(Exception.class)
-    public void testThatTheLatestOrderJsonIsPublished() {
-        final var rawMessage = SalesOrderUtil.readResource("examples/ecpOrderMessage.json");
-        final var salesOrder = SalesOrderUtil.getSalesOrder(rawMessage);
-        final var salesOrderLatest = SalesOrderUtil.getSalesOrder(rawMessage);
+    public void testPublishOrderCreatedPublishesOnlyTheOrderCreatedV2EventIfTheOriginalOrderJsonIsV3() {
+        final var expectedTopic2 = "order-created-v2";
+        final var expectedSubject2 = "Sales order created V2";
+        String rawMessage = SalesOrderUtil.readResource("examples/ecpOrderMessage.json");
+        SalesOrder salesOrder = SalesOrderUtil.getSalesOrder(rawMessage);
+        salesOrder.setOriginalOrder(salesOrder.getLatestJson());
 
-        salesOrderLatest.getLatestJson().getOrderHeader().getBillingAddress().setCity("Berlin");
-        salesOrder.setLatestJson(salesOrderLatest.getLatestJson());
-        assertThat(salesOrder.getOriginalOrder().getOrderHeader().getBillingAddress().getCity())
-                .isNotEqualTo(salesOrder.getLatestJson().getOrderHeader().getBillingAddress().getCity());
+        //given
+        var orderNumber = salesOrder.getOrderNumber();
+        given(salesOrderService.getOrderByOrderNumber(orderNumber)).willReturn(Optional.of(salesOrder));
+        given(awsSnsConfig.getSnsOrderCreatedTopicV2()).willReturn(expectedTopic2);
 
-        given(salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber()))
-                .willReturn(Optional.of(salesOrder));
+        //when
+        snsPublishService.publishOrderCreated(orderNumber);
 
-        snsPublishService.sendOrder("", "", salesOrder.getOrderNumber());
-
-        verify(notificationMessagingTemplate).sendNotification(any(), salesOrderArgumentCaptor.capture(), any());
-
-        final var salesOrderInfo = objectMapper.readValue(salesOrderArgumentCaptor.getValue(),
-                SalesOrderInfo.class);
-        assertThat(salesOrderInfo.getOrder().getOrderHeader().getBillingAddress().getCity())
-                .isEqualTo(salesOrder.getLatestJson().getOrderHeader().getBillingAddress().getCity());
+        //then
+        final var expectedSalesOrderInfoV2 = SalesOrderInfo.builder()
+                .recurringOrder(Boolean.TRUE)
+                .order(salesOrder.getLatestJson())
+                .build();
+        verify(notificationMessagingTemplate).sendNotification(expectedTopic2,
+                objectMapper.writeValueAsString(expectedSalesOrderInfoV2), expectedSubject2);
+        verifyNoMoreInteractions(notificationMessagingTemplate);
     }
 
     @Test
@@ -125,7 +121,7 @@ public class SnsPublishServiceTest {
         //given
         given(salesOrderService.getOrderByOrderNumber(orderNumber)).willReturn(Optional.empty());
         //when
-        assertThatThrownBy(() -> snsPublishService.sendOrder(snsTopic, subject, orderNumber))
+        assertThatThrownBy(() -> snsPublishService.sendLatestOrderJson(snsTopic, subject, orderNumber))
                 .isInstanceOf(SalesOrderNotFoundException.class)
                 .hasMessageContaining("Sales order not found for the given order number ", orderNumber);
         //then
@@ -142,7 +138,7 @@ public class SnsPublishServiceTest {
         given(awsSnsConfig.getSnsOrderCreatedTopic()).willReturn(expectedTopic);
 
         verifyPublishedEvent(expectedTopic, expectedSubject,
-                throwingConsumerWrapper(snsPublishService::publishOrderCreated));
+                throwingConsumerWrapper(snsPublishService::publishOrderCreated), false);
     }
 
     @Test
@@ -154,7 +150,7 @@ public class SnsPublishServiceTest {
         given(awsSnsConfig.getSnsOrderCancelledTopic()).willReturn(expectedTopic);
 
         verifyPublishedEvent(expectedTopic, expectedSubject,
-                throwingConsumerWrapper(snsPublishService::publishOrderCancelled));
+                throwingConsumerWrapper(snsPublishService::publishOrderCancelled), true);
     }
 
     @Test
@@ -166,7 +162,7 @@ public class SnsPublishServiceTest {
         given(awsSnsConfig.getSnsOrderItemCancelledTopic()).willReturn(expectedTopic);
 
         verifyPublishedEvent(expectedTopic, expectedSubject,
-                throwingConsumerWrapper(snsPublishService::publishOrderItemCancelled));
+                throwingConsumerWrapper(snsPublishService::publishOrderItemCancelled), true);
     }
 
     @Test
@@ -178,7 +174,7 @@ public class SnsPublishServiceTest {
         given(awsSnsConfig.getSnsOrderCompletedTopic()).willReturn(expectedTopic);
 
         verifyPublishedEvent(expectedTopic, expectedSubject,
-                throwingConsumerWrapper(snsPublishService::publishOrderCompleted));
+                throwingConsumerWrapper(snsPublishService::publishOrderCompleted), true);
     }
 
     @Test
@@ -190,7 +186,7 @@ public class SnsPublishServiceTest {
         given(awsSnsConfig.getSnsDeliveryAddressChanged()).willReturn(expectedTopic);
 
         verifyPublishedEvent(expectedTopic, expectedSubject,
-                throwingConsumerWrapper(snsPublishService::publishDeliveryAddressChanged));
+                throwingConsumerWrapper(snsPublishService::publishDeliveryAddressChanged), true);
     }
 
     @Test
@@ -202,11 +198,12 @@ public class SnsPublishServiceTest {
         given(awsSnsConfig.getSnsInvoiceAddressChangedTopic()).willReturn(expectedTopic);
 
         verifyPublishedEvent(expectedTopic, expectedSubject,
-                throwingConsumerWrapper(snsPublishService::publishInvoiceAddressChanged));
+                throwingConsumerWrapper(snsPublishService::publishInvoiceAddressChanged), true);
     }
 
     @SneakyThrows(Exception.class)
-    private void verifyPublishedEvent(String expectedTopic, String expectedSubject, Consumer<String> executor) {
+    private void verifyPublishedEvent(String expectedTopic, String expectedSubject, Consumer<String> executor,
+                                      boolean expectLatestOrderJSON) {
         final String rawMessage = SalesOrderUtil.readResource("examples/ecpOrderMessage.json");
         final SalesOrder salesOrder = SalesOrderUtil.getSalesOrder(rawMessage);
         given(salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber()))
@@ -214,9 +211,14 @@ public class SnsPublishServiceTest {
 
         executor.accept(salesOrder.getOrderNumber());
 
+        var expectedSalesOrderInfo = SalesOrderInfo.builder()
+                .recurringOrder(Boolean.TRUE)
+                .order(expectLatestOrderJSON ? salesOrder.getLatestJson() : salesOrder.getOriginalOrder())
+                .build();
+
         verify(notificationMessagingTemplate).sendNotification(
                 expectedTopic,
-                objectMapper.writeValueAsString(getSalesOrderInfo(rawMessage)),
+                objectMapper.writeValueAsString(expectedSalesOrderInfo),
                 expectedSubject
         );
     }

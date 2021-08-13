@@ -14,8 +14,8 @@ public class Totals {
     private BigDecimal salesValueTotalNet;
     private BigDecimal subtotalGross;
     private BigDecimal subtotalNet;
-    private Object shippingTotalsGross;
-    private Object shippingTotalsNet;
+    private ShippingTotalValues shippingTotalsGross;
+    private ShippingTotalValues shippingTotalsNet;
     private Object paymentExpensesGross;
     private Object paymentExpensesNet;
     private BigDecimal grandtotalGross;

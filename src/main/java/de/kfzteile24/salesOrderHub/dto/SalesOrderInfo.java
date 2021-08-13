@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class SalesOrderInfo {
 
-  private OrderJSON order;
+  private Object order;
   private boolean recurringOrder;
 
 }
