@@ -192,7 +192,7 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
         final SalesOrder testOrder = salesOrderUtil.createNewSalesOrder();
         final String orderNumber = testOrder.getOrderNumber();
         processVariables.put(ORDER_NUMBER.getName(), orderNumber);
-        processVariables.put(SHIPMENT_METHOD.getName(), ShipmentMethod.OWN_DELIVERY.getName());
+        processVariables.put(SHIPMENT_METHOD.getName(), ShipmentMethod.DIRECT_DELIVERY.getName());
 
         final ProcessInstance orderItemFulfillmentProcess = runtimeService.startProcessInstanceByKey(
                 SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
@@ -227,7 +227,7 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
         final String orderItemId = testOrder.getLatestJson().getOrderRows().get(0).getSku();
 
         processVariables.put(ORDER_NUMBER.getName(), orderNumber);
-        processVariables.put(SHIPMENT_METHOD.getName(), ShipmentMethod.OWN_DELIVERY.getName());
+        processVariables.put(SHIPMENT_METHOD.getName(), ShipmentMethod.DIRECT_DELIVERY.getName());
         processVariables.put(RowVariables.ORDER_ROW_ID.getName(), orderItemId);
 
         final Address address = Address.builder()
