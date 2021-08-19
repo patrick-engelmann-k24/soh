@@ -22,7 +22,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS;
@@ -127,8 +126,7 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
         final Map<String, Object> processVariables = new HashMap<>();
         final SalesOrder testOrder = salesOrderUtil.createNewSalesOrder();
         final String orderNumber = testOrder.getOrderNumber();
-        final List<String> orderItems = util.getOrderRows(orderNumber, 5);
-        final String orderItemId = orderItems.get(0);
+        final String orderItemId = testOrder.getLatestJson().getOrderRows().get(0).getSku();
 
         processVariables.put(ORDER_NUMBER.getName(), orderNumber);
         processVariables.put(SHIPMENT_METHOD.getName(), ShipmentMethod.REGULAR.getName());
@@ -226,8 +224,7 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
         final Map<String, Object> processVariables = new HashMap<>();
         final SalesOrder testOrder = salesOrderUtil.createNewSalesOrder();
         final String orderNumber = testOrder.getOrderNumber();
-        final List<String> orderItems = util.getOrderRows(orderNumber, 5);
-        final String orderItemId = orderItems.get(0);
+        final String orderItemId = testOrder.getLatestJson().getOrderRows().get(0).getSku();
 
         processVariables.put(ORDER_NUMBER.getName(), orderNumber);
         processVariables.put(SHIPMENT_METHOD.getName(), ShipmentMethod.OWN_DELIVERY.getName());

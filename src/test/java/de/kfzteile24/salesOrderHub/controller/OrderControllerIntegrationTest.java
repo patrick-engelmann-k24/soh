@@ -2,9 +2,10 @@ package de.kfzteile24.salesOrderHub.controller;
 
 import de.kfzteile24.salesOrderHub.SalesOrderHubProcessApplication;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.dto.order.customer.Address;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
+import de.kfzteile24.soh.order.dto.Address;
+import de.kfzteile24.soh.order.dto.OrderRows;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
@@ -30,6 +31,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMes
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.ROW_TRANSMITTED_TO_LOGISTICS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.TRACKING_ID_RECEIVED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
+import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
 
@@ -70,7 +72,9 @@ class OrderControllerIntegrationTest {
     public void updateShippingAddressForOrder() {
         var testOrder = salesOrderUtil.createNewSalesOrder();
         final String orderNumber = testOrder.getOrderNumber();
-        final List<String> orderItems = util.getOrderRows(orderNumber, 5);
+        final List<String> orderItems = testOrder.getLatestJson().getOrderRows().stream()
+                .map(OrderRows::getSku)
+                .collect(toList());
 
         final Address address = Address.builder()
                                         .firstName("Max")

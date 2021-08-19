@@ -3,6 +3,8 @@ package de.kfzteile24.salesOrderHub.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.AwsSnsConfig;
+import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import de.kfzteile24.salesOrderHub.dto.SalesOrderInfo;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import lombok.NonNull;
@@ -26,32 +28,50 @@ public class SnsPublishService {
     @NonNull
     private final AwsSnsConfig config;
 
-    public void publishOrderCreated(String orderNumber) throws Exception {
-        sendOrder(config.getSnsOrderCreatedTopic(), "Sales order created", orderNumber);
+    public void publishOrderCreated(String orderNumber) {
+        final var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
+                .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
+
+        if (salesOrder.getOriginalOrder() instanceof OrderJSON) {
+            final var salesOrderInfo = SalesOrderInfo.builder()
+                    .order(salesOrder.getOriginalOrder())
+                    .recurringOrder(salesOrder.isRecurringOrder())
+                    .build();
+            sendOrder(config.getSnsOrderCreatedTopic(), "Sales order created", salesOrderInfo, orderNumber);
+        }
+        publishOrderCreatedWithLatestOrderJson(salesOrder, orderNumber);
     }
 
-    public void publishInvoiceAddressChanged(String orderNumber) throws Exception {
-        sendOrder(config.getSnsInvoiceAddressChangedTopic(), "Sales order invoice address changed", orderNumber);
+    private void publishOrderCreatedWithLatestOrderJson(SalesOrder salesOrder, String orderNumber) {
+        final var salesOrderInfoV2 = SalesOrderInfo.builder()
+                .order(salesOrder.getLatestJson())
+                .recurringOrder(salesOrder.isRecurringOrder())
+                .build();
+        sendOrder(config.getSnsOrderCreatedTopicV2(), "Sales order created V2", salesOrderInfoV2, orderNumber);
     }
 
-    public void publishDeliveryAddressChanged(String orderNumber) throws Exception {
-        sendOrder(config.getSnsDeliveryAddressChanged(), "Sales order delivery address changed", orderNumber);
+    public void publishInvoiceAddressChanged(String orderNumber) {
+        sendLatestOrderJson(config.getSnsInvoiceAddressChangedTopic(),
+                "Sales order invoice address changed", orderNumber);
     }
 
-    public void publishOrderItemCancelled(String orderNumber) throws Exception {
-        sendOrder(config.getSnsOrderItemCancelledTopic(), "Sales order item cancelled", orderNumber);
+    public void publishDeliveryAddressChanged(String orderNumber) {
+        sendLatestOrderJson(config.getSnsDeliveryAddressChanged(), "Sales order delivery address changed", orderNumber);
     }
 
-    public void publishOrderCancelled(String orderNumber) throws Exception {
-        sendOrder(config.getSnsOrderCancelledTopic(), "Sales order cancelled", orderNumber);
+    public void publishOrderItemCancelled(String orderNumber) {
+        sendLatestOrderJson(config.getSnsOrderItemCancelledTopic(), "Sales order item cancelled", orderNumber);
     }
 
-    public void publishOrderCompleted(String orderNumber) throws Exception {
-        sendOrder(config.getSnsOrderCompletedTopic(), "Sales order completed", orderNumber);
+    public void publishOrderCancelled(String orderNumber) {
+        sendLatestOrderJson(config.getSnsOrderCancelledTopic(), "Sales order cancelled", orderNumber);
     }
 
-    @SneakyThrows({JsonProcessingException.class})
-    protected void sendOrder(String topic, String subject, String orderNumber) {
+    public void publishOrderCompleted(String orderNumber) {
+        sendLatestOrderJson(config.getSnsOrderCompletedTopic(), "Sales order completed", orderNumber);
+    }
+
+    protected void sendLatestOrderJson(String topic, String subject, String orderNumber) {
         final var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
 
@@ -60,10 +80,14 @@ public class SnsPublishService {
                 .recurringOrder(salesOrder.isRecurringOrder())
                 .build();
 
+        sendOrder(topic, subject, salesOrderInfo, orderNumber);
+    }
+
+    @SneakyThrows({JsonProcessingException.class})
+    private void sendOrder(String topic, String subject, SalesOrderInfo salesOrderInfo, String orderNumber) {
         log.info("Publishing SNS-Topic: {} for order number {}", topic, orderNumber);
+
         notificationMessagingTemplate.sendNotification(topic,
-                objectMapper.writeValueAsString(
-                        salesOrderInfo),
-                subject);
+                objectMapper.writeValueAsString( salesOrderInfo), subject);
     }
 }

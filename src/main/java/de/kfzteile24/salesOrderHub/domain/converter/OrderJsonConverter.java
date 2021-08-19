@@ -3,6 +3,8 @@ package de.kfzteile24.salesOrderHub.domain.converter;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.dto.OrderJSON;
+import de.kfzteile24.soh.order.dto.Order;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 
@@ -11,19 +13,30 @@ import javax.persistence.Converter;
 
 @Converter
 @RequiredArgsConstructor
-public class OrderJsonConverter implements AttributeConverter<OrderJSON, String> {
+public class OrderJsonConverter implements AttributeConverter<Object, String> {
 
+    @NonNull
     private final ObjectMapper objectMapper;
+
+    @NonNull
+    private final OrderJsonVersionDetector orderJsonVersionDetector;
 
     @Override
     @SneakyThrows(JsonProcessingException.class)
-    public String convertToDatabaseColumn(OrderJSON attribute) {
-        return objectMapper.writeValueAsString(attribute);
+    public String convertToDatabaseColumn(Object orderJson) {
+        return objectMapper.writeValueAsString(orderJson);
     }
 
     @Override
     @SneakyThrows(JsonProcessingException.class)
-    public OrderJSON convertToEntityAttribute(String dbData) {
-        return objectMapper.readValue(dbData, OrderJSON.class);
+    public Object convertToEntityAttribute(String orderJson) {
+        if (orderJsonVersionDetector.isVersion2(orderJson)) {
+            return objectMapper.readValue(orderJson, OrderJSON.class);
+        } else if (orderJsonVersionDetector.isVersion3(orderJson)) {
+            return objectMapper.readValue(orderJson, Order.class);
+        } else {
+            throw new IllegalStateException("Cannot convert unsupported JSON version: " +
+                    orderJsonVersionDetector.detectVersion(orderJson));
+        }
     }
 }

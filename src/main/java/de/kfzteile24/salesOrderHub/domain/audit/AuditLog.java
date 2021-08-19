@@ -2,7 +2,6 @@ package de.kfzteile24.salesOrderHub.domain.audit;
 
 import de.kfzteile24.salesOrderHub.domain.converter.AuditActionConverter;
 import de.kfzteile24.salesOrderHub.domain.converter.OrderJsonConverter;
-import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -45,7 +44,7 @@ public class AuditLog implements Persistable<UUID> {
 
     @Column(name = "data", columnDefinition = "json")
     @Convert(converter = OrderJsonConverter.class)
-    private OrderJSON data;
+    private Object data;
 
     @Column(name = "created_at")
     @CreationTimestamp

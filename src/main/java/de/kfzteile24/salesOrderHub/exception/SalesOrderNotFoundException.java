@@ -6,7 +6,7 @@ import java.text.MessageFormat;
  * @author vinaya
  */
 
-public class SalesOrderNotFoundException extends RuntimeException {
+public class SalesOrderNotFoundException extends NotFoundException {
 
     public SalesOrderNotFoundException(String orderNumber) {
         super(MessageFormat.format(

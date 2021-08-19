@@ -18,7 +18,7 @@ public class LogisticalUnits {
     private SelfPickup selfPickup;
     private String shippingAdvice;
     private String shippingProvider;
-    private String ShippingType;
+    private String shippingType;
     private String expectedDeliveryDate;
     private String expectedDeliveryMessage;
     private String trackingNumber;
