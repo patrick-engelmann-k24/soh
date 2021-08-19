@@ -117,7 +117,7 @@ public class CheckRowCancellationPossibleIntegrationTest {
         final Map<String, Object> processVariables = new HashMap<>();
         String orderNumber = util.getRandomOrderNumber();
         processVariables.put(ORDER_NUMBER.getName(), orderNumber);
-        processVariables.put(SHIPMENT_METHOD.getName(), ShipmentMethod.OWN_DELIVERY.getName());
+        processVariables.put(SHIPMENT_METHOD.getName(), ShipmentMethod.DIRECT_DELIVERY.getName());
 
         final ProcessInstance orderRowFulfillmentProcess = runtimeService.startProcessInstanceByKey(
                 ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName(),

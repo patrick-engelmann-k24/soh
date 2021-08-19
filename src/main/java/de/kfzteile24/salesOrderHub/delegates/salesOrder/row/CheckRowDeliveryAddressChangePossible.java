@@ -33,7 +33,7 @@ public class CheckRowDeliveryAddressChangePossible extends CommonDelegate {
                 return checkOnShipmentMethodParcel(processInstanceId);
             case CLICK_COLLECT:
                 return false;
-            case OWN_DELIVERY:
+            case DIRECT_DELIVERY:
                 return checkOnShipmentMethodOwnDelivery(processInstanceId);
             default:
                 log.warning(format("Unknown Shipment method %s", Variables.SHIPMENT_METHOD.getName()));
