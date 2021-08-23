@@ -82,7 +82,7 @@ public class SalesOrderRowService {
                 return helper.hasNotPassed(processId, RowEvents.TRACKING_ID_RECEIVED.getName());
             case CLICK_COLLECT:
                 return helper.hasNotPassed(processId, RowEvents.ROW_PICKED_UP.getName());
-            case OWN_DELIVERY:
+            case DIRECT_DELIVERY:
                 return helper.hasNotPassed(processId, RowEvents.ROW_DELIVERED.getName());
             default:
                 log.warn(format("Unknown Shipment method %s", SHIPMENT_METHOD.getName()));

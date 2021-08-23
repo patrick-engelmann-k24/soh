@@ -33,8 +33,8 @@ public class CheckRowDeliveryAddressChangePossible extends CommonDelegate {
                 return checkOnShipmentMethodParcel(processInstanceId);
             case CLICK_COLLECT:
                 return false;
-            case OWN_DELIVERY:
-                return checkOnShipmentMethodOwnDelivery(processInstanceId);
+            case DIRECT_DELIVERY:
+                return checkOnShipmentMethod(processInstanceId);
             default:
                 log.warning(format("Unknown Shipment method %s", Variables.SHIPMENT_METHOD.getName()));
         }
@@ -47,7 +47,7 @@ public class CheckRowDeliveryAddressChangePossible extends CommonDelegate {
         return helper.hasNotPassed(processInstanceId, RowEvents.PACKING_STARTED.getName());
     }
 
-    protected boolean checkOnShipmentMethodOwnDelivery(String processInstanceId) {
+    protected boolean checkOnShipmentMethod(String processInstanceId) {
         return helper.hasNotPassed(processInstanceId, RowEvents.TOUR_STARTED.getName());
     }
 
