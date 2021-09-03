@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 import java.util.Arrays;
 import java.util.UUID;
 
+import static de.kfzteile24.soh.order.dto.Platform.ECP;
 import static java.lang.Integer.parseInt;
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
@@ -51,6 +52,7 @@ public class OrderHeaderConverter implements Converter<OrderJSON, OrderHeader> {
 
         return OrderHeader.builder()
                 .salesChannel(header.getOrigin().getSalesChannel())
+                .platform(ECP)
                 .locale(header.getOrigin().getLocale())
                 .orderDateTime(header.getOrderDatetime())
                 .orderTimezone(header.getOrderTimezone())

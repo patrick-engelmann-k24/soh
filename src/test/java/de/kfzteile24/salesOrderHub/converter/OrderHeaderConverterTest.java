@@ -24,6 +24,7 @@ import java.util.UUID;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.readOrderJson;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.readResource;
+import static de.kfzteile24.soh.order.dto.Platform.ECP;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -78,6 +79,7 @@ class OrderHeaderConverterTest {
         assertThat(convertedHeader.getOfferReferenceNumber()).isEqualTo(originalHeader.getOfferReferenceNumber());
         assertThat(convertedHeader.getOrderFulfillment()).isEqualTo(OrderHeaderConverter.FULFILLED_BY_K24);
         assertThat(convertedHeader.getCustomerFulfillmentPartialPreference()).isFalse();
+        assertThat(convertedHeader.getPlatform()).isEqualTo(ECP);
 
         validateCustomer(orderJSON.getOrderHeader(), convertedHeader.getCustomer());
 

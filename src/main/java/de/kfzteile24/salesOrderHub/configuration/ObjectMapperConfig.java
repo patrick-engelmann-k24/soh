@@ -1,6 +1,7 @@
 package de.kfzteile24.salesOrderHub.configuration;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -20,6 +21,7 @@ public class ObjectMapperConfig {
         return JsonMapper.builder()
                 .propertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE)
                 .enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS)
+                .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
                 .addModule(new JavaTimeModule())
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
