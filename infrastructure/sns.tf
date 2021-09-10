@@ -115,7 +115,7 @@ resource "aws_sns_topic_subscription" "sns_subscription_order_item_tour_started"
   topic_arn = data.aws_sns_topic.sns_soh_order_item_tour_started.arn
 }
 
-subscribe for invoices
+# subscribe for invoices
 resource "aws_sns_topic_subscription" "sns_subscription_invoices_from_core" {
   endpoint = aws_sqs_queue.soh_invoices_from_core.arn
   protocol = "sqs"
