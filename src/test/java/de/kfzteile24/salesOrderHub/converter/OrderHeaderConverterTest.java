@@ -73,7 +73,8 @@ class OrderHeaderConverterTest {
         assertThat(convertedHeader.getOrderCurrency()).isEqualTo(originalHeader.getOrderCurrency());
         assertThat(convertedHeader.getOrderId()).isEqualTo(originalHeader.getOrderId());
         assertThat(convertedHeader.getOrderNumber()).isEqualTo(originalHeader.getOrderNumber());
-        assertThat(convertedHeader.getOrderNumberWhm()).isEqualTo(originalHeader.getOrderNumber());
+        assertThat(convertedHeader.getOrderNumberCore()).isEqualTo(originalHeader.getOrderNumber());
+        assertThat(convertedHeader.getOrderNumberExternal()).isNull();
         assertThat(convertedHeader.getOrderGroupId()).isNull();
         assertThat(convertedHeader.getOfferId()).isEqualTo(UUID.fromString(originalHeader.getOfferId()));
         assertThat(convertedHeader.getOfferReferenceNumber()).isEqualTo(originalHeader.getOfferReferenceNumber());
@@ -90,6 +91,7 @@ class OrderHeaderConverterTest {
                     .findAny();
 
             assertThat(convertedAddressOpt.isPresent()).isTrue();
+            assertThat(convertedAddressOpt.get().getRelayPhoneNumberConsent()).isFalse();
             validateAddress(originalAddress, convertedAddressOpt.get());
         });
 

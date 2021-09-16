@@ -38,18 +38,9 @@ public class OrderHeaderConverter implements Converter<OrderJSON, OrderHeader> {
     @NonNull
     private final SurchargesConverter surchargesConverter;
 
-/* Activate or delete this, depending on how to finally implement order[Number/Id/NumberWhm]
-    private static final ThreadLocal<DateTimeFormatter> DATE_FORMATTER =
-            ThreadLocal.withInitial(() ->
-                    DateTimeFormatter.ofPattern("yyyyMMdd").withZone(ZoneId.of("Europe/Berlin"))
-            );
-*/
-
     @Override
     public OrderHeader convert(OrderJSON source) {
         final var header = source.getOrderHeader();
-//        final var orderDateTime = OffsetDateTime.parse(header.getOrderDatetime());
-
         return OrderHeader.builder()
                 .salesChannel(header.getOrigin().getSalesChannel())
                 .platform(ECP)
@@ -59,7 +50,8 @@ public class OrderHeaderConverter implements Converter<OrderJSON, OrderHeader> {
                 .orderCurrency(header.getOrderCurrency())
                 .orderId(header.getOrderId())
                 .orderNumber(header.getOrderNumber())
-                .orderNumberCore(header.getOrderNumberCore())
+                .orderNumberCore(header.getOrderNumber())//Former WHM for core system.
+                .orderNumberExternal(null)//for marketplaces and other external order numbers
                 .orderGroupId(null)
                 .offerId(toUUIDOrNull(header.getOfferId()))
                 .offerReferenceNumber(header.getOfferReferenceNumber())
@@ -112,6 +104,7 @@ public class OrderHeaderConverter implements Converter<OrderJSON, OrderHeader> {
                 .zipCode(source.getZipCode())
                 .countryRegionCode(source.getCountryRegionCode())
                 .countryCode(source.getCountryCode())
+                .relayPhoneNumberConsent(false)
                 .build();
     }
 
