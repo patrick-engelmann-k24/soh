@@ -131,6 +131,7 @@ class OrderHeaderConverterTest {
         assertThat(convertedCustomer.getContactId()).isEqualTo(UUID.fromString(originalCustomer.getContactId()));
         assertThat(convertedCustomer.getCustomerType().getType()).isEqualTo(originalCustomer.getCustomerType());
         assertThat(convertedCustomer.getCustomerNumber()).isEqualTo(originalCustomer.getCustomerNumber());
+        assertThat(convertedCustomer.getCustomerNumberCore()).isNull();
         assertThat(convertedCustomer.getVatTaxId())
                 .isEqualTo(originalHeader.getBillingAddress().getTaxNumber());
         assertThat(convertedCustomer.getCustomerSegment().isEmpty()).isTrue();

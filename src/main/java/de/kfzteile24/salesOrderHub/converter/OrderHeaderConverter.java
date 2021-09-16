@@ -77,6 +77,7 @@ public class OrderHeaderConverter implements Converter<OrderJSON, OrderHeader> {
                 .customerType(customerTypeConverter.convert(customer.getCustomerType()))
                 .customerEmail(customer.getCustomerEmail())
                 .customerNumber(customer.getCustomerNumber())
+                .customerNumberCore(null)
                 .vatTaxId(sourceHeader.getBillingAddress().getTaxNumber())
                 .customerSegment(emptyList())
                 .build();
