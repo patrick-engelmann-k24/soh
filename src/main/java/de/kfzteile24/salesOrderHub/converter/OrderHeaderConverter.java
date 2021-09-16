@@ -38,18 +38,9 @@ public class OrderHeaderConverter implements Converter<OrderJSON, OrderHeader> {
     @NonNull
     private final SurchargesConverter surchargesConverter;
 
-/* Activate or delete this, depending on how to finally implement order[Number/Id/NumberWhm]
-    private static final ThreadLocal<DateTimeFormatter> DATE_FORMATTER =
-            ThreadLocal.withInitial(() ->
-                    DateTimeFormatter.ofPattern("yyyyMMdd").withZone(ZoneId.of("Europe/Berlin"))
-            );
-*/
-
     @Override
     public OrderHeader convert(OrderJSON source) {
         final var header = source.getOrderHeader();
-//        final var orderDateTime = OffsetDateTime.parse(header.getOrderDatetime());
-
         return OrderHeader.builder()
                 .salesChannel(header.getOrigin().getSalesChannel())
                 .platform(ECP)
@@ -57,12 +48,10 @@ public class OrderHeaderConverter implements Converter<OrderJSON, OrderHeader> {
                 .orderDateTime(header.getOrderDatetime())
                 .orderTimezone(header.getOrderTimezone())
                 .orderCurrency(header.getOrderCurrency())
-                //TODO: Finalize orderNumber/orderId/orderNumberWhm conversion, when it is clear how it should be implemented
                 .orderId(header.getOrderId())
-//                .orderNumber(MessageFormat.format("{0}-{1}",
-//                        DATE_FORMATTER.get().format(orderDateTime), randomNumeric(8)))
                 .orderNumber(header.getOrderNumber())
-                .orderNumberWhm(header.getOrderNumber())
+                .orderNumberCore(header.getOrderNumber())//Former WHM for core system.
+                .orderNumberExternal(null)//for marketplaces and other external order numbers
                 .orderGroupId(null)
                 .offerId(toUUIDOrNull(header.getOfferId()))
                 .offerReferenceNumber(header.getOfferReferenceNumber())
@@ -88,6 +77,7 @@ public class OrderHeaderConverter implements Converter<OrderJSON, OrderHeader> {
                 .customerType(customerTypeConverter.convert(customer.getCustomerType()))
                 .customerEmail(customer.getCustomerEmail())
                 .customerNumber(customer.getCustomerNumber())
+                .customerNumberCore(null)
                 .vatTaxId(sourceHeader.getBillingAddress().getTaxNumber())
                 .customerSegment(emptyList())
                 .build();
@@ -115,6 +105,7 @@ public class OrderHeaderConverter implements Converter<OrderJSON, OrderHeader> {
                 .zipCode(source.getZipCode())
                 .countryRegionCode(source.getCountryRegionCode())
                 .countryCode(source.getCountryCode())
+                .relayPhoneNumberConsent(false)
                 .build();
     }
 
