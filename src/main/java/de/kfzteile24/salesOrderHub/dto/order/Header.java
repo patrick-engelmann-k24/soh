@@ -16,6 +16,7 @@ import java.util.UUID;
 public class Header {
     private UUID orderId;
     private String orderNumber;
+    private String orderNumberCore;
     private String orderDatetime;
     private String orderTimezone;
     private String orderCurrency;

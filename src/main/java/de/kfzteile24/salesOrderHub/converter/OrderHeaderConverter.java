@@ -57,12 +57,9 @@ public class OrderHeaderConverter implements Converter<OrderJSON, OrderHeader> {
                 .orderDateTime(header.getOrderDatetime())
                 .orderTimezone(header.getOrderTimezone())
                 .orderCurrency(header.getOrderCurrency())
-                //TODO: Finalize orderNumber/orderId/orderNumberWhm conversion, when it is clear how it should be implemented
                 .orderId(header.getOrderId())
-//                .orderNumber(MessageFormat.format("{0}-{1}",
-//                        DATE_FORMATTER.get().format(orderDateTime), randomNumeric(8)))
                 .orderNumber(header.getOrderNumber())
-                .orderNumberWhm(header.getOrderNumber())
+                .orderNumberCore(header.getOrderNumberCore())
                 .orderGroupId(null)
                 .offerId(toUUIDOrNull(header.getOfferId()))
                 .offerReferenceNumber(header.getOfferReferenceNumber())
