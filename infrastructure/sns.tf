@@ -58,6 +58,10 @@ data "aws_sns_topic" "sns_braincraft_order_received" {
   name = "braincraft-order-received-v1"
 }
 
+data "aws_sns_topic" "sns_core_sales_orders_created" {
+  name = "core-sales-order-created-v1"
+}
+
 # subscriptions of sqs to sns
 //resource "aws_sns_topic_subscription" "sns_subscription_ecp_orders" {
 //  endpoint = aws_sqs_queue.ecp_shop_orders.arn
@@ -77,6 +81,13 @@ resource "aws_sns_topic_subscription" "sns_subscription_braincraft_orders" {
   endpoint = aws_sqs_queue.ecp_shop_orders.arn
   protocol = "sqs"
   topic_arn = data.aws_sns_topic.sns_braincraft_order_received.arn
+}
+
+# subscription for core aka offline orders
+resource "aws_sns_topic_subscription" "sns_subscription_core_orders" {
+  endpoint = aws_sqs_queue.ecp_shop_orders.arn
+  protocol = "sqs"
+  topic_arn = data.aws_sns_topic.sns_core_sales_orders_created.arn
 }
 
 resource "aws_sns_topic_subscription" "sns_subscription_order_item_shipped" {
