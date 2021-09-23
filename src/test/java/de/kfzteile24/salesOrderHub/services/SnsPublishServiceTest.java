@@ -46,8 +46,6 @@ public class SnsPublishServiceTest {
     @Test
     @SneakyThrows(Exception.class)
     public void testPublishOrderCreatedPublishesBothOrderCreatedEventsIfTheOriginalOrderJsonIsV21() {
-        final var expectedTopic1 = "order-created";
-        final var expectedSubject1 = "Sales order created";
         final var expectedTopic2 = "order-created-v2";
         final var expectedSubject2 = "Sales order created V2";
         String rawMessage = SalesOrderUtil.readResource("examples/ecpOrderMessage.json");
@@ -56,19 +54,12 @@ public class SnsPublishServiceTest {
         //given
         var orderNumber = salesOrder.getOrderNumber();
         given(salesOrderService.getOrderByOrderNumber(orderNumber)).willReturn(Optional.of(salesOrder));
-        given(awsSnsConfig.getSnsOrderCreatedTopic()).willReturn(expectedTopic1);
         given(awsSnsConfig.getSnsOrderCreatedTopicV2()).willReturn(expectedTopic2);
 
         //when
         snsPublishService.publishOrderCreated(orderNumber);
 
         //then
-        final var expectedSalesOrderInfoV1 = SalesOrderInfo.builder()
-                .recurringOrder(Boolean.TRUE)
-                .order(salesOrder.getOriginalOrder())
-                .build();
-        verify(notificationMessagingTemplate).sendNotification(expectedTopic1,
-                objectMapper.writeValueAsString(expectedSalesOrderInfoV1), expectedSubject1);
         final var expectedSalesOrderInfoV2 = SalesOrderInfo.builder()
                 .recurringOrder(Boolean.TRUE)
                 .order(salesOrder.getLatestJson())
@@ -128,18 +119,6 @@ public class SnsPublishServiceTest {
         verify(notificationMessagingTemplate, never()).sendNotification(snsTopic,
             objectMapper.writeValueAsString(salesOrderInfo), subject);
    }
-
-    @Test
-    @SneakyThrows(Exception.class)
-    public void testPublishOrderCreated() {
-        final var expectedTopic = "order-created";
-        final var expectedSubject = "Sales order created";
-
-        given(awsSnsConfig.getSnsOrderCreatedTopic()).willReturn(expectedTopic);
-
-        verifyPublishedEvent(expectedTopic, expectedSubject,
-                throwingConsumerWrapper(snsPublishService::publishOrderCreated), false);
-    }
 
     @Test
     @SneakyThrows(Exception.class)

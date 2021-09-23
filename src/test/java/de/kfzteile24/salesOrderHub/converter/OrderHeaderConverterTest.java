@@ -24,6 +24,7 @@ import java.util.UUID;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.readOrderJson;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.readResource;
+import static de.kfzteile24.soh.order.dto.Platform.ECP;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -72,12 +73,14 @@ class OrderHeaderConverterTest {
         assertThat(convertedHeader.getOrderCurrency()).isEqualTo(originalHeader.getOrderCurrency());
         assertThat(convertedHeader.getOrderId()).isEqualTo(originalHeader.getOrderId());
         assertThat(convertedHeader.getOrderNumber()).isEqualTo(originalHeader.getOrderNumber());
-        assertThat(convertedHeader.getOrderNumberWhm()).isEqualTo(originalHeader.getOrderNumber());
+        assertThat(convertedHeader.getOrderNumberCore()).isEqualTo(originalHeader.getOrderNumber());
+        assertThat(convertedHeader.getOrderNumberExternal()).isNull();
         assertThat(convertedHeader.getOrderGroupId()).isNull();
         assertThat(convertedHeader.getOfferId()).isEqualTo(UUID.fromString(originalHeader.getOfferId()));
         assertThat(convertedHeader.getOfferReferenceNumber()).isEqualTo(originalHeader.getOfferReferenceNumber());
         assertThat(convertedHeader.getOrderFulfillment()).isEqualTo(OrderHeaderConverter.FULFILLED_BY_K24);
         assertThat(convertedHeader.getCustomerFulfillmentPartialPreference()).isFalse();
+        assertThat(convertedHeader.getPlatform()).isEqualTo(ECP);
 
         validateCustomer(orderJSON.getOrderHeader(), convertedHeader.getCustomer());
 
@@ -88,6 +91,7 @@ class OrderHeaderConverterTest {
                     .findAny();
 
             assertThat(convertedAddressOpt.isPresent()).isTrue();
+            assertThat(convertedAddressOpt.get().getRelayPhoneNumberConsent()).isFalse();
             validateAddress(originalAddress, convertedAddressOpt.get());
         });
 
@@ -127,6 +131,7 @@ class OrderHeaderConverterTest {
         assertThat(convertedCustomer.getContactId()).isEqualTo(UUID.fromString(originalCustomer.getContactId()));
         assertThat(convertedCustomer.getCustomerType().getType()).isEqualTo(originalCustomer.getCustomerType());
         assertThat(convertedCustomer.getCustomerNumber()).isEqualTo(originalCustomer.getCustomerNumber());
+        assertThat(convertedCustomer.getCustomerNumberCore()).isNull();
         assertThat(convertedCustomer.getVatTaxId())
                 .isEqualTo(originalHeader.getBillingAddress().getTaxNumber());
         assertThat(convertedCustomer.getCustomerSegment().isEmpty()).isTrue();

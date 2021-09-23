@@ -3,8 +3,6 @@ package de.kfzteile24.salesOrderHub.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.AwsSnsConfig;
-import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import de.kfzteile24.salesOrderHub.dto.SalesOrderInfo;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import lombok.NonNull;
@@ -31,18 +29,6 @@ public class SnsPublishService {
     public void publishOrderCreated(String orderNumber) {
         final var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
-
-        if (salesOrder.getOriginalOrder() instanceof OrderJSON) {
-            final var salesOrderInfo = SalesOrderInfo.builder()
-                    .order(salesOrder.getOriginalOrder())
-                    .recurringOrder(salesOrder.isRecurringOrder())
-                    .build();
-            sendOrder(config.getSnsOrderCreatedTopic(), "Sales order created", salesOrderInfo, orderNumber);
-        }
-        publishOrderCreatedWithLatestOrderJson(salesOrder, orderNumber);
-    }
-
-    private void publishOrderCreatedWithLatestOrderJson(SalesOrder salesOrder, String orderNumber) {
         final var salesOrderInfoV2 = SalesOrderInfo.builder()
                 .order(salesOrder.getLatestJson())
                 .recurringOrder(salesOrder.isRecurringOrder())
