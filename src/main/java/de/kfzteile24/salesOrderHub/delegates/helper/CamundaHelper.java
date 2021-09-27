@@ -1,6 +1,7 @@
 package de.kfzteile24.salesOrderHub.delegates.helper;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import de.kfzteile24.salesOrderHub.dto.order.Rows;
@@ -16,6 +17,7 @@ import org.camunda.bpm.engine.runtime.Execution;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +31,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROWS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.PAYMENT_TYPE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SHIPMENT_METHOD;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.VIRTUAL_ORDER_ROWS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.DELIVERY_ADDRESS_CHANGE_POSSIBLE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.ORDER_ROW_ID;
 import static java.util.stream.Collectors.toList;
@@ -72,35 +75,53 @@ public class CamundaHelper {
      * @return
      */
     public ProcessInstance createOrderProcess(SalesOrder salesOrder, Messages originChannel) {
+
+        return runtimeService.createMessageCorrelation(originChannel.getName())
+                             .processInstanceBusinessKey(salesOrder.getOrderNumber())
+                             .setVariables(createProcessVariables(salesOrder))
+                             .correlateWithResult().getProcessInstance();
+    }
+
+    protected Map<String, Object> createProcessVariables(SalesOrder salesOrder) {
         final String orderNumber = salesOrder.getOrderNumber();
 
-        List<String> orderItems;
+        List<String> orderRowSkus;
+        List<String> virtualOrderRowSkus = new ArrayList<>();
         String shippingType;
         String paymentType;
         if (salesOrder.getOriginalOrder() instanceof OrderJSON) {
             final var orderJSON = (OrderJSON) salesOrder.getOriginalOrder();
-            orderItems = orderJSON.getOrderRows().stream().map(Rows::getSku).collect(toList());
+            orderRowSkus = orderJSON.getOrderRows().stream().map(Rows::getSku).collect(toList());
             shippingType = orderJSON.getLogisticalUnits().get(0).getShippingType();
             paymentType = orderJSON.getOrderHeader().getPayments().get(0).getType();
         } else {
+            orderRowSkus = new ArrayList<>();
             final var order = (Order) salesOrder.getOriginalOrder();
-            shippingType = order.getOrderRows().get(0).getShippingType();
             paymentType = order.getOrderHeader().getPayments().get(0).getType();
-            orderItems = order.getOrderRows().stream().map(OrderRows::getSku).collect(toList());
+            shippingType = order.getOrderRows().get(0).getShippingType();
+            for (OrderRows orderRow : order.getOrderRows()) {
+                if (isShipped(orderRow.getShippingType())) {
+                    shippingType = orderRow.getShippingType();
+                    orderRowSkus.add(orderRow.getSku());
+                } else {
+                    virtualOrderRowSkus.add(orderRow.getSku());
+                }
+            }
         }
 
         final Map<String, Object> processVariables = new HashMap<>();
         processVariables.put(SHIPMENT_METHOD.getName(), shippingType);
         processVariables.put(ORDER_NUMBER.getName(), orderNumber);
         processVariables.put(PAYMENT_TYPE.getName(), paymentType);
-        processVariables.put(ORDER_ROWS.getName(), orderItems);
+        processVariables.put(ORDER_ROWS.getName(), orderRowSkus);
         processVariables.put(CUSTOMER_TYPE.getName(), salesOrder.isRecurringOrder() ?
-                                                       RECURRING.getType(): NEW.getType());
+                RECURRING.getType(): NEW.getType());
 
-        return runtimeService.createMessageCorrelation(originChannel.getName())
-                             .processInstanceBusinessKey(orderNumber)
-                             .setVariables(processVariables)
-                             .correlateWithResult().getProcessInstance();
+        if(!virtualOrderRowSkus.isEmpty()) {
+            processVariables.put(VIRTUAL_ORDER_ROWS.getName(), virtualOrderRowSkus);
+        }
+
+        return processVariables;
     }
 
     public boolean checkIfItemProcessExists(String orderNumber, String orderItemId) {
@@ -131,10 +152,7 @@ public class CamundaHelper {
         return (Boolean) runtimeService.getVariable(execution.getId(), DELIVERY_ADDRESS_CHANGE_POSSIBLE.getName());
     }
 
-    public ProcessInstance getOrderProcess(String processId) {
-        return runtimeService.createProcessInstanceQuery()
-                             .processInstanceId(processId)
-                             .singleResult();
+    private boolean isShipped(String shippingType) {
+        return !ShipmentMethod.NONE.getName().equals(shippingType);
     }
-
 }

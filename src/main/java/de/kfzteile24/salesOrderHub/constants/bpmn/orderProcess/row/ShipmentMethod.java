@@ -3,13 +3,14 @@ package de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row;
 import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 
 /**
- * All available payment types
+ * All available shipment methods
  */
 public enum ShipmentMethod implements BpmItem {
     REGULAR("shipment_regular"),
     EXPRESS("shipment_express"),
     DIRECT_DELIVERY("direct_delivery"),
     CLICK_COLLECT("click_collect"),
+    NONE("none"),
     // sometimes we have not shipment method. But we can't return null in fromString
     UNKNOWN("unknown");
 
