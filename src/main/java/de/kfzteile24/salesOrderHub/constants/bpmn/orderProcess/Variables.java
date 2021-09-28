@@ -8,6 +8,10 @@ public enum Variables implements BpmItem {
     PAYMENT_STATUS("paymentStatus"),
     ORDER_VALID("orderValid"),
     ORDER_ROWS("orderRows"),
+    /** Contains the SKU of each order row having the shipment method 'none'.
+     *  {@link de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod#NONE}
+     */
+    VIRTUAL_ORDER_ROWS("virtualOrderRows"),
     SHIPMENT_METHOD("shipmentMethod"),
     INVOICE_EXISTS("invoiceExist"),
     INVOICE_ADDRESS_CHANGE_REQUEST("invoiceAddressChangeRequest"),

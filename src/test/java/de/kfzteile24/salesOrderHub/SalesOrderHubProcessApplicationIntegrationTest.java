@@ -20,16 +20,17 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowActivities;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowGateways;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
+import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
+import de.kfzteile24.soh.order.dto.OrderRows;
+import org.assertj.core.api.Assertions;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
@@ -43,10 +44,17 @@ import org.springframework.test.annotation.DirtiesContext;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_ECP;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.NONE;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static org.camunda.bpm.engine.test.assertions.ProcessEngineTests.assertThat;
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
@@ -67,6 +75,9 @@ public class SalesOrderHubProcessApplicationIntegrationTest {
 
     @Autowired
     private SalesOrderUtil salesOrderUtil;
+
+    @Autowired
+    private CamundaHelper camundaHelper;
 
     private SalesOrder testOrder;
 
@@ -96,10 +107,10 @@ public class SalesOrderHubProcessApplicationIntegrationTest {
                 runtimeService.createMessageCorrelation(Messages.ORDER_RECEIVED_MARKETPLACE.getName())
                         .processInstanceBusinessKey(orderNumber)
                         .setVariable(Variables.ORDER_NUMBER.getName(), orderNumber)
-                        .setVariable(Variables.PAYMENT_TYPE.getName(), PaymentType.CREDIT_CARD.getName())
+                        .setVariable(Variables.PAYMENT_TYPE.getName(), CREDIT_CARD.getName())
                         .setVariable(Variables.ORDER_VALID.getName(), true)
                         .setVariable(Variables.ORDER_ROWS.getName(), orderItems)
-                        .setVariable(Variables.SHIPMENT_METHOD.getName(), ShipmentMethod.REGULAR.getName())
+                        .setVariable(Variables.SHIPMENT_METHOD.getName(), REGULAR.getName())
                         .correlateWithResult().getProcessInstance();
 
         try {
@@ -168,10 +179,10 @@ public class SalesOrderHubProcessApplicationIntegrationTest {
                 runtimeService.createMessageCorrelation(Messages.ORDER_RECEIVED_MARKETPLACE.getName())
                         .processInstanceBusinessKey(orderNumber)
                         .setVariable(Variables.ORDER_NUMBER.getName(), orderNumber)
-                        .setVariable(Variables.PAYMENT_TYPE.getName(), PaymentType.CREDIT_CARD.getName())
+                        .setVariable(Variables.PAYMENT_TYPE.getName(), CREDIT_CARD.getName())
                         .setVariable(Variables.ORDER_VALID.getName(), true)
                         .setVariable(Variables.ORDER_ROWS.getName(), orderItems)
-                        .setVariable(Variables.SHIPMENT_METHOD.getName(), ShipmentMethod.REGULAR.getName())
+                        .setVariable(Variables.SHIPMENT_METHOD.getName(), REGULAR.getName())
                         .correlateWithResult().getProcessInstance();
 
         try {
@@ -190,6 +201,49 @@ public class SalesOrderHubProcessApplicationIntegrationTest {
                 .isEnded()
                 .hasPassed(Events.ORDER_CANCELLATION_RECEIVED.getName());
 
+    }
+
+    @Test
+    public void noSubprocessesAreCreatedForOrderRowsWithShippingTypeNone() {
+        final var salesOrder = salesOrderUtil.createPersistedSalesOrderV3(true, REGULAR, CREDIT_CARD, NEW);
+        final var processInstance = camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
+
+        final var virtualOrderRowSkus = (List<String>) runtimeService.getVariable(processInstance.getProcessInstanceId(),
+                Variables.VIRTUAL_ORDER_ROWS.getName());
+        assertNotNull(virtualOrderRowSkus);
+        assertEquals(1, virtualOrderRowSkus.size());
+
+        final var expectedVirtualSkus = salesOrder.getLatestJson().getOrderRows().stream()
+                .filter(orderRow -> orderRow.getShippingType().equals(NONE.getName()))
+                .map(OrderRows::getSku)
+                .collect(Collectors.toList());
+        Assertions.assertThat(virtualOrderRowSkus).isEqualTo(expectedVirtualSkus);
+
+        final var orderRowSkus = runtimeService.getVariable(processInstance.getProcessInstanceId(),
+                Variables.ORDER_ROWS.getName());
+
+        final var expectedOrderRowSkus = salesOrder.getLatestJson().getOrderRows().stream()
+                .filter(orderRow -> !orderRow.getShippingType().equals(NONE.getName()))
+                .map(OrderRows::getSku)
+                .collect(Collectors.toList());
+        Assertions.assertThat(orderRowSkus).isEqualTo(expectedOrderRowSkus);
+
+        try {
+            Thread.sleep(400);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        util.sendMessage(Messages.ORDER_RECEIVED_PAYMENT_SECURED.getName(), salesOrder.getOrderNumber());
+
+        salesOrder.getLatestJson().getOrderRows()
+                .forEach(orderRow -> {
+                    Assertions.assertThat(
+                            camundaHelper.checkIfItemProcessExists(salesOrder.getOrderNumber(), orderRow.getSku()))
+                            .isEqualTo(!NONE.getName().equals(orderRow.getShippingType()));
+
+                });
+        assertFalse(camundaHelper.checkIfItemProcessExists(salesOrder.getOrderNumber(), virtualOrderRowSkus.get(0)));
     }
 
     protected ProcessInstance getFirstOrderItem(final String firstItem, final List<MessageCorrelationResult> correlationResultList) {
@@ -215,10 +269,10 @@ public class SalesOrderHubProcessApplicationIntegrationTest {
                 runtimeService.createMessageCorrelation(Messages.ORDER_RECEIVED_MARKETPLACE.getName())
                         .processInstanceBusinessKey(orderNumber)
                         .setVariable(Variables.ORDER_NUMBER.getName(), orderNumber)
-                        .setVariable(Variables.PAYMENT_TYPE.getName(), PaymentType.CREDIT_CARD.getName())
+                        .setVariable(Variables.PAYMENT_TYPE.getName(), CREDIT_CARD.getName())
                         .setVariable(Variables.ORDER_VALID.getName(), true)
                         .setVariable(Variables.ORDER_ROWS.getName(), orderRows)
-                        .setVariable(Variables.SHIPMENT_METHOD.getName(), ShipmentMethod.REGULAR.getName())
+                        .setVariable(Variables.SHIPMENT_METHOD.getName(), REGULAR.getName())
                         .correlateWithResult().getProcessInstance();
         assertThat(salesOrderProcessInstance).isActive();
 

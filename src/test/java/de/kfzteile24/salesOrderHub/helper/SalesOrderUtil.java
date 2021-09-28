@@ -4,6 +4,9 @@ package de.kfzteile24.salesOrderHub.helper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.converter.CustomerTypeConverter;
 import de.kfzteile24.salesOrderHub.converter.OrderHeaderConverter;
 import de.kfzteile24.salesOrderHub.converter.OrderJsonConverter;
@@ -15,6 +18,10 @@ import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import de.kfzteile24.salesOrderHub.dto.order.LogisticalUnits;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
+import de.kfzteile24.soh.order.dto.Order;
+import de.kfzteile24.soh.order.dto.OrderHeader;
+import de.kfzteile24.soh.order.dto.OrderRows;
+import de.kfzteile24.soh.order.dto.Payments;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -31,7 +38,10 @@ import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.RECURRING;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.NONE;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -77,6 +87,66 @@ public class SalesOrderUtil {
         testOrder.setSalesOrderInvoiceList(new HashSet<>());
         salesOrderService.save(testOrder, ORDER_CREATED);
         return testOrder;
+    }
+
+    public SalesOrder createPersistedSalesOrderV3(
+            boolean shouldContainVirtualItem,
+            ShipmentMethod shipmentMethod,
+            PaymentType paymentType,
+            CustomerType customerType) {
+        final var salesOrder = createNewSalesOrderV3(
+                shouldContainVirtualItem, shipmentMethod, paymentType, customerType);
+
+        salesOrderService.save(salesOrder, ORDER_CREATED);
+
+        return salesOrder;
+    }
+
+    public static SalesOrder createNewSalesOrderV3(
+            boolean shouldContainVirtualItem,
+            ShipmentMethod shipmentMethod,
+            PaymentType paymentType,
+            CustomerType customerType) {
+        final String orderNumber = UUID.randomUUID().toString();
+        final List<OrderRows> orderRows = List.of(
+                createOrderRow("sku-1", shouldContainVirtualItem ? NONE : shipmentMethod),
+                createOrderRow("sku-2", shipmentMethod),
+                createOrderRow("sku-3", shipmentMethod)
+        );
+
+        final List<Payments> payments = List.of(
+                Payments.builder()
+                        .type(paymentType.getName())
+                        .build()
+        );
+
+        final OrderHeader orderHeader = OrderHeader.builder()
+                .orderNumber(orderNumber)
+                .payments(payments)
+                .salesChannel("www-k24-at")
+                .build();
+
+        final Order order = Order.builder()
+                .version("3.0")
+                .orderHeader(orderHeader)
+                .orderRows(orderRows)
+                .build();
+
+        var salesOrder = new SalesOrder();
+        salesOrder.setOrderNumber(orderNumber);
+        salesOrder.setOriginalOrder(order);
+        salesOrder.setSalesChannel(order.getOrderHeader().getSalesChannel());
+        salesOrder.setLatestJson(order);
+        salesOrder.setRecurringOrder(customerType == RECURRING);
+
+        return salesOrder;
+    }
+
+    public static OrderRows createOrderRow(String sku, ShipmentMethod shippingType) {
+       return OrderRows.builder()
+               .shippingType(shippingType.getName())
+               .sku(sku)
+               .build();
     }
 
     private SqsMessage readTestFile(InputStream testFileStream) {
