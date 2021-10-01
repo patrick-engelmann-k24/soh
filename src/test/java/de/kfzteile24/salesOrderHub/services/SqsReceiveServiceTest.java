@@ -7,6 +7,7 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.converter.OrderJsonConverter;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.domain.converter.OrderJsonVersionDetector;
 import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import lombok.SneakyThrows;
@@ -24,6 +25,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.Objects;
+import java.util.Set;
 
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
@@ -53,6 +55,8 @@ public class SqsReceiveServiceTest {
   private OrderJsonConverter orderJsonConverter;
   @Mock
   private OrderJsonVersionDetector orderJsonVersionDetector;
+  @Mock
+  private InvoiceService invoiceService;
   @Captor
   private ArgumentCaptor<SalesOrder> salesOrderArgumentCaptor;
   @InjectMocks
@@ -105,6 +109,37 @@ public class SqsReceiveServiceTest {
     assertThat(salesOrderArgumentCaptor.getValue().isRecurringOrder()).isFalse();
     verify(camundaHelper).createOrderProcess(any(SalesOrder.class), any(Messages.class));
     verify(orderJsonConverter).convert(eq((OrderJSON) salesOrder.getOriginalOrder()));
+  }
+
+  @Test
+  public void alreadyExistingInvoicesAreAddedToTheSalesOrder() throws Exception {
+    final String rawMessage =  readResource("examples/ecpOrderMessage.json");
+    SalesOrder salesOrder = getSalesOrder(rawMessage);
+    salesOrder.setRecurringOrder(false);
+
+    when(orderJsonConverter.convert(any())).thenReturn(salesOrder.getLatestJson());
+
+    when(orderJsonVersionDetector.isVersion2(any())).thenReturn(true);
+
+    final var existingInvoices = Set.of(
+            SalesOrderInvoice.builder()
+                    .orderNumber(salesOrder.getOrderNumber())
+                    .invoiceNumber("1")
+                    .build(),
+            SalesOrderInvoice.builder()
+                    .orderNumber(salesOrder.getOrderNumber())
+                    .invoiceNumber("2")
+                    .build()
+    );
+
+    when(invoiceService.getInvoicesByOrderNumber(salesOrder.getOrderNumber())).thenReturn(existingInvoices);
+
+    sqsReceiveService.queueListenerEcpShopOrders(rawMessage, "senderId");
+
+    verify(invoiceService).getInvoicesByOrderNumber(eq(salesOrder.getOrderNumber()));
+
+    existingInvoices
+            .forEach(invoice -> verify(invoiceService).addSalesOrderToInvoice(eq(salesOrder), eq(invoice)));
   }
 
   @SneakyThrows({URISyntaxException.class, IOException.class})

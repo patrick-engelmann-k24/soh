@@ -14,6 +14,7 @@ import de.kfzteile24.salesOrderHub.converter.OrderRowConverter;
 import de.kfzteile24.salesOrderHub.converter.SurchargesConverter;
 import de.kfzteile24.salesOrderHub.converter.TotalTaxesConverter;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import de.kfzteile24.salesOrderHub.dto.order.LogisticalUnits;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
@@ -25,6 +26,7 @@ import de.kfzteile24.soh.order.dto.Payments;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
@@ -132,14 +134,13 @@ public class SalesOrderUtil {
                 .orderRows(orderRows)
                 .build();
 
-        var salesOrder = new SalesOrder();
-        salesOrder.setOrderNumber(orderNumber);
-        salesOrder.setOriginalOrder(order);
-        salesOrder.setSalesChannel(order.getOrderHeader().getSalesChannel());
-        salesOrder.setLatestJson(order);
-        salesOrder.setRecurringOrder(customerType == RECURRING);
-
-        return salesOrder;
+        return SalesOrder.builder()
+                .orderNumber(orderNumber)
+                .salesChannel(order.getOrderHeader().getSalesChannel())
+                .originalOrder(order)
+                .latestJson(order)
+                .recurringOrder(customerType == RECURRING)
+                .build();
     }
 
     public static OrderRows createOrderRow(String sku, ShipmentMethod shippingType) {
@@ -204,5 +205,16 @@ public class SalesOrderUtil {
     public static OrderJSON readOrderJson(String path) {
         final var orderJson = readResource(path);
         return new ObjectMapperConfig().objectMapper().readValue(orderJson, OrderJSON.class);
+    }
+
+    public static SalesOrderInvoice createSalesOrderInvoice(final String orderNumber, final boolean isCorrection) {
+        final var sep = isCorrection ? "--" : "-";
+        final var invoiceNumber = RandomStringUtils.randomNumeric(10);
+        final var invoiceUrl = "s3://k24-invoices/www-k24-at/2020/08/12/" + orderNumber + sep + invoiceNumber + ".pdf";
+        return SalesOrderInvoice.builder()
+                .invoiceNumber(invoiceNumber)
+                .orderNumber(orderNumber)
+                .url(invoiceUrl)
+                .build();
     }
 }
