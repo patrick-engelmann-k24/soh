@@ -3,9 +3,9 @@ package de.kfzteile24.salesOrderHub.services;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
-import de.kfzteile24.salesOrderHub.domain.audit.AuditLog;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
+import de.kfzteile24.salesOrderHub.domain.audit.AuditLog;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import lombok.NonNull;
@@ -16,10 +16,10 @@ import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -35,23 +35,11 @@ public class SalesOrderService {
     private final AuditLogRepository auditLogRepository;
 
     @NonNull
-    private final InvoiceService invoiceService;
-
-    @NonNull
     private final RuntimeService runtimeService;
 
     public SalesOrder updateOrder(final SalesOrder salesOrder) {
         salesOrder.setUpdatedAt(LocalDateTime.now());
         return orderRepository.save(salesOrder);
-    }
-
-    public Boolean isOrderBillingAddressChangeable(String orderNumber) {
-        final Optional<SalesOrder> order = this.getOrderByOrderNumber(orderNumber);
-        if (order.isPresent()) {
-            return invoiceService.checkInvoiceExistentForOrder(order.get().getOrderNumber());
-        }
-
-        return false;
     }
 
     public ResponseEntity<String> cancelOrder(String orderNumber) {
@@ -72,22 +60,11 @@ public class SalesOrderService {
         }
     }
 
-    public SalesOrder createOrder(SalesOrder salesOrder) {
-        return orderRepository.save(salesOrder);
-    }
-
-    public Optional<SalesOrder> findById(UUID id) {
-        return orderRepository.findById(id);
-    }
-
     public Optional<SalesOrder> getOrderByOrderNumber(String orderNumber) {
         return orderRepository.getOrderByOrderNumber(orderNumber);
     }
 
-    public Optional<SalesOrder> getOrderByProcessId(String processId) {
-        return orderRepository.getOrderByProcessId(processId);
-    }
-
+    @Transactional
     public SalesOrder save(SalesOrder order, Action action) {
         final var storedOrder = orderRepository.save(order);
 

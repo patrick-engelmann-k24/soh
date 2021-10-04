@@ -125,7 +125,7 @@ public class ChangeInvoiceAddressPossibleDelegateIntegrationTest {
     }
 
     @Test
-    public void testChangeInvoiceAddressPossibleNotPossible() {
+    public void testChangeInvoiceAddressNotPossible() {
         final SalesOrder testOrder = salesOrderUtil.createNewSalesOrder();
         final ProcessInstance orderProcess = createOrderProcess(testOrder);
         final String orderNumber = testOrder.getOrderNumber();
@@ -133,6 +133,7 @@ public class ChangeInvoiceAddressPossibleDelegateIntegrationTest {
         final SalesOrderInvoice orderInvoice = SalesOrderInvoice.builder()
                 .salesOrder(testOrder)
                 .invoiceNumber(util.getRandomOrderNumber())
+                .orderNumber(orderNumber)
                 .build();
         invoiceRepository.save(orderInvoice);
 

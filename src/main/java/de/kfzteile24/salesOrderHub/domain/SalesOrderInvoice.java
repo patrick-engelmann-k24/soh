@@ -29,8 +29,11 @@ public class SalesOrderInvoice extends AbstractBaseEntity {
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     @ManyToOne
-    @JoinColumn(name = "sales_order_id", nullable = false)
+    @JoinColumn(name = "sales_order_id")
     private SalesOrder salesOrder;
+
+    @Column(name = "order_number")
+    private String orderNumber;
 
     @Basic
     @Column(name = "invoice_number")

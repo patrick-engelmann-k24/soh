@@ -9,6 +9,7 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
 import de.kfzteile24.salesOrderHub.converter.OrderJsonConverter;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.domain.converter.OrderJsonVersionDetector;
 import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
@@ -28,6 +29,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_ECP;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
@@ -45,6 +48,7 @@ public class SqsReceiveService {
     @NonNull private final ObjectMapper objectMapper;
     @NonNull private final OrderJsonConverter orderJsonConverter;
     @NonNull private final OrderJsonVersionDetector orderJsonVersionDetector;
+    @NonNull private final InvoiceService invoiceService;
 
     /**
      * Consume sqs for new orders from ecp shop
@@ -89,7 +93,9 @@ public class SqsReceiveService {
         }
 
         salesOrder.setRecurringOrder(salesOrderService.isRecurringOrder(salesOrder));
+        addAlreadyExistingInvoices(salesOrder);
         salesOrderService.save(salesOrder, ORDER_CREATED);
+
         ProcessInstance result = camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
 
         if (result != null) {
@@ -364,5 +370,14 @@ public class SqsReceiveService {
                 .correlateWithResult();
 
         return result;
+    }
+
+    private void addAlreadyExistingInvoices(SalesOrder salesOrder) {
+        final Set<SalesOrderInvoice> invoices = invoiceService.getInvoicesByOrderNumber(salesOrder.getOrderNumber());
+        final Set<SalesOrderInvoice> updatedInvoices = invoices.stream()
+                .map(invoice -> invoiceService.addSalesOrderToInvoice(salesOrder, invoice))
+                .collect(Collectors.toSet());
+
+        salesOrder.setSalesOrderInvoiceList(updatedInvoices);
     }
 }

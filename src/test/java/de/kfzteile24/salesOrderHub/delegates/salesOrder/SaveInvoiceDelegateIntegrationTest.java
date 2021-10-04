@@ -3,7 +3,6 @@ package de.kfzteile24.salesOrderHub.delegates.salesOrder;
 import de.kfzteile24.salesOrderHub.SalesOrderHubProcessApplication;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.helper.AuditLogUtil;
@@ -12,7 +11,6 @@ import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
@@ -31,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.INVOICE_CREATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_MARKETPLACE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.INVOICE_URL;
@@ -40,8 +39,10 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.PAYMENT_TYPE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SHIPMENT_METHOD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.INVOICE_RECEIVED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrderInvoice;
 import static java.util.Collections.singletonList;
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
 import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
@@ -188,14 +189,21 @@ public class SaveInvoiceDelegateIntegrationTest {
         auditLogUtil.assertAuditLogExists(testOrder.getId(), INVOICE_RECEIVED, 2);
     }
 
-    private SalesOrderInvoice createSalesOrderInvoice(final String orderNumber, final boolean isCorrection) {
-        final var sep = isCorrection ? "--" : "-";
-        final var invoiceNumber = RandomStringUtils.randomNumeric(10);
-        final var invoiceUrl = "s3://k24-invoices/www-k24-at/2020/08/12/" + orderNumber + sep + invoiceNumber + ".pdf";
-        return SalesOrderInvoice.builder()
-                                .invoiceNumber(invoiceNumber)
-                                .url(invoiceUrl)
-                                .build();
+    @Test
+    public void invoicesAreAlsoStoredWhenNoCorrespondingSalesOrderExistsYet() {
+        final var testOrder = SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
+        final var orderNumber = testOrder.getOrderNumber();
+        final var invoice = createSalesOrderInvoice(orderNumber, false);
+        createSaveInvoiceProcess(orderNumber, invoice);
+
+        try {
+            Thread.sleep(400);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        final var storedInvoices = salesOrderInvoiceRepository.getInvoicesByOrderNumber(orderNumber);
+        assertEquals(1, storedInvoices.size());
     }
 
     private void assertInvoices(final String orderNumber, final List<SalesOrderInvoice> expectedInvoices) {
@@ -220,6 +228,7 @@ public class SaveInvoiceDelegateIntegrationTest {
                     assertEquals(expected.getUrl(), actual.getUrl());
                     assertNotNull(actual.getCreatedAt());
                     assertNotNull(actual.getUpdatedAt());
+                    assertEquals(salesOrder.getOrderNumber(), actual.getOrderNumber());
                 });
             }
         });
@@ -230,7 +239,7 @@ public class SaveInvoiceDelegateIntegrationTest {
         final List<String> orderItems = util.getOrderRows(orderNumber, 5);
 
         final Map<String, Object> processVariables = new HashMap<>();
-        processVariables.put(SHIPMENT_METHOD.getName(), ShipmentMethod.REGULAR.getName());
+        processVariables.put(SHIPMENT_METHOD.getName(), REGULAR.getName());
         processVariables.put(ORDER_NUMBER.getName(), orderNumber);
         processVariables.put(PAYMENT_TYPE.getName(), CREDIT_CARD.getName());
         processVariables.put(ORDER_VALID.getName(), true);
