@@ -1,4 +1,4 @@
-package de.kfzteile24.salesOrderHub.dto;
+package de.kfzteile24.salesOrderHub.dto.events;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class SalesOrderInfo {
+public class SalesOrderInfoEvent {
 
   private Object order;
   private boolean recurringOrder;

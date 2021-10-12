@@ -16,6 +16,7 @@ TOPICS="
     soh-order-completed
     soh-order-cancelled
     soh-order-item-cancelled
+    soh-order-rows-cancelled
     soh-order-item-delivered
     soh-order-item-packing-started
     soh-order-item-tour-started

@@ -3,14 +3,20 @@ package de.kfzteile24.salesOrderHub.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.AwsSnsConfig;
-import de.kfzteile24.salesOrderHub.dto.SalesOrderInfo;
+import de.kfzteile24.salesOrderHub.dto.events.OrderRowsCancelledEvent;
+import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInfoEvent;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
+import de.kfzteile24.soh.order.dto.Order;
+import de.kfzteile24.soh.order.dto.OrderRows;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.aws.messaging.core.NotificationMessagingTemplate;
 import org.springframework.stereotype.Service;
+
+import java.time.OffsetDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -27,13 +33,7 @@ public class SnsPublishService {
     private final AwsSnsConfig config;
 
     public void publishOrderCreated(String orderNumber) {
-        final var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
-                .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
-        final var salesOrderInfoV2 = SalesOrderInfo.builder()
-                .order(salesOrder.getLatestJson())
-                .recurringOrder(salesOrder.isRecurringOrder())
-                .build();
-        sendOrder(config.getSnsOrderCreatedTopicV2(), "Sales order created V2", salesOrderInfoV2, orderNumber);
+        sendLatestOrderJson(config.getSnsOrderCreatedTopicV2(), "Sales order created V2", orderNumber);
     }
 
     public void publishInvoiceAddressChanged(String orderNumber) {
@@ -45,12 +45,16 @@ public class SnsPublishService {
         sendLatestOrderJson(config.getSnsDeliveryAddressChanged(), "Sales order delivery address changed", orderNumber);
     }
 
-    public void publishOrderItemCancelled(String orderNumber) {
-        sendLatestOrderJson(config.getSnsOrderItemCancelledTopic(), "Sales order item cancelled", orderNumber);
-    }
+    public void publishOrderRowsCancelled(Order order, List<OrderRows> cancelledRows, boolean isFullCancellation) {
+        final var orderRowsCancelled = OrderRowsCancelledEvent.builder()
+                .cancelledRows(cancelledRows)
+                .order(order)
+                .isFullCancellation(isFullCancellation)
+                .cancellationDate(OffsetDateTime.now())
+                .build();
 
-    public void publishOrderCancelled(String orderNumber) {
-        sendLatestOrderJson(config.getSnsOrderCancelledTopic(), "Sales order cancelled", orderNumber);
+        publishEvent(config.getSnsOrderRowsCancelledTopic(), "Sales order rows cancelled",
+                orderRowsCancelled, order.getOrderHeader().getOrderNumber());
     }
 
     public void publishOrderCompleted(String orderNumber) {
@@ -61,19 +65,19 @@ public class SnsPublishService {
         final var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
 
-        final var salesOrderInfo = SalesOrderInfo.builder()
+        final var salesOrderInfo = SalesOrderInfoEvent.builder()
                 .order(salesOrder.getLatestJson())
                 .recurringOrder(salesOrder.isRecurringOrder())
                 .build();
 
-        sendOrder(topic, subject, salesOrderInfo, orderNumber);
+        publishEvent(topic, subject, salesOrderInfo, orderNumber);
     }
 
     @SneakyThrows({JsonProcessingException.class})
-    private void sendOrder(String topic, String subject, SalesOrderInfo salesOrderInfo, String orderNumber) {
+    private void publishEvent(String topic, String subject, Object event, String orderNumber) {
         log.info("Publishing SNS-Topic: {} for order number {}", topic, orderNumber);
 
         notificationMessagingTemplate.sendNotification(topic,
-                objectMapper.writeValueAsString( salesOrderInfo), subject);
+                objectMapper.writeValueAsString(event), subject);
     }
 }

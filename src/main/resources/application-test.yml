@@ -27,6 +27,7 @@ soh:
       orderCompleted: arn:aws:sns:eu-central-1:000000000000:soh-order-completed
       orderCancelled: arn:aws:sns:eu-central-1:000000000000:soh-order-cancelled
       orderItemCancelled: arn:aws:sns:eu-central-1:000000000000:soh-order-item-cancelled
+      orderRowsCancelled: arn:aws:sns:eu-central-1:000000000000:soh-order-rows-cancelled
       invoiceAddressChanged: arn:aws:sns:eu-central-1:000000000000:soh-invoice-address-changed
       deliveryAddressChanged: arn:aws:sns:eu-central-1:000000000000:soh-delivery-address-changed
   sqs:

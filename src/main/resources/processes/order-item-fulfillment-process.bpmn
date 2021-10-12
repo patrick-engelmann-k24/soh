@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_0csmsqq" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.9.0">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_0csmsqq" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.6.0">
   <bpmn:process id="OrderRowFulfillmentProcess" name="Order row fulfillment process" isExecutable="true" camunda:isStartableInTasklist="false">
     <bpmn:startEvent id="eventStartOrderRowFulfillmentProcess" name="Order row received">
       <bpmn:extensionElements>
@@ -133,9 +133,9 @@ Pickup: n/a</bpmn:text>
       <bpmn:association id="Association_0h6k50a" sourceRef="activityCheckDeliveryAddressChangePossible" targetRef="TextAnnotation_0tz7azp" />
     </bpmn:subProcess>
     <bpmn:subProcess id="subProcessHandleOrderRowCancellation" triggeredByEvent="true">
-      <bpmn:endEvent id="eventOrderRowCancelled" name="Order row cancelled">
+      <bpmn:endEvent id="eventOrderRowCancelled" name="Order row cancelled" camunda:asyncBefore="true">
         <bpmn:incoming>Flow_1acb332</bpmn:incoming>
-        <bpmn:messageEventDefinition id="MessageEventDefinition_113l560" camunda:delegateExpression="${orderItemCancelledDelegate}" />
+        <bpmn:messageEventDefinition id="MessageEventDefinition_113l560" camunda:delegateExpression="${orderRowCancelledDelegate}" />
       </bpmn:endEvent>
       <bpmn:startEvent id="eventOrderRowCancellationReceived" name="Order row cancellation received">
         <bpmn:outgoing>Flow_1acb332</bpmn:outgoing>

@@ -34,6 +34,10 @@ data "aws_sns_topic" "sns_soh_order_cancelled_topic" {
   name = "soh-order-cancelled"
 }
 
+data "aws_sns_topic" "sns_soh_order_rows_cancelled_topic" {
+  name = "soh-order-rows-cancelled"
+}
+
 data "aws_sns_topic" "sns_soh_invoice_address_changed_topic" {
   name = "soh-invoice-address-changed"
 }

@@ -16,8 +16,8 @@ import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
+import javax.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -47,6 +47,13 @@ public class SalesOrderService {
         if (orderOptional.isPresent()) {
             if (helper.checkIfActiveProcessExists(orderNumber)) {
                 sendMessageForOrderCancellation(orderNumber);
+
+                // TODO: Find a nice abstraction to eliminate all the sleeps, e.g. with Futures and periodic polling
+                try {
+                    Thread.sleep(400);
+                } catch (Exception e) {
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+                }
                 if (!helper.checkIfActiveProcessExists(orderNumber)) {
                     return ResponseEntity.ok().build();
                 } else {

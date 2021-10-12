@@ -32,6 +32,7 @@ module "application_module" {
     soh_order_created_v2       = data.aws_sns_topic.sns_soh_order_created_v2_topic.arn
     soh_order_completed        = data.aws_sns_topic.sns_soh_order_completed_topic.arn
     soh_order_item_cancelled   = data.aws_sns_topic.sns_soh_order_item_cancelled_topic.arn
+    soh_order_rows_cancelled   = data.aws_sns_topic.sns_soh_order_rows_cancelled_topic.arn
     soh_order_cancelled        = data.aws_sns_topic.sns_soh_order_cancelled_topic.arn
     soh_invoice_address_changed = data.aws_sns_topic.sns_soh_invoice_address_changed_topic.arn
     soh_delivery_address_changed = data.aws_sns_topic.sns_soh_delivery_address_changed_topic.arn

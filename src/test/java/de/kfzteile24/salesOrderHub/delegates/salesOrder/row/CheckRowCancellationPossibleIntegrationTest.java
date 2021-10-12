@@ -8,9 +8,9 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowGateways;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
-import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
+import de.kfzteile24.soh.order.dto.Order;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
@@ -23,8 +23,11 @@ import org.springframework.test.annotation.DirtiesContext;
 import java.util.HashMap;
 import java.util.Map;
 
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SHIPMENT_METHOD;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.ORDER_ROW_ID;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.TRACKING_ID_RECEIVED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
@@ -168,24 +171,32 @@ public class CheckRowCancellationPossibleIntegrationTest {
 
     @Test
     public void testCancellationPossibleOnParcelShipmentAfterPackingStartedTrackingIdNOTSet() {
-        final Map<String, Object> processVariables = new HashMap<>();
-        SalesOrder salesOrder = salesOrderUtil.createNewSalesOrder();
-        processVariables.put(ORDER_NUMBER.getName(), salesOrder.getOrderNumber());
-        processVariables.put(SHIPMENT_METHOD.getName(), REGULAR.getName());
+        final var salesOrder = salesOrderUtil.createPersistedSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
+        final var skuToCancel = salesOrder.getLatestJson().getOrderRows().get(0).getSku();
 
-        ProcessInstance processInstance = testProcess(processVariables, salesOrder.getOrderNumber());
+        final Map<String, Object> processVariables = Map.of(
+                ORDER_NUMBER.getName(), salesOrder.getOrderNumber(),
+                SHIPMENT_METHOD.getName(), REGULAR.getName(),
+                ORDER_ROW_ID.getName(), skuToCancel
+        );
+
+        ProcessInstance processInstance = testProcess(processVariables, salesOrder.getLatestJson(), skuToCancel);
         assertThat(processInstance).isEnded();
     }
 
     @Test
     public void testCancellationPossibleOnParcelShipmentAfterPackingStartedTrackingIdIsSet() {
-        final Map<String, Object> processVariables = new HashMap<>();
-        SalesOrder salesOrder = salesOrderUtil.createNewSalesOrder();
-        processVariables.put(ORDER_NUMBER.getName(), salesOrder.getOrderNumber());
-        processVariables.put(SHIPMENT_METHOD.getName(), REGULAR.getName());
-        processVariables.put(TRACKING_ID_RECEIVED.getName(), false);
+        final var salesOrder = salesOrderUtil.createPersistedSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
+        final var skuToCancel = salesOrder.getLatestJson().getOrderRows().get(0).getSku();
 
-        ProcessInstance processInstance = testProcess(processVariables, salesOrder.getOrderNumber());
+        final Map<String, Object> processVariables = Map.of(
+            ORDER_NUMBER.getName(), salesOrder.getOrderNumber(),
+            SHIPMENT_METHOD.getName(), REGULAR.getName(),
+            ORDER_ROW_ID.getName(), skuToCancel,
+            TRACKING_ID_RECEIVED.getName(), false
+        );
+
+        ProcessInstance processInstance = testProcess(processVariables, salesOrder.getLatestJson(), skuToCancel);
         assertThat(processInstance).isEnded();
     }
 
@@ -231,13 +242,20 @@ public class CheckRowCancellationPossibleIntegrationTest {
 
     }
 
-    private ProcessInstance testProcess(final Map<String, Object> processVariables, String orderNumber) {
+    private ProcessInstance testProcess(final Map<String, Object> processVariables, Order order, String skuToCancel) {
+        final var orderNumber = order.getOrderHeader().getOrderNumber();
         final ProcessInstance orderItemFulfillmentProcess = runtimeService.startProcessInstanceByKey(
                 ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
                 processVariables);
         util.sendMessage(RowMessages.ROW_TRANSMITTED_TO_LOGISTICS, orderNumber);
         util.sendMessage(RowMessages.PACKING_STARTED, orderNumber);
-        util.sendMessage(RowMessages.ORDER_ROW_CANCELLATION_RECEIVED, orderNumber);
+        util.sendMessage(RowMessages.ORDER_ROW_CANCELLATION_RECEIVED, orderNumber, skuToCancel);
+
+        try {
+            Thread.sleep(400);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
         assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
                 RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
@@ -257,7 +275,6 @@ public class CheckRowCancellationPossibleIntegrationTest {
         );
 
         assertThat(orderItemFulfillmentProcess).hasNotPassed(
-//                util._N(ItemActivities.EVENT_TRACKING_ID_RECEIVED),
                 RowEvents.ROW_SHIPPED.getName()
         );
 
