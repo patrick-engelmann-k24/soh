@@ -30,6 +30,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Shipme
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createNewSalesOrderV3;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.readResource;
+import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -149,9 +150,10 @@ public class SnsPublishServiceTest {
 
         snsPublishService.publishOrderRowsCancelled(latestOrderJson, canceledOrderRows, true);
 
+        final var expectedCancelledOrderRows = canceledOrderRows.stream().map(OrderRows::getSku).collect(toList());
         var expectedEvent = OrderRowsCancelledEvent.builder()
                 .order(latestOrderJson)
-                .cancelledRows(canceledOrderRows)
+                .cancelledRows(expectedCancelledOrderRows)
                 .isFullCancellation(true)
                 .build();
 

@@ -18,6 +18,8 @@ import org.springframework.stereotype.Service;
 import java.time.OffsetDateTime;
 import java.util.List;
 
+import static java.util.stream.Collectors.toList;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -47,7 +49,7 @@ public class SnsPublishService {
 
     public void publishOrderRowsCancelled(Order order, List<OrderRows> cancelledRows, boolean isFullCancellation) {
         final var orderRowsCancelled = OrderRowsCancelledEvent.builder()
-                .cancelledRows(cancelledRows)
+                .cancelledRows(cancelledRows.stream().map(OrderRows::getSku).collect(toList()))
                 .order(order)
                 .isFullCancellation(isFullCancellation)
                 .cancellationDate(OffsetDateTime.now())
