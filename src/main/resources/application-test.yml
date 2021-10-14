@@ -17,6 +17,8 @@ spring:
     jdbcUrl: jdbc:postgresql://localhost:5432/soh?currentSchema=public
     username: soh
     password: soh
+  main:
+    allow-bean-definition-overriding: true
 
   #AWS
 soh:
