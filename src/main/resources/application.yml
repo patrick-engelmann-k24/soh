@@ -18,8 +18,6 @@ spring:
       web:
         exposure:
           include: info, health,configprops
-  main:
-    allow-bean-definition-overriding: true #Needed to enable Jersey bean overriding.
 #  Override the path for camunda rest engine if needed.
 #  jersey:
 #    application-path:
