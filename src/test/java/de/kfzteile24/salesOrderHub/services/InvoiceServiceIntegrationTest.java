@@ -19,8 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @SpringBootTest(
-        classes = SalesOrderHubProcessApplication.class,
-        webEnvironment = SpringBootTest.WebEnvironment.NONE
+        classes = SalesOrderHubProcessApplication.class
 )
 public class InvoiceServiceIntegrationTest {
     @Autowired

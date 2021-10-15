@@ -35,8 +35,7 @@ import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertT
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @SpringBootTest(
-        classes = SalesOrderHubProcessApplication.class,
-        webEnvironment = SpringBootTest.WebEnvironment.NONE
+        classes = SalesOrderHubProcessApplication.class
 )
 public class CheckRowCancellationPossibleIntegrationTest {
 
