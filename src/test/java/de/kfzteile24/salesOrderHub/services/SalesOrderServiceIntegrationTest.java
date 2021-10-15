@@ -23,8 +23,7 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @SpringBootTest(
-        classes = SalesOrderHubProcessApplication.class,
-        webEnvironment = SpringBootTest.WebEnvironment.NONE
+        classes = SalesOrderHubProcessApplication.class
 )
 public class SalesOrderServiceIntegrationTest {
     @Autowired
