@@ -118,7 +118,7 @@ public class OrderController {
             @ApiResponse(code = 404, message = "Not found"),
             @ApiResponse(code = 409, message = "Failed|Not possible")
     })
-    public ResponseEntity<String> cancelOrderItem(
+    public ResponseEntity<String> cancelOrderRow(
             @PathVariable("orderNumber") final String orderNumber,
             @PathVariable("orderItemId") final String orderItemId
     ) {

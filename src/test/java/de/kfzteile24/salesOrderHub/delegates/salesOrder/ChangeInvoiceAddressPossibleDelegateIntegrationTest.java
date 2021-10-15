@@ -16,6 +16,7 @@ import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
+import de.kfzteile24.salesOrderHub.services.TimerService;
 import de.kfzteile24.soh.order.dto.Address;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
@@ -30,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.MSG_ORDER_PAYMENT_SECURED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.INVOICE_ADDRESS_CHANGED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
@@ -70,6 +72,9 @@ public class ChangeInvoiceAddressPossibleDelegateIntegrationTest {
     @Autowired
     private AuditLogUtil auditLogUtil;
 
+    @Autowired
+    private TimerService timerService;
+
     @BeforeEach
     public void setUp() {
         init(processEngine);
@@ -82,21 +87,21 @@ public class ChangeInvoiceAddressPossibleDelegateIntegrationTest {
         final String orderNumber = testOrder.getOrderNumber();
         final var newAddress = Address.builder().city("Berlin").build();
 
-        try {
-            Thread.sleep(400);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        assertTrue(util.isProcessWaitingAtExpectedTokenAsync(orderProcess, MSG_ORDER_PAYMENT_SECURED.getName()));
 
-        assertThat(orderProcess).isWaitingAt(Events.MSG_ORDER_PAYMENT_SECURED.getName());
         util.sendMessage(Messages.ORDER_INVOICE_ADDRESS_CHANGE_RECEIVED, orderNumber,
                 Map.of(
                         Variables.INVOICE_ADDRESS_CHANGE_REQUEST.getName(), objectMapper.writeValueAsString(newAddress))
                 );
 
         // check if the delegate sets the variable
-        assertThat(orderProcess)
-                .hasVariables(Variables.INVOICE_EXISTS.getName());
+        final var invoiceExistsVariableHasBeenAdded = timerService.scheduleWithDefaultTiming(() -> {
+            assertThat(orderProcess)
+                    .hasVariables(Variables.INVOICE_EXISTS.getName());
+            return true;
+        });
+        assertTrue(invoiceExistsVariableHasBeenAdded);
+
         final Boolean invoiceExists = (Boolean) runtimeService
                 .getVariable(orderProcess.getProcessInstanceId(), Variables.INVOICE_EXISTS.getName());
         assertFalse(invoiceExists, "Variable invoice exists does not exist");
@@ -137,13 +142,8 @@ public class ChangeInvoiceAddressPossibleDelegateIntegrationTest {
                 .build();
         invoiceRepository.save(orderInvoice);
 
-        try {
-            Thread.sleep(400);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        assertTrue(util.isProcessWaitingAtExpectedTokenAsync(orderProcess, MSG_ORDER_PAYMENT_SECURED.getName()));
 
-        assertThat(orderProcess).isWaitingAt(Events.MSG_ORDER_PAYMENT_SECURED.getName());
         util.sendMessage(Messages.ORDER_INVOICE_ADDRESS_CHANGE_RECEIVED, orderNumber);
 
         // check if the delegate sets the variable

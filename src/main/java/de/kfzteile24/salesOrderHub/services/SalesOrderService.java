@@ -37,6 +37,9 @@ public class SalesOrderService {
     @NonNull
     private final RuntimeService runtimeService;
 
+    @NonNull
+    private final TimerService timerService;
+
     public SalesOrder updateOrder(final SalesOrder salesOrder) {
         salesOrder.setUpdatedAt(LocalDateTime.now());
         return orderRepository.save(salesOrder);
@@ -48,13 +51,10 @@ public class SalesOrderService {
             if (helper.checkIfActiveProcessExists(orderNumber)) {
                 sendMessageForOrderCancellation(orderNumber);
 
-                // TODO: Find a nice abstraction to eliminate all the sleeps, e.g. with Futures and periodic polling
-                try {
-                    Thread.sleep(400);
-                } catch (Exception e) {
-                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
-                }
-                if (!helper.checkIfActiveProcessExists(orderNumber)) {
+                final var processDidExit = timerService.
+                        scheduleWithDefaultTiming(() -> !helper.checkIfActiveProcessExists(orderNumber));
+
+                if (processDidExit) {
                     return ResponseEntity.ok().build();
                 } else {
                     return new ResponseEntity<>("The order was found but could not cancelled, because the order rows are already in progress.", HttpStatus.CONFLICT);
