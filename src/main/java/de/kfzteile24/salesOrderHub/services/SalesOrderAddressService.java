@@ -42,7 +42,7 @@ public class SalesOrderAddressService {
     private final ObjectMapper objectMapper;
 
     @NonNull
-    private final TimerService timerService;
+    private final TimedPollingService timerService;
 
     @SneakyThrows
     public ResponseEntity<String> updateBillingAddress(final String orderNumber, final Address newBillingAddress) {
@@ -51,7 +51,7 @@ public class SalesOrderAddressService {
             if (helper.checkIfActiveProcessExists(orderNumber)) {
                 sendMessageForUpdateBillingAddress(orderNumber, newBillingAddress);
 
-                final var addressChanged = timerService.scheduleWithDefaultTiming(() -> {
+                final var addressChanged = timerService.pollWithDefaultTiming(() -> {
                     final var newOrder = orderRepository.getOrderByOrderNumber(orderNumber);
                     if (newOrder.isPresent()) {
                         final var latestJson = (Order) newOrder.get().getLatestJson();
@@ -82,7 +82,7 @@ public class SalesOrderAddressService {
                         RowMessages.DELIVERY_ADDRESS_CHANGE,
                         orderNumber, orderItemId, newDeliveryAddress);
 
-                final var addressChanged = timerService.scheduleWithDefaultTiming(() -> {
+                final var addressChanged = timerService.pollWithDefaultTiming(() -> {
                     final var newOrder = orderRepository.getOrderByOrderNumber(orderNumber);
                     if (newOrder.isPresent()) {
                         final List<Address> shippingAddresses =

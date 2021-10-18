@@ -29,7 +29,7 @@ import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
-import de.kfzteile24.salesOrderHub.services.TimerService;
+import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import org.assertj.core.api.Assertions;
@@ -83,7 +83,7 @@ public class SalesOrderHubProcessApplicationIntegrationTest {
     private CamundaHelper camundaHelper;
 
     @Autowired
-    private TimerService timerService;
+    private TimedPollingService pollingService;
 
     private SalesOrder testOrder;
 
@@ -193,7 +193,7 @@ public class SalesOrderHubProcessApplicationIntegrationTest {
                 .processInstanceBusinessKey(orderNumber)
                 .correlateWithResult();
 
-        timerService.scheduleWithDefaultTiming(() -> {
+        pollingService.pollWithDefaultTiming(() -> {
             assertThat(salesOrderProcessInstance)
                     .isEnded()
                     .hasPassed(Events.ORDER_CANCELLATION_RECEIVED.getName());
@@ -272,7 +272,7 @@ public class SalesOrderHubProcessApplicationIntegrationTest {
         assertThat(salesOrderProcessInstance).isActive();
 
 
-        timerService.scheduleWithDefaultTiming(() -> {
+        pollingService.pollWithDefaultTiming(() -> {
             assertThat(salesOrderProcessInstance)
                     .hasPassed(Events.THROW_MSG_ORDER_CREATED.getName())
                     .isWaitingAt(Events.MSG_ORDER_PAYMENT_SECURED.getName());

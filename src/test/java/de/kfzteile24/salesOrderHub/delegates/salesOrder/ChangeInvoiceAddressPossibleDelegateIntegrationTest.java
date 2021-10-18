@@ -16,7 +16,7 @@ import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
-import de.kfzteile24.salesOrderHub.services.TimerService;
+import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import de.kfzteile24.soh.order.dto.Address;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
@@ -73,7 +73,7 @@ public class ChangeInvoiceAddressPossibleDelegateIntegrationTest {
     private AuditLogUtil auditLogUtil;
 
     @Autowired
-    private TimerService timerService;
+    private TimedPollingService pollingService;
 
     @BeforeEach
     public void setUp() {
@@ -95,7 +95,7 @@ public class ChangeInvoiceAddressPossibleDelegateIntegrationTest {
                 );
 
         // check if the delegate sets the variable
-        final var invoiceExistsVariableHasBeenAdded = timerService.scheduleWithDefaultTiming(() -> {
+        final var invoiceExistsVariableHasBeenAdded = pollingService.pollWithDefaultTiming(() -> {
             assertThat(orderProcess)
                     .hasVariables(Variables.INVOICE_EXISTS.getName());
             return true;

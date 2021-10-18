@@ -10,7 +10,7 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
-import de.kfzteile24.salesOrderHub.services.TimerService;
+import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import de.kfzteile24.soh.order.dto.Order;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
@@ -55,7 +55,7 @@ public class CheckRowCancellationPossibleIntegrationTest {
     private SalesOrderUtil salesOrderUtil;
 
     @Autowired
-    private TimerService timerService;
+    private TimedPollingService pollingService;
 
     @BeforeEach
     public void setUp() {
@@ -256,7 +256,7 @@ public class CheckRowCancellationPossibleIntegrationTest {
         util.sendMessage(RowMessages.PACKING_STARTED, orderNumber);
         util.sendMessage(RowMessages.ORDER_ROW_CANCELLATION_RECEIVED, orderNumber, skuToCancel);
 
-        final var processFlowWasAsExpected = timerService.scheduleWithDefaultTiming(() -> {
+        final var processFlowWasAsExpected = pollingService.pollWithDefaultTiming(() -> {
             assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
                     RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
                     RowEvents.ROW_TRANSMITTED_TO_LOGISTICS.getName(),

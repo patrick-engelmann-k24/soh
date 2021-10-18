@@ -38,7 +38,7 @@ public class SalesOrderService {
     private final RuntimeService runtimeService;
 
     @NonNull
-    private final TimerService timerService;
+    private final TimedPollingService timerService;
 
     public SalesOrder updateOrder(final SalesOrder salesOrder) {
         salesOrder.setUpdatedAt(LocalDateTime.now());
@@ -52,7 +52,7 @@ public class SalesOrderService {
                 sendMessageForOrderCancellation(orderNumber);
 
                 final var processDidExit = timerService.
-                        scheduleWithDefaultTiming(() -> !helper.checkIfActiveProcessExists(orderNumber));
+                        pollWithDefaultTiming(() -> !helper.checkIfActiveProcessExists(orderNumber));
 
                 if (processDidExit) {
                     return ResponseEntity.ok().build();

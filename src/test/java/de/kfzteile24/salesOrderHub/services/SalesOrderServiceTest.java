@@ -44,7 +44,7 @@ class SalesOrderServiceTest {
     private RuntimeService runtimeService;
 
     @Mock
-    private TimerService timerService;
+    private TimedPollingService pollingService;
 
     @InjectMocks
     private SalesOrderService salesOrderService;

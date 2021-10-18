@@ -11,7 +11,7 @@ import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
-import de.kfzteile24.salesOrderHub.services.TimerService;
+import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
@@ -86,7 +86,7 @@ public class SaveInvoiceDelegateIntegrationTest {
     private AuditLogUtil auditLogUtil;
 
     @Autowired
-    private TimerService timerService;
+    private TimedPollingService pollingService;
 
     @BeforeEach
     public void setUp() {
@@ -103,7 +103,7 @@ public class SaveInvoiceDelegateIntegrationTest {
 
         var firstInvoiceProcess = createSaveInvoiceProcess(orderNumber, expectedInvoice);
 
-        final var invoicesWereStoredCorrectly = timerService.scheduleWithDefaultTiming(() -> {
+        final var invoicesWereStoredCorrectly = pollingService.pollWithDefaultTiming(() -> {
                 assertThat(firstInvoiceProcess).isEnded()
                         .hasPassedInOrder(Events.START_MSG_INVOICE_CREATED.getName(),
                                 Activities.SAVE_INVOICE.getName(),
@@ -119,7 +119,7 @@ public class SaveInvoiceDelegateIntegrationTest {
 
         var correctedInvoiceProcess = createSaveInvoiceProcess(orderNumber, expectedCorrectionInvoice);
 
-        final var invoicesWereUpdatedCorrectly = timerService.scheduleWithDefaultTiming(() -> {
+        final var invoicesWereUpdatedCorrectly = pollingService.pollWithDefaultTiming(() -> {
             assertInvoices(orderNumber, Arrays.asList(expectedInvoice, expectedCorrectionInvoice));
             assertThat(correctedInvoiceProcess).isEnded()
                                                .hasPassedInOrder(Events.START_MSG_INVOICE_CREATED.getName(),
@@ -150,7 +150,7 @@ public class SaveInvoiceDelegateIntegrationTest {
 
         var firstInvoiceProcess = createSaveInvoiceProcess(orderNumber, expectedInvoice);
 
-        final var initialInvoiceWasStoredCorrectly = timerService.scheduleWithDefaultTiming(() -> {
+        final var initialInvoiceWasStoredCorrectly = pollingService.pollWithDefaultTiming(() -> {
             assertInvoices(orderNumber, singletonList(expectedInvoice));
             return true;
         });
@@ -166,7 +166,7 @@ public class SaveInvoiceDelegateIntegrationTest {
 
         var correctedInvoiceProcess = createSaveInvoiceProcess(orderNumber, expectedCorrectionInvoice);
 
-        final var correctionInvoiceWasStoredCorrectly = timerService.scheduleWithDefaultTiming(() -> {
+        final var correctionInvoiceWasStoredCorrectly = pollingService.pollWithDefaultTiming(() -> {
             assertInvoices(orderNumber, Arrays.asList(expectedInvoice, expectedCorrectionInvoice));
             return true;
         });
@@ -188,7 +188,7 @@ public class SaveInvoiceDelegateIntegrationTest {
         final var invoice = createSalesOrderInvoice(orderNumber, false);
         createSaveInvoiceProcess(orderNumber, invoice);
 
-        final var invoiceWasStored = timerService.scheduleWithDefaultTiming(() ->
+        final var invoiceWasStored = pollingService.pollWithDefaultTiming(() ->
                 salesOrderInvoiceRepository.getInvoicesByOrderNumber(orderNumber).size() == 1);
         assertTrue(invoiceWasStored);
     }

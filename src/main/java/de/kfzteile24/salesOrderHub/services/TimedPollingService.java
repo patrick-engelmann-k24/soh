@@ -3,21 +3,22 @@ package de.kfzteile24.salesOrderHub.services;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 @Service
 @Slf4j
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
-public class TimerService {
-    public static final long DELAY_MS = 50;
-    public static final long TIMEOUT_MS = 1000;
+public class TimedPollingService {
+    public static final Duration DELAY = Duration.ofMillis(50);
+    public static final Duration TIMEOUT = Duration.ofSeconds(1);
 
-    public Boolean schedule(long delay, long timeout, Supplier<Boolean> test) {
+    public Boolean poll(Duration delay, Duration timeout, Supplier<Boolean> test) {
         final var startTime = System.currentTimeMillis();
-        while (System.currentTimeMillis() - startTime < timeout) {
+        while (System.currentTimeMillis() - startTime < timeout.toMillis()) {
             try {
-                TimeUnit.MILLISECONDS.sleep(delay);
+                TimeUnit.MILLISECONDS.sleep(delay.toMillis());
                 if (test.get()) {
                     return true;
                 }
@@ -30,8 +31,7 @@ public class TimerService {
         return false;
     }
 
-    public boolean scheduleWithDefaultTiming(Supplier<Boolean> test) {
-        return schedule(DELAY_MS, TIMEOUT_MS, test);
+    public boolean pollWithDefaultTiming(Supplier<Boolean> test) {
+        return poll(DELAY, TIMEOUT, test);
     }
-
 }

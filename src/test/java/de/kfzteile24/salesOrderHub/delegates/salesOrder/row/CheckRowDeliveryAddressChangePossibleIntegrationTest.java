@@ -11,7 +11,7 @@ import de.kfzteile24.salesOrderHub.dto.order.customer.Address;
 import de.kfzteile24.salesOrderHub.helper.AuditLogUtil;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
-import de.kfzteile24.salesOrderHub.services.TimerService;
+import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import lombok.SneakyThrows;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
@@ -75,7 +75,7 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
     private AuditLogUtil auditLogUtil;
 
     @Autowired
-    private TimerService timerService;
+    private TimedPollingService pollingService;
 
     @BeforeEach
     public void setUp() {
@@ -311,7 +311,7 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
     }
 
     private void verifyProcessFlowedUntilChangeDeliveryAddress(ProcessInstance orderItemFulfillmentProcess) {
-        final var processFlowedAsExpected = timerService.scheduleWithDefaultTiming(() -> {
+        final var processFlowedAsExpected = pollingService.pollWithDefaultTiming(() -> {
             assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
                     RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
                     RowEvents.ROW_TRANSMITTED_TO_LOGISTICS.getName(),
