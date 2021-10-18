@@ -240,6 +240,13 @@ class OrderControllerIntegrationTest {
 
         BpmnAwareTests.assertThat(processInstance).isWaitingAt(MSG_ORDER_PAYMENT_SECURED.getName());
         util.sendMessage(ORDER_RECEIVED_PAYMENT_SECURED, orderNumber);
+
+        try {
+            Thread.sleep(400);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
         final var result = controller.cancelOrder(orderNumber);
         assertThat(result.getStatusCodeValue()).isEqualTo(200);
     }

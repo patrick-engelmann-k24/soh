@@ -144,7 +144,7 @@
         <bpmn:messageEventDefinition id="MessageEventDefinition_0haczqj" messageRef="Message_0u9ctv5" />
       </bpmn:startEvent>
       <bpmn:sequenceFlow id="Flow_08evzqu" sourceRef="Activity_18fl4gz" targetRef="eventEndMsgOrderCancelled" />
-      <bpmn:serviceTask id="Activity_18fl4gz" name="Handle order cancellation" camunda:delegateExpression="${handleOrderCancellationDelegate}">
+      <bpmn:serviceTask id="Activity_18fl4gz" name="Handle order cancellation" camunda:asyncBefore="true" camunda:delegateExpression="${handleOrderCancellationDelegate}">
         <bpmn:incoming>Flow_17hhkas</bpmn:incoming>
         <bpmn:outgoing>Flow_08evzqu</bpmn:outgoing>
       </bpmn:serviceTask>

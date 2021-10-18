@@ -51,20 +51,20 @@ public class BpmUtil {
                 .correlateAllWithResult();
     }
 
-    public final MessageCorrelationResult sendMessage(final BpmItem message, final String orderNumber, final String orderItem,
+    public final MessageCorrelationResult sendMessage(final BpmItem message, final String orderNumber, final String orderRow,
                                                       final Map<String, Object> processVariables) {
-        return sendMessage(message.getName(), orderNumber, orderItem, processVariables);
+        return sendMessage(message.getName(), orderNumber, orderRow, processVariables);
     }
 
-    public final MessageCorrelationResult sendMessage(final BpmItem message, final String orderNumber, final String orderItem) {
-        return sendMessage(message.getName(), orderNumber, orderItem, Collections.emptyMap());
+    public final MessageCorrelationResult sendMessage(final BpmItem message, final String orderNumber, final String orderRow) {
+        return sendMessage(message.getName(), orderNumber, orderRow, Collections.emptyMap());
     }
 
-    public final MessageCorrelationResult sendMessage(final String message, final String orderNumber, final String orderItem,
+    public final MessageCorrelationResult sendMessage(final String message, final String orderNumber, final String orderRow,
                                                       final Map<String, Object> processVariables) {
         MessageCorrelationBuilder builder = runtimeService.createMessageCorrelation(message)
                 .processInstanceVariableEquals(ORDER_NUMBER.getName(), orderNumber)
-                .processInstanceVariableEquals(ORDER_ROW_ID.getName(), orderItem);
+                .processInstanceVariableEquals(ORDER_ROW_ID.getName(), orderRow);
         if (!processVariables.isEmpty())
             builder.setVariables(processVariables);
 

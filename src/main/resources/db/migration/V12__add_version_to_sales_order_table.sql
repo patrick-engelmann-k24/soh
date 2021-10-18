@@ -1,0 +1,1 @@
+ALTER TABLE "public".sales_order ADD COLUMN version BIGINT NOT NULL DEFAULT 0;

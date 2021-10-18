@@ -18,6 +18,7 @@ env:
   soh_order_completed: 'arn:aws:sns:eu-central-1:000000000000:soh-order-completed'
   soh_order_cancelled: 'arn:aws:sns:eu-central-1:000000000000:soh-order-cancelled'
   soh_order_item_cancelled: 'arn:aws:sns:eu-central-1:000000000000:soh-order-item-cancelled'
+  soh_order_rows_cancelled: 'arn:aws:sns:eu-central-1:000000000000:soh-order-rows-cancelled-v1'
   soh_invoice_address_changed: 'arn:aws:sns:eu-central-1:000000000000:soh-invoice-address-changed'
   soh_delivery_address_changed: 'arn:aws:sns:eu-central-1:000000000000:soh-delivery-address-changed'
   soh_sqs_ecp_shop_orders: 'http://localhost:4566/000000000000/soh-ecp-shop-orders-queue'

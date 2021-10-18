@@ -23,6 +23,9 @@ public class AwsSnsConfig {
     @Value("${soh.sns.topic.orderItemCancelled}")
     private String snsOrderItemCancelledTopic;
 
+    @Value("${soh.sns.topic.orderRowsCancelled}")
+    private String snsOrderRowsCancelledTopic;
+
     @Value("${soh.sns.topic.invoiceAddressChanged}")
     private String snsInvoiceAddressChangedTopic;
 

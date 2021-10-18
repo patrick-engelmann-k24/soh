@@ -146,6 +146,7 @@ public class SalesOrderUtil {
     public static OrderRows createOrderRow(String sku, ShipmentMethod shippingType) {
        return OrderRows.builder()
                .shippingType(shippingType.getName())
+               .isCancelled(false)
                .sku(sku)
                .build();
     }

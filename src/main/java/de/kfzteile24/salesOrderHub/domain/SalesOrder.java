@@ -16,6 +16,7 @@ import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
+import javax.persistence.Version;
 import java.util.Set;
 
 @Entity
@@ -28,6 +29,10 @@ import java.util.Set;
 public class SalesOrder extends AbstractBaseEntity {
 
     private static final long serialVersionUID = 1L;
+
+    @Version
+    @Column(nullable = false)
+    private Long version;
 
     @Column(name = "order_number")
     private String orderNumber;
