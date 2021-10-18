@@ -12,7 +12,7 @@ import java.util.function.Supplier;
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class TimedPollingService {
     public static final Duration DELAY = Duration.ofMillis(50);
-    public static final Duration TIMEOUT = Duration.ofSeconds(1);
+    public static final Duration TIMEOUT = Duration.ofSeconds(2);
 
     public Boolean poll(Duration delay, Duration timeout, Supplier<Boolean> test) {
         final var startTime = System.currentTimeMillis();

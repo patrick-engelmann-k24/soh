@@ -90,7 +90,7 @@ class OrderControllerIntegrationTest {
         util.sendMessage(ORDER_RECEIVED_PAYMENT_SECURED, orderNumber);
 
         final var result = controller.updateDeliveryAddress(orderNumber, orderItems.get(0), address);
-//        assertThat(result.getStatusCode()).isEqualTo(OK);
+        assertThat(result.getStatusCode()).isEqualTo(OK);
     }
 
     @Test
