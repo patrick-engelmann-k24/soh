@@ -85,7 +85,7 @@ class OrderControllerIntegrationTest {
                                         .build();
 
         final var processInstance = createProcessInstance(orderNumber, orderItems);
-        assertTrue(util.isProcessWaitingAtExpectedTokenAsync(processInstance, MSG_ORDER_PAYMENT_SECURED.getName()));
+        assertTrue(util.isProcessWaitingAtExpectedToken(processInstance, MSG_ORDER_PAYMENT_SECURED.getName()));
 
         util.sendMessage(ORDER_RECEIVED_PAYMENT_SECURED, orderNumber);
 
@@ -102,7 +102,7 @@ class OrderControllerIntegrationTest {
         final Address address = Address.builder().build();
 
         final ProcessInstance processInstance = createProcessInstance(orderNumber, orderItems);
-        assertTrue(util.isProcessWaitingAtExpectedTokenAsync(processInstance, MSG_ORDER_PAYMENT_SECURED.getName()));
+        assertTrue(util.isProcessWaitingAtExpectedToken(processInstance, MSG_ORDER_PAYMENT_SECURED.getName()));
         util.sendMessage(ORDER_RECEIVED_PAYMENT_SECURED, orderNumber);
 
         util.sendMessage(ROW_TRANSMITTED_TO_LOGISTICS, orderNumber);
@@ -127,7 +127,7 @@ class OrderControllerIntegrationTest {
                                         .build();
 
         final ProcessInstance processInstance = createProcessInstance(orderNumber, orderRows);
-        assertTrue(util.isProcessWaitingAtExpectedTokenAsync(processInstance, MSG_ORDER_PAYMENT_SECURED.getName()));
+        assertTrue(util.isProcessWaitingAtExpectedToken(processInstance, MSG_ORDER_PAYMENT_SECURED.getName()));
 
         final var result = controller.updateBillingAddress(orderNumber, address);
         assertThat(result.getStatusCode()).isEqualTo(OK);
@@ -147,7 +147,7 @@ class OrderControllerIntegrationTest {
                 .build();
 
         final ProcessInstance processInstance = createProcessInstance(orderNumber, orderRows);
-        assertTrue(util.isProcessWaitingAtExpectedTokenAsync(processInstance, MSG_ORDER_PAYMENT_SECURED.getName()));
+        assertTrue(util.isProcessWaitingAtExpectedToken(processInstance, MSG_ORDER_PAYMENT_SECURED.getName()));
         invoiceService.addSalesOrderToInvoice(testOrder, SalesOrderInvoice.builder()
                 .orderNumber(orderNumber)
                 .invoiceNumber("444")
@@ -164,7 +164,7 @@ class OrderControllerIntegrationTest {
         final List<String> orderRows = util.getOrderRows(orderNumber, 5);
 
         final var processInstance = createProcessInstance(orderNumber, orderRows);
-        assertTrue(util.isProcessWaitingAtExpectedTokenAsync(processInstance, MSG_ORDER_PAYMENT_SECURED.getName()));
+        assertTrue(util.isProcessWaitingAtExpectedToken(processInstance, MSG_ORDER_PAYMENT_SECURED.getName()));
 
         util.sendMessage(ORDER_RECEIVED_PAYMENT_SECURED, orderNumber);
 
@@ -179,7 +179,7 @@ class OrderControllerIntegrationTest {
         final List<String> orderRows = util.getOrderRows(orderNumber, 5);
 
         final var processInstance = createProcessInstance(orderNumber, orderRows);
-        assertTrue(util.isProcessWaitingAtExpectedTokenAsync(processInstance, MSG_ORDER_PAYMENT_SECURED.getName()));
+        assertTrue(util.isProcessWaitingAtExpectedToken(processInstance, MSG_ORDER_PAYMENT_SECURED.getName()));
         util.sendMessage(ORDER_RECEIVED_PAYMENT_SECURED, orderNumber);
 
         util.sendMessage(ROW_TRANSMITTED_TO_LOGISTICS, orderNumber);
@@ -197,7 +197,7 @@ class OrderControllerIntegrationTest {
         final List<String> orderRows = util.getOrderRows(orderNumber, 5);
 
         final var processInstance = createProcessInstance(orderNumber, orderRows);
-        assertTrue(util.isProcessWaitingAtExpectedTokenAsync(processInstance, MSG_ORDER_PAYMENT_SECURED.getName()));
+        assertTrue(util.isProcessWaitingAtExpectedToken(processInstance, MSG_ORDER_PAYMENT_SECURED.getName()));
 
         final var result = controller.cancelOrder(orderNumber);
         assertThat(result.getStatusCode()).isEqualTo(OK);
@@ -210,7 +210,7 @@ class OrderControllerIntegrationTest {
         final List<String> orderRows = util.getOrderRows(orderNumber, 5);
 
         final var processInstance = createProcessInstance(orderNumber, orderRows);
-        assertTrue(util.isProcessWaitingAtExpectedTokenAsync(processInstance, MSG_ORDER_PAYMENT_SECURED.getName()));
+        assertTrue(util.isProcessWaitingAtExpectedToken(processInstance, MSG_ORDER_PAYMENT_SECURED.getName()));
 
         util.sendMessage(ORDER_RECEIVED_PAYMENT_SECURED, orderNumber);
 

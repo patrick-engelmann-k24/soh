@@ -87,7 +87,7 @@ public class ChangeInvoiceAddressPossibleDelegateIntegrationTest {
         final String orderNumber = testOrder.getOrderNumber();
         final var newAddress = Address.builder().city("Berlin").build();
 
-        assertTrue(util.isProcessWaitingAtExpectedTokenAsync(orderProcess, MSG_ORDER_PAYMENT_SECURED.getName()));
+        assertTrue(util.isProcessWaitingAtExpectedToken(orderProcess, MSG_ORDER_PAYMENT_SECURED.getName()));
 
         util.sendMessage(Messages.ORDER_INVOICE_ADDRESS_CHANGE_RECEIVED, orderNumber,
                 Map.of(
@@ -142,7 +142,7 @@ public class ChangeInvoiceAddressPossibleDelegateIntegrationTest {
                 .build();
         invoiceRepository.save(orderInvoice);
 
-        assertTrue(util.isProcessWaitingAtExpectedTokenAsync(orderProcess, MSG_ORDER_PAYMENT_SECURED.getName()));
+        assertTrue(util.isProcessWaitingAtExpectedToken(orderProcess, MSG_ORDER_PAYMENT_SECURED.getName()));
 
         util.sendMessage(Messages.ORDER_INVOICE_ADDRESS_CHANGE_RECEIVED, orderNumber);
 

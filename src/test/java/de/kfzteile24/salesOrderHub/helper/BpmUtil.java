@@ -137,7 +137,7 @@ public class BpmUtil {
        assertThat(orderProcess).isEnded().hasPassed(Events.END_MSG_ORDER_COMPLETED.getName());
     }
 
-    public boolean isProcessWaitingAtExpectedTokenAsync(final ProcessInstance processInstance, final String activityId) {
+    public boolean isProcessWaitingAtExpectedToken(final ProcessInstance processInstance, final String activityId) {
         return pollingService.pollWithDefaultTiming(() -> {
             assertThat(processInstance).isWaitingAt(activityId);
             return true;

@@ -119,7 +119,7 @@ public class SalesOrderHubProcessApplicationIntegrationTest {
                         .setVariable(Variables.SHIPMENT_METHOD.getName(), REGULAR.getName())
                         .correlateWithResult().getProcessInstance();
 
-        assertTrue(util.isProcessWaitingAtExpectedTokenAsync(salesOrderProcessInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName()));
+        assertTrue(util.isProcessWaitingAtExpectedToken(salesOrderProcessInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName()));
         util.sendMessage(Messages.ORDER_RECEIVED_PAYMENT_SECURED.getName(), orderNumber);
         assertThat(salesOrderProcessInstance).isWaitingAt(Activities.ORDER_ROW_FULFILLMENT_PROCESS.getName());
 
@@ -151,7 +151,7 @@ public class SalesOrderHubProcessApplicationIntegrationTest {
         util.sendMessage(RowMessages.ORDER_ROW_CANCELLATION_RECEIVED, orderNumber, skuToCancel, processVariables);
 
         // main process should stay at the same pos
-        assertTrue(util.isProcessWaitingAtExpectedTokenAsync(salesOrderProcessInstance,
+        assertTrue(util.isProcessWaitingAtExpectedToken(salesOrderProcessInstance,
                 Activities.ORDER_ROW_FULFILLMENT_PROCESS.getName()));
 
         assertThat(firstItemProcessInstance).hasPassed(
@@ -187,7 +187,7 @@ public class SalesOrderHubProcessApplicationIntegrationTest {
                         .setVariable(Variables.SHIPMENT_METHOD.getName(), REGULAR.getName())
                         .correlateWithResult().getProcessInstance();
 
-        assertTrue(util.isProcessWaitingAtExpectedTokenAsync(salesOrderProcessInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName()));
+        assertTrue(util.isProcessWaitingAtExpectedToken(salesOrderProcessInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName()));
 
         runtimeService.createMessageCorrelation(Messages.ORDER_CANCELLATION_RECEIVED.getName())
                 .processInstanceBusinessKey(orderNumber)
@@ -226,7 +226,7 @@ public class SalesOrderHubProcessApplicationIntegrationTest {
                 .collect(Collectors.toList());
         Assertions.assertThat(orderRowSkus).isEqualTo(expectedOrderRowSkus);
 
-        assertTrue(util.isProcessWaitingAtExpectedTokenAsync(processInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName()));
+        assertTrue(util.isProcessWaitingAtExpectedToken(processInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName()));
 
         util.sendMessage(Messages.ORDER_RECEIVED_PAYMENT_SECURED.getName(), salesOrder.getOrderNumber());
 

@@ -142,7 +142,7 @@ public class SaveInvoiceDelegateIntegrationTest {
         final var orderProcess = createOrderProcess(testOrder);
         final var orderNumber = testOrder.getOrderNumber();
 
-        assertTrue(util.isProcessWaitingAtExpectedTokenAsync(orderProcess, MSG_ORDER_PAYMENT_SECURED.getName()));
+        assertTrue(util.isProcessWaitingAtExpectedToken(orderProcess, MSG_ORDER_PAYMENT_SECURED.getName()));
 
         util.finishOrderProcess(orderProcess, orderNumber);
 
