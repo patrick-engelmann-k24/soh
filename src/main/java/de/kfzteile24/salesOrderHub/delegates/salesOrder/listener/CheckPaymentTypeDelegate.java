@@ -6,6 +6,8 @@ import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.ExecutionListener;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
+
 @Component
 public class CheckPaymentTypeDelegate implements ExecutionListener {
 
@@ -13,12 +15,16 @@ public class CheckPaymentTypeDelegate implements ExecutionListener {
     public void notify(DelegateExecution delegateExecution) throws Exception {
         //The following payment types do not need to wait for payment secured event.
         final String paymentType = (String) delegateExecution.getVariable(Variables.PAYMENT_TYPE.getName());
-        boolean positivePaymentType =
-                paymentType.equals(PaymentType.AMAZON.getName())
-                || paymentType.equals(PaymentType.EBAY.getName())
-                || paymentType.equals(PaymentType.CASH.getName())
-                || paymentType.equals(PaymentType.CASH_ON_DELIVERY.getName())
-                || paymentType.equals(PaymentType.B2B_CASH_ON_DELIVERY.getName());
+        boolean positivePaymentType = Optional.of(paymentType)
+                .map(s -> s.equals(PaymentType.CASH_ON_DELIVERY.getName())
+                        || s.equals(PaymentType.B2B_CASH_ON_DELIVERY.getName())
+                        || s.equals(PaymentType.AFTERPAY_DEBIT.getName())
+                        || s.equals(PaymentType.AFTERPAY_INVOICE.getName())
+                        || s.equals(PaymentType.PAYMENT_IN_ADVANCE.getName())
+                        || s.equals(PaymentType.B2B_INVOICE.getName())
+                        || s.equals(PaymentType.AMAZON.getName())
+                        || s.equals(PaymentType.EBAY.getName()))
+                .orElse(false);
 
         delegateExecution.setVariable(Variables.POSITIVE_PAYMENT_TYPE.getName(), positivePaymentType);
     }
