@@ -15,7 +15,7 @@ public class CheckPaymentTypeDelegate implements ExecutionListener {
     public void notify(DelegateExecution delegateExecution) throws Exception {
         //The following payment types do not need to wait for payment secured event.
         final String paymentType = (String) delegateExecution.getVariable(Variables.PAYMENT_TYPE.getName());
-        boolean positivePaymentType = Optional.of(paymentType)
+        boolean positivePaymentType = Optional.ofNullable(paymentType)
                 .map(s -> s.equals(PaymentType.CASH_ON_DELIVERY.getName())
                         || s.equals(PaymentType.B2B_CASH_ON_DELIVERY.getName())
                         || s.equals(PaymentType.AFTERPAY_DEBIT.getName())

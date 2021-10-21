@@ -24,7 +24,7 @@ public class CheckOrderTypeDelegate implements ExecutionListener {
     @Override
     public void notify(DelegateExecution delegateExecution) throws Exception {
         final String salesChannel = (String) delegateExecution.getVariable(Variables.SALES_CHANNEL.getName());
-        boolean branchOrder = Optional.of(salesChannel)
+        boolean branchOrder = Optional.ofNullable(salesChannel)
                 .map(s -> s.contains(SALES_CHANNEL_BRANCH_ORDERS))
                 .orElse(false);
 

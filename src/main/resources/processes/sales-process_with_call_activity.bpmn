@@ -178,22 +178,22 @@
       <bpmn:outgoing>Flow_14ji7tw</bpmn:outgoing>
       <bpmn:outgoing>Flow_1u4eif7</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:sequenceFlow id="Flow_14ji7tw" name="No" sourceRef="gwXORCheckBranchType" targetRef="Gateway_19ekrg4">
+    <bpmn:sequenceFlow id="Flow_14ji7tw" name="No" sourceRef="gwXORCheckBranchType" targetRef="gwXORCheckPaymentType">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${not isBranchOrder}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_01fom6v" sourceRef="eventThrowMsgOrderCreated" targetRef="gwXORCheckBranchType" />
     <bpmn:sequenceFlow id="Flow_1u4eif7" name="Yes" sourceRef="gwXORCheckBranchType" targetRef="Gateway_1nzl7ma">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${isBranchOrder}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:exclusiveGateway id="Gateway_19ekrg4" name="paymentType?">
+    <bpmn:exclusiveGateway id="gwXORCheckPaymentType" name="paymentType?">
       <bpmn:extensionElements>
-        <camunda:executionListener delegateExpression="${checkPaymentTypeDelegate}}" event="start" />
+        <camunda:executionListener delegateExpression="${checkPaymentTypeDelegate}" event="start" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_14ji7tw</bpmn:incoming>
       <bpmn:outgoing>Flow_1pow4tb</bpmn:outgoing>
       <bpmn:outgoing>Flow_0w4tu46</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:sequenceFlow id="Flow_1pow4tb" name="Other Payments - Negative" sourceRef="Gateway_19ekrg4" targetRef="eventMsgOrderPaymentSecured">
+    <bpmn:sequenceFlow id="Flow_1pow4tb" name="Other Payments - Negative" sourceRef="gwXORCheckPaymentType" targetRef="eventMsgOrderPaymentSecured">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${not positivePaymentType}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:exclusiveGateway id="Gateway_18pf8ry">
@@ -202,7 +202,7 @@
       <bpmn:outgoing>Flow_1k1avar</bpmn:outgoing>
     </bpmn:exclusiveGateway>
     <bpmn:sequenceFlow id="Flow_1k1avar" sourceRef="Gateway_18pf8ry" targetRef="activityOrderRowFulfillmentProcess" />
-    <bpmn:sequenceFlow id="Flow_0w4tu46" name="amazon/ebay/cash_on_delivery&#10;Positive Payment" sourceRef="Gateway_19ekrg4" targetRef="Gateway_18pf8ry">
+    <bpmn:sequenceFlow id="Flow_0w4tu46" name="amazon/ebay/cash_on_delivery&#10;Positive Payment" sourceRef="gwXORCheckPaymentType" targetRef="Gateway_18pf8ry">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${positivePaymentType}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:textAnnotation id="TextAnnotation_124vwel">
@@ -365,7 +365,7 @@
           <dc:Bounds x="964" y="305" width="74" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Gateway_19ekrg4_di" bpmnElement="Gateway_19ekrg4" isMarkerVisible="true">
+      <bpmndi:BPMNShape id="Gateway_19ekrg4_di" bpmnElement="gwXORCheckPaymentType" isMarkerVisible="true">
         <dc:Bounds x="825" y="255" width="50" height="50" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="814" y="312" width="73" height="14" />
