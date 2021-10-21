@@ -19,7 +19,10 @@ public enum Variables implements BpmItem {
     INVOICE_URL("invoiceUrl"),
     ORDER_CANCELED("orderCancelled"),
     CUSTOMER_EMAIL("customerEmail"),
-    CUSTOMER_TYPE("customerType")
+    CUSTOMER_TYPE("customerType"),
+    SALES_CHANNEL("salesChannel"),
+    IS_BRANCH_ORDER("isBranchOrder"),
+    POSITIVE_PAYMENT_TYPE("positivePaymentType")
     ;
 
     private final String name;
