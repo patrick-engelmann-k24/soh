@@ -69,9 +69,6 @@ public class CamundaHelper {
                 .processInstanceId(processInstance);
     }
 
-    /**
-     * @param originChannel - from which channel comes the order
-     */
     public ProcessInstance createOrderProcess(SalesOrder salesOrder, Messages originChannel) {
 
         return runtimeService.createMessageCorrelation(originChannel.getName())

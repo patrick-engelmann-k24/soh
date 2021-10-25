@@ -1,6 +1,5 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder.listener;
 
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import lombok.SneakyThrows;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.junit.jupiter.api.Test;
@@ -26,7 +25,8 @@ class CheckOrderTypeDelegateTest {
     @SneakyThrows(Exception.class)
     public void checkOrderTypeForGarageOrder() {
         //Prepare the data
-        doReturn("TestbranchTest").when(delegateExecution).getVariable(eq("salesChannel"));
+        doReturn("11111111111111").when(delegateExecution).getVariable(eq("orderNumber"));
+        doReturn("otc_branch3-kfzteile24-des").when(delegateExecution).getVariable(eq("salesChannel"));
 
         //Execute
         checkOrderTypeDelegate.notify(delegateExecution);
@@ -39,7 +39,21 @@ class CheckOrderTypeDelegateTest {
     @SneakyThrows(Exception.class)
     public void checkOrderTypeForNonGarageOrder() {
         //Prepare the data
-        doReturn("TestTestTest").when(delegateExecution).getVariable(Variables.SALES_CHANNEL.getName());
+        doReturn("11111111111111").when(delegateExecution).getVariable(eq("orderNumber"));
+        doReturn("support-kfzteile24-de").when(delegateExecution).getVariable(eq("salesChannel"));
+
+        //Execute
+        checkOrderTypeDelegate.notify(delegateExecution);
+
+        //Check the result
+        verify(delegateExecution).setVariable(eq("isBranchOrder"), eq(false));
+    }
+
+    @Test
+    @SneakyThrows(Exception.class)
+    public void missingSalesChannel() {
+        //Prepare the data
+        doReturn("11111111111111").when(delegateExecution).getVariable(eq("orderNumber"));
 
         //Execute
         checkOrderTypeDelegate.notify(delegateExecution);

@@ -6,8 +6,6 @@ import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.ExecutionListener;
 import org.springframework.stereotype.Component;
 
-import java.util.Optional;
-
 @Component
 @Slf4j
 public class CheckOrderTypeDelegate implements ExecutionListener {
@@ -23,12 +21,17 @@ public class CheckOrderTypeDelegate implements ExecutionListener {
 
     @Override
     public void notify(DelegateExecution delegateExecution) throws Exception {
-        final String salesChannel = (String) delegateExecution.getVariable(Variables.SALES_CHANNEL.getName());
-        boolean branchOrder = Optional.ofNullable(salesChannel)
-                .map(s -> s.contains(SALES_CHANNEL_BRANCH_ORDERS))
-                .orElse(false);
-
-        log.info("The order type check has the following result. SalesChannel: {}, Is Branch Order: {}", salesChannel, branchOrder);
+        final var orderNumber = (String) delegateExecution.getVariable(Variables.ORDER_NUMBER.getName());
+        final var salesChannel = (String) delegateExecution.getVariable(Variables.SALES_CHANNEL.getName());
+        boolean branchOrder = false;
+        if(salesChannel == null){
+            log.error("Unable to identify the order type, sales channel is not provided. Order Number: {}", orderNumber);
+        } else{
+            branchOrder = salesChannel.contains(SALES_CHANNEL_BRANCH_ORDERS);
+        }
+        log.info("The order type check has the following result. " +
+                        "Order Number: {}, SalesChannel: {}, Is Branch Order?: {}",
+                orderNumber, salesChannel, branchOrder);
         delegateExecution.setVariable(Variables.IS_BRANCH_ORDER.getName(), branchOrder);
     }
 }
