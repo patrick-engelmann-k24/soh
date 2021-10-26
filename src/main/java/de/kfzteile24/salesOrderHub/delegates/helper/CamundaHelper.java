@@ -30,6 +30,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROWS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.PAYMENT_TYPE;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SALES_CHANNEL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SHIPMENT_METHOD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.VIRTUAL_ORDER_ROWS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.DELIVERY_ADDRESS_CHANGE_POSSIBLE;
@@ -68,12 +69,6 @@ public class CamundaHelper {
                 .processInstanceId(processInstance);
     }
 
-    /**
-     *
-     * @param salesOrder
-     * @param originChannel - from which channel comes the order
-     * @return
-     */
     public ProcessInstance createOrderProcess(SalesOrder salesOrder, Messages originChannel) {
 
         return runtimeService.createMessageCorrelation(originChannel.getName())
@@ -114,8 +109,9 @@ public class CamundaHelper {
         processVariables.put(ORDER_NUMBER.getName(), orderNumber);
         processVariables.put(PAYMENT_TYPE.getName(), paymentType);
         processVariables.put(ORDER_ROWS.getName(), orderRowSkus);
-        processVariables.put(CUSTOMER_TYPE.getName(), salesOrder.isRecurringOrder() ?
-                RECURRING.getType(): NEW.getType());
+        processVariables.put(CUSTOMER_TYPE.getName(),
+                salesOrder.isRecurringOrder() ? RECURRING.getType(): NEW.getType());
+        processVariables.put(SALES_CHANNEL.getName(), salesOrder.getSalesChannel());
 
         if(!virtualOrderRowSkus.isEmpty()) {
             processVariables.put(VIRTUAL_ORDER_ROWS.getName(), virtualOrderRowSkus);

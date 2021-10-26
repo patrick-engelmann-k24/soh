@@ -18,6 +18,9 @@ spring:
       web:
         exposure:
           include: info, health,configprops
+#  Override the path for camunda rest engine if needed.
+#  jersey:
+#    application-path:
 
 cloud:
   aws:

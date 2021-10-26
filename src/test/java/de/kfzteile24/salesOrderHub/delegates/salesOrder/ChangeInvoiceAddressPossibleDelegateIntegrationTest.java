@@ -44,10 +44,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @SpringBootTest(
-        classes = SalesOrderHubProcessApplication.class,
-        webEnvironment = SpringBootTest.WebEnvironment.NONE
+        classes = SalesOrderHubProcessApplication.class
 )
 public class ChangeInvoiceAddressPossibleDelegateIntegrationTest {
+
     @Autowired
     private ProcessEngine processEngine;
 

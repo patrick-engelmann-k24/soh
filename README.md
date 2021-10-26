@@ -137,3 +137,9 @@ Link to [miro board](https://miro.com/app/board/o9J_lRPP23M=/)
 ```
 http(s)://<host>:<port>/swagger-ui.html
 ```
+
+## Camunda Rest endpoints can be accessed by using the following as a base URL.  
+This is configured in application.yml or JerseyConfig.class
+```
+http(s)://<host>:<port>/engine-rest/*
+```
