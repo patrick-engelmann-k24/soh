@@ -94,7 +94,7 @@ class OrderControllerIntegrationTest {
     }
 
     @Test
-    public void ifTheDeliveryAddressOfAnOrderRowCannotBeUpdatedBecauseOfTheProcessStateTheStatus_CONFLICT_IsReturned() {
+    public void ifTheDeliveryAddressOfAnOrderRowCannotBeUpdatedBecauseOfTheProcessStateTheStatusCONFLICTIsReturned() {
         final String orderNumber = testOrder.getOrderNumber();
         final List<String> orderItems = util.getOrderRows(orderNumber, 5);
 
@@ -134,7 +134,7 @@ class OrderControllerIntegrationTest {
     }
 
     @Test
-    public void ifTheInvoiceAddressCannotBeUpdatedBecauseOfTheProcessStateTheStatus_CONFLICT_IsReturned() {
+    public void ifTheInvoiceAddressCannotBeUpdatedBecauseOfTheProcessStateTheStatusCONFLICTIsReturned() {
         var testOrder = salesOrderUtil.createNewSalesOrder();
         final String orderNumber = testOrder.getOrderNumber();
         final List<String> orderRows = util.getOrderRows(orderNumber, 5);
@@ -173,7 +173,7 @@ class OrderControllerIntegrationTest {
     }
 
     @Test
-    public void ifAnOrderRowCannotBeCancelledBecauseOfTheProcessStateTheStatus_CONFLICT_IsReturned() {
+    public void ifAnOrderRowCannotBeCancelledBecauseOfTheProcessStateTheStatusCONFLICTIsReturned() {
         var testOrder = salesOrderUtil.createNewSalesOrder();
         final String orderNumber = testOrder.getOrderNumber();
         final List<String> orderRows = util.getOrderRows(orderNumber, 5);
@@ -204,7 +204,7 @@ class OrderControllerIntegrationTest {
     }
 
     @Test
-    public void ifAnOrderCannotBeCancelledBecauseOfTheProcessStateTheStatus_CONFLICT_IsReturned() {
+    public void ifAnOrderCannotBeCancelledBecauseOfTheProcessStateTheStatusCONFLICTIsReturned() {
         var testOrder = salesOrderUtil.createNewSalesOrder();
         final String orderNumber = testOrder.getOrderNumber();
         final List<String> orderRows = util.getOrderRows(orderNumber, 5);

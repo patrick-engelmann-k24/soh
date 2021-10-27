@@ -9,7 +9,7 @@ import java.util.function.Supplier;
 
 @Service
 @Slf4j
-@SuppressWarnings("PMD.AvoidCatchingGenericException")
+@SuppressWarnings({"PMD.AvoidCatchingGenericException", "PMD.AvoidInstanceofChecksInCatchClause"})
 public class TimedPollingService {
     public static final Duration DELAY = Duration.ofMillis(50);
     public static final Duration TIMEOUT = Duration.ofSeconds(2);
