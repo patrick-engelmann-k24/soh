@@ -45,6 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
         classes = SalesOrderHubProcessApplication.class
 )
 public class ChangeInvoiceAddressPossibleDelegateIntegrationTest {
+
     @Autowired
     private ProcessEngine processEngine;
 

@@ -237,6 +237,7 @@
             <configuration>
               <includes>
                 <include>**/*IntegrationTest</include>
+                <include>**/*IntTest</include>
               </includes>
             </configuration>
           </plugin>
@@ -263,6 +264,7 @@
             <configuration>
               <excludes>
                 <exclude>**/*IntegrationTest</exclude>
+                <exclude>**/*IntTest</exclude>
               </excludes>
             </configuration>
           </plugin>
