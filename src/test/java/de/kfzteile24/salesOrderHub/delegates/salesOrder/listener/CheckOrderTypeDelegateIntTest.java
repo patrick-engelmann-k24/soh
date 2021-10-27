@@ -26,6 +26,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Paymen
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.reset;
 import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @SpringBootTest(classes = SalesOrderHubProcessApplication.class)
@@ -55,12 +56,9 @@ class CheckOrderTypeDelegateIntTest {
     public void isWaitingAtPaymentSecured() throws JsonProcessingException {
         final SalesOrder testOrder = salesOrderUtil.createNewSalesOrder();
         final ProcessInstance orderProcess = createOrderProcess(testOrder, "support-kfzteile24-de");
-        try {
-            Thread.sleep(400);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        assertThat(orderProcess).isWaitingAt(Events.MSG_ORDER_PAYMENT_SECURED.getName());
+        final var isWaitingForPaymentSecured =
+                util.isProcessWaitingAtExpectedToken(orderProcess, Events.MSG_ORDER_PAYMENT_SECURED.getName());
+        assertTrue(isWaitingForPaymentSecured);
     }
 
     @Test
