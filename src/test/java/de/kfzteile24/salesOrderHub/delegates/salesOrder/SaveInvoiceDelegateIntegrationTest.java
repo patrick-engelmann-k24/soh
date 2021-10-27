@@ -11,6 +11,7 @@ import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
+import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
@@ -30,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.MSG_ORDER_PAYMENT_SECURED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.INVOICE_CREATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_MARKETPLACE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.INVOICE_URL;
@@ -82,6 +84,9 @@ public class SaveInvoiceDelegateIntegrationTest {
     @Autowired
     private AuditLogUtil auditLogUtil;
 
+    @Autowired
+    private TimedPollingService pollingService;
+
     @BeforeEach
     public void setUp() {
         init(processEngine);
@@ -97,37 +102,32 @@ public class SaveInvoiceDelegateIntegrationTest {
 
         var firstInvoiceProcess = createSaveInvoiceProcess(orderNumber, expectedInvoice);
 
-        try {
-            Thread.sleep(400);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        final var invoicesWereStoredCorrectly = pollingService.pollWithDefaultTiming(() -> {
+                assertThat(firstInvoiceProcess).isEnded()
+                        .hasPassedInOrder(Events.START_MSG_INVOICE_CREATED.getName(),
+                                Activities.SAVE_INVOICE.getName(),
+                                Events.INVOICE_SAVED.getName());
+                assertInvoices(orderNumber, singletonList(expectedInvoice));
+                return true;
+        });
 
-        assertInvoices(orderNumber, singletonList(expectedInvoice));
-
-        assertThat(firstInvoiceProcess).isEnded()
-                                       .hasPassedInOrder(Events.START_MSG_INVOICE_CREATED.getName(),
-                                                         Activities.SAVE_INVOICE.getName(),
-                                                         Events.INVOICE_SAVED.getName());
+        assertTrue(invoicesWereStoredCorrectly);
 
         // add a correction invoice
         final var expectedCorrectionInvoice = createSalesOrderInvoice(orderNumber, true);
 
         var correctedInvoiceProcess = createSaveInvoiceProcess(orderNumber, expectedCorrectionInvoice);
 
-        try {
-            Thread.sleep(400);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        final var invoicesWereUpdatedCorrectly = pollingService.pollWithDefaultTiming(() -> {
+            assertInvoices(orderNumber, Arrays.asList(expectedInvoice, expectedCorrectionInvoice));
+            assertThat(correctedInvoiceProcess).isEnded()
+                                               .hasPassedInOrder(Events.START_MSG_INVOICE_CREATED.getName(),
+                                                                 Activities.SAVE_INVOICE.getName(),
+                                                                 Events.INVOICE_SAVED.getName());
+            return true;
+        });
 
-        assertInvoices(orderNumber, Arrays.asList(expectedInvoice, expectedCorrectionInvoice));
-
-        assertThat(correctedInvoiceProcess).isEnded()
-                                           .hasPassedInOrder(Events.START_MSG_INVOICE_CREATED.getName(),
-                                                             Activities.SAVE_INVOICE.getName(),
-                                                             Events.INVOICE_SAVED.getName());
-
+        assertTrue(invoicesWereUpdatedCorrectly);
 
         util.finishOrderProcess(orderProcess, orderNumber);
 
@@ -141,11 +141,7 @@ public class SaveInvoiceDelegateIntegrationTest {
         final var orderProcess = createOrderProcess(testOrder);
         final var orderNumber = testOrder.getOrderNumber();
 
-        try {
-            Thread.sleep(400);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        assertTrue(util.isProcessWaitingAtExpectedToken(orderProcess, MSG_ORDER_PAYMENT_SECURED.getName()));
 
         util.finishOrderProcess(orderProcess, orderNumber);
 
@@ -153,13 +149,11 @@ public class SaveInvoiceDelegateIntegrationTest {
 
         var firstInvoiceProcess = createSaveInvoiceProcess(orderNumber, expectedInvoice);
 
-        try {
-            Thread.sleep(400);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        assertInvoices(orderNumber, singletonList(expectedInvoice));
+        final var initialInvoiceWasStoredCorrectly = pollingService.pollWithDefaultTiming(() -> {
+            assertInvoices(orderNumber, singletonList(expectedInvoice));
+            return true;
+        });
+        assertTrue(initialInvoiceWasStoredCorrectly);
 
         assertThat(firstInvoiceProcess).isEnded()
                                        .hasPassedInOrder(Events.START_MSG_INVOICE_CREATED.getName(),
@@ -171,13 +165,11 @@ public class SaveInvoiceDelegateIntegrationTest {
 
         var correctedInvoiceProcess = createSaveInvoiceProcess(orderNumber, expectedCorrectionInvoice);
 
-        try {
-            Thread.sleep(400);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        assertInvoices(orderNumber, Arrays.asList(expectedInvoice, expectedCorrectionInvoice));
+        final var correctionInvoiceWasStoredCorrectly = pollingService.pollWithDefaultTiming(() -> {
+            assertInvoices(orderNumber, Arrays.asList(expectedInvoice, expectedCorrectionInvoice));
+            return true;
+        });
+        assertTrue(correctionInvoiceWasStoredCorrectly);
 
         assertThat(correctedInvoiceProcess).isEnded()
                                            .hasPassedInOrder(Events.START_MSG_INVOICE_CREATED.getName(),
@@ -195,14 +187,9 @@ public class SaveInvoiceDelegateIntegrationTest {
         final var invoice = createSalesOrderInvoice(orderNumber, false);
         createSaveInvoiceProcess(orderNumber, invoice);
 
-        try {
-            Thread.sleep(400);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        final var storedInvoices = salesOrderInvoiceRepository.getInvoicesByOrderNumber(orderNumber);
-        assertEquals(1, storedInvoices.size());
+        final var invoiceWasStored = pollingService.pollWithDefaultTiming(() ->
+                salesOrderInvoiceRepository.getInvoicesByOrderNumber(orderNumber).size() == 1);
+        assertTrue(invoiceWasStored);
     }
 
     private void assertInvoices(final String orderNumber, final List<SalesOrderInvoice> expectedInvoices) {

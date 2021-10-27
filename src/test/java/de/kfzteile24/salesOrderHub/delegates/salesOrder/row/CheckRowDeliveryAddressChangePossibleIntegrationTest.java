@@ -11,6 +11,7 @@ import de.kfzteile24.salesOrderHub.dto.order.customer.Address;
 import de.kfzteile24.salesOrderHub.helper.AuditLogUtil;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
+import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import lombok.SneakyThrows;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
@@ -46,6 +47,7 @@ import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
 import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
 import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.withVariables;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @SpringBootTest(
@@ -70,6 +72,9 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
     
     @Autowired
     private AuditLogUtil auditLogUtil;
+
+    @Autowired
+    private TimedPollingService pollingService;
 
     @BeforeEach
     public void setUp() {
@@ -152,15 +157,7 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
                 withVariables(RowVariables.DELIVERY_ADDRESS_CHANGE_REQUEST.getName(), objectMapper.writeValueAsString(address))
         );
 
-        assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
-                RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
-                RowEvents.ROW_TRANSMITTED_TO_LOGISTICS.getName(),
-                XOR_SHIPMENT_METHOD.getName(),
-                RowEvents.MSG_DELIVERY_ADDRESS_CHANGE.getName(),
-                CHECK_DELIVERY_ADDRESS_CHANGE_POSSIBLE.getName(),
-                XOR_DELIVERY_ADRESS_CHANGE_POSSIBLE.getName(),
-                CHANGE_DELIVERY_ADDRESS.getName()
-        );
+        verifyProcessFlowedUntilChangeDeliveryAddress(orderItemFulfillmentProcess);
 
         assertThat(orderItemFulfillmentProcess).hasPassed(
                 SUB_PROCESS_ORDER_ROW_DELIVERY_ADDRESS_CHANGE.getName(),
@@ -250,15 +247,7 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
                 withVariables(RowVariables.DELIVERY_ADDRESS_CHANGE_REQUEST.getName(), objectMapper.writeValueAsString(address))
         );
 
-        assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
-                RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
-                RowEvents.ROW_TRANSMITTED_TO_LOGISTICS.getName(),
-                XOR_SHIPMENT_METHOD.getName(),
-                RowEvents.MSG_DELIVERY_ADDRESS_CHANGE.getName(),
-                CHECK_DELIVERY_ADDRESS_CHANGE_POSSIBLE.getName(),
-                XOR_DELIVERY_ADRESS_CHANGE_POSSIBLE.getName(),
-                CHANGE_DELIVERY_ADDRESS.getName()
-        );
+        verifyProcessFlowedUntilChangeDeliveryAddress(orderItemFulfillmentProcess);
 
         assertThat(orderItemFulfillmentProcess).hasPassed(
                 SUB_PROCESS_ORDER_ROW_DELIVERY_ADDRESS_CHANGE.getName(),
@@ -320,4 +309,20 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
         auditLogUtil.assertAuditLogDoesNotExist(testOrder.getId(), DELIVERY_ADDRESS_CHANGED);
     }
 
+    private void verifyProcessFlowedUntilChangeDeliveryAddress(ProcessInstance orderItemFulfillmentProcess) {
+        final var processFlowedAsExpected = pollingService.pollWithDefaultTiming(() -> {
+            assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
+                    RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
+                    RowEvents.ROW_TRANSMITTED_TO_LOGISTICS.getName(),
+                    XOR_SHIPMENT_METHOD.getName(),
+                    RowEvents.MSG_DELIVERY_ADDRESS_CHANGE.getName(),
+                    CHECK_DELIVERY_ADDRESS_CHANGE_POSSIBLE.getName(),
+                    XOR_DELIVERY_ADRESS_CHANGE_POSSIBLE.getName(),
+                    CHANGE_DELIVERY_ADDRESS.getName()
+            );
+
+            return true;
+        });
+        assertTrue(processFlowedAsExpected);
+    }
 }

@@ -5,6 +5,7 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
+import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -40,6 +41,9 @@ public class BpmUtil {
 
     @NonNull
     private final ObjectMapper objectMapper;
+
+    @NonNull
+    private final TimedPollingService pollingService;
 
     public final List<MessageCorrelationResult> sendMessage(BpmItem message, String orderNumber) {
         return this.sendMessage(message.getName(), orderNumber);
@@ -131,6 +135,13 @@ public class BpmUtil {
         sendMessage(ROW_SHIPPED, orderNumber);
 
        assertThat(orderProcess).isEnded().hasPassed(Events.END_MSG_ORDER_COMPLETED.getName());
+    }
+
+    public boolean isProcessWaitingAtExpectedToken(final ProcessInstance processInstance, final String activityId) {
+        return pollingService.pollWithDefaultTiming(() -> {
+            assertThat(processInstance).isWaitingAt(activityId);
+            return true;
+        });
     }
 
 }

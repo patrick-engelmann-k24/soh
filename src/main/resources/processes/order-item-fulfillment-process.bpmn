@@ -117,7 +117,7 @@ Pickup: only before "Row picked up"</bpmn:text>
       </bpmn:sequenceFlow>
       <bpmn:sequenceFlow id="Flow_1eflki8" sourceRef="activityCheckDeliveryAddressChangePossible" targetRef="gwXORDeliveryAdressChangePossible" />
       <bpmn:sequenceFlow id="Flow_0qzv6af" sourceRef="eventMsgDeliveryAddressChange" targetRef="activityCheckDeliveryAddressChangePossible" />
-      <bpmn:serviceTask id="activityChangeDeliveryAddress" name="Change delivery address" camunda:delegateExpression="${changeDeliveryAddress}">
+      <bpmn:serviceTask id="activityChangeDeliveryAddress" name="Change delivery address" camunda:asyncBefore="true" camunda:delegateExpression="${changeDeliveryAddress}">
         <bpmn:incoming>Flow_0o27d4k</bpmn:incoming>
         <bpmn:outgoing>Flow_1y311on</bpmn:outgoing>
       </bpmn:serviceTask>

@@ -10,6 +10,7 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
+import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import de.kfzteile24.soh.order.dto.Order;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
@@ -32,6 +33,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVar
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
 import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @SpringBootTest(
@@ -50,6 +52,9 @@ public class CheckRowCancellationPossibleIntegrationTest {
 
     @Autowired
     private SalesOrderUtil salesOrderUtil;
+
+    @Autowired
+    private TimedPollingService pollingService;
 
     @BeforeEach
     public void setUp() {
@@ -250,28 +255,27 @@ public class CheckRowCancellationPossibleIntegrationTest {
         util.sendMessage(RowMessages.PACKING_STARTED, orderNumber);
         util.sendMessage(RowMessages.ORDER_ROW_CANCELLATION_RECEIVED, orderNumber, skuToCancel);
 
-        try {
-            Thread.sleep(400);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        final var processFlowWasAsExpected = pollingService.pollWithDefaultTiming(() -> {
+            assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
+                    RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
+                    RowEvents.ROW_TRANSMITTED_TO_LOGISTICS.getName(),
+                    RowGateways.XOR_SHIPMENT_METHOD.getName(),
+                    RowEvents.PACKING_STARTED.getName(),
+                    RowEvents.MSG_ROW_CANCELLATION_RECEIVED.getName(),
+                    RowActivities.CHECK_CANCELLATION_POSSIBLE.getName(),
+                    RowGateways.XOR_CANCELLATION_POSSIBLE.getName(),
+                    BPMSalesOrderRowFulfillment.SUB_PROCESS_ORDER_ROW_CANCELLATION_SHIPMENT.getName(),
+                    RowEvents.ORDER_ROW_CANCELLATION_RECEIVED.getName()
+            );
 
-        assertThat(orderItemFulfillmentProcess).hasPassedInOrder(
-                RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
-                RowEvents.ROW_TRANSMITTED_TO_LOGISTICS.getName(),
-                RowGateways.XOR_SHIPMENT_METHOD.getName(),
-                RowEvents.PACKING_STARTED.getName(),
-                RowEvents.MSG_ROW_CANCELLATION_RECEIVED.getName(),
-                RowActivities.CHECK_CANCELLATION_POSSIBLE.getName(),
-                RowGateways.XOR_CANCELLATION_POSSIBLE.getName(),
-                BPMSalesOrderRowFulfillment.SUB_PROCESS_ORDER_ROW_CANCELLATION_SHIPMENT.getName(),
-                RowEvents.ORDER_ROW_CANCELLATION_RECEIVED.getName()
-        );
+            assertThat(orderItemFulfillmentProcess).hasPassed(
+                    RowEvents.ORDER_ROW_CANCELLED.getName(),
+                    BPMSalesOrderRowFulfillment.SUB_PROCESS_HANDLE_ORDER_ROW_CANCELLATION.getName()
+            );
 
-        assertThat(orderItemFulfillmentProcess).hasPassed(
-                RowEvents.ORDER_ROW_CANCELLED.getName(),
-                BPMSalesOrderRowFulfillment.SUB_PROCESS_HANDLE_ORDER_ROW_CANCELLATION.getName()
-        );
+            return true;
+        });
+        assertTrue(processFlowWasAsExpected);
 
         assertThat(orderItemFulfillmentProcess).hasNotPassed(
                 RowEvents.ROW_SHIPPED.getName()

@@ -12,6 +12,7 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.soh.order.dto.Address;
 import de.kfzteile24.soh.order.dto.Order;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.camunda.bpm.engine.RuntimeService;
@@ -28,13 +29,20 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class SalesOrderAddressService {
 
+    @NonNull
     private final CamundaHelper helper;
 
+    @NonNull
     private final SalesOrderRepository orderRepository;
 
+    @NonNull
     private final RuntimeService runtimeService;
 
+    @NonNull
     private final ObjectMapper objectMapper;
+
+    @NonNull
+    private final TimedPollingService timerService;
 
     @SneakyThrows
     public ResponseEntity<String> updateBillingAddress(final String orderNumber, final Address newBillingAddress) {
@@ -42,14 +50,19 @@ public class SalesOrderAddressService {
         if (soOpt.isPresent()) {
             if (helper.checkIfActiveProcessExists(orderNumber)) {
                 sendMessageForUpdateBillingAddress(orderNumber, newBillingAddress);
-                final var newOrder = orderRepository.getOrderByOrderNumber(orderNumber);
-                if (newOrder.isPresent()) {
-                    final var latestJson = (Order) newOrder.get().getLatestJson();
-                    if (latestJson.getOrderHeader().getBillingAddress().equals(newBillingAddress)) {
-                        return new ResponseEntity<>("", HttpStatus.OK);
-                    } else {
-                        return new ResponseEntity<>("The order was found but we could not change the billing address, because the order has already a invoice.", HttpStatus.CONFLICT);
+
+                final var addressChanged = timerService.pollWithDefaultTiming(() -> {
+                    final var newOrder = orderRepository.getOrderByOrderNumber(orderNumber);
+                    if (newOrder.isPresent()) {
+                        final var latestJson = (Order) newOrder.get().getLatestJson();
+                        return latestJson.getOrderHeader().getBillingAddress().equals(newBillingAddress);
                     }
+                    return false;
+                });
+                if (addressChanged) {
+                    return new ResponseEntity<>("", HttpStatus.OK);
+                } else {
+                    return new ResponseEntity<>("The order was found but we could not change the billing address, because the order has already a invoice.", HttpStatus.CONFLICT);
                 }
             } else {
                 return new ResponseEntity<>("Order not found", HttpStatus.NOT_FOUND);
@@ -68,19 +81,26 @@ public class SalesOrderAddressService {
                 sendMessageForUpdateDeliveryAddress(
                         RowMessages.DELIVERY_ADDRESS_CHANGE,
                         orderNumber, orderItemId, newDeliveryAddress);
-                final Optional<SalesOrder> newOrder = orderRepository.getOrderByOrderNumber(orderNumber);
-                if (newOrder.isPresent()) {
-                    final var latestJson = (Order) newOrder.get().getLatestJson();
-                    List<Address> shippingAddresses = latestJson.getOrderHeader().getShippingAddresses();
-                    for(Address shippingAddress : shippingAddresses) {
-                        if (shippingAddress.equals(newDeliveryAddress)) {
-                            return new ResponseEntity<>("", HttpStatus.OK);
+
+                final var addressChanged = timerService.pollWithDefaultTiming(() -> {
+                    final var newOrder = orderRepository.getOrderByOrderNumber(orderNumber);
+                    if (newOrder.isPresent()) {
+                        final List<Address> shippingAddresses =
+                                newOrder.get().getLatestJson().getOrderHeader().getShippingAddresses();
+                        for(Address shippingAddress : shippingAddresses) {
+                            if (shippingAddress.equals(newDeliveryAddress)) {
+                                return true;
+                            }
                         }
                     }
+                    return false;
+                });
 
+                if (addressChanged) {
+                    return new ResponseEntity<>("", HttpStatus.OK);
+                } else {
                     return new ResponseEntity<>("The order was found but could not changed the deliver address, because the state was not good.", HttpStatus.CONFLICT);
                 }
-
             } else if (helper.checkIfActiveProcessExists(orderNumber)) {
                 // todo change main delivery address (order lvl)
 
@@ -90,16 +110,6 @@ public class SalesOrderAddressService {
         }
         return ResponseEntity.notFound().build();
     }
-
-//    protected Execution tryUpdateBillingAddress(String orderNumber, Address newBillingAddress) {
-//        final MessageCorrelationResult result = sendMessage(Messages.ORDER_INVOICE_ADDRESS_CHANGE_RECEIVED, orderNumber, newBillingAddress);
-//
-//        if (result.getExecution() != null) {
-//            return result.getExecution();
-//        } else {
-//            return null;
-//        }
-//    }
 
     protected boolean tryUpdateDeliveryAddress(String orderNumber, String orderItemId, Address newDeliveryAddress) {
         final MessageCorrelationResult result = sendMessageForUpdateDeliveryAddress(RowMessages.DELIVERY_ADDRESS_CHANGE, orderNumber, orderItemId, newDeliveryAddress);

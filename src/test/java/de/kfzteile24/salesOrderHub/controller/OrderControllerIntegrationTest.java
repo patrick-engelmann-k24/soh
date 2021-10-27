@@ -2,14 +2,15 @@ package de.kfzteile24.salesOrderHub.controller;
 
 import de.kfzteile24.salesOrderHub.SalesOrderHubProcessApplication;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
+import de.kfzteile24.salesOrderHub.services.InvoiceService;
 import de.kfzteile24.soh.order.dto.Address;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
-import org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +35,9 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Shipme
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.http.HttpStatus.CONFLICT;
+import static org.springframework.http.HttpStatus.OK;
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @SpringBootTest(
@@ -52,6 +56,9 @@ class OrderControllerIntegrationTest {
     private SalesOrderUtil salesOrderUtil;
     @Autowired
     private OrderController controller;
+    @Autowired
+    private InvoiceService invoiceService;
+
     private SalesOrder testOrder;
 
     @BeforeEach
@@ -61,15 +68,7 @@ class OrderControllerIntegrationTest {
     }
 
     @Test
-    public void contextLoads() throws Exception {
-        assertThat(controller).isNotNull();
-    }
-
-    /**
-     * Test for non existing order
-     */
-    @Test
-    public void updateShippingAddressForOrder() {
+    public void updateDeliveryAddressForOrder() {
         var testOrder = salesOrderUtil.createNewSalesOrder();
         final String orderNumber = testOrder.getOrderNumber();
         final List<String> orderItems = testOrder.getLatestJson().getOrderRows().stream()
@@ -86,47 +85,141 @@ class OrderControllerIntegrationTest {
                                         .build();
 
         final var processInstance = createProcessInstance(orderNumber, orderItems);
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        assertTrue(util.isProcessWaitingAtExpectedToken(processInstance, MSG_ORDER_PAYMENT_SECURED.getName()));
 
-        BpmnAwareTests.assertThat(processInstance).isWaitingAt(MSG_ORDER_PAYMENT_SECURED.getName());
         util.sendMessage(ORDER_RECEIVED_PAYMENT_SECURED, orderNumber);
 
         final var result = controller.updateDeliveryAddress(orderNumber, orderItems.get(0), address);
-        //TODO:this test should return 200 successful but is not.Fix this test
-        assertThat(result.getStatusCode().is2xxSuccessful()).isFalse();
+        assertThat(result.getStatusCode()).isEqualTo(OK);
     }
 
-    /**
-     * Test for existing order
-     */
-    //@Test
-    public void updateShippingAddressForOrderExisting() {
-    }
-
-    /**
-     * Test for existing order but incorrect state
-     */
-    //@Test
-    public void updateShippingAddressForOrderExistingButIncorrectState() {
+    @Test
+    public void ifTheDeliveryAddressOfAnOrderRowCannotBeUpdatedBecauseOfTheProcessStateTheStatusCONFLICTIsReturned() {
         final String orderNumber = testOrder.getOrderNumber();
         final List<String> orderItems = util.getOrderRows(orderNumber, 5);
 
         final String orderItemId = orderItems.get(0);
         final Address address = Address.builder().build();
 
-        createProcessInstance(orderNumber, orderItems);
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        final ProcessInstance processInstance = createProcessInstance(orderNumber, orderItems);
+        assertTrue(util.isProcessWaitingAtExpectedToken(processInstance, MSG_ORDER_PAYMENT_SECURED.getName()));
+        util.sendMessage(ORDER_RECEIVED_PAYMENT_SECURED, orderNumber);
+
+        util.sendMessage(ROW_TRANSMITTED_TO_LOGISTICS, orderNumber);
+        util.sendMessage(PACKING_STARTED, orderNumber);
+        util.sendMessage(TRACKING_ID_RECEIVED, orderNumber);
 
         final var result = controller.updateDeliveryAddress(orderNumber, orderItemId, address);
-        assertThat(result.getStatusCode().is4xxClientError()).isTrue();
+        assertThat(result.getStatusCode()).isEqualTo(CONFLICT);
+    }
+
+    @Test
+    public void updatingTheInvoiceAddressSuccessfullyReturnsTheStatusOK() {
+        var testOrder = salesOrderUtil.createNewSalesOrder();
+        final String orderNumber = testOrder.getOrderNumber();
+        final List<String> orderRows = util.getOrderRows(orderNumber, 5);
+
+        final Address address = Address.builder()
+                                        .street1("Unit")
+                                        .street2("Test")
+                                        .city("Javaland")
+                                        .zipCode("12345")
+                                        .build();
+
+        final ProcessInstance processInstance = createProcessInstance(orderNumber, orderRows);
+        assertTrue(util.isProcessWaitingAtExpectedToken(processInstance, MSG_ORDER_PAYMENT_SECURED.getName()));
+
+        final var result = controller.updateBillingAddress(orderNumber, address);
+        assertThat(result.getStatusCode()).isEqualTo(OK);
+    }
+
+    @Test
+    public void ifTheInvoiceAddressCannotBeUpdatedBecauseOfTheProcessStateTheStatusCONFLICTIsReturned() {
+        var testOrder = salesOrderUtil.createNewSalesOrder();
+        final String orderNumber = testOrder.getOrderNumber();
+        final List<String> orderRows = util.getOrderRows(orderNumber, 5);
+
+        final Address address = Address.builder()
+                .street1("Unit")
+                .street2("Test")
+                .city("Javaland")
+                .zipCode("12345")
+                .build();
+
+        final ProcessInstance processInstance = createProcessInstance(orderNumber, orderRows);
+        assertTrue(util.isProcessWaitingAtExpectedToken(processInstance, MSG_ORDER_PAYMENT_SECURED.getName()));
+        invoiceService.addSalesOrderToInvoice(testOrder, SalesOrderInvoice.builder()
+                .orderNumber(orderNumber)
+                .invoiceNumber("444")
+                .build());
+
+        final var result = controller.updateBillingAddress(orderNumber, address);
+        assertThat(result.getStatusCode()).isEqualTo(CONFLICT);
+    }
+
+    @Test
+    public void cancellingAnOrderRowSuccessfullyReturnsTheStatusOK() {
+        var testOrder = salesOrderUtil.createNewSalesOrder();
+        final String orderNumber = testOrder.getOrderNumber();
+        final List<String> orderRows = util.getOrderRows(orderNumber, 5);
+
+        final var processInstance = createProcessInstance(orderNumber, orderRows);
+        assertTrue(util.isProcessWaitingAtExpectedToken(processInstance, MSG_ORDER_PAYMENT_SECURED.getName()));
+
+        util.sendMessage(ORDER_RECEIVED_PAYMENT_SECURED, orderNumber);
+
+        final var result = controller.cancelOrderRow(orderNumber, orderRows.get(0));
+        assertThat(result.getStatusCode()).isEqualTo(OK);
+    }
+
+    @Test
+    public void ifAnOrderRowCannotBeCancelledBecauseOfTheProcessStateTheStatusCONFLICTIsReturned() {
+        var testOrder = salesOrderUtil.createNewSalesOrder();
+        final String orderNumber = testOrder.getOrderNumber();
+        final List<String> orderRows = util.getOrderRows(orderNumber, 5);
+
+        final var processInstance = createProcessInstance(orderNumber, orderRows);
+        assertTrue(util.isProcessWaitingAtExpectedToken(processInstance, MSG_ORDER_PAYMENT_SECURED.getName()));
+        util.sendMessage(ORDER_RECEIVED_PAYMENT_SECURED, orderNumber);
+
+        util.sendMessage(ROW_TRANSMITTED_TO_LOGISTICS, orderNumber);
+        util.sendMessage(PACKING_STARTED, orderNumber);
+        util.sendMessage(TRACKING_ID_RECEIVED, orderNumber);
+
+        final var result = controller.cancelOrderRow(orderNumber, orderRows.get(0));
+        assertThat(result.getStatusCode()).isEqualTo(CONFLICT);
+    }
+
+    @Test
+    public void cancellingAnOrderSuccessfullyReturnsTheStatusOK() {
+        var testOrder = salesOrderUtil.createNewSalesOrder();
+        final String orderNumber = testOrder.getOrderNumber();
+        final List<String> orderRows = util.getOrderRows(orderNumber, 5);
+
+        final var processInstance = createProcessInstance(orderNumber, orderRows);
+        assertTrue(util.isProcessWaitingAtExpectedToken(processInstance, MSG_ORDER_PAYMENT_SECURED.getName()));
+
+        final var result = controller.cancelOrder(orderNumber);
+        assertThat(result.getStatusCode()).isEqualTo(OK);
+    }
+
+    @Test
+    public void ifAnOrderCannotBeCancelledBecauseOfTheProcessStateTheStatusCONFLICTIsReturned() {
+        var testOrder = salesOrderUtil.createNewSalesOrder();
+        final String orderNumber = testOrder.getOrderNumber();
+        final List<String> orderRows = util.getOrderRows(orderNumber, 5);
+
+        final var processInstance = createProcessInstance(orderNumber, orderRows);
+        assertTrue(util.isProcessWaitingAtExpectedToken(processInstance, MSG_ORDER_PAYMENT_SECURED.getName()));
+
+        util.sendMessage(ORDER_RECEIVED_PAYMENT_SECURED, orderNumber);
+
+        util.sendMessage(ROW_TRANSMITTED_TO_LOGISTICS, orderNumber, orderRows.get(0));
+        util.sendMessage(PACKING_STARTED, orderNumber, orderRows.get(0));
+        util.sendMessage(TRACKING_ID_RECEIVED, orderNumber, orderRows.get(0));
+
+        final var result = controller.cancelOrder(orderNumber);
+        assertThat(result.getStatusCode()).isEqualTo(CONFLICT);
     }
 
     private ProcessInstance createProcessInstance(String orderNumber, List<String> orderItems) {
@@ -138,141 +231,6 @@ class OrderControllerIntegrationTest {
                 .setVariable(ORDER_ROWS.getName(), orderItems)
                 .setVariable(SHIPMENT_METHOD.getName(), REGULAR.getName())
                 .correlateWithResult().getProcessInstance();
-    }
-
-    @Test
-    public void updateBillingAddressForExistingOrder() {
-        var testOrder = salesOrderUtil.createNewSalesOrder();
-        final String orderNumber = testOrder.getOrderNumber();
-        final List<String> orderItems = util.getOrderRows(orderNumber, 5);
-
-        final Address address = Address.builder()
-                                        .street1("Unit")
-                                        .street2("Test")
-                                        .city("Javaland")
-                                        .zipCode("12345")
-                                        .build();
-
-        createProcessInstance(orderNumber, orderItems);
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        final var result = controller.updateBillingAddress(orderNumber, address);
-        assertThat(result.getStatusCodeValue()).isEqualTo(200);
-    }
-
-    @Test
-    public void cancelOrderItemForExistingOrder() {
-        var testOrder = salesOrderUtil.createNewSalesOrder();
-        final String orderNumber = testOrder.getOrderNumber();
-        final List<String> orderItems = util.getOrderRows(orderNumber, 5);
-
-        final var processInstance = createProcessInstance(orderNumber, orderItems);
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        BpmnAwareTests.assertThat(processInstance).isWaitingAt(MSG_ORDER_PAYMENT_SECURED.getName());
-        util.sendMessage(ORDER_RECEIVED_PAYMENT_SECURED, orderNumber);
-
-        final var result = controller.cancelOrderItem(orderNumber, orderItems.get(0));
-        assertThat(result.getStatusCodeValue()).isEqualTo(200);
-    }
-
-    @Test
-    public void cancelOrderItemNotPossibleState() {
-        var testOrder = salesOrderUtil.createNewSalesOrder();
-        final String orderNumber = testOrder.getOrderNumber();
-        final List<String> orderItems = util.getOrderRows(orderNumber, 5);
-
-        final var processInstance = createProcessInstance(orderNumber, orderItems);
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        BpmnAwareTests.assertThat(processInstance).isWaitingAt(MSG_ORDER_PAYMENT_SECURED.getName());
-        util.sendMessage(ORDER_RECEIVED_PAYMENT_SECURED, orderNumber);
-
-        util.sendMessage(ROW_TRANSMITTED_TO_LOGISTICS, orderNumber);
-        util.sendMessage(PACKING_STARTED, orderNumber);
-        util.sendMessage(TRACKING_ID_RECEIVED, orderNumber);
-
-        final var result = controller.cancelOrderItem(orderNumber, orderItems.get(0));
-        assertThat(result.getStatusCodeValue()).isEqualTo(409);
-    }
-
-    @Test
-    public void cancelOrderPossibleTest() {
-        var testOrder = salesOrderUtil.createNewSalesOrder();
-        final String orderNumber = testOrder.getOrderNumber();
-        final List<String> orderItems = util.getOrderRows(orderNumber, 5);
-
-        final var processInstance = createProcessInstance(orderNumber, orderItems);
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        BpmnAwareTests.assertThat(processInstance).isWaitingAt(MSG_ORDER_PAYMENT_SECURED.getName());
-        final var result = controller.cancelOrder(orderNumber);
-        assertThat(result.getStatusCodeValue()).isEqualTo(200);
-    }
-
-    @Test
-    public void cancelOrderPossibleWithOrderRowProcessesTest() {
-        var testOrder = salesOrderUtil.createNewSalesOrder();
-        final String orderNumber = testOrder.getOrderNumber();
-        final List<String> orderItems = util.getOrderRows(orderNumber, 5);
-
-        final var processInstance = createProcessInstance(orderNumber, orderItems);
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        BpmnAwareTests.assertThat(processInstance).isWaitingAt(MSG_ORDER_PAYMENT_SECURED.getName());
-        util.sendMessage(ORDER_RECEIVED_PAYMENT_SECURED, orderNumber);
-
-        try {
-            Thread.sleep(400);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        final var result = controller.cancelOrder(orderNumber);
-        assertThat(result.getStatusCodeValue()).isEqualTo(200);
-    }
-
-    @Test
-    public void orderCancelNotPossibleOrderRowsDeliveredTest() {
-        var testOrder = salesOrderUtil.createNewSalesOrder();
-        final String orderNumber = testOrder.getOrderNumber();
-        final List<String> orderItems = util.getOrderRows(orderNumber, 5);
-
-        final var processInstance = createProcessInstance(orderNumber, orderItems);
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        BpmnAwareTests.assertThat(processInstance).isWaitingAt(MSG_ORDER_PAYMENT_SECURED.getName());
-        util.sendMessage(ORDER_RECEIVED_PAYMENT_SECURED, orderNumber);
-
-        util.sendMessage(ROW_TRANSMITTED_TO_LOGISTICS, orderNumber, orderItems.get(0));
-        util.sendMessage(PACKING_STARTED, orderNumber, orderItems.get(0));
-        util.sendMessage(TRACKING_ID_RECEIVED, orderNumber, orderItems.get(0));
-
-        final var result = controller.cancelOrder(orderNumber);
-        assertThat(result.getStatusCodeValue()).isEqualTo(409);
     }
 
 }
