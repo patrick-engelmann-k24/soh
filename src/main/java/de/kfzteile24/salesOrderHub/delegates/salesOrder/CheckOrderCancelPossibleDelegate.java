@@ -25,7 +25,7 @@ public class CheckOrderCancelPossibleDelegate implements JavaDelegate {
     private RuntimeService runtimeService;
 
     @Autowired
-    private SalesOrderRowService itemService;
+    private SalesOrderRowService orderRowService;
 
     @Override
     public void execute(DelegateExecution delegateExecution) throws Exception {
@@ -41,7 +41,7 @@ public class CheckOrderCancelPossibleDelegate implements JavaDelegate {
 
             // check if one this is not able to cancel the whole order can not cancelled
             for (ProcessInstance orderRowProcess : orderRowProcesses) {
-                if (!itemService.checkItemCancellationPossible(orderRowProcess.getProcessInstanceId(), shipmentMethod)) {
+                if (!orderRowService.checkOrderRowCancellationPossible(orderRowProcess.getProcessInstanceId(), shipmentMethod)) {
                     orderCancelPossible = false;
                 }
             }

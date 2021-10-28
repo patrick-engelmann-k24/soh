@@ -16,7 +16,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 public class CheckRowCancellationPossible implements JavaDelegate {
 
     @Autowired
-    private SalesOrderRowService rowService;
+    private SalesOrderRowService orderRowService;
 
     /**
      * Check if process (item) cancellation is possible
@@ -26,7 +26,7 @@ public class CheckRowCancellationPossible implements JavaDelegate {
     @Override
     public void execute(DelegateExecution delegateExecution) {
         final String shipmentMethod = (String) delegateExecution.getVariable(SHIPMENT_METHOD.getName());
-        Boolean checkResult = rowService.checkItemCancellationPossible(delegateExecution.getProcessInstanceId(), shipmentMethod);
+        Boolean checkResult = orderRowService.checkOrderRowCancellationPossible(delegateExecution.getProcessInstanceId(), shipmentMethod);
 
         delegateExecution.setVariable(RowVariables.ROW_CANCELLATION_POSSIBLE.getName(), checkResult);
     }
