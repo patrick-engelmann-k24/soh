@@ -44,7 +44,7 @@ public class OrderController {
     private SalesOrderAddressService orderAddressService;
 
     @Autowired
-    private SalesOrderRowService orderItemService;
+    private SalesOrderRowService orderRowService;
 
 
     /**
@@ -67,7 +67,7 @@ public class OrderController {
      * Pickup: n/a</P>
      *
      * @param orderNumber The order number from the order where the order row is part of it
-     * @param orderItemId The order row id where the address tried to changed
+     * @param orderRowId The order row id where the address tried to changed
      * @param address The new delivery address
      * @return
      */
@@ -75,8 +75,8 @@ public class OrderController {
     @PutMapping("/{orderNumber}/{orderItemId}/deliveryAddress")
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<String> updateDeliveryAddress(
-            @PathVariable("orderNumber") final String orderNumber, @PathVariable("orderItemId") final String orderItemId, @RequestBody final Address address) {
-        return orderAddressService.updateDeliveryAddress(orderNumber, orderItemId, address);
+            @PathVariable("orderNumber") final String orderNumber, @PathVariable("orderItemId") final String orderRowId, @RequestBody final Address address) {
+        return orderAddressService.updateDeliveryAddress(orderNumber, orderRowId, address);
     }
 
     /**
@@ -107,7 +107,7 @@ public class OrderController {
      * </P>
      *
      * @param orderNumber The order number where the order row is part of it
-     * @param orderItemId The id of the order row which should tried to cancelled
+     * @param orderRowId The id of the order row which should tried to cancelled
      * @return ResponseEntity with optional message if not possible
      */
     @ApiOperation(value = "Try to cancel order row if it has not reached a defined state")
@@ -118,11 +118,11 @@ public class OrderController {
             @ApiResponse(code = 404, message = "Not found"),
             @ApiResponse(code = 409, message = "Failed|Not possible")
     })
-    public ResponseEntity<String> cancelOrderItem(
+    public ResponseEntity<String> cancelOrderRow(
             @PathVariable("orderNumber") final String orderNumber,
-            @PathVariable("orderItemId") final String orderItemId
+            @PathVariable("orderItemId") final String orderRowId
     ) {
-        return orderItemService.cancelOrderItem(orderNumber, orderItemId);
+        return orderRowService.cancelOrderRow(orderNumber, orderRowId);
     }
 
     /**

@@ -71,7 +71,7 @@
         <bpmn:incoming>Flow_1daj8ak</bpmn:incoming>
         <bpmn:outgoing>Flow_01gshae</bpmn:outgoing>
       </bpmn:serviceTask>
-      <bpmn:serviceTask id="activityChangeInvoiceAddress" name="Change invoice address" camunda:delegateExpression="${changeInvoiceAddressDelegate}">
+      <bpmn:serviceTask id="activityChangeInvoiceAddress" name="Change invoice address" camunda:asyncBefore="true" camunda:delegateExpression="${changeInvoiceAddressDelegate}">
         <bpmn:incoming>Flow_0tnk89y</bpmn:incoming>
         <bpmn:outgoing>Flow_0d2x8sg</bpmn:outgoing>
       </bpmn:serviceTask>

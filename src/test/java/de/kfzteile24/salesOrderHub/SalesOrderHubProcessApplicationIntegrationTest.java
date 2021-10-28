@@ -29,6 +29,7 @@ import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
+import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import org.assertj.core.api.Assertions;
@@ -57,6 +58,7 @@ import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.ini
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @SpringBootTest(
@@ -78,6 +80,9 @@ public class SalesOrderHubProcessApplicationIntegrationTest {
 
     @Autowired
     private CamundaHelper camundaHelper;
+
+    @Autowired
+    private TimedPollingService pollingService;
 
     private SalesOrder testOrder;
 
@@ -101,7 +106,7 @@ public class SalesOrderHubProcessApplicationIntegrationTest {
     @Test
     public void salesOrderItemPassThruTest() {
         final String orderNumber = testOrder.getOrderNumber();
-        final List<String> orderItems = util.getOrderRows(orderNumber, 5);
+        final List<String> orderRows = util.getOrderRows(orderNumber, 5);
 
         ProcessInstance salesOrderProcessInstance =
                 runtimeService.createMessageCorrelation(Messages.ORDER_RECEIVED_MARKETPLACE.getName())
@@ -109,17 +114,11 @@ public class SalesOrderHubProcessApplicationIntegrationTest {
                         .setVariable(Variables.ORDER_NUMBER.getName(), orderNumber)
                         .setVariable(Variables.PAYMENT_TYPE.getName(), CREDIT_CARD.getName())
                         .setVariable(Variables.ORDER_VALID.getName(), true)
-                        .setVariable(Variables.ORDER_ROWS.getName(), orderItems)
+                        .setVariable(Variables.ORDER_ROWS.getName(), orderRows)
                         .setVariable(Variables.SHIPMENT_METHOD.getName(), REGULAR.getName())
                         .correlateWithResult().getProcessInstance();
 
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        assertThat(salesOrderProcessInstance).isWaitingAt(Events.MSG_ORDER_PAYMENT_SECURED.getName());
+        assertTrue(util.isProcessWaitingAtExpectedToken(salesOrderProcessInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName()));
         util.sendMessage(Messages.ORDER_RECEIVED_PAYMENT_SECURED.getName(), orderNumber);
         assertThat(salesOrderProcessInstance).isWaitingAt(Activities.ORDER_ROW_FULFILLMENT_PROCESS.getName());
 
@@ -133,7 +132,7 @@ public class SalesOrderHubProcessApplicationIntegrationTest {
     }
 
     @Test
-    public void salesOrderItemShipmentCancellationPossibleTest() {
+    public void salesOrderRowShipmentCancellationPossibleTest() {
         final var salesOrder = salesOrderUtil.createPersistedSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
         final String orderNumber = salesOrder.getOrderNumber();
         final String skuToCancel = salesOrder.getLatestJson().getOrderRows().get(0).getSku();
@@ -142,24 +141,19 @@ public class SalesOrderHubProcessApplicationIntegrationTest {
 
         List<MessageCorrelationResult> msg_packingStarted = util.sendMessage(RowMessages.PACKING_STARTED, orderNumber);
 
-        final ProcessInstance firstItemProcessInstance = getFirstOrderItem(msg_packingStarted);
+        final ProcessInstance firstOrderRowProcessInstance = getFirstOrderRowProcess(msg_packingStarted);
 
-        assertThat(firstItemProcessInstance).hasPassedInOrder(RowEvents.ROW_TRANSMITTED_TO_LOGISTICS.getName());
+        assertThat(firstOrderRowProcessInstance).hasPassedInOrder(RowEvents.ROW_TRANSMITTED_TO_LOGISTICS.getName());
 
-        // cancel 1st orderItem
+        // cancel 1st order row
         final Map<String, Object> processVariables = Map.of(RowVariables.ROW_CANCELLATION_POSSIBLE.getName(), true);
         util.sendMessage(RowMessages.ORDER_ROW_CANCELLATION_RECEIVED, orderNumber, skuToCancel, processVariables);
 
-        try {
-            Thread.sleep(400);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
         // main process should stay at the same pos
-        assertThat(salesOrderProcessInstance).isWaitingAt(Activities.ORDER_ROW_FULFILLMENT_PROCESS.getName());
+        assertTrue(util.isProcessWaitingAtExpectedToken(salesOrderProcessInstance,
+                Activities.ORDER_ROW_FULFILLMENT_PROCESS.getName()));
 
-        assertThat(firstItemProcessInstance).hasPassed(
+        assertThat(firstOrderRowProcessInstance).hasPassed(
                 RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
                 RowEvents.ROW_TRANSMITTED_TO_LOGISTICS.getName(),
                 RowGateways.XOR_SHIPMENT_METHOD.getName(),
@@ -169,7 +163,12 @@ public class SalesOrderHubProcessApplicationIntegrationTest {
                 RowGateways.XOR_CANCELLATION_POSSIBLE.getName(),
                 RowActivities.HANDLE_CANCELLATION_SHIPMENT.getName()
         );
-        assertThat(firstItemProcessInstance).isEnded();
+
+        final var firstOrderRowProcessHasEnded = pollingService.pollWithDefaultTiming(() -> {
+            assertThat(firstOrderRowProcessInstance).isEnded();
+            return true;
+        });
+        assertTrue(firstOrderRowProcessHasEnded);
 
         // move remaining items
         util.sendMessage(RowMessages.TRACKING_ID_RECEIVED, orderNumber);
@@ -180,7 +179,7 @@ public class SalesOrderHubProcessApplicationIntegrationTest {
     @Test
     public void salesOrderCancellationTest() {
         final String orderNumber = testOrder.getOrderNumber();
-        final List<String> orderItems = util.getOrderRows(orderNumber, 5);
+        final List<String> orderRows = util.getOrderRows(orderNumber, 5);
 
         ProcessInstance salesOrderProcessInstance =
                 runtimeService.createMessageCorrelation(Messages.ORDER_RECEIVED_MARKETPLACE.getName())
@@ -188,32 +187,22 @@ public class SalesOrderHubProcessApplicationIntegrationTest {
                         .setVariable(Variables.ORDER_NUMBER.getName(), orderNumber)
                         .setVariable(Variables.PAYMENT_TYPE.getName(), CREDIT_CARD.getName())
                         .setVariable(Variables.ORDER_VALID.getName(), true)
-                        .setVariable(Variables.ORDER_ROWS.getName(), orderItems)
+                        .setVariable(Variables.ORDER_ROWS.getName(), orderRows)
                         .setVariable(Variables.SHIPMENT_METHOD.getName(), REGULAR.getName())
                         .correlateWithResult().getProcessInstance();
 
-        try {
-            Thread.sleep(400);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        assertThat(salesOrderProcessInstance).isWaitingAt(Events.MSG_ORDER_PAYMENT_SECURED.getName());
+        assertTrue(util.isProcessWaitingAtExpectedToken(salesOrderProcessInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName()));
 
         runtimeService.createMessageCorrelation(Messages.ORDER_CANCELLATION_RECEIVED.getName())
                 .processInstanceBusinessKey(orderNumber)
                 .correlateWithResult();
 
-        try {
-            Thread.sleep(400);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        assertThat(salesOrderProcessInstance)
-                .isEnded()
-                .hasPassed(Events.ORDER_CANCELLATION_RECEIVED.getName());
-
+        pollingService.pollWithDefaultTiming(() -> {
+            assertThat(salesOrderProcessInstance)
+                    .isEnded()
+                    .hasPassed(Events.ORDER_CANCELLATION_RECEIVED.getName());
+            return true;
+        });
     }
 
     @Test
@@ -241,25 +230,21 @@ public class SalesOrderHubProcessApplicationIntegrationTest {
                 .collect(Collectors.toList());
         Assertions.assertThat(orderRowSkus).isEqualTo(expectedOrderRowSkus);
 
-        try {
-            Thread.sleep(400);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        assertTrue(util.isProcessWaitingAtExpectedToken(processInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName()));
 
         util.sendMessage(Messages.ORDER_RECEIVED_PAYMENT_SECURED.getName(), salesOrder.getOrderNumber());
 
         salesOrder.getLatestJson().getOrderRows()
                 .forEach(orderRow -> {
                     Assertions.assertThat(
-                            camundaHelper.checkIfItemProcessExists(salesOrder.getOrderNumber(), orderRow.getSku()))
+                            camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), orderRow.getSku()))
                             .isEqualTo(!NONE.getName().equals(orderRow.getShippingType()));
 
                 });
-        assertFalse(camundaHelper.checkIfItemProcessExists(salesOrder.getOrderNumber(), virtualOrderRowSkus.get(0)));
+        assertFalse(camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), virtualOrderRowSkus.get(0)));
     }
 
-    protected ProcessInstance getFirstOrderItem(final List<MessageCorrelationResult> correlationResultList) {
+    protected ProcessInstance getFirstOrderRowProcess(final List<MessageCorrelationResult> correlationResultList) {
         String firstItemProcessInstanceId = correlationResultList.get(0).getExecution().getProcessInstanceId();
         final ProcessInstance firstItemProcessInstance = getProcessInstanceQuery()
                 .processInstanceId(firstItemProcessInstanceId)
@@ -290,15 +275,12 @@ public class SalesOrderHubProcessApplicationIntegrationTest {
                         .correlateWithResult().getProcessInstance();
         assertThat(salesOrderProcessInstance).isActive();
 
-        try {
-            Thread.sleep(400);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        assertThat(salesOrderProcessInstance)
-                .hasPassed(Events.THROW_MSG_ORDER_CREATED.getName())
-                .isWaitingAt(Events.MSG_ORDER_PAYMENT_SECURED.getName());
+        pollingService.pollWithDefaultTiming(() -> {
+            assertThat(salesOrderProcessInstance)
+                    .hasPassed(Events.THROW_MSG_ORDER_CREATED.getName())
+                    .isWaitingAt(Events.MSG_ORDER_PAYMENT_SECURED.getName());
+            return true;
+        });
 
         runtimeService.createMessageCorrelation(Messages.ORDER_RECEIVED_PAYMENT_SECURED.getName())
                 .processInstanceBusinessKey(orderNumber)

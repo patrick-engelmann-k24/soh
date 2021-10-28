@@ -120,11 +120,11 @@ public class CamundaHelper {
         return processVariables;
     }
 
-    public boolean checkIfItemProcessExists(String orderNumber, String orderItemId) {
+    public boolean checkIfOrderRowProcessExists(String orderNumber, String orderRowId) {
         var result = runtimeService.createProcessInstanceQuery()
                                            .processDefinitionKey(SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName())
                                            .variableValueEquals(ORDER_NUMBER.getName(), orderNumber)
-                                           .variableValueEquals(ORDER_ROW_ID.getName(), orderItemId)
+                                           .variableValueEquals(ORDER_ROW_ID.getName(), orderRowId)
                                            .list().isEmpty();
 
         return !result;
@@ -148,7 +148,7 @@ public class CamundaHelper {
         return (Boolean) runtimeService.getVariable(execution.getId(), DELIVERY_ADDRESS_CHANGE_POSSIBLE.getName());
     }
 
-    private boolean isShipped(String shippingType) {
+    public boolean isShipped(String shippingType) {
         return !ShipmentMethod.NONE.getName().equals(shippingType);
     }
 }
