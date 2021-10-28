@@ -73,14 +73,14 @@ public class SalesOrderAddressService {
     }
 
     @SneakyThrows
-    public ResponseEntity<String> updateDeliveryAddress(final String orderNumber, final String orderItemId, final Address newDeliveryAddress) {
+    public ResponseEntity<String> updateDeliveryAddress(final String orderNumber, final String orderRowId, final Address newDeliveryAddress) {
         final Optional<SalesOrder> soOpt = orderRepository.getOrderByOrderNumber(orderNumber);
 
         if (soOpt.isPresent()) {
-            if (helper.checkIfItemProcessExists(orderNumber, orderItemId)) {
+            if (helper.checkIfOrderRowProcessExists(orderNumber, orderRowId)) {
                 sendMessageForUpdateDeliveryAddress(
                         RowMessages.DELIVERY_ADDRESS_CHANGE,
-                        orderNumber, orderItemId, newDeliveryAddress);
+                        orderNumber, orderRowId, newDeliveryAddress);
 
                 final var addressChanged = timerService.pollWithDefaultTiming(() -> {
                     final var newOrder = orderRepository.getOrderByOrderNumber(orderNumber);
