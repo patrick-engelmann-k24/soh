@@ -7,7 +7,6 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMetho
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.soh.order.dto.OrderRows;
-import org.camunda.bpm.engine.HistoryService;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.MessageCorrelationBuilder;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
@@ -60,9 +59,6 @@ class SalesOrderRowServiceTest {
 
     @Mock
     private RuntimeService runtimeService;
-
-    @Mock
-    private HistoryService historyService;
 
     @Mock
     private SalesOrderService salesOrderService;
