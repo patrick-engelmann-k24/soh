@@ -151,7 +151,7 @@ Pickup: n/a</bpmn:text>
     <bpmn:sequenceFlow id="Flow_17aezh1" sourceRef="eventTrackingIdReceived" targetRef="rowShipped" />
     <bpmn:sequenceFlow id="Flow_0ya2mbr" sourceRef="gwXORTourStarted" targetRef="gwXORClickAndCollect" />
     <bpmn:sequenceFlow id="Flow_1j8lgbb" name="Regular &#38; Express" sourceRef="gwXORShipmentMethod" targetRef="eventPackingStarted">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${shipmentMethod == "shipment_regular" || shipmentMethod == "shipment_express" || shipment_priority == "shipment_priority"}</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${shipmentMethod == "shipment_regular" || shipmentMethod == "shipment_express" || shipmentMethod == "shipment_priority"}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_0i51he6" sourceRef="eventPackingStarted" targetRef="eventTrackingIdReceived" />
     <bpmn:sequenceFlow id="Flow_0hihgm6" name="Direct delivery" sourceRef="gwXORShipmentMethod" targetRef="eventTourStarted">
