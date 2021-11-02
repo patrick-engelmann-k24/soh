@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_0csmsqq" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.6.0">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_0csmsqq" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.9.0">
   <bpmn:process id="OrderRowFulfillmentProcess" name="Order row fulfillment process" isExecutable="true" camunda:isStartableInTasklist="false">
     <bpmn:startEvent id="eventStartOrderRowFulfillmentProcess" name="Order row received">
       <bpmn:extensionElements>
@@ -151,7 +151,7 @@ Pickup: n/a</bpmn:text>
     <bpmn:sequenceFlow id="Flow_17aezh1" sourceRef="eventTrackingIdReceived" targetRef="rowShipped" />
     <bpmn:sequenceFlow id="Flow_0ya2mbr" sourceRef="gwXORTourStarted" targetRef="gwXORClickAndCollect" />
     <bpmn:sequenceFlow id="Flow_1j8lgbb" name="Regular &#38; Express" sourceRef="gwXORShipmentMethod" targetRef="eventPackingStarted">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${shipmentMethod == "shipment_regular" || shipmentMethod == "shipment_express"}</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${shipmentMethod == "shipment_regular" || shipmentMethod == "shipment_express" || shipmentMethod == "shipment_priority"}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_0i51he6" sourceRef="eventPackingStarted" targetRef="eventTrackingIdReceived" />
     <bpmn:sequenceFlow id="Flow_0hihgm6" name="Direct delivery" sourceRef="gwXORShipmentMethod" targetRef="eventTourStarted">

@@ -61,6 +61,7 @@ public class SalesOrderRowService {
         switch (ShipmentMethod.fromString(shipmentMethod)) {
             case REGULAR:
             case EXPRESS:
+            case PRIORITY:
                 return helper.hasNotPassed(processId, RowEvents.TRACKING_ID_RECEIVED.getName());
             case CLICK_COLLECT:
                 return helper.hasNotPassed(processId, RowEvents.ROW_PICKED_UP.getName());

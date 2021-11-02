@@ -8,6 +8,7 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 public enum ShipmentMethod implements BpmItem {
     REGULAR("shipment_regular"),
     EXPRESS("shipment_express"),
+    PRIORITY("shipment_priority"),
     DIRECT_DELIVERY("direct_delivery"),
     CLICK_COLLECT("click_collect"),
     NONE("none"),
