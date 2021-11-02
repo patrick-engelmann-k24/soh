@@ -38,6 +38,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEve
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.CLICK_COLLECT;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.DIRECT_DELIVERY;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.EXPRESS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.PRIORITY;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ROW_CANCELLED;
 import static java.util.Collections.emptyList;
@@ -182,6 +183,7 @@ class SalesOrderRowServiceTest {
         return Stream.of(
                 Arguments.of(REGULAR, TRACKING_ID_RECEIVED),
                 Arguments.of(EXPRESS, TRACKING_ID_RECEIVED),
+                Arguments.of(PRIORITY, TRACKING_ID_RECEIVED),
                 Arguments.of(CLICK_COLLECT, ROW_PICKED_UP),
                 Arguments.of(DIRECT_DELIVERY, ROW_DELIVERED)
         );

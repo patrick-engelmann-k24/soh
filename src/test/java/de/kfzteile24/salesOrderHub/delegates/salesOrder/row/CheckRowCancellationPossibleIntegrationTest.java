@@ -120,6 +120,35 @@ public class CheckRowCancellationPossibleIntegrationTest {
     }
 
     @Test
+    public void testPassThruOnParcelShipmentPriority() {
+        final Map<String, Object> processVariables = new HashMap<>();
+        String orderNumber = util.getRandomOrderNumber();
+        processVariables.put(ORDER_NUMBER.getName(), orderNumber);
+        processVariables.put(SHIPMENT_METHOD.getName(), ShipmentMethod.PRIORITY.getName());
+
+        final ProcessInstance orderRowFulfillmentProcess = runtimeService.startProcessInstanceByKey(
+                ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
+                processVariables);
+
+        util.sendMessage(RowMessages.ROW_TRANSMITTED_TO_LOGISTICS, orderNumber);
+        util.sendMessage(RowMessages.PACKING_STARTED, orderNumber);
+        util.sendMessage(RowMessages.TRACKING_ID_RECEIVED, orderNumber);
+        util.sendMessage(RowMessages.ROW_SHIPPED, orderNumber);
+
+        assertThat(orderRowFulfillmentProcess).hasPassedInOrder(
+                RowEvents.START_ORDER_ROW_FULFILLMENT_PROCESS.getName(),
+                RowEvents.ROW_TRANSMITTED_TO_LOGISTICS.getName(),
+                RowGateways.XOR_SHIPMENT_METHOD.getName(),
+                RowEvents.PACKING_STARTED.getName(),
+                RowEvents.TRACKING_ID_RECEIVED.getName(),
+                RowEvents.ROW_SHIPPED.getName(),
+                RowGateways.XOR_TOUR_STARTED.getName(),
+                RowEvents.ORDER_ROW_FULFILLMENT_PROCESS_FINISHED.getName()
+        );
+        assertThat(orderRowFulfillmentProcess).isEnded();
+    }
+
+    @Test
     public void testPassThruOnParcelOwnDelivery() {
         final Map<String, Object> processVariables = new HashMap<>();
         String orderNumber = util.getRandomOrderNumber();

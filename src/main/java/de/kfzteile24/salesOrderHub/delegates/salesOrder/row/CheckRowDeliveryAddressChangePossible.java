@@ -30,6 +30,7 @@ public class CheckRowDeliveryAddressChangePossible extends CommonDelegate {
         switch (ShipmentMethod.fromString(shipmentMethod)) {
             case REGULAR:
             case EXPRESS:
+            case PRIORITY:
                 return checkOnShipmentMethodParcel(processInstanceId);
             case CLICK_COLLECT:
                 return false;
