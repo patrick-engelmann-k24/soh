@@ -117,6 +117,7 @@
         "first_name": "Han",
         "last_name": "Cole",
         "phone_number": "236077695",
+        "relay_phone_number_consent": false,
         "street1": "MusterStr. 4 ",
         "street2": "Dorfstr. 10",
         "street3": "s3",

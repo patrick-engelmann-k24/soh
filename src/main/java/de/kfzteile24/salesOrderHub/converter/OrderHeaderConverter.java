@@ -119,6 +119,7 @@ public class OrderHeaderConverter implements Converter<OrderJSON, OrderHeader> {
                 .firstName(source.getFirstName())
                 .lastName(source.getLastName())
                 .phoneNumber(source.getPhoneNumber())
+                .relayPhoneNumberConsent(source.isRelayPhoneNumberConsent())
                 .street1(source.getStreet1())
                 .street2(source.getStreet2())
                 .street3(source.getStreet3())

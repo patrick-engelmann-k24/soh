@@ -18,6 +18,7 @@ public class Address {
     private String firstName;
     private String lastName;
     private String phoneNumber;
+    private boolean relayPhoneNumberConsent;
     private String street1;
     private String street2;
     private String street3;
