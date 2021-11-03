@@ -4,12 +4,13 @@ import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import de.kfzteile24.salesOrderHub.dto.order.Header;
 import de.kfzteile24.salesOrderHub.dto.order.header.Discount;
 import de.kfzteile24.salesOrderHub.dto.order.header.Payment;
-import de.kfzteile24.soh.order.dto.Address;
+import de.kfzteile24.soh.order.dto.BillingAddress;
 import de.kfzteile24.soh.order.dto.Customer;
 import de.kfzteile24.soh.order.dto.Discounts;
 import de.kfzteile24.soh.order.dto.OrderHeader;
 import de.kfzteile24.soh.order.dto.PaymentProviderData;
 import de.kfzteile24.soh.order.dto.Payments;
+import de.kfzteile24.soh.order.dto.ShippingAddress;
 import de.kfzteile24.soh.order.dto.Totals;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -58,9 +59,9 @@ public class OrderHeaderConverter implements Converter<OrderJSON, OrderHeader> {
                 .orderFulfillment(FULFILLED_BY_K24)
                 .customerFulfillmentPartialPreference(false)
                 .customer(convertCustomer(header))
-                .billingAddress(convertAddress(header.getBillingAddress()))
+                .billingAddress(convertAddressToBilling(header.getBillingAddress()))
                 .shippingAddresses(header.getShippingAddresses().stream()
-                        .map(this::convertAddress)
+                        .map(this::convertAddressToShipping)
                         .collect(toList()))
                 .totals(convertTotals(source))
                 .payments(header.getPayments().stream().map(this::convertPayment).collect(toList()))
@@ -87,8 +88,8 @@ public class OrderHeaderConverter implements Converter<OrderJSON, OrderHeader> {
         return uuid == null ? null : UUID.fromString(uuid);
     }
 
-    private Address convertAddress(de.kfzteile24.salesOrderHub.dto.order.customer.Address source) {
-        return Address.builder()
+    private BillingAddress convertAddressToBilling(de.kfzteile24.salesOrderHub.dto.order.customer.Address source) {
+        return BillingAddress.builder()
                 .addressKey(parseInt(source.getAddressKey()))
                 .addressFormat(source.getAddressFormat())
                 .addressType(source.getAddressType())
@@ -105,7 +106,27 @@ public class OrderHeaderConverter implements Converter<OrderJSON, OrderHeader> {
                 .zipCode(source.getZipCode())
                 .countryRegionCode(source.getCountryRegionCode())
                 .countryCode(source.getCountryCode())
-                .relayPhoneNumberConsent(false)
+                .build();
+    }
+
+    private ShippingAddress convertAddressToShipping(de.kfzteile24.salesOrderHub.dto.order.customer.Address source) {
+        return ShippingAddress.builder()
+                .addressKey(parseInt(source.getAddressKey()))
+                .addressFormat(source.getAddressFormat())
+                .addressType(source.getAddressType())
+                .company(source.getCompany())
+                .salutation(source.getSalutation())
+                .firstName(source.getFirstName())
+                .lastName(source.getLastName())
+                .phoneNumber(source.getPhoneNumber())
+                .street1(source.getStreet1())
+                .street2(source.getStreet2())
+                .street3(source.getStreet3())
+                .street4(source.getStreet4())
+                .city(source.getCity())
+                .zipCode(source.getZipCode())
+                .countryRegionCode(source.getCountryRegionCode())
+                .countryCode(source.getCountryCode())
                 .build();
     }
 

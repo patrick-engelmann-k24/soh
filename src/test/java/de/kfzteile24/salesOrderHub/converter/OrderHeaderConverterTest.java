@@ -84,7 +84,7 @@ class OrderHeaderConverterTest {
 
         validateCustomer(orderJSON.getOrderHeader(), convertedHeader.getCustomer());
 
-        validateAddress(originalHeader.getBillingAddress(), convertedHeader.getBillingAddress());
+        validateBillingAddress(originalHeader.getBillingAddress(), convertedHeader.getBillingAddress());
         originalHeader.getShippingAddresses().forEach(originalAddress -> {
             final var convertedAddressOpt = convertedHeader.getShippingAddresses().stream()
                     .filter(a -> a.getAddressKey().equals(Integer.parseInt(originalAddress.getAddressKey())))
@@ -92,7 +92,7 @@ class OrderHeaderConverterTest {
 
             assertThat(convertedAddressOpt.isPresent()).isTrue();
             assertThat(convertedAddressOpt.get().getRelayPhoneNumberConsent()).isFalse();
-            validateAddress(originalAddress, convertedAddressOpt.get());
+            validateShippingAddress(originalAddress, convertedAddressOpt.get());
         });
 
         validateTotals(originalHeader.getTotals(), convertedHeader.getTotals(),
@@ -139,7 +139,7 @@ class OrderHeaderConverterTest {
     }
 
     private void validateAddress(de.kfzteile24.salesOrderHub.dto.order.customer.Address originalAddress,
-                                 de.kfzteile24.soh.order.dto.Address convertedAddress) {
+                                 de.kfzteile24.soh.order.dto.ShippingAddress convertedAddress) {
         assertThat(convertedAddress.getAddressKey()).isEqualTo(Integer.parseInt(originalAddress.getAddressKey()));
         assertThat(convertedAddress.getAddressFormat()).isEqualTo(originalAddress.getAddressFormat());
         assertThat(convertedAddress.getAddressType()).isEqualTo(originalAddress.getAddressType());
@@ -157,6 +157,47 @@ class OrderHeaderConverterTest {
         assertThat(convertedAddress.getCountryRegionCode()).isEqualTo(originalAddress.getCountryRegionCode());
         assertThat(convertedAddress.getCountryCode()).isEqualTo(originalAddress.getCountryCode());
     }
+
+    private void validateBillingAddress(de.kfzteile24.salesOrderHub.dto.order.customer.Address originalAddress,
+                                 de.kfzteile24.soh.order.dto.BillingAddress convertedAddress) {
+        assertThat(convertedAddress.getAddressKey()).isEqualTo(Integer.parseInt(originalAddress.getAddressKey()));
+        assertThat(convertedAddress.getAddressFormat()).isEqualTo(originalAddress.getAddressFormat());
+        assertThat(convertedAddress.getAddressType()).isEqualTo(originalAddress.getAddressType());
+        assertThat(convertedAddress.getCompany()).isEqualTo(originalAddress.getCompany());
+        assertThat(convertedAddress.getSalutation()).isEqualTo(originalAddress.getSalutation());
+        assertThat(convertedAddress.getFirstName()).isEqualTo(originalAddress.getFirstName());
+        assertThat(convertedAddress.getLastName()).isEqualTo(originalAddress.getLastName());
+        assertThat(convertedAddress.getPhoneNumber()).isEqualTo(originalAddress.getPhoneNumber());
+        assertThat(convertedAddress.getStreet1()).isEqualTo(originalAddress.getStreet1());
+        assertThat(convertedAddress.getStreet2()).isEqualTo(originalAddress.getStreet2());
+        assertThat(convertedAddress.getStreet3()).isEqualTo(originalAddress.getStreet3());
+        assertThat(convertedAddress.getStreet4()).isEqualTo(originalAddress.getStreet4());
+        assertThat(convertedAddress.getCity()).isEqualTo(originalAddress.getCity());
+        assertThat(convertedAddress.getZipCode()).isEqualTo(originalAddress.getZipCode());
+        assertThat(convertedAddress.getCountryRegionCode()).isEqualTo(originalAddress.getCountryRegionCode());
+        assertThat(convertedAddress.getCountryCode()).isEqualTo(originalAddress.getCountryCode());
+    }
+
+    private void validateShippingAddress(de.kfzteile24.salesOrderHub.dto.order.customer.Address originalAddress,
+                                        de.kfzteile24.soh.order.dto.ShippingAddress convertedAddress) {
+        assertThat(convertedAddress.getAddressKey()).isEqualTo(Integer.parseInt(originalAddress.getAddressKey()));
+        assertThat(convertedAddress.getAddressFormat()).isEqualTo(originalAddress.getAddressFormat());
+        assertThat(convertedAddress.getAddressType()).isEqualTo(originalAddress.getAddressType());
+        assertThat(convertedAddress.getCompany()).isEqualTo(originalAddress.getCompany());
+        assertThat(convertedAddress.getSalutation()).isEqualTo(originalAddress.getSalutation());
+        assertThat(convertedAddress.getFirstName()).isEqualTo(originalAddress.getFirstName());
+        assertThat(convertedAddress.getLastName()).isEqualTo(originalAddress.getLastName());
+        assertThat(convertedAddress.getPhoneNumber()).isEqualTo(originalAddress.getPhoneNumber());
+        assertThat(convertedAddress.getStreet1()).isEqualTo(originalAddress.getStreet1());
+        assertThat(convertedAddress.getStreet2()).isEqualTo(originalAddress.getStreet2());
+        assertThat(convertedAddress.getStreet3()).isEqualTo(originalAddress.getStreet3());
+        assertThat(convertedAddress.getStreet4()).isEqualTo(originalAddress.getStreet4());
+        assertThat(convertedAddress.getCity()).isEqualTo(originalAddress.getCity());
+        assertThat(convertedAddress.getZipCode()).isEqualTo(originalAddress.getZipCode());
+        assertThat(convertedAddress.getCountryRegionCode()).isEqualTo(originalAddress.getCountryRegionCode());
+        assertThat(convertedAddress.getCountryCode()).isEqualTo(originalAddress.getCountryCode());
+    }
+
 
     private void validateTotals(de.kfzteile24.salesOrderHub.dto.order.header.Totals originalTotals,
                                 de.kfzteile24.soh.order.dto.Totals convertedTotals,
