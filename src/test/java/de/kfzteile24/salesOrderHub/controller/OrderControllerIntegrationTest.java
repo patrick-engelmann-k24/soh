@@ -6,8 +6,9 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.services.InvoiceService;
-import de.kfzteile24.soh.order.dto.Address;
+import de.kfzteile24.soh.order.dto.BillingAddress;
 import de.kfzteile24.soh.order.dto.OrderRows;
+import de.kfzteile24.soh.order.dto.ShippingAddress;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
@@ -75,7 +76,7 @@ class OrderControllerIntegrationTest {
                 .map(OrderRows::getSku)
                 .collect(toList());
 
-        final Address address = Address.builder()
+        final ShippingAddress address = ShippingAddress.builder()
                                         .firstName("Max")
                                         .lastName("Mustermann")
                                         .street1("Unit")
@@ -99,7 +100,7 @@ class OrderControllerIntegrationTest {
         final List<String> orderItems = util.getOrderRows(orderNumber, 5);
 
         final String orderItemId = orderItems.get(0);
-        final Address address = Address.builder().build();
+        final ShippingAddress address = ShippingAddress.builder().build();
 
         final ProcessInstance processInstance = createProcessInstance(orderNumber, orderItems);
         assertTrue(util.isProcessWaitingAtExpectedToken(processInstance, MSG_ORDER_PAYMENT_SECURED.getName()));
@@ -119,7 +120,7 @@ class OrderControllerIntegrationTest {
         final String orderNumber = testOrder.getOrderNumber();
         final List<String> orderRows = util.getOrderRows(orderNumber, 5);
 
-        final Address address = Address.builder()
+        final BillingAddress address = BillingAddress.builder()
                                         .street1("Unit")
                                         .street2("Test")
                                         .city("Javaland")
@@ -139,7 +140,7 @@ class OrderControllerIntegrationTest {
         final String orderNumber = testOrder.getOrderNumber();
         final List<String> orderRows = util.getOrderRows(orderNumber, 5);
 
-        final Address address = Address.builder()
+        final BillingAddress address = BillingAddress.builder()
                 .street1("Unit")
                 .street2("Test")
                 .city("Javaland")

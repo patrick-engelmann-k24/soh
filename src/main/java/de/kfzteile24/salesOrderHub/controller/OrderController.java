@@ -4,8 +4,9 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.services.SalesOrderAddressService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderRowService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
-import de.kfzteile24.soh.order.dto.Address;
+import de.kfzteile24.soh.order.dto.BillingAddress;
 import de.kfzteile24.soh.order.dto.Order;
+import de.kfzteile24.soh.order.dto.ShippingAddress;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -55,7 +56,7 @@ public class OrderController {
      */
     @ApiOperation(value = "Change billing address if there no invoice exists")
     @PutMapping("/{orderNumber}/billingAddress")
-    public ResponseEntity<String> updateBillingAddress(@PathVariable String orderNumber, @RequestBody final Address address) {
+    public ResponseEntity<String> updateBillingAddress(@PathVariable String orderNumber, @RequestBody final BillingAddress address) {
         return orderAddressService.updateBillingAddress(orderNumber, address);
     }
 
@@ -75,7 +76,7 @@ public class OrderController {
     @PutMapping("/{orderNumber}/{orderItemId}/deliveryAddress")
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<String> updateDeliveryAddress(
-            @PathVariable("orderNumber") final String orderNumber, @PathVariable("orderItemId") final String orderRowId, @RequestBody final Address address) {
+            @PathVariable("orderNumber") final String orderNumber, @PathVariable("orderItemId") final String orderRowId, @RequestBody final ShippingAddress address) {
         return orderAddressService.updateDeliveryAddress(orderNumber, orderRowId, address);
     }
 

@@ -17,7 +17,7 @@ import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
-import de.kfzteile24.soh.order.dto.Address;
+import de.kfzteile24.soh.order.dto.BillingAddress;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
@@ -85,7 +85,7 @@ public class ChangeInvoiceAddressPossibleDelegateIntegrationTest {
         final SalesOrder testOrder = salesOrderUtil.createNewSalesOrder();
         final ProcessInstance orderProcess = createOrderProcess(testOrder);
         final String orderNumber = testOrder.getOrderNumber();
-        final var newAddress = Address.builder().city("Berlin").build();
+        final var newAddress = BillingAddress.builder().city("Berlin").build();
 
         assertTrue(util.isProcessWaitingAtExpectedToken(orderProcess, MSG_ORDER_PAYMENT_SECURED.getName()));
 

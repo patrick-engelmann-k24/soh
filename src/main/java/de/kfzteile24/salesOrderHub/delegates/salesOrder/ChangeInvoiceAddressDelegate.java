@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
-import de.kfzteile24.soh.order.dto.Address;
+import de.kfzteile24.soh.order.dto.BillingAddress;
 import lombok.RequiredArgsConstructor;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.JavaDelegate;
@@ -25,7 +25,7 @@ public class ChangeInvoiceAddressDelegate implements JavaDelegate {
     public void execute(DelegateExecution delegateExecution) throws JsonProcessingException {
         var newAddressStr = (String)delegateExecution.getVariable(Variables.INVOICE_ADDRESS_CHANGE_REQUEST.getName());
         var orderNumber = (String)delegateExecution.getVariable(Variables.ORDER_NUMBER.getName());
-        final Address address = objectMapper.readValue(newAddressStr, Address.class);
+        final BillingAddress address = objectMapper.readValue(newAddressStr, BillingAddress.class);
 
         var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));

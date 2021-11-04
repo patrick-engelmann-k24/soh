@@ -6,8 +6,8 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
-import de.kfzteile24.soh.order.dto.Address;
 import de.kfzteile24.soh.order.dto.OrderRows;
+import de.kfzteile24.soh.order.dto.ShippingAddress;
 import lombok.RequiredArgsConstructor;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.JavaDelegate;
@@ -31,20 +31,20 @@ public class ChangeDeliveryAddress implements JavaDelegate {
         var orderNumber = (String)execution.getVariable(Variables.ORDER_NUMBER.getName());
         var sku = (String)execution.getVariable(RowVariables.ORDER_ROW_ID.getName());
 
-        final Address address = objectMapper.readValue(newAddressStr, Address.class);
+        final ShippingAddress address = objectMapper.readValue(newAddressStr, ShippingAddress.class);
 
         var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
 
         var latestJson = salesOrder.getLatestJson();
-        final List<Address> addressList = latestJson.getOrderHeader().getShippingAddresses();
+        final List<ShippingAddress> addressList = latestJson.getOrderHeader().getShippingAddresses();
         if (!addressList.contains(address)) {
             int addressKey = addressList.size() + 1;
             address.setAddressKey(addressKey);
             addressList.add(address);
         }
 
-        final Address foundAddress = addressList.get(addressList.indexOf(address));
+        final ShippingAddress foundAddress = addressList.get(addressList.indexOf(address));
 
         final OrderRows orderRow = latestJson.getOrderRows().stream()
                 .filter(row -> sku.equals(row.getSku()))
