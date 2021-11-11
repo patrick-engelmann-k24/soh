@@ -10,7 +10,7 @@ public enum ShipmentMethod implements BpmItem {
     EXPRESS("shipment_express"),
     PRIORITY("shipment_priority"),
     DIRECT_DELIVERY("direct_delivery"),
-    CLICK_COLLECT("click_collect"),
+    CLICK_COLLECT("click_and_collect"),
     NONE("none"),
     // sometimes we have not shipment method. But we can't return null in fromString
     UNKNOWN("unknown");

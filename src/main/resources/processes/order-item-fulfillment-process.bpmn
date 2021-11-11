@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_0csmsqq" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.9.0">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_0csmsqq" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.6.0">
   <bpmn:process id="OrderRowFulfillmentProcess" name="Order row fulfillment process" isExecutable="true" camunda:isStartableInTasklist="false">
     <bpmn:startEvent id="eventStartOrderRowFulfillmentProcess" name="Order row received">
       <bpmn:extensionElements>
@@ -158,7 +158,7 @@ Pickup: n/a</bpmn:text>
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${shipmentMethod=="direct_delivery"}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_1mddwth" name="Click &#38; Collect" sourceRef="gwXORShipmentMethod" targetRef="eventRowPreparedForPickUp">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${shipmentMethod=="click_collect"}</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${shipmentMethod=="click_and_collect"}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_10ytpqn" sourceRef="eventTourStarted" targetRef="gwXORTourStarted" />
     <bpmn:sequenceFlow id="Flow_1tbhmax" sourceRef="eventRowPreparedForPickUp" targetRef="eventRowPickedUp" />
