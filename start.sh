@@ -12,13 +12,13 @@ is_localstack_ready() {
 
   local sns_up
   sns_up=0
-  if [[ "$response" == *'"sns": "running"'* ]]; then
+  if [[ "$response" == *'"sns": "available"'* ]]; then
     sns_up=1
   fi
 
   local sqs_up
   sqs_up=0
-  if [[ "$response" == *'"sqs": "running"'* ]]; then
+  if [[ "$response" == *'"sqs": "available"'* ]]; then
     sqs_up=1
   fi
 
