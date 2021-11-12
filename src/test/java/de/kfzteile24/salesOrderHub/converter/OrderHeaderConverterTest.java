@@ -138,26 +138,6 @@ class OrderHeaderConverterTest {
         assertThat(convertedCustomer.getCustomerEmail()).isEqualTo(originalCustomer.getCustomerEmail());
     }
 
-    private void validateAddress(de.kfzteile24.salesOrderHub.dto.order.customer.Address originalAddress,
-                                 de.kfzteile24.soh.order.dto.ShippingAddress convertedAddress) {
-        assertThat(convertedAddress.getAddressKey()).isEqualTo(Integer.parseInt(originalAddress.getAddressKey()));
-        assertThat(convertedAddress.getAddressFormat()).isEqualTo(originalAddress.getAddressFormat());
-        assertThat(convertedAddress.getAddressType()).isEqualTo(originalAddress.getAddressType());
-        assertThat(convertedAddress.getCompany()).isEqualTo(originalAddress.getCompany());
-        assertThat(convertedAddress.getSalutation()).isEqualTo(originalAddress.getSalutation());
-        assertThat(convertedAddress.getFirstName()).isEqualTo(originalAddress.getFirstName());
-        assertThat(convertedAddress.getLastName()).isEqualTo(originalAddress.getLastName());
-        assertThat(convertedAddress.getPhoneNumber()).isEqualTo(originalAddress.getPhoneNumber());
-        assertThat(convertedAddress.getStreet1()).isEqualTo(originalAddress.getStreet1());
-        assertThat(convertedAddress.getStreet2()).isEqualTo(originalAddress.getStreet2());
-        assertThat(convertedAddress.getStreet3()).isEqualTo(originalAddress.getStreet3());
-        assertThat(convertedAddress.getStreet4()).isEqualTo(originalAddress.getStreet4());
-        assertThat(convertedAddress.getCity()).isEqualTo(originalAddress.getCity());
-        assertThat(convertedAddress.getZipCode()).isEqualTo(originalAddress.getZipCode());
-        assertThat(convertedAddress.getCountryRegionCode()).isEqualTo(originalAddress.getCountryRegionCode());
-        assertThat(convertedAddress.getCountryCode()).isEqualTo(originalAddress.getCountryCode());
-    }
-
     private void validateBillingAddress(de.kfzteile24.salesOrderHub.dto.order.customer.Address originalAddress,
                                  de.kfzteile24.soh.order.dto.BillingAddress convertedAddress) {
         assertThat(convertedAddress.getAddressKey()).isEqualTo(Integer.parseInt(originalAddress.getAddressKey()));
