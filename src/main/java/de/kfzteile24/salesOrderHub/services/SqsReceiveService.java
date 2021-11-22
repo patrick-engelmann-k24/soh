@@ -99,7 +99,7 @@ public class SqsReceiveService {
         ProcessInstance result = camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
 
         if (result != null) {
-            log.info("New ecp order process started: {} ", result.getId());
+            log.info("New ecp order process started. Process-Instance-ID: {} ", result.getProcessInstanceId());
         }
     }
 
@@ -112,9 +112,11 @@ public class SqsReceiveService {
      */
     @SqsListener(value = "${soh.sqs.queue.orderItemShipped}", deletionPolicy = ON_SUCCESS)
     @SneakyThrows(JsonProcessingException.class)
-    public void queueListenerItemShipped(String rawMessage,
-                                         @Header("SenderId") String senderId,
-                                         @Header("ApproximateReceiveCount") Integer receiveCount) {
+    public void queueListenerItemShipped(
+            String rawMessage,
+            @Header("SenderId") String senderId,
+            @Header("ApproximateReceiveCount") Integer receiveCount
+    ) {
         logReceivedMessage(rawMessage, senderId, receiveCount);
 
         String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
@@ -127,12 +129,15 @@ public class SqsReceiveService {
                     fulfillmentMessage.getOrderItemSku()
             );
 
-            if (result.getProcessInstance() != null) {
+            if (!result.getExecution().getProcessInstanceId().isEmpty()) {
                 log.info("Order item shipped message for oder number " + fulfillmentMessage.getOrderNumber() + " successfully received");
             }
         } catch (Exception e) {
-            log.error("Order item shipped message error - OrderNumber " + fulfillmentMessage.getOrderNumber() + ", OrderItem: " + fulfillmentMessage.getOrderItemSku());
-            log.error(e.getMessage());
+            log.error("Order item shipped message error:\r\nOrderNumber: {}\r\nOrderItem-SKU: {}\r\nError-Message: {}",
+                    fulfillmentMessage.getOrderNumber(),
+                    fulfillmentMessage.getOrderItemSku(),
+                    e.getMessage()
+            );
             throw e;
         }
 
@@ -147,7 +152,11 @@ public class SqsReceiveService {
      */
     @SqsListener(value = "${soh.sqs.queue.orderPaymentSecured}", deletionPolicy = ON_SUCCESS)
     @SneakyThrows(JsonProcessingException.class)
-    public void queueListenerOrderPaymentSecured(String rawMessage, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
+    public void queueListenerOrderPaymentSecured(
+            String rawMessage,
+            @Header("SenderId") String senderId,
+            @Header("ApproximateReceiveCount") Integer receiveCount
+    ) {
         logReceivedMessage(rawMessage, senderId, receiveCount);
 
         String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
@@ -158,12 +167,14 @@ public class SqsReceiveService {
                     .processInstanceBusinessKey(coreDataReaderEvent.getOrderNumber())
                     .correlateWithResult();
 
-            if (result.getProcessInstance() != null) {
+            if (!result.getExecution().getProcessInstanceId().isEmpty()) {
                 log.info("Order payment secured message for oder number " + coreDataReaderEvent.getOrderNumber() + " successfully received");
             }
         } catch (Exception e) {
-            log.error("Order payment secured message error - OrderNumber " + coreDataReaderEvent.getOrderNumber());
-            log.error(e.getMessage());
+            log.error("Order payment secured message error:\r\nOrderNumber: {}\r\nError-Message: {}",
+                    coreDataReaderEvent.getOrderNumber(),
+                    e.getMessage()
+            );
             throw e;
         }
 
@@ -191,12 +202,19 @@ public class SqsReceiveService {
                     fulfillmentMessage.getOrderItemSku()
             );
 
-            if (result.getProcessInstance() != null) {
-                log.info("Order item transmitted to logistic message for oder number " + fulfillmentMessage.getOrderNumber() + " successfully received");
+            if (!result.getExecution().getProcessInstanceId().isEmpty()) {
+                log.info("Order item transmitted to logistic message for order-number {} and sku {} successfully received",
+                        fulfillmentMessage.getOrderNumber(),
+                        fulfillmentMessage.getOrderItemSku()
+                );
             }
         } catch (Exception e) {
-            log.error("Order item transmitted to logistic message error - OrderNumber " + fulfillmentMessage.getOrderNumber());
-            log.error(e.getMessage());
+            log.error("Order item transmitted to logistic message error: \r\nOrderNumber: {}\r\nOrderItem-SKU: {}\r\nSQS-Message: {}\r\nError-Message: {}",
+                    fulfillmentMessage.getOrderNumber(),
+                    fulfillmentMessage.getOrderItemSku(),
+                    rawMessage,
+                    e.getMessage()
+            );
             throw e;
         }
     }
@@ -210,7 +228,11 @@ public class SqsReceiveService {
      */
     @SqsListener(value = "${soh.sqs.queue.orderItemPackingStarted}", deletionPolicy = ON_SUCCESS)
     @SneakyThrows(JsonProcessingException.class)
-    public void queueListenerOrderItemPackingStarted(String rawMessage, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
+    public void queueListenerOrderItemPackingStarted(
+            String rawMessage,
+            @Header("SenderId") String senderId,
+            @Header("ApproximateReceiveCount") Integer receiveCount
+    ) {
         logReceivedMessage(rawMessage, senderId, receiveCount);
 
         String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
@@ -223,12 +245,18 @@ public class SqsReceiveService {
                     fulfillmentMessage.getOrderItemSku()
             );
 
-            if (result.getProcessInstance() != null) {
-                log.info("Order item packing started message for oder number " + fulfillmentMessage.getOrderNumber() + " successfully received");
+            if (!result.getExecution().getProcessInstanceId().isEmpty()) {
+                log.info("Order item packing started message for oder-number {} and sku {} successfully received",
+                        fulfillmentMessage.getOrderNumber(),
+                        fulfillmentMessage.getOrderItemSku()
+                );
             }
         } catch (Exception e) {
-            log.error("Order item packing started message error - OrderNumber " + fulfillmentMessage.getOrderNumber());
-            log.error(e.getMessage());
+            log.error("Order item packing started message error:\r\nOrderNumber: {}\r\nOrderItem-SKU: {}\r\nSQS-Message: {}\r\nError-Message: {}",
+                    fulfillmentMessage.getOrderNumber(),
+                    fulfillmentMessage.getOrderItemSku(),
+                    rawMessage,
+                    e.getMessage());
             throw e;
         }
     }
@@ -242,7 +270,11 @@ public class SqsReceiveService {
      */
     @SqsListener(value = "${soh.sqs.queue.orderItemTrackingIdReceived}", deletionPolicy = ON_SUCCESS)
     @SneakyThrows(JsonProcessingException.class)
-    public void queueListenerOrderItemTrackingIdReceived(String rawMessage, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
+    public void queueListenerOrderItemTrackingIdReceived(
+            String rawMessage,
+            @Header("SenderId") String senderId,
+            @Header("ApproximateReceiveCount") Integer receiveCount
+    ) {
         logReceivedMessage(rawMessage, senderId, receiveCount);
 
         String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
@@ -255,12 +287,19 @@ public class SqsReceiveService {
                     fulfillmentMessage.getOrderItemSku()
                     );
 
-            if (result.getProcessInstance() != null) {
-                log.info("Order item tracking id received message for oder number " + fulfillmentMessage.getOrderNumber() + " successfully received");
+            if (!result.getExecution().getProcessInstanceId().isEmpty()) {
+                log.info("Order item tracking id received message for order-number {} and sku {} successfully received",
+                        fulfillmentMessage.getOrderNumber(),
+                        fulfillmentMessage.getOrderItemSku()
+                );
             }
         } catch (Exception e) {
-            log.error("Order item tracking id received message error - OrderNumber " + fulfillmentMessage.getOrderNumber());
-            log.error(e.getMessage());
+            log.error("Order item tracking id received message error:\r\nOrderNumber: {}\r\nOrderItem-SKU: {}\r\nSQS-Message: {}\r\nError-Message: {}\r\n",
+                    fulfillmentMessage.getOrderNumber(),
+                    fulfillmentMessage.getOrderItemSku(),
+                    rawMessage,
+                    e.getMessage()
+            );
             throw e;
         }
     }
@@ -274,7 +313,11 @@ public class SqsReceiveService {
      */
     @SqsListener(value = "${soh.sqs.queue.orderItemTourStarted}", deletionPolicy = ON_SUCCESS)
     @SneakyThrows(JsonProcessingException.class)
-    public void queueListenerOrderItemTourStarted(String rawMessage, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
+    public void queueListenerOrderItemTourStarted(
+            String rawMessage,
+            @Header("SenderId") String senderId,
+            @Header("ApproximateReceiveCount") Integer receiveCount
+    ) {
         logReceivedMessage(rawMessage, senderId, receiveCount);
 
         String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
@@ -287,12 +330,19 @@ public class SqsReceiveService {
                     fulfillmentMessage.getOrderItemSku()
             );
 
-            if (result.getProcessInstance() != null) {
-                log.info("Order item tour started message for oder number " + fulfillmentMessage.getOrderNumber() + " successfully received");
+            if (!result.getExecution().getProcessInstanceId().isEmpty()) {
+                log.info("Order item tour started message for order-number {} and sku {} successfully received",
+                        fulfillmentMessage.getOrderNumber(),
+                        fulfillmentMessage.getOrderItemSku()
+                );
             }
         } catch (Exception e) {
-            log.error("Order item tour started message error - OrderNumber " + fulfillmentMessage.getOrderNumber());
-            log.error(e.getMessage());
+            log.error("Order item tour started message error:\r\nOrderNumber: {}\r\nOrderItem-SKU: {}\r\nSQS-Message: {}\r\nError-Message: {}",
+                    fulfillmentMessage.getOrderNumber(),
+                    fulfillmentMessage.getOrderItemSku(),
+                    rawMessage,
+                    e.getMessage()
+            );
             throw e;
         }
     }
@@ -314,7 +364,7 @@ public class SqsReceiveService {
 
         try {
             final var orderNumber = extractOrderNumber(invoiceUrl);
-            log.info("Adding invoice {} to orderNumber {}", invoiceUrl, orderNumber);
+            log.info("Adding invoice {} to order-number {}", invoiceUrl, orderNumber);
 
             final Map<String, Object> processVariables = new HashMap<>();
             processVariables.put(ORDER_NUMBER.getName(), orderNumber);
@@ -326,12 +376,11 @@ public class SqsReceiveService {
                     .setVariables(processVariables)
                     .correlateWithResult();
 
-            if (result.getProcessInstance() != null) {
-                log.info("Invoice " + invoiceUrl + " from core successfully received");
+            if (!result.getExecution().getProcessInstanceId().isEmpty()) {
+                log.info("Invoice {} from core for order-number {} successfully received", invoiceUrl, orderNumber);
             }
         } catch (Exception e) {
-            log.error("Invoice received from core message error - invoice url " + invoiceUrl);
-            log.error(e.getMessage());
+            log.error("Invoice received from core message error - invoice url: {}\r\nErrorMessage: {}", invoiceUrl, e.getMessage());
             throw e;
         }
     }
@@ -350,9 +399,11 @@ public class SqsReceiveService {
     }
 
     private void logReceivedMessage(final String rawMessage, final String senderId, final Integer receiveCount) {
-        log.info("message received: " + senderId);
-        log.info("message receive count: " + receiveCount.toString());
-        log.info("message content: " + rawMessage);
+        log.info("message received: {}\r\nmessage receive count: {}\r\nmessage content: {}",
+                senderId,
+                receiveCount.toString(),
+                rawMessage
+        );
     }
 
     /**
