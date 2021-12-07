@@ -181,7 +181,7 @@ public class OrderHeaderConverter implements Converter<OrderJSON, OrderHeader> {
                 .senderLastName(paymentProviderData.getSenderLastName())
                 .externalTransactionId(paymentProviderData.getExternalTransactionId())
                 .externalPaymentStatus(paymentProviderData.getExternalPaymentStatus())
-                .billingAgreement(paymentProviderData.getBillingAgreement())
+                .billingAgreement(Boolean.TRUE.toString().equalsIgnoreCase(paymentProviderData.getBillingAgreement()))
                 .iban(paymentProviderData.getIban())
                 .bic(paymentProviderData.getBic())
                 .senderHolder(paymentProviderData.getSenderHolder())

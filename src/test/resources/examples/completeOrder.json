@@ -46,7 +46,8 @@
           "bic": "WELADE8LXXX",
           "country_code": "DE",
           "request": "",
-          "response": ""
+          "response": "",
+          "billing_agreement": true
         },
         "category": null
       }

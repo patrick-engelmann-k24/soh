@@ -2,6 +2,7 @@ package de.kfzteile24.salesOrderHub.delegates.helper;
 
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
+import de.kfzteile24.soh.order.dto.Payments;
 import org.camunda.bpm.engine.HistoryService;
 import org.camunda.bpm.engine.RuntimeService;
 import org.junit.jupiter.api.Test;
@@ -11,6 +12,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
@@ -22,6 +24,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SHIPMENT_METHOD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.VIRTUAL_ORDER_ROWS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.VOUCHER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.NONE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createNewSalesOrderV3;
@@ -98,5 +101,19 @@ class CamundaHelperTest {
                 .collect(Collectors.toList());
 
         assertThat(processVariables.get(VIRTUAL_ORDER_ROWS.getName())).isEqualTo(expectedVirtualOrderRowSkus);
+    }
+
+    @Test
+    public void thePaymentTypeVoucherIsNotAddedToTheProcessVariables() {
+        final var salesOrder = createNewSalesOrderV3(true, REGULAR, CREDIT_CARD, NEW);
+        Order orderJson = (Order) salesOrder.getOriginalOrder();
+        final var payments = List.of(
+                Payments.builder().type(VOUCHER.getName()).build(),
+                orderJson.getOrderHeader().getPayments().get(0)
+        );
+        orderJson.getOrderHeader().setPayments(payments);
+
+        final var processVariables = camundaHelper.createProcessVariables(salesOrder);
+        assertThat(processVariables.get(PAYMENT_TYPE.getName())).isEqualTo(CREDIT_CARD.getName());
     }
 }
