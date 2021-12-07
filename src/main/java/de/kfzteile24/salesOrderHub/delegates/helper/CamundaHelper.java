@@ -7,6 +7,7 @@ import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import de.kfzteile24.salesOrderHub.dto.order.Rows;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
+import de.kfzteile24.soh.order.dto.Payments;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.camunda.bpm.engine.HistoryService;
@@ -33,6 +34,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SALES_CHANNEL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SHIPMENT_METHOD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.VIRTUAL_ORDER_ROWS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.VOUCHER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.DELIVERY_ADDRESS_CHANGE_POSSIBLE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.ORDER_ROW_ID;
 import static java.util.stream.Collectors.toList;
@@ -92,7 +94,7 @@ public class CamundaHelper {
         } else {
             orderRowSkus = new ArrayList<>();
             final var order = (Order) salesOrder.getOriginalOrder();
-            paymentType = order.getOrderHeader().getPayments().get(0).getType();
+            paymentType = getPaymentType(order.getOrderHeader().getPayments());
             shippingType = order.getOrderRows().get(0).getShippingType();
             for (OrderRows orderRow : order.getOrderRows()) {
                 if (isShipped(orderRow.getShippingType())) {
@@ -118,6 +120,14 @@ public class CamundaHelper {
         }
 
         return processVariables;
+    }
+
+    private String getPaymentType(List<Payments> payments) {
+        return payments.stream()
+                .map(Payments::getType)
+                .filter(paymentType -> !VOUCHER.getName().equals(paymentType))
+                .findAny()
+                .orElseThrow(() -> new IllegalArgumentException("Order does not contain a valid payment type"));
     }
 
     public boolean checkIfOrderRowProcessExists(String orderNumber, String orderRowId) {

@@ -14,7 +14,8 @@ public enum PaymentType implements BpmItem {
     PAYMENT_IN_ADVANCE("payment_in_advance"),
     B2B_INVOICE("business_to_business_invoice"),
     AMAZON("amazonmarketplace"),
-    EBAY("ebay_payment");
+    EBAY("ebay_payment"),
+    VOUCHER("voucher");
 
     private final String name;
 
