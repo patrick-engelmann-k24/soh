@@ -4,7 +4,7 @@ module "aurora" {
   engine                          = "aurora-postgresql"
   engine_version                  = "11.9"
   replica_scale_enabled           = false
-  replica_count                   = 1
+  replica_count                   = var.db_instance_scale
   backtrack_window                = 10 # ignored in serverless
   database_name                   = "sales_order_hub"
   subnets                         = module.common.db_subnet_ids
