@@ -10,6 +10,10 @@ variable "db_instance_class" {
   type = string
 }
 
+variable "db_instance_scale" {
+  type = number
+}
+
 variable "domain_name" {
   type = string
 }
