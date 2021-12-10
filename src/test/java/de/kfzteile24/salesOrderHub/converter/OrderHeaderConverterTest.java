@@ -19,12 +19,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.readOrderJson;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.readResource;
 import static de.kfzteile24.soh.order.dto.Platform.ECP;
+import static java.lang.Boolean.parseBoolean;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -230,7 +232,8 @@ class OrderHeaderConverterTest {
         assertThat(convertedPPD.getSenderLastName()).isEqualTo(originalPPD.getSenderLastName());
         assertThat(convertedPPD.getExternalTransactionId()).isEqualTo(originalPPD.getExternalTransactionId());
         assertThat(convertedPPD.getExternalPaymentStatus()).isEqualTo(originalPPD.getExternalPaymentStatus());
-        assertThat(convertedPPD.getBillingAgreement()).isEqualTo(originalPPD.getBillingAgreement());
+        assertThat(convertedPPD.getBillingAgreement())
+                .isEqualTo(parseBoolean(originalPPD.getBillingAgreement().toLowerCase(Locale.ROOT)));
         assertThat(convertedPPD.getIban()).isEqualTo(originalPPD.getIban());
         assertThat(convertedPPD.getBic()).isEqualTo(originalPPD.getBic());
         assertThat(convertedPPD.getSenderHolder()).isEqualTo(originalPPD.getSenderHolder());
