@@ -187,6 +187,7 @@ public class SalesOrderUtil {
                 new OrderRowConverter());
         return SalesOrder.builder()
             .orderNumber("514000016")
+            .orderGroupId("514000016")
             .salesChannel("www-k24-at")
             .customerEmail("test@kfzteile24.de")
             .recurringOrder(Boolean.TRUE)
