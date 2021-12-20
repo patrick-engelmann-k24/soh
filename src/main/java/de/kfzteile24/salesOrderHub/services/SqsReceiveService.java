@@ -385,11 +385,11 @@ public class SqsReceiveService {
                     .setVariables(processVariables)
                     .correlateWithResult();
 
-            if (!result.getExecution().getProcessInstanceId().isEmpty()) {
+            if (StringUtils.hasLength(result.getExecution().getProcessInstanceId())) {
                 log.info("Invoice {} from core for order-number {} successfully received", invoiceUrl, orderNumber);
             }
         } catch (Exception e) {
-            log.error("Invoice received from core message error - invoice url: {}\r\nErrorMessage: {}", invoiceUrl, e.getMessage());
+            log.error("Invoice received from core message error - invoice url: {}\r\nErrorMessage: {}", invoiceUrl, e);
             throw e;
         }
     }
