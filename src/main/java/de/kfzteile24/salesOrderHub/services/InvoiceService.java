@@ -9,6 +9,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import javax.transaction.Transactional;
 import java.util.Set;
 
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.INVOICE_RECEIVED;
@@ -41,8 +42,7 @@ public class InvoiceService {
         return invoiceRepository.save(invoice);
     }
 
-    //TODO uncomment after testing the pool problem
-//    @Transactional
+    @Transactional
     public SalesOrderInvoice addSalesOrderToInvoice(SalesOrder salesOrder, SalesOrderInvoice invoice) {
         final var auditLog = AuditLog.builder()
                 .salesOrderId(invoice.getId())

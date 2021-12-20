@@ -22,6 +22,8 @@ spring:
       minimum-idle: 10
 
   jpa:
+    hibernate:
+      ddl-auto: validate
     open-in-view: false
 
   management:
