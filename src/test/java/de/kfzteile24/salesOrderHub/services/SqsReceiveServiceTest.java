@@ -85,6 +85,7 @@ public class SqsReceiveServiceTest {
     assertThat(actualSalesOrder.getCustomerEmail()).isEqualTo("test@kfzteile24.de");
     assertThat(actualSalesOrder.getSalesChannel()).isEqualTo("www-k24-at");
     assertThat(actualSalesOrder.getOrderNumber()).isEqualTo("514000016");
+    assertThat(actualSalesOrder.getOrderGroupId()).isEqualTo("514000016");//The orderNumber should be used to fill the group Id with the same number, since it was missing in the Order JSON.
 
     verify(camundaHelper).createOrderProcess(any(SalesOrder.class), any(Messages.class));
     verify(orderJsonConverter).convert(eq((OrderJSON) salesOrder.getOriginalOrder()));

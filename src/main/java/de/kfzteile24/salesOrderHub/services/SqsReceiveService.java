@@ -26,6 +26,7 @@ import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.springframework.cloud.aws.messaging.listener.annotation.SqsListener;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -68,6 +69,8 @@ public class SqsReceiveService {
             salesOrder = SalesOrder.builder()
                     .orderNumber(orderJSON.getOrderHeader()
                             .getOrderNumber())
+                    .orderGroupId(orderJSON.getOrderHeader()
+                            .getOrderNumber())//For V2.1 there is no group ID provided, so it will come always null.
                     .salesChannel(orderJSON.getOrderHeader()
                             .getOrigin()
                             .getSalesChannel())
@@ -79,9 +82,15 @@ public class SqsReceiveService {
                     .build();
         } else {
             Order order = objectMapper.readValue(body, Order.class);
+            String orderNumber = order.getOrderHeader().getOrderNumber();
+            if(StringUtils.isEmpty(order.getOrderHeader().getOrderGroupId())){
+                order.getOrderHeader().setOrderGroupId(orderNumber);
+            }
             salesOrder = SalesOrder.builder()
                     .orderNumber(order.getOrderHeader()
                             .getOrderNumber())
+                    .orderGroupId(order.getOrderHeader()
+                            .getOrderGroupId())
                     .salesChannel(order.getOrderHeader()
                             .getSalesChannel())
                     .customerEmail(order.getOrderHeader()
