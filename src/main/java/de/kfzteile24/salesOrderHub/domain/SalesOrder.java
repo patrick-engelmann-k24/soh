@@ -37,6 +37,9 @@ public class SalesOrder extends AbstractBaseEntity {
     @Column(name = "order_number")
     private String orderNumber;
 
+    @Column(name = "order_group_id")
+    private String orderGroupId;
+
     @Column(name = "process_id")
     private String processId;
 
