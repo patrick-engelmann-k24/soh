@@ -11,5 +11,5 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @EnableJpaRepositories(basePackages = {"de.kfzteile24.salesOrderHub.repositories"})
 @EnableTransactionManagement
 @EnableJpaAuditing
-public class JpaConfig{
+public class JpaConfig {
 }
