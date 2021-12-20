@@ -5,9 +5,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import javax.transaction.Transactional;
 import java.util.Optional;
 import java.util.UUID;
 
+@Transactional
 public interface SalesOrderRepository extends JpaRepository<SalesOrder, UUID> {
 
     @Query("SELECT a FROM SalesOrder a WHERE a.orderNumber = :orderNumber")
