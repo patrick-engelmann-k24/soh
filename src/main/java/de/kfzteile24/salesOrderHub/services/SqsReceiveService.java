@@ -389,7 +389,8 @@ public class SqsReceiveService {
                 log.info("Invoice {} from core for order-number {} successfully received", invoiceUrl, orderNumber);
             }
         } catch (Exception e) {
-            log.error("Invoice received from core message error - invoice url: {}\r\nErrorMessage: {}", invoiceUrl, e);
+            log.error("Invoice received from core message error - invoice url: {}\r\nErrorMessage: {}", invoiceUrl, e.getMessage());
+            throw e;
         }
     }
 
@@ -402,7 +403,8 @@ public class SqsReceiveService {
                return invoiceUrl.substring(afterLastSlash, minus);
            }
        }
-       throw new IllegalArgumentException("Cannot parse OrderNumber from invoice url: " + invoiceUrl);
+
+        throw new IllegalArgumentException("Cannot parse OrderNumber from invoice url: " + invoiceUrl);
     }
 
     private void logReceivedMessage(final String rawMessage, final String senderId, final Integer receiveCount) {
