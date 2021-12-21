@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 import org.hibernate.annotations.TypeDefs;
 
@@ -49,11 +50,13 @@ public class SalesOrder extends AbstractBaseEntity {
     @Column(name = "process_id")
     private String processId;
 
-    @Column(name = "original_order", columnDefinition = "jsonb", updatable = false)
+    @Type(type = "jsonb")
+    @Column(name = "original_order", columnDefinition = "json", updatable = false)
     @Convert(converter = OrderJsonConverter.class)
     private Object originalOrder;
 
-    @Column(name = "latest_json", columnDefinition = "jsonb")
+    @Type(type = "jsonb")
+    @Column(name = "latest_json", columnDefinition = "json")
     @Convert(converter = OrderJsonConverter.class)
     private Order latestJson;
 
