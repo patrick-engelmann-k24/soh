@@ -23,5 +23,4 @@ public class SalesOrderHubProcessApplication {
     public HikariDataSource dataSourceSOH() {
         return DataSourceBuilder.create().type(HikariDataSource.class).build();
     }
-
 }

@@ -8,8 +8,8 @@ import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
+import javax.transaction.Transactional;
 import java.util.Set;
 
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.INVOICE_RECEIVED;
