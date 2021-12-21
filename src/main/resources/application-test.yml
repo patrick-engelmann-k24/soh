@@ -14,9 +14,9 @@ spring:
     hibernate:
       ddl-auto: none
   datasource:
-    url: jdbc:postgresql://localhost:5432/soh?currentSchema=public
-    username: soh
-    password: soh
+    username: postgres
+    password: postgres
+    jdbcUrl: jdbc:postgresql://localhost:5432/soh?currentSchema=public
   main:
     allow-bean-definition-overriding: true
 

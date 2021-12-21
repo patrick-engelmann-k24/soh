@@ -8,8 +8,7 @@ logging:
 
 spring:
   datasource:
-#    driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://${soh_db_host}:${soh_db_port}/${soh_db_database}?currentSchema=public
+    jdbcUrl: jdbc:postgresql://${soh_db_host}:${soh_db_port}/${soh_db_database}?currentSchema=public
     username: ${soh_db_username}
     password: ${soh_db_password}
     data-source-properties:
@@ -29,8 +28,6 @@ spring:
       ddl-auto: validate
     open-in-view: false
     show-sql: true
-#    database: postgresql
-#    database-platform: org.hibernate.dialect.PostgreSQLDialect
     generate-ddl: true
 
   management:
@@ -98,6 +95,9 @@ camunda:
       create: All tasks
     history-level: FULL
     history-level-default: FULL
+    job-execution:
+      core-pool-size: 5
+      max-pool-size: 15
 
 # swagger endpoint documentation
 springdoc:
