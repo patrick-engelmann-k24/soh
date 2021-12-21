@@ -28,6 +28,7 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import javax.transaction.Transactional;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -59,6 +60,7 @@ public class SqsReceiveService {
      */
     @SqsListener("${soh.sqs.queue.ecpShopOrders}")
     @SneakyThrows(JsonProcessingException.class)
+    @Transactional
     public void queueListenerEcpShopOrders(String rawMessage, @Header("SenderId") String senderId) {
         log.info("Received message from ecp shop with sender id : {} ", senderId);
 
