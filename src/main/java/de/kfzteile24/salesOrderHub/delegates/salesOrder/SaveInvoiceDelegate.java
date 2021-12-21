@@ -11,6 +11,8 @@ import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.JavaDelegate;
 import org.springframework.stereotype.Component;
 
+import javax.transaction.Transactional;
+
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.INVOICE_RECEIVED;
 
 @Component
@@ -24,6 +26,7 @@ public class SaveInvoiceDelegate implements JavaDelegate {
     private final InvoiceService invoiceService;
 
     @Override
+    @Transactional
     public void execute(DelegateExecution delegateExecution) throws Exception {
         final var orderNumber = (String) delegateExecution.getVariable(Variables.ORDER_NUMBER.getName());
         final var invoiceUrl = (String) delegateExecution.getVariable(Variables.INVOICE_URL.getName());
