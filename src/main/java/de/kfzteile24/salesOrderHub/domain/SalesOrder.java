@@ -1,5 +1,6 @@
 package de.kfzteile24.salesOrderHub.domain;
 
+import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import de.kfzteile24.salesOrderHub.domain.converter.OrderJsonConverter;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.AllArgsConstructor;
@@ -8,6 +9,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.hibernate.annotations.TypeDef;
+import org.hibernate.annotations.TypeDefs;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -26,6 +29,9 @@ import java.util.Set;
 @EqualsAndHashCode(callSuper = true)
 @AllArgsConstructor
 @NoArgsConstructor
+@TypeDefs({
+        @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
+})
 public class SalesOrder extends AbstractBaseEntity {
 
     private static final long serialVersionUID = 1L;
