@@ -17,13 +17,10 @@ public class SalesOrderHubProcessApplication {
         SpringApplication.run(SalesOrderHubProcessApplication.class, args);
     }
 
-
-
     @Bean
     @Primary
     @ConfigurationProperties("spring.datasource")
     public HikariDataSource dataSourceSOH() {
         return DataSourceBuilder.create().type(HikariDataSource.class).build();
     }
-
 }
