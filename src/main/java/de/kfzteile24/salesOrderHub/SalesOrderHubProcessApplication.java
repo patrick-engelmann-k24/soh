@@ -7,7 +7,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
 
 @SpringBootApplication
 @EnableProcessApplication
@@ -18,7 +17,6 @@ public class SalesOrderHubProcessApplication {
     }
 
     @Bean
-    @Primary
     @ConfigurationProperties("spring.datasource")
     public HikariDataSource dataSourceSOH() {
         //Needed for camunda BPMN
