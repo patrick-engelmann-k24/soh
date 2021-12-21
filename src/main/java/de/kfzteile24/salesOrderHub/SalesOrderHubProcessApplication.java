@@ -21,6 +21,7 @@ public class SalesOrderHubProcessApplication {
     @Primary
     @ConfigurationProperties("spring.datasource")
     public HikariDataSource dataSourceSOH() {
+        //Needed for camunda BPMN
         return DataSourceBuilder.create().type(HikariDataSource.class).build();
     }
 }

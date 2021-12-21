@@ -14,13 +14,6 @@ spring:
     data-source-properties:
       stringtype: unspecified
     pool-name: sales-order-hub
-    hikari:
-      idle-timeout: 20000
-      connection-timeout: 40000
-      maximum-pool-size: 30
-      minimum-idle: 15
-      max-lifetime: 1000
-      auto-commit: true
 
 
   jpa:
