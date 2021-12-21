@@ -1,21 +1,34 @@
 #
 # Profile documentation: https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-profiles
 #
+
+logging:
+  level:
+    com.zaxxer.hikari: DEBUG
+
 spring:
   datasource:
     jdbcUrl: jdbc:postgresql://${soh_db_host}:${soh_db_port}/${soh_db_database}?currentSchema=public
     username: ${soh_db_username}
     password: ${soh_db_password}
-    poolName: sales-order-hub
     data-source-properties:
       stringtype: unspecified
+    pool-name: sales-order-hub
     hikari:
-      idle-timeout: 10000
-      connection-timeout: 30000
+      idle-timeout: 20000
+      connection-timeout: 40000
       maximum-pool-size: 30
+      minimum-idle: 15
+      max-lifetime: 1000
+      auto-commit: true
+
 
   jpa:
+    hibernate:
+      ddl-auto: validate
     open-in-view: false
+    show-sql: true
+    generate-ddl: true
 
   management:
     endpoints:
@@ -82,6 +95,9 @@ camunda:
       create: All tasks
     history-level: FULL
     history-level-default: FULL
+    job-execution:
+      core-pool-size: 5
+      max-pool-size: 15
 
 # swagger endpoint documentation
 springdoc:

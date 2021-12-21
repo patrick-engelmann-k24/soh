@@ -17,7 +17,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import javax.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -71,7 +70,8 @@ public class SalesOrderService {
         return orderRepository.getOrderByOrderNumber(orderNumber);
     }
 
-    @Transactional
+    //TODO Uncomment after testing the pool problem
+//    @Transactional
     public SalesOrder save(SalesOrder order, Action action) {
         final var storedOrder = orderRepository.save(order);
 
