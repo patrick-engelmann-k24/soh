@@ -14,7 +14,8 @@ spring:
     data-source-properties:
       stringtype: unspecified
     pool-name: sales-order-hub
-
+    maximum-pool-size: 30
+    minimum-idle: 15
 
   jpa:
     hibernate:
@@ -88,9 +89,6 @@ camunda:
       create: All tasks
     history-level: FULL
     history-level-default: FULL
-    job-execution:
-      core-pool-size: 5
-      max-pool-size: 15
 
 # swagger endpoint documentation
 springdoc:
