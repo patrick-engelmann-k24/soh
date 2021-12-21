@@ -43,11 +43,11 @@ public class SalesOrder extends AbstractBaseEntity {
     @Column(name = "process_id")
     private String processId;
 
-    @Column(name = "original_order", columnDefinition = "json", updatable = false)
+    @Column(name = "original_order", columnDefinition = "jsonb", updatable = false)
     @Convert(converter = OrderJsonConverter.class)
     private Object originalOrder;
 
-    @Column(name = "latest_json", columnDefinition = "json")
+    @Column(name = "latest_json", columnDefinition = "jsonb")
     @Convert(converter = OrderJsonConverter.class)
     private Order latestJson;
 
