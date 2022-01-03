@@ -4,6 +4,7 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
 import de.kfzteile24.salesOrderHub.domain.audit.AuditLog;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
@@ -16,10 +17,14 @@ import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import javax.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +44,9 @@ public class SalesOrderService {
 
     @NonNull
     private final TimedPollingService timerService;
+
+    @NonNull
+    private final InvoiceService invoiceService;
 
     public SalesOrder updateOrder(final SalesOrder salesOrder) {
         salesOrder.setUpdatedAt(LocalDateTime.now());
@@ -72,6 +80,19 @@ public class SalesOrderService {
     }
 
     @Transactional
+    public SalesOrder createSalesOrder(SalesOrder salesOrder) {
+        salesOrder.setRecurringOrder(isRecurringOrder(salesOrder));
+
+        final Set<SalesOrderInvoice> invoices = invoiceService.getInvoicesByOrderNumber(salesOrder.getOrderNumber());
+        final Set<SalesOrderInvoice> updatedInvoices = invoices.stream()
+                .map(invoice -> invoiceService.addSalesOrderToInvoice(salesOrder, invoice))
+                .collect(Collectors.toSet());
+
+        salesOrder.setSalesOrderInvoiceList(updatedInvoices);
+        return save(salesOrder, ORDER_CREATED);
+    }
+
+    @Transactional
     public SalesOrder save(SalesOrder order, Action action) {
         final var storedOrder = orderRepository.save(order);
 
@@ -89,7 +110,6 @@ public class SalesOrderService {
     /**
      * checks if there is any order in the past for this customer. If yes then sets the status
      * of the order to recurring.
-     * @param salesOrder
      */
     public boolean isRecurringOrder(SalesOrder salesOrder) {
         return orderRepository.countByCustomerEmail(salesOrder.getCustomerEmail()) > 0;
@@ -98,9 +118,7 @@ public class SalesOrderService {
     protected MessageCorrelationResult sendMessageForOrderCancellation(String orderNumber) {
         MessageCorrelationBuilder builder = runtimeService
                 .createMessageCorrelation(Messages.ORDER_CANCELLATION_RECEIVED.getName())
-                .processInstanceVariableEquals(Variables.ORDER_NUMBER.getName(), orderNumber)
-                ;
-
+                .processInstanceVariableEquals(Variables.ORDER_NUMBER.getName(), orderNumber);
         return builder.correlateWithResultAndVariables(true);
     }
 }

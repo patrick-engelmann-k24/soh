@@ -9,7 +9,6 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
 import de.kfzteile24.salesOrderHub.converter.OrderJsonConverter;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.domain.converter.OrderJsonVersionDetector;
 import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
@@ -31,12 +30,9 @@ import org.springframework.util.StringUtils;
 import javax.transaction.Transactional;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_ECP;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
-import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
 import static org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy.ON_SUCCESS;
 
 @Service
@@ -50,13 +46,9 @@ public class SqsReceiveService {
     @NonNull private final ObjectMapper objectMapper;
     @NonNull private final OrderJsonConverter orderJsonConverter;
     @NonNull private final OrderJsonVersionDetector orderJsonVersionDetector;
-    @NonNull private final InvoiceService invoiceService;
 
     /**
      * Consume sqs for new orders from ecp shop
-     *
-     * @param rawMessage
-     * @param senderId
      */
     @SqsListener("${soh.sqs.queue.ecpShopOrders}")
     @SneakyThrows(JsonProcessingException.class)
@@ -103,11 +95,8 @@ public class SqsReceiveService {
                     .build();
         }
 
-        salesOrder.setRecurringOrder(salesOrderService.isRecurringOrder(salesOrder));
-        addAlreadyExistingInvoices(salesOrder);
-        salesOrderService.save(salesOrder, ORDER_CREATED);
-
-        ProcessInstance result = camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
+        ProcessInstance result = camundaHelper.createOrderProcess(
+                salesOrderService.createSalesOrder(salesOrder), ORDER_RECEIVED_ECP);
 
         if (result != null) {
             log.info("New ecp order process started. Process-Instance-ID: {} ", result.getProcessInstanceId());
@@ -116,10 +105,6 @@ public class SqsReceiveService {
 
     /**
      * Consume messages from sqs for event order item shipped
-     *
-     * @param rawMessage
-     * @param senderId
-     * @param receiveCount
      */
     @SqsListener(value = "${soh.sqs.queue.orderItemShipped}", deletionPolicy = ON_SUCCESS)
     @SneakyThrows(JsonProcessingException.class)
@@ -156,10 +141,6 @@ public class SqsReceiveService {
 
     /**
      * Consume messages from sqs for order payment secured
-     *
-     * @param rawMessage
-     * @param senderId
-     * @param receiveCount
      */
     @SqsListener(value = "${soh.sqs.queue.orderPaymentSecured}", deletionPolicy = ON_SUCCESS)
     @SneakyThrows(JsonProcessingException.class)
@@ -193,10 +174,6 @@ public class SqsReceiveService {
 
     /**
      * Consume messages from sqs for order item transmitted to logistic
-     *
-     * @param rawMessage
-     * @param senderId
-     * @param receiveCount
      */
     @SqsListener(value = "${soh.sqs.queue.orderItemTransmittedToLogistic}", deletionPolicy = ON_SUCCESS)
     @SneakyThrows(JsonProcessingException.class)
@@ -232,10 +209,6 @@ public class SqsReceiveService {
 
     /**
      * Consume messages from sqs for event order item packing started
-     *
-     * @param rawMessage
-     * @param senderId
-     * @param receiveCount
      */
     @SqsListener(value = "${soh.sqs.queue.orderItemPackingStarted}", deletionPolicy = ON_SUCCESS)
     @SneakyThrows(JsonProcessingException.class)
@@ -274,10 +247,6 @@ public class SqsReceiveService {
 
     /**
      * Consume messages from sqs for event order item tracking id received
-     *
-     * @param rawMessage
-     * @param senderId
-     * @param receiveCount
      */
     @SqsListener(value = "${soh.sqs.queue.orderItemTrackingIdReceived}", deletionPolicy = ON_SUCCESS)
     @SneakyThrows(JsonProcessingException.class)
@@ -317,10 +286,6 @@ public class SqsReceiveService {
 
     /**
      * Consume messages from sqs for event order item tour started
-     *
-     * @param rawMessage
-     * @param senderId
-     * @param receiveCount
      */
     @SqsListener(value = "${soh.sqs.queue.orderItemTourStarted}", deletionPolicy = ON_SUCCESS)
     @SneakyThrows(JsonProcessingException.class)
@@ -360,10 +325,6 @@ public class SqsReceiveService {
 
     /**
      * Consume messages from sqs for event invoice from core
-     *
-     * @param rawMessage
-     * @param senderId
-     * @param receiveCount
      */
     @SqsListener(value = "${soh.sqs.queue.invoicesFromCore}", deletionPolicy = ON_SUCCESS)
     @SneakyThrows(JsonProcessingException.class)
@@ -419,27 +380,12 @@ public class SqsReceiveService {
 
     /**
      * Send message to bpmn engine
-     *
-     * @param itemMessages
-     * @param orderNumber
-     * @param orderItemSku
-     * @return
      */
     private MessageCorrelationResult sendOrderRowMessage(RowMessages itemMessages, String orderNumber, String orderItemSku) {
-        MessageCorrelationResult result = runtimeService.createMessageCorrelation(itemMessages.getName())
+        return runtimeService.createMessageCorrelation(itemMessages.getName())
                 .processInstanceVariableEquals(Variables.ORDER_NUMBER.getName(), orderNumber)
                 .processInstanceVariableEquals(RowVariables.ORDER_ROW_ID.getName(), orderItemSku)
                 .correlateWithResult();
-
-        return result;
     }
 
-    private void addAlreadyExistingInvoices(SalesOrder salesOrder) {
-        final Set<SalesOrderInvoice> invoices = invoiceService.getInvoicesByOrderNumber(salesOrder.getOrderNumber());
-        final Set<SalesOrderInvoice> updatedInvoices = invoices.stream()
-                .map(invoice -> invoiceService.addSalesOrderToInvoice(salesOrder, invoice))
-                .collect(Collectors.toSet());
-
-        salesOrder.setSalesOrderInvoiceList(updatedInvoices);
-    }
 }
