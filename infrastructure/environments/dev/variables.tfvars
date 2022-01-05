@@ -8,3 +8,5 @@ ecp_new_order_sns          = "arn:aws:sns:eu-central-1:726569450381:development-
 ecp_new_order_sns_v3       = "arn:aws:sns:eu-central-1:726569450381:development-order-export-v3"
 invoices_from_core_sns     = "arn:aws:sns:eu-central-1:726569450381:integration-1-k24-invoices-integrate-invoices-from-core"
 db_instance_scale          = 1
+container_min_count        = 1
+container_max_count        = 1
