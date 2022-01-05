@@ -19,6 +19,8 @@ module "application_module" {
   container_port               = "8080"
   environment                  = var.environment
   codebuild_vpc                = true
+  min_capacity                 = var.container_min_count
+  max_capacity                 = var.container_max_count
 
   environment_variables = {
     SPRING_PROFILES_ACTIVE     = "default,${var.stage}"

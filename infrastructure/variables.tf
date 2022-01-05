@@ -14,6 +14,14 @@ variable "db_instance_scale" {
   type = number
 }
 
+variable "container_min_count" {
+  type = number
+}
+
+variable "container_max_count" {
+  type = number
+}
+
 variable "domain_name" {
   type = string
 }
