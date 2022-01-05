@@ -54,6 +54,7 @@ resource "aws_sqs_queue" "soh_order_item_transmitted_to_logistic_dlq" {
 resource "aws_sqs_queue" "soh_order_item_transmitted_to_logistic" {
   name = local.sqs_queues.order_item_transmitted_to_logistic
   redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.soh_order_item_transmitted_to_logistic_dlq.arn}\",\"maxReceiveCount\":4}"
+  visibility_timeout_seconds = 60
 }
 
 resource "aws_sqs_queue" "soh_order_item_packing_started_dlq" {
@@ -63,6 +64,7 @@ resource "aws_sqs_queue" "soh_order_item_packing_started_dlq" {
 resource "aws_sqs_queue" "soh_order_item_packing_started" {
   name = local.sqs_queues.order_item_packing_started
   redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.soh_order_item_packing_started_dlq.arn}\",\"maxReceiveCount\":4}"
+  visibility_timeout_seconds = 60
 }
 
 resource "aws_sqs_queue" "soh_order_item_tracking_id_received_dlq" {
