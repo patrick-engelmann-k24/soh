@@ -14,10 +14,10 @@ spring:
     data-source-properties:
       stringtype: unspecified
     pool-name: sales-order-hub
-    maximum-pool-size: 53
+    maximum-pool-size: 100
     # 48 connections for SqsListener (8 queues * (5 messages_per_batch + 1) + 5 spare connections for e.g. manual access
     # (s. https://github.com/awspring/spring-cloud-aws/blob/c63f77ff5fe9fa5d8e23ae11c4cbc19ecd99ab15/spring-cloud-aws-messaging/src/main/java/io/awspring/cloud/messaging/listener/SimpleMessageListenerContainer.java#L203)
-    minimum-idle: 16
+    minimum-idle: 25
 
   jpa:
     hibernate:
@@ -55,7 +55,7 @@ soh:
       invoiceAddressChanged: ${soh_invoice_address_changed}
       deliveryAddressChanged: ${soh_delivery_address_changed}
   sqs:
-    maxMessageRetrieves: 5
+    maxMessageRetrieves: 10
     queue:
       ecpShopOrders: ${soh_sqs_ecp_shop_orders}
       orderItemShipped: ${soh_sqs_order_item_shipped}
@@ -67,7 +67,7 @@ soh:
       invoicesFromCore: ${soh_sqs_invoices_from_core}
   aws:
     config:
-      maxNumberOfMessages: 5
+      maxNumberOfMessages: 10
       waitTimeOut: 10
 
 
