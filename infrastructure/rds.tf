@@ -15,4 +15,5 @@ module "aurora" {
   apply_immediately               = true
   skip_final_snapshot             = true
   storage_encrypted               = true
+  performance_insights_enabled    = var.db_performance_insight
 }

@@ -10,3 +10,4 @@ invoices_from_core_sns     = "arn:aws:sns:eu-central-1:726569450381:integration-
 db_instance_scale          = 1
 container_min_count        = 1
 container_max_count        = 1
+db_performance_insight     = false
