@@ -49,3 +49,7 @@ variable "ecp_new_order_sns_v3" {
 variable "invoices_from_core_sns" {
   type = string
 }
+
+variable "db_performance_insight" {
+  type = bool
+}
