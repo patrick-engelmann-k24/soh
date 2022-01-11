@@ -55,7 +55,6 @@ soh:
       invoiceAddressChanged: ${soh_invoice_address_changed}
       deliveryAddressChanged: ${soh_delivery_address_changed}
   sqs:
-    maxMessageRetrieves: 15
     queue:
       ecpShopOrders: ${soh_sqs_ecp_shop_orders}
       orderItemShipped: ${soh_sqs_order_item_shipped}
@@ -67,7 +66,7 @@ soh:
       invoicesFromCore: ${soh_sqs_invoices_from_core}
   aws:
     config:
-      maxNumberOfMessages: 15
+      maxNumberOfMessages: 10
       waitTimeOut: 10
 
 
