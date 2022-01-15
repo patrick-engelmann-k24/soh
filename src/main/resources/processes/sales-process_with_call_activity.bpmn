@@ -111,7 +111,7 @@
         <camunda:in source="orderNumber" target="orderNumber" />
         <camunda:in source="shipmentMethod" target="shipmentMethod" />
         <camunda:in source="orderRow" target="orderRowId" />
-        <camunda:in businessKey="#{orderNumber}'#'#{orderRow}" />
+        <camunda:in businessKey="${orderNumber}#${orderRow}" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_1k1avar</bpmn:incoming>
       <bpmn:outgoing>Flow_0ero9gg</bpmn:outgoing>
