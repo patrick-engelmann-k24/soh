@@ -2,6 +2,7 @@ package de.kfzteile24.salesOrderHub.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
@@ -383,8 +384,8 @@ public class SqsReceiveService {
      */
     private MessageCorrelationResult sendOrderRowMessage(RowMessages itemMessages, String orderNumber, String orderItemSku) {
         return runtimeService.createMessageCorrelation(itemMessages.getName())
-                .processInstanceVariableEquals(Variables.ORDER_NUMBER.getName(), orderNumber)
-                .processInstanceVariableEquals(RowVariables.ORDER_ROW_ID.getName(), orderItemSku)
+                .processDefinitionId(ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName())
+                .processInstanceBusinessKey(orderNumber + "#" +orderItemSku)
                 .correlateWithResult();
     }
 
