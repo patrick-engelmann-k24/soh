@@ -2,11 +2,9 @@ package de.kfzteile24.salesOrderHub.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
 import de.kfzteile24.salesOrderHub.converter.OrderJsonConverter;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
@@ -156,7 +154,8 @@ public class SqsReceiveService {
         CoreDataReaderEvent coreDataReaderEvent = objectMapper.readValue(body, CoreDataReaderEvent.class);
 
         try {
-            MessageCorrelationResult result = runtimeService.createMessageCorrelation(Messages.ORDER_RECEIVED_PAYMENT_SECURED.getName())
+            MessageCorrelationResult result = runtimeService
+                    .createMessageCorrelation(Messages.ORDER_RECEIVED_PAYMENT_SECURED.getName())
                     .processInstanceBusinessKey(coreDataReaderEvent.getOrderNumber())
                     .correlateWithResult();
 
@@ -384,7 +383,6 @@ public class SqsReceiveService {
      */
     private MessageCorrelationResult sendOrderRowMessage(RowMessages itemMessages, String orderNumber, String orderItemSku) {
         return runtimeService.createMessageCorrelation(itemMessages.getName())
-                .processDefinitionId(ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName())
                 .processInstanceBusinessKey(orderNumber + "#" +orderItemSku)
                 .correlateWithResult();
     }
