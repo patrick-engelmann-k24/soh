@@ -2,6 +2,7 @@ package de.kfzteile24.salesOrderHub.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.newrelic.api.agent.Trace;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
@@ -52,6 +53,7 @@ public class SqsReceiveService {
     @SqsListener("${soh.sqs.queue.ecpShopOrders}")
     @SneakyThrows(JsonProcessingException.class)
     @Transactional
+    @Trace(metricName = "Handling shop order message", dispatcher = true)
     public void queueListenerEcpShopOrders(String rawMessage, @Header("SenderId") String senderId) {
         log.info("Received message from ecp shop with sender id : {} ", senderId);
 
@@ -107,6 +109,7 @@ public class SqsReceiveService {
      */
     @SqsListener(value = "${soh.sqs.queue.orderItemShipped}", deletionPolicy = ON_SUCCESS)
     @SneakyThrows(JsonProcessingException.class)
+    @Trace(metricName = "Handling ItemShipped message", dispatcher = true)
     public void queueListenerItemShipped(
             String rawMessage,
             @Header("SenderId") String senderId,
@@ -125,7 +128,7 @@ public class SqsReceiveService {
             );
 
             if (!result.getExecution().getProcessInstanceId().isEmpty()) {
-                log.info("Order item shipped message for oder number " + fulfillmentMessage.getOrderNumber() + " successfully received");
+                log.info("Order item shipped message for order number {} successfully received", fulfillmentMessage.getOrderNumber());
             }
         } catch (Exception e) {
             log.error("Order item shipped message error:\r\nOrderNumber: {}\r\nOrderItem-SKU: {}\r\nError-Message: {}",
@@ -143,6 +146,7 @@ public class SqsReceiveService {
      */
     @SqsListener(value = "${soh.sqs.queue.orderPaymentSecured}", deletionPolicy = ON_SUCCESS)
     @SneakyThrows(JsonProcessingException.class)
+    @Trace(metricName = "Handling OrderPaymentSecured message", dispatcher = true)
     public void queueListenerOrderPaymentSecured(
             String rawMessage,
             @Header("SenderId") String senderId,
@@ -177,6 +181,7 @@ public class SqsReceiveService {
      */
     @SqsListener(value = "${soh.sqs.queue.orderItemTransmittedToLogistic}", deletionPolicy = ON_SUCCESS)
     @SneakyThrows(JsonProcessingException.class)
+    @Trace(metricName = "Handling OrderItemTransmittedToLogistic message", dispatcher = true)
     public void queueListenerOrderItemTransmittedToLogistic(String rawMessage, @Header("SenderId") String senderId, @Header("ApproximateReceiveCount") Integer receiveCount) {
         logReceivedMessage(rawMessage, senderId, receiveCount);
 
@@ -212,6 +217,7 @@ public class SqsReceiveService {
      */
     @SqsListener(value = "${soh.sqs.queue.orderItemPackingStarted}", deletionPolicy = ON_SUCCESS)
     @SneakyThrows(JsonProcessingException.class)
+    @Trace(metricName = "Handling OrderItemPacking message", dispatcher = true)
     public void queueListenerOrderItemPackingStarted(
             String rawMessage,
             @Header("SenderId") String senderId,
@@ -250,6 +256,7 @@ public class SqsReceiveService {
      */
     @SqsListener(value = "${soh.sqs.queue.orderItemTrackingIdReceived}", deletionPolicy = ON_SUCCESS)
     @SneakyThrows(JsonProcessingException.class)
+    @Trace(metricName = "Handling OrderItemTrackingIdReceived message", dispatcher = true)
     public void queueListenerOrderItemTrackingIdReceived(
             String rawMessage,
             @Header("SenderId") String senderId,
@@ -289,6 +296,7 @@ public class SqsReceiveService {
      */
     @SqsListener(value = "${soh.sqs.queue.orderItemTourStarted}", deletionPolicy = ON_SUCCESS)
     @SneakyThrows(JsonProcessingException.class)
+    @Trace(metricName = "Handling OrderItemTourStarted message", dispatcher = true)
     public void queueListenerOrderItemTourStarted(
             String rawMessage,
             @Header("SenderId") String senderId,
@@ -328,6 +336,7 @@ public class SqsReceiveService {
      */
     @SqsListener(value = "${soh.sqs.queue.invoicesFromCore}", deletionPolicy = ON_SUCCESS)
     @SneakyThrows(JsonProcessingException.class)
+    @Trace(metricName = "Handling InvoiceReceived message", dispatcher = true)
     public void queueListenerInvoiceReceivedFromCore(String rawMessage,
                                                      @Header("SenderId") String senderId,
                                                      @Header("ApproximateReceiveCount") Integer receiveCount) {
