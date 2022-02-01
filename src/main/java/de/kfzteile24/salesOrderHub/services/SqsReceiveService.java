@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.newrelic.api.agent.Trace;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.converter.OrderJsonConverter;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
@@ -28,10 +27,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import javax.transaction.Transactional;
-import java.util.HashMap;
 import java.util.Map;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_ECP;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.INVOICE_URL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy.ON_SUCCESS;
 
@@ -345,21 +344,14 @@ public class SqsReceiveService {
 
         try {
             final var orderNumber = extractOrderNumber(invoiceUrl);
-            log.info("Adding invoice {} to order-number {}", invoiceUrl, orderNumber);
 
-            final Map<String, Object> processVariables = new HashMap<>();
-            processVariables.put(ORDER_NUMBER.getName(), orderNumber);
-            processVariables.put(Variables.INVOICE_URL.getName(), invoiceUrl);
+            final Map<String, Object> processVariables = Map.of(
+                    ORDER_NUMBER.getName(), orderNumber,
+                    INVOICE_URL.getName(), invoiceUrl
+            );
 
-            final var result = runtimeService
-                    .createMessageCorrelation(Messages.INVOICE_CREATED.getName())
-                    .processInstanceBusinessKey(orderNumber)
-                    .setVariables(processVariables)
-                    .correlateWithResult();
-
-            if (StringUtils.hasLength(result.getExecution().getProcessInstanceId())) {
-                log.info("Invoice {} from core for order-number {} successfully received", invoiceUrl, orderNumber);
-            }
+            runtimeService.startProcessInstanceByMessage(Messages.INVOICE_CREATED.getName(), orderNumber, processVariables);
+            log.info("Invoice {} from core for order-number {} successfully received", invoiceUrl, orderNumber);
         } catch (Exception e) {
             log.error("Invoice received from core message error - invoice url: {}\r\nErrorMessage: {}", invoiceUrl, e);
             throw e;
