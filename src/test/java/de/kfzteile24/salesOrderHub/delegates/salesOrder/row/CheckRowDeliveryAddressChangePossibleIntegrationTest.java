@@ -7,11 +7,11 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.dto.order.customer.Address;
 import de.kfzteile24.salesOrderHub.helper.AuditLogUtil;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
+import de.kfzteile24.soh.order.dto.ShippingAddress;
 import lombok.SneakyThrows;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
@@ -141,7 +141,7 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
                 processVariables);
         util.sendMessage(ROW_TRANSMITTED_TO_LOGISTICS, orderNumber);
 
-        final Address address = Address.builder()
+        final ShippingAddress address = ShippingAddress.builder()
                                         .firstName("Max")
                                         .lastName("Mustermann")
                                         .street1("Unit")
@@ -226,7 +226,7 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
         processVariables.put(SHIPMENT_METHOD.getName(), ShipmentMethod.DIRECT_DELIVERY.getName());
         processVariables.put(RowVariables.ORDER_ROW_ID.getName(), orderItemId);
 
-        final Address address = Address.builder()
+        final ShippingAddress address = ShippingAddress.builder()
                                         .firstName("Max")
                                         .lastName("Mustermann")
                                         .street1("Unit")

@@ -3,8 +3,6 @@ package de.kfzteile24.salesOrderHub.delegates.helper;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.dto.OrderJSON;
-import de.kfzteile24.salesOrderHub.dto.order.Rows;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Payments;
@@ -86,25 +84,19 @@ public class CamundaHelper {
         List<String> virtualOrderRowSkus = new ArrayList<>();
         String shippingType;
         String paymentType;
-        if (salesOrder.getOriginalOrder() instanceof OrderJSON) {
-            final var orderJSON = (OrderJSON) salesOrder.getOriginalOrder();
-            orderRowSkus = orderJSON.getOrderRows().stream().map(Rows::getSku).collect(toList());
-            shippingType = orderJSON.getLogisticalUnits().get(0).getShippingType();
-            paymentType = orderJSON.getOrderHeader().getPayments().get(0).getType();
-        } else {
-            orderRowSkus = new ArrayList<>();
-            final var order = (Order) salesOrder.getOriginalOrder();
-            paymentType = getPaymentType(order.getOrderHeader().getPayments());
-            shippingType = order.getOrderRows().get(0).getShippingType();
-            for (OrderRows orderRow : order.getOrderRows()) {
-                if (isShipped(orderRow.getShippingType())) {
-                    shippingType = orderRow.getShippingType();
-                    orderRowSkus.add(orderRow.getSku());
-                } else {
-                    virtualOrderRowSkus.add(orderRow.getSku());
-                }
+        orderRowSkus = new ArrayList<>();
+        final var order = (Order) salesOrder.getOriginalOrder();
+        paymentType = getPaymentType(order.getOrderHeader().getPayments());
+        shippingType = order.getOrderRows().get(0).getShippingType();
+        for (OrderRows orderRow : order.getOrderRows()) {
+            if (isShipped(orderRow.getShippingType())) {
+                shippingType = orderRow.getShippingType();
+                orderRowSkus.add(orderRow.getSku());
+            } else {
+                virtualOrderRowSkus.add(orderRow.getSku());
             }
         }
+
 
         final Map<String, Object> processVariables = new HashMap<>();
         processVariables.put(SHIPMENT_METHOD.getName(), shippingType);

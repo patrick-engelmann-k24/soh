@@ -1,6 +1,5 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder.listener;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import de.kfzteile24.salesOrderHub.SalesOrderHubProcessApplication;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
@@ -53,7 +52,7 @@ class CheckOrderTypeDelegateIntTest {
 
 
     @Test
-    public void isWaitingAtPaymentSecured() throws JsonProcessingException {
+    public void isWaitingAtPaymentSecured() {
         final SalesOrder testOrder = salesOrderUtil.createNewSalesOrder();
         final ProcessInstance orderProcess = createOrderProcess(testOrder, "support-kfzteile24-de");
         final var isWaitingForPaymentSecured =
@@ -62,7 +61,7 @@ class CheckOrderTypeDelegateIntTest {
     }
 
     @Test
-    public void isNotWaitingForPaymentSecured() throws JsonProcessingException {
+    public void isNotWaitingForPaymentSecured() {
         final SalesOrder testOrder = salesOrderUtil.createNewSalesOrder();
         final ProcessInstance orderProcess = createOrderProcess(testOrder, "otc_branch3-kfzteile24-des");
         assertThat(orderProcess).isNotWaitingFor(Events.MSG_ORDER_PAYMENT_SECURED.getName());

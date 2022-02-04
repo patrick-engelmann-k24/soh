@@ -62,7 +62,7 @@ public class CheckRowCancellationPossibleIntegrationTest {
     }
 
     @Test
-    public void testPassThruOnParcelShipmentRegular() {
+    public void testPassThroughOnParcelShipmentRegular() {
         final Map<String, Object> processVariables = new HashMap<>();
         String orderNumber = util.getRandomOrderNumber();
         processVariables.put(ORDER_NUMBER.getName(), orderNumber);
@@ -91,7 +91,7 @@ public class CheckRowCancellationPossibleIntegrationTest {
     }
 
     @Test
-    public void testPassThruOnParcelShipmentExpress() {
+    public void testPassThroughOnParcelShipmentExpress() {
         final Map<String, Object> processVariables = new HashMap<>();
         String orderNumber = util.getRandomOrderNumber();
         processVariables.put(ORDER_NUMBER.getName(), orderNumber);
@@ -120,7 +120,7 @@ public class CheckRowCancellationPossibleIntegrationTest {
     }
 
     @Test
-    public void testPassThruOnParcelShipmentPriority() {
+    public void testPassThroughOnParcelShipmentPriority() {
         final Map<String, Object> processVariables = new HashMap<>();
         String orderNumber = util.getRandomOrderNumber();
         processVariables.put(ORDER_NUMBER.getName(), orderNumber);
@@ -149,7 +149,7 @@ public class CheckRowCancellationPossibleIntegrationTest {
     }
 
     @Test
-    public void testPassThruOnParcelOwnDelivery() {
+    public void testPassThroughOnParcelOwnDelivery() {
         final Map<String, Object> processVariables = new HashMap<>();
         String orderNumber = util.getRandomOrderNumber();
         processVariables.put(ORDER_NUMBER.getName(), orderNumber);
@@ -176,7 +176,7 @@ public class CheckRowCancellationPossibleIntegrationTest {
     }
 
     @Test
-    public void testPassThruOnParcelClickCollect() {
+    public void testPassThroughOnParcelClickCollect() {
         final Map<String, Object> processVariables = new HashMap<>();
         String orderNumber = util.getRandomOrderNumber();
         processVariables.put(ORDER_NUMBER.getName(), orderNumber);
