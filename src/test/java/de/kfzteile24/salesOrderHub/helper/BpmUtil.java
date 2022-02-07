@@ -1,22 +1,16 @@
 package de.kfzteile24.salesOrderHub.helper;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
-import de.kfzteile24.salesOrderHub.dto.OrderJSON;
-import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.MessageCorrelationBuilder;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Component;
 
-import java.io.FileReader;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -38,9 +32,6 @@ public class BpmUtil {
 
     @NonNull
     private final RuntimeService runtimeService;
-
-    @NonNull
-    private final ObjectMapper objectMapper;
 
     @NonNull
     private final TimedPollingService pollingService;
@@ -101,27 +92,12 @@ public class BpmUtil {
         return buffer.toString();
     }
 
-    @SneakyThrows(IOException.class)
-    public final OrderJSON getRandomOrder() {
-        final SqsMessage sqsMessage = objectMapper.readValue(loadOrderJson(), SqsMessage.class);
-        final OrderJSON orderJSON = objectMapper.readValue(sqsMessage.getBody(), OrderJSON.class);
-
-        orderJSON.getOrderHeader().setOrderNumber(getRandomOrderNumber());
-        return orderJSON;
-    }
-
     public final List<String> getOrderRows(final String orderNumber, final int number) {
         final List<String> result = new ArrayList<>();
         for (int i = 0; i < number; i++) {
             result.add(orderNumber + "-row-" + i);
         }
         return result;
-    }
-
-    @SneakyThrows
-    protected FileReader loadOrderJson() {
-        String fileName = "examples/testmessage.json";
-        return new FileReader(getClass().getResource(fileName).getFile());
     }
 
    public void finishOrderProcess(final ProcessInstance orderProcess, final String orderNumber) {

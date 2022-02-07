@@ -53,7 +53,7 @@ class CheckPaymentTypeDelegateIntTest {
     }
 
     @Test
-    public void isWaitingAtPaymentSecured() throws JsonProcessingException {
+    public void isWaitingAtPaymentSecured() {
         final SalesOrder testOrder = salesOrderUtil.createNewSalesOrder();
         final ProcessInstance orderProcess = createOrderProcess(testOrder, CREDIT_CARD);
         final var isWaitingForPaymentSecured =
@@ -62,7 +62,7 @@ class CheckPaymentTypeDelegateIntTest {
     }
 
     @Test
-    public void isNotWaitingForPaymentSecured() throws JsonProcessingException {
+    public void isNotWaitingForPaymentSecured() {
         final SalesOrder testOrder = salesOrderUtil.createNewSalesOrder();
         final ProcessInstance orderProcess = createOrderProcess(testOrder, CASH_ON_DELIVERY);
         assertThat(orderProcess).isNotWaitingFor(Events.MSG_ORDER_PAYMENT_SECURED.getName());

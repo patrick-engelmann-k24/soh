@@ -2,7 +2,6 @@ package de.kfzteile24.salesOrderHub.domain.converter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -30,9 +29,7 @@ public class OrderJsonConverter implements AttributeConverter<Object, String> {
     @Override
     @SneakyThrows(JsonProcessingException.class)
     public Object convertToEntityAttribute(String orderJson) {
-        if (orderJsonVersionDetector.isVersion2(orderJson)) {
-            return objectMapper.readValue(orderJson, OrderJSON.class);
-        } else if (orderJsonVersionDetector.isVersion3(orderJson)) {
+        if (orderJsonVersionDetector.isVersion3(orderJson)) {
             return objectMapper.readValue(orderJson, Order.class);
         } else {
             throw new IllegalStateException("Cannot convert unsupported JSON version: " +

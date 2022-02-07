@@ -2,9 +2,9 @@ package de.kfzteile24.salesOrderHub.configuration;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
+import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,19 +48,19 @@ public class JsonOrderConfigTest {
 
     @Test
     public void orderToObject() throws IOException {
-        final String orderNUmber = "504000035";
+        final String orderNUmber = "524001248";
 
         final var sqsMessage = objectMapper.readValue(loadJson(), SqsMessage.class);
         assertNotNull(sqsMessage);
         assertNotNull(sqsMessage.getMessageId());
         assertNotNull(sqsMessage.getBody());
-        final OrderJSON orderJSON = objectMapper.readValue(sqsMessage.getBody(), OrderJSON.class);
+        final Order order = objectMapper.readValue(sqsMessage.getBody(), Order.class);
 
-        assertEquals(orderNUmber, orderJSON.getOrderHeader().getOrderNumber());
+        assertEquals(orderNUmber, order.getOrderHeader().getOrderNumber());
 
-        final String json = objectMapper.writeValueAsString(orderJSON);
-        final OrderJSON deserializedOrderJson = objectMapper.readValue(json, OrderJSON.class);
-        assertEquals(orderJSON, deserializedOrderJson);
+        final String json = objectMapper.writeValueAsString(order);
+        final Order deserializedOrderJson = objectMapper.readValue(json, Order.class);
+        assertEquals(order, deserializedOrderJson);
     }
 
     @SneakyThrows({URISyntaxException.class, IOException.class})

@@ -5,11 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.newrelic.api.agent.Trace;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
-import de.kfzteile24.salesOrderHub.converter.OrderJsonConverter;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.domain.converter.OrderJsonVersionDetector;
-import de.kfzteile24.salesOrderHub.dto.OrderJSON;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
 import de.kfzteile24.salesOrderHub.dto.sns.FulfillmentMessage;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
@@ -43,8 +40,6 @@ public class SqsReceiveService {
     @NonNull private final SalesOrderService salesOrderService;
     @NonNull private final CamundaHelper camundaHelper;
     @NonNull private final ObjectMapper objectMapper;
-    @NonNull private final OrderJsonConverter orderJsonConverter;
-    @NonNull private final OrderJsonVersionDetector orderJsonVersionDetector;
 
     /**
      * Consume sqs for new orders from ecp shop
@@ -58,42 +53,25 @@ public class SqsReceiveService {
 
         String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
         SalesOrder salesOrder;
-        if (orderJsonVersionDetector.isVersion2(body)) {
-            OrderJSON orderJSON = objectMapper.readValue(body, OrderJSON.class);
-            salesOrder = SalesOrder.builder()
-                    .orderNumber(orderJSON.getOrderHeader()
-                            .getOrderNumber())
-                    .orderGroupId(orderJSON.getOrderHeader()
-                            .getOrderNumber())//For V2.1 there is no group ID provided, so it will come always null.
-                    .salesChannel(orderJSON.getOrderHeader()
-                            .getOrigin()
-                            .getSalesChannel())
-                    .customerEmail(orderJSON.getOrderHeader()
-                            .getCustomer()
-                            .getCustomerEmail())
-                    .originalOrder(orderJSON)
-                    .latestJson(orderJsonConverter.convert(orderJSON))
-                    .build();
-        } else {
-            Order order = objectMapper.readValue(body, Order.class);
-            String orderNumber = order.getOrderHeader().getOrderNumber();
-            if(StringUtils.isEmpty(order.getOrderHeader().getOrderGroupId())){
-                order.getOrderHeader().setOrderGroupId(orderNumber);
-            }
-            salesOrder = SalesOrder.builder()
-                    .orderNumber(order.getOrderHeader()
-                            .getOrderNumber())
-                    .orderGroupId(order.getOrderHeader()
-                            .getOrderGroupId())
-                    .salesChannel(order.getOrderHeader()
-                            .getSalesChannel())
-                    .customerEmail(order.getOrderHeader()
-                            .getCustomer()
-                            .getCustomerEmail())
-                    .originalOrder(order)
-                    .latestJson(order)
-                    .build();
+        Order order = objectMapper.readValue(body, Order.class);
+        String orderNumber = order.getOrderHeader().getOrderNumber();
+        if (StringUtils.isEmpty(order.getOrderHeader().getOrderGroupId())) {
+            order.getOrderHeader().setOrderGroupId(orderNumber);
         }
+        salesOrder = SalesOrder.builder()
+                .orderNumber(order.getOrderHeader()
+                        .getOrderNumber())
+                .orderGroupId(order.getOrderHeader()
+                        .getOrderGroupId())
+                .salesChannel(order.getOrderHeader()
+                        .getSalesChannel())
+                .customerEmail(order.getOrderHeader()
+                        .getCustomer()
+                        .getCustomerEmail())
+                .originalOrder(order)
+                .latestJson(order)
+                .build();
+
 
         ProcessInstance result = camundaHelper.createOrderProcess(
                 salesOrderService.createSalesOrder(salesOrder), ORDER_RECEIVED_ECP);

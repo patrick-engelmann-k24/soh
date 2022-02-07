@@ -1,22 +1,13 @@
 package de.kfzteile24.salesOrderHub.helper;
 
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
-import de.kfzteile24.salesOrderHub.converter.CustomerTypeConverter;
-import de.kfzteile24.salesOrderHub.converter.OrderHeaderConverter;
-import de.kfzteile24.salesOrderHub.converter.OrderJsonConverter;
-import de.kfzteile24.salesOrderHub.converter.OrderRowConverter;
-import de.kfzteile24.salesOrderHub.converter.SurchargesConverter;
-import de.kfzteile24.salesOrderHub.converter.TotalTaxesConverter;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
-import de.kfzteile24.salesOrderHub.dto.OrderJSON;
-import de.kfzteile24.salesOrderHub.dto.order.LogisticalUnits;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.soh.order.dto.Order;
@@ -45,7 +36,6 @@ import java.util.UUID;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.RECURRING;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.NONE;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @Component
@@ -61,9 +51,6 @@ public class SalesOrderUtil {
     @NonNull
     private final ObjectMapper objectMapper;
 
-    @NonNull
-    private final OrderJsonConverter orderJsonConverter;
-
     @SneakyThrows(JsonProcessingException.class)
     public SalesOrder createNewSalesOrder() {
         InputStream testFileStream = getClass().getResourceAsStream("/examples/testmessage.json");
@@ -72,19 +59,15 @@ public class SalesOrderUtil {
         SqsMessage sqsMessage = readTestFile(testFileStream);
         assertNotNull(sqsMessage);
 
-        OrderJSON orderJSON = objectMapper.readValue(sqsMessage.getBody(), OrderJSON.class);
-        orderJSON.getOrderHeader().setOrderNumber(bpmUtil.getRandomOrderNumber());
+        Order order = objectMapper.readValue(sqsMessage.getBody(), Order.class);
+        order.getOrderHeader().setOrderNumber(bpmUtil.getRandomOrderNumber());
 
         final SalesOrder testOrder = SalesOrder.builder()
-                .orderNumber(orderJSON.getOrderHeader().getOrderNumber())
-                .salesChannel(orderJSON.getOrderHeader().getOrigin().getSalesChannel())
-                .originalOrder(orderJSON)
-                .latestJson(orderJsonConverter.convert(orderJSON))
+                .orderNumber(order.getOrderHeader().getOrderNumber())
+                .salesChannel(order.getOrderHeader().getSalesChannel())
+                .originalOrder(order)
+                .latestJson(order)
                 .build();
-
-        // Get Shipping Type
-        List<LogisticalUnits> logisticalUnits = orderJSON.getLogisticalUnits();
-        assertEquals(1, logisticalUnits.size());
 
         testOrder.setSalesOrderInvoiceList(new HashSet<>());
         salesOrderService.save(testOrder, ORDER_CREATED);
@@ -177,36 +160,23 @@ public class SalesOrderUtil {
     }
 
     public static SalesOrder getSalesOrder(String rawMessage){
-        final var orderJson = getOrderJson(rawMessage);
-        final var orderJsonConverter = new OrderJsonConverter(
-                new OrderHeaderConverter(
-                        new CustomerTypeConverter(),
-                        new TotalTaxesConverter(),
-                        new SurchargesConverter()
-                ),
-                new OrderRowConverter());
+        final var order = getOrder(rawMessage);
         return SalesOrder.builder()
-            .orderNumber("514000016")
-            .orderGroupId("514000016")
-            .salesChannel("www-k24-at")
-            .customerEmail("test@kfzteile24.de")
-            .recurringOrder(Boolean.TRUE)
-            .originalOrder(orderJson)
-            .latestJson(orderJsonConverter.convert(orderJson))
-            .build();
+                .orderNumber("514000016")
+                .orderGroupId("514000016")
+                .salesChannel("www-k24-at")
+                .customerEmail("test@kfzteile24.de")
+                .recurringOrder(Boolean.TRUE)
+                .originalOrder(order)
+                .latestJson(order)
+                .build();
     }
 
     @SneakyThrows(JsonProcessingException.class)
-    public static OrderJSON getOrderJson(String rawMessage){
+    public static Order getOrder(String rawMessage){
         ObjectMapper mapper = new ObjectMapperConfig().objectMapper();
         final var sqsMessage = mapper.readValue(rawMessage, SqsMessage.class);
-        return mapper.readValue(sqsMessage.getBody(), OrderJSON.class);
-    }
-
-    @SneakyThrows(JsonProcessingException.class)
-    public static OrderJSON readOrderJson(String path) {
-        final var orderJson = readResource(path);
-        return new ObjectMapperConfig().objectMapper().readValue(orderJson, OrderJSON.class);
+        return mapper.readValue(sqsMessage.getBody(), Order.class);
     }
 
     public static SalesOrderInvoice createSalesOrderInvoice(final String orderNumber, final boolean isCorrection) {

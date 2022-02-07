@@ -121,7 +121,7 @@ public class SnsPublishServiceTest {
         var subject = "testsubject";
         SalesOrderInfoEvent salesOrderInfo = SalesOrderInfoEvent.builder()
                 .recurringOrder(Boolean.TRUE)
-                .order(SalesOrderUtil.getOrderJson(rawMessage))
+                .order(SalesOrderUtil.getOrder(rawMessage))
                 .build();
 
         //given
