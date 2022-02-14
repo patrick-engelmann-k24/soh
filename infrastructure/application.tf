@@ -21,6 +21,7 @@ module "application_module" {
   codebuild_vpc                = true
   min_capacity                 = var.container_min_count
   max_capacity                 = var.container_max_count
+  use_stickiness               = true
 
   environment_variables = {
     SPRING_PROFILES_ACTIVE     = "default,${var.stage}"
