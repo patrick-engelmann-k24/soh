@@ -49,11 +49,12 @@ public class SqsReceiveService {
     @Transactional
     @Trace(metricName = "Handling shop order message", dispatcher = true)
     public void queueListenerEcpShopOrders(String rawMessage, @Header("SenderId") String senderId) {
-        log.info("Received message from ecp shop with sender id : {} ", senderId);
 
         String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
         SalesOrder salesOrder;
         Order order = objectMapper.readValue(body, Order.class);
+
+        try {
         String orderNumber = order.getOrderHeader().getOrderNumber();
         if (StringUtils.isEmpty(order.getOrderHeader().getOrderGroupId())) {
             order.getOrderHeader().setOrderGroupId(orderNumber);
@@ -72,12 +73,17 @@ public class SqsReceiveService {
                 .latestJson(order)
                 .build();
 
+            log.info("Received message from ecp shop with sender id : {}, order number: {} ", senderId, order.getOrderHeader().getOrderNumber());
 
-        ProcessInstance result = camundaHelper.createOrderProcess(
-                salesOrderService.createSalesOrder(salesOrder), ORDER_RECEIVED_ECP);
+            ProcessInstance result = camundaHelper.createOrderProcess(
+                    salesOrderService.createSalesOrder(salesOrder), ORDER_RECEIVED_ECP);
 
-        if (result != null) {
-            log.info("New ecp order process started. Process-Instance-ID: {} ", result.getProcessInstanceId());
+            if (result != null) {
+                log.info("New ecp order process started for order number: {}. Process-Instance-ID: {} ", order.getOrderHeader().getOrderNumber(), result.getProcessInstanceId());
+            }
+        } catch (Exception e) {
+            log.error("Order item shipped message error:\r\nError-Message: {}", e.getMessage());
+            throw e;
         }
     }
 
@@ -96,6 +102,7 @@ public class SqsReceiveService {
 
         String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
         FulfillmentMessage fulfillmentMessage = objectMapper.readValue(body, FulfillmentMessage.class);
+        log.info("Received item shipped  message with order number: {} ", fulfillmentMessage.getOrderNumber());
 
         try {
             MessageCorrelationResult result = sendOrderRowMessage(
@@ -133,6 +140,7 @@ public class SqsReceiveService {
 
         String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
         CoreDataReaderEvent coreDataReaderEvent = objectMapper.readValue(body, CoreDataReaderEvent.class);
+        log.info("Received order payment secured message with order number: {} ", coreDataReaderEvent.getOrderNumber());
 
         try {
             MessageCorrelationResult result = runtimeService
@@ -164,6 +172,7 @@ public class SqsReceiveService {
 
         String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
         FulfillmentMessage fulfillmentMessage = objectMapper.readValue(body, FulfillmentMessage.class);
+        log.info("Received order item transmitted to logistic message with order number: {} ", fulfillmentMessage.getOrderNumber());
 
         try {
             MessageCorrelationResult result = sendOrderRowMessage(
@@ -204,6 +213,7 @@ public class SqsReceiveService {
 
         String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
         FulfillmentMessage fulfillmentMessage = objectMapper.readValue(body, FulfillmentMessage.class);
+        log.info("Received order item packing message with order number: {} ", fulfillmentMessage.getOrderNumber());
 
         try {
             MessageCorrelationResult result = sendOrderRowMessage(
@@ -243,6 +253,7 @@ public class SqsReceiveService {
 
         String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
         FulfillmentMessage fulfillmentMessage = objectMapper.readValue(body, FulfillmentMessage.class);
+        log.info("Received order item tracking id message with order number: {} ", fulfillmentMessage.getOrderNumber());
 
         try {
             MessageCorrelationResult result = sendOrderRowMessage(
@@ -283,6 +294,7 @@ public class SqsReceiveService {
 
         String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
         FulfillmentMessage fulfillmentMessage =objectMapper.readValue(body, FulfillmentMessage.class);
+        log.info("Received order item tour started message with order number: {} ", fulfillmentMessage.getOrderNumber());
 
         try {
             MessageCorrelationResult result = sendOrderRowMessage(
@@ -322,6 +334,8 @@ public class SqsReceiveService {
 
         try {
             final var orderNumber = extractOrderNumber(invoiceUrl);
+
+            log.info("Received invoice from core with order number: {} ", orderNumber);
 
             final Map<String, Object> processVariables = Map.of(
                     ORDER_NUMBER.getName(), orderNumber,
