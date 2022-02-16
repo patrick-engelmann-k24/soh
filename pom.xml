@@ -97,12 +97,12 @@
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
-      <version>42.2.16</version>
+      <version>42.3.3</version>
     </dependency>
     <dependency>
       <groupId>org.springdoc</groupId>
       <artifactId>springdoc-openapi-ui</artifactId>
-      <version>1.6.5</version>
+      <version>1.6.6</version>
     </dependency>
     <dependency>
       <groupId>io.springfox</groupId>
@@ -193,7 +193,7 @@
           <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>42.2.16</version>
+            <version>42.3.3</version>
           </dependency>
         </dependencies>
       </plugin>
