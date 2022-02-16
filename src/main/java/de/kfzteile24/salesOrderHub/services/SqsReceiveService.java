@@ -21,9 +21,9 @@ import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.springframework.cloud.aws.messaging.listener.annotation.SqsListener;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import javax.transaction.Transactional;
 import java.util.Map;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_ECP;
@@ -73,7 +73,7 @@ public class SqsReceiveService {
                 .latestJson(order)
                 .build();
 
-            log.info("Received message from ecp shop with sender id : {}, order number: {} ", senderId, order.getOrderHeader().getOrderNumber());
+            log.info("Received message from ecp shop with sender id : {}, order number: {}, Platform: {} ", senderId, order.getOrderHeader().getOrderNumber(), order.getOrderHeader().getPlatform());
 
             ProcessInstance result = camundaHelper.createOrderProcess(
                     salesOrderService.createSalesOrder(salesOrder), ORDER_RECEIVED_ECP);
@@ -82,7 +82,7 @@ public class SqsReceiveService {
                 log.info("New ecp order process started for order number: {}. Process-Instance-ID: {} ", order.getOrderHeader().getOrderNumber(), result.getProcessInstanceId());
             }
         } catch (Exception e) {
-            log.error("Order item shipped message error:\r\nError-Message: {}", e.getMessage());
+            log.error("Order item shipped message error:\r\nError-Message: {}, Message Body: {}", e.getMessage(), body);
             throw e;
         }
     }
