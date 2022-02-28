@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.AwsSnsConfig;
 import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.dto.events.OrderRowsCancelledEvent;
+import de.kfzteile24.salesOrderHub.dto.events.OrderRowCancelledEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInfoEvent;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
@@ -19,8 +19,6 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.cloud.aws.messaging.core.NotificationMessagingTemplate;
 
-import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -30,9 +28,8 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Shipme
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createNewSalesOrderV3;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.readResource;
-import static java.util.stream.Collectors.toList;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -138,36 +135,30 @@ public class SnsPublishServiceTest {
     @Test
     @SneakyThrows(Exception.class)
     public void testPublishOrderRowsCancelled() {
-        final var expectedTopic = "order-rows-cancelled";
-        final var expectedSubject = "Sales order rows cancelled";
+        final var expectedTopic = "order-row-cancelled";
+        final var expectedSubject = "Sales order row cancelled";
 
-        given(awsSnsConfig.getSnsOrderRowsCancelledTopic()).willReturn(expectedTopic);
+        given(awsSnsConfig.getSnsSalesOrderRowCancelled()).willReturn(expectedTopic);
 
         final var latestOrderJson = createNewSalesOrderV3(true, REGULAR, CREDIT_CARD, NEW).getLatestJson();
 
-        final List<OrderRows> canceledOrderRows = List.of(latestOrderJson.getOrderRows().get(0));
-        final var now = OffsetDateTime.now();
+        final OrderRows canceledOrderRow = latestOrderJson.getOrderRows().get(0);
 
-        snsPublishService.publishOrderRowsCancelled(latestOrderJson, canceledOrderRows, true);
+        snsPublishService.publishOrderRowCancelled(latestOrderJson.getOrderHeader().getOrderNumber(), canceledOrderRow.getSku());
 
-        final var expectedCancelledOrderRows = canceledOrderRows.stream().map(OrderRows::getSku).collect(toList());
-        var expectedEvent = OrderRowsCancelledEvent.builder()
-                .order(latestOrderJson)
-                .cancelledRows(expectedCancelledOrderRows)
-                .isFullCancellation(true)
+        var expectedEvent = OrderRowCancelledEvent.builder()
+                .orderNumber(latestOrderJson.getOrderHeader().getOrderNumber())
+                .orderRowNumber(canceledOrderRow.getSku())
                 .build();
 
         verify(notificationMessagingTemplate).sendNotification(
                 eq(expectedTopic),
                 argThat(json -> {
                     try {
-                        final var publishedEvent = objectMapper.readValue(((String) json), OrderRowsCancelledEvent.class);
+                        final var publishedEvent = objectMapper.readValue(((String) json), OrderRowCancelledEvent.class);
 
-                        assertThat(expectedEvent.getOrder()).isEqualTo(publishedEvent.getOrder());
-                        assertThat(publishedEvent.getCancelledRows()).isEqualTo(expectedEvent.getCancelledRows());
-                        assertThat(publishedEvent.getIsFullCancellation()).isTrue();
-                        final var cancellationDate = publishedEvent.getCancellationDate();
-                        assertThat(cancellationDate.isBefore(now)).isFalse();
+                        assertEquals(expectedEvent.getOrderNumber(), publishedEvent.getOrderNumber());
+                        assertEquals(expectedEvent.getOrderRowNumber(), publishedEvent.getOrderRowNumber());
                     } catch (JsonProcessingException e) {
                         throw new IllegalArgumentException(e);
                     }

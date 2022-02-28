@@ -21,6 +21,8 @@ env:
   soh_order_rows_cancelled: 'arn:aws:sns:eu-central-1:000000000000:soh-order-rows-cancelled-v1'
   soh_invoice_address_changed: 'arn:aws:sns:eu-central-1:000000000000:soh-invoice-address-changed'
   soh_delivery_address_changed: 'arn:aws:sns:eu-central-1:000000000000:soh-delivery-address-changed'
+  soh_sales_order_row_cancellation: 'arn:aws:sns:eu-central-1:000000000000:soh-sales-order-row-cancellation'
+  soh_sales_order_cancellation:  'arn:aws:sns:eu-central-1:000000000000:soh-sales-order-cancellation'
   soh_sqs_ecp_shop_orders: 'http://localhost:4566/000000000000/soh-ecp-shop-orders-queue'
   soh_sqs_order_item_shipped: 'http://localhost:4566/000000000000/soh-order-item-shipped-queue'
   soh_sqs_order_payment_secured: 'http://localhost:4566/000000000000/soh-order-payment-secured-queue'
@@ -29,6 +31,7 @@ env:
   soh_sqs_order_item_tracking_id_received: 'http://localhost:4566/000000000000/soh-order-item-tracking-id-received-queue'
   soh_sqs_order_item_tour_started: 'http://localhost:4566/000000000000/soh-order-item-tour-started-queue'
   soh_sqs_invoices_from_core: 'http://localhost:4566/000000000000/soh-invoices-from-core-queue'
+  soh_sqs_core_cancellation: 'http://localhost:4566/000000000000/soh-core-cancellation-queue'
 
 on: [push]
 

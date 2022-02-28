@@ -54,6 +54,8 @@ soh:
       orderRowsCancelled: ${soh_order_rows_cancelled}
       invoiceAddressChanged: ${soh_invoice_address_changed}
       deliveryAddressChanged: ${soh_delivery_address_changed}
+      salesOrderRowCancelled: ${soh_sales_order_row_cancellation}
+      salesOrderCancelled: ${soh_sales_order_cancellation}
   sqs:
     queue:
       ecpShopOrders: ${soh_sqs_ecp_shop_orders}
@@ -64,6 +66,7 @@ soh:
       orderItemTrackingIdReceived: ${soh_sqs_order_item_tracking_id_received}
       orderItemTourStarted: ${soh_sqs_order_item_tour_started}
       invoicesFromCore: ${soh_sqs_invoices_from_core}
+      coreCancellation: ${soh_sqs_core_cancellation}
   aws:
     config:
       maxNumberOfMessages: 10

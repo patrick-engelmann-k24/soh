@@ -2,13 +2,13 @@ package de.kfzteile24.salesOrderHub.services;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreCancellationItem;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreCancellationMessage;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.soh.order.dto.Order;
@@ -17,28 +17,19 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.bpm.engine.HistoryService;
 import org.camunda.bpm.engine.RuntimeService;
-import org.camunda.bpm.engine.history.HistoricProcessInstance;
-import org.camunda.bpm.engine.history.HistoricVariableInstance;
-import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import javax.transaction.Transactional;
 import java.text.MessageFormat;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SHIPMENT_METHOD;
-import static java.lang.String.format;
-import static java.util.stream.Collectors.toList;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
-@SuppressWarnings("PMD.MissingBreakInSwitch")
 public class SalesOrderRowService {
 
     @NonNull
@@ -48,95 +39,60 @@ public class SalesOrderRowService {
     private final RuntimeService runtimeService;
 
     @NonNull
-    private final HistoryService historyService;
-
-    @NonNull
     private final SalesOrderService salesOrderService;
 
-    @NonNull
-    private final SnsPublishService snsPublishService;
-
-    public Boolean checkOrderRowCancellationPossible(String processId, String shipmentMethod) {
-
-        switch (ShipmentMethod.fromString(shipmentMethod)) {
-            case REGULAR:
-            case EXPRESS:
-            case PRIORITY:
-                return helper.hasNotPassed(processId, RowEvents.TRACKING_ID_RECEIVED.getName());
-            case CLICK_COLLECT:
-                return helper.hasNotPassed(processId, RowEvents.ROW_PICKED_UP.getName());
-            case DIRECT_DELIVERY:
-                return helper.hasNotPassed(processId, RowEvents.ROW_DELIVERED.getName());
-            default:
-                log.warn(format("Unknown Shipment method %s", SHIPMENT_METHOD.getName()));
-        }
-
-        return false;
-    }
-
     @SneakyThrows
-    public ResponseEntity<String> cancelOrderRow(String orderNumber, String orderRowId) {
+    @Transactional
+    public void cancelOrderRows(CoreCancellationMessage coreCancellationMessage) {
+
+        String orderNumber = coreCancellationMessage.getOrderNumber();
+        for (CoreCancellationItem coreCancellationItem : coreCancellationMessage.getItems()) {
+            cancelOrderRow(orderNumber, coreCancellationItem.getSku());
+        }
+    }
+
+    public void cancelOrderProcessIfFullyCancelled(SalesOrder salesOrder) {
+
+        if (isOrderFullyCancelled(salesOrder.getLatestJson())) {
+            cancelOrderProcess(salesOrder);
+        }
+    }
+
+    public void cancelOrderRow(String orderNumber, String orderRowId) {
+
         if (helper.checkIfOrderRowProcessExists(orderNumber, orderRowId)) {
-            sendMessageForOrderRowCancelCancellation(orderNumber, orderRowId);
+            correlateMessageForOrderRowCancelCancellation(orderNumber, orderRowId);
 
-            List<HistoricProcessInstance> queryResult = historyService.createHistoricProcessInstanceQuery()
-                    .processDefinitionKey(SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName())
-                    .variableValueEquals(Variables.ORDER_NUMBER.getName(), orderNumber)
-                    .variableValueEquals(RowVariables.ORDER_ROW_ID.getName(), orderRowId)
-                    .list();
+        } else {
+            log.debug("Sales order row process does not exist for order number {} and order row: {}",
+                    orderNumber, orderRowId);
+        }
 
-            if (queryResult.size() == 1) {
-                HistoricProcessInstance processInstance = queryResult.get(0);
-                HistoricVariableInstance variableInstance = historyService.createHistoricVariableInstanceQuery()
-                        .processInstanceId(processInstance.getId())
-                        .variableName(RowVariables.ROW_CANCELLATION_POSSIBLE.getName())
-                        .singleResult();
-                boolean cancellationPossible = (boolean) variableInstance.getValue();
-                if (cancellationPossible) {
-                    return ResponseEntity.ok(orderRowId);
-                } else {
-                    return new ResponseEntity<>("The order row was found, but could not cancelled, because it is already in shipping.", HttpStatus.CONFLICT);
-                }
-            } else {
-                log.debug("More then one instances found {}", queryResult.size());
+        if (helper.checkIfActiveProcessExists(orderNumber)) {
+            removeCancelledOrderRowFromProcessVariables(orderNumber, orderRowId);
+        } else {
+            log.debug("Sales order process does not exist for order number {}", orderNumber);
+        }
+
+        markOrderRowAsCancelled(orderNumber, orderRowId);
+        log.info("Order row cancelled for order number: {} and order row: {}", orderNumber, orderRowId);
+    }
+
+    public void cancelOrderProcess(SalesOrder salesOrder) {
+
+        log.info("Order with order number: {} is fully cancelled, cancelling the order process", salesOrder.getOrderNumber());
+        for (OrderRows orderRow : salesOrder.getLatestJson().getOrderRows()) {
+            if (!helper.isShipped(orderRow.getShippingType())) {
+                orderRow.setIsCancelled(true);
             }
-            return ResponseEntity.notFound().build();
-        } else if (helper.checkIfActiveProcessExists(orderNumber)) {
-            cancelOrderRowWithoutSubprocess(orderNumber, orderRowId);
-
-            return ResponseEntity.ok(orderRowId);
-        } else {
-            return ResponseEntity.notFound().build();
         }
+        salesOrderService.save(salesOrder, Action.ORDER_CANCELLED);
+        correlateMessageForOrderCancellation(salesOrder.getOrderNumber());
+
+
     }
 
-    public void cancelOrderRowWithoutSubprocess(String orderNumber, String orderRowId) {
-        removeCancelledOrderRowFromProcessVariables(orderNumber, orderRowId);
-
-        final var salesOrder = markOrderRowsAsCancelled(orderNumber, orderRowId);
-        if (isFullyCancelled(salesOrder.getLatestJson())) {
-            salesOrder.getLatestJson().getOrderRows().forEach(orderRow -> {
-                if (!helper.isShipped(orderRow.getShippingType())) {
-                    orderRow.setIsCancelled(true);
-                }
-            });
-            sendMessageForOrderCancellation(orderNumber);
-        } else {
-            publishOrderRowsCancelled(orderRowId, salesOrder);
-        }
-    }
-
-    public void publishOrderRowsCancelled(String orderRowId, SalesOrder salesOrder) {
-        final var latestJson = salesOrder.getLatestJson();
-        final boolean isFullyCancelled = isFullyCancelled(latestJson);
-        final var cancelledRows = latestJson.getOrderRows().stream()
-                .filter(orderRow -> orderRow.getSku().equals(orderRowId))
-                .collect(toList());
-
-        snsPublishService.publishOrderRowsCancelled(latestJson, cancelledRows, isFullyCancelled);
-    }
-
-    public SalesOrder markOrderRowsAsCancelled(String orderNumber, String orderRowId) {
+    public void markOrderRowAsCancelled(String orderNumber, String orderRowId) {
         final var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException("Could not find order: " + orderNumber));
 
@@ -150,9 +106,9 @@ public class SalesOrderRowService {
                 .setIsCancelled(true);
 
         salesOrderService.save(salesOrder, Action.ORDER_ROW_CANCELLED);
-        return salesOrder;
     }
 
+    @SuppressWarnings("unchecked")
     private void removeCancelledOrderRowFromProcessVariables(String orderNumber, String orderRowId) {
         var processInstance = runtimeService.createProcessInstanceQuery()
                 .processDefinitionKey(SALES_ORDER_PROCESS.getName())
@@ -165,20 +121,23 @@ public class SalesOrderRowService {
         runtimeService.setVariable(processInstance.getId(), Variables.ORDER_ROWS.getName(), orderRows);
     }
 
-    public boolean isFullyCancelled(Order order) {
-        return order.getOrderRows().stream()
-                .filter(orderRow -> helper.isShipped(orderRow.getShippingType()))
-                .allMatch(OrderRows::getIsCancelled);
+    private boolean isOrderFullyCancelled(Order order) {
+
+        Stream<OrderRows> orderRowsStream = order.getOrderRows().stream()
+                .filter(orderRow -> helper.isShipped(orderRow.getShippingType()));
+        return orderRowsStream.allMatch(OrderRows::getIsCancelled);
     }
 
-    private MessageCorrelationResult sendMessageForOrderRowCancelCancellation(String orderNumber, String orderRowId) {
-        return runtimeService.createMessageCorrelation(RowMessages.ORDER_ROW_CANCELLATION_RECEIVED.getName())
+    private void correlateMessageForOrderRowCancelCancellation(String orderNumber, String orderRowId) {
+        log.info("Starting cancelling order row process for order number: {} and order row: {}", orderNumber, orderRowId);
+        runtimeService.createMessageCorrelation(RowMessages.ORDER_ROW_CANCELLATION_RECEIVED.getName())
                 .processInstanceVariableEquals(Variables.ORDER_NUMBER.getName(), orderNumber)
                 .processInstanceVariableEquals(RowVariables.ORDER_ROW_ID.getName(), orderRowId)
                 .correlateWithResultAndVariables(true);
     }
 
-    private void sendMessageForOrderCancellation(String orderNumber) {
+    private void correlateMessageForOrderCancellation(String orderNumber) {
+        log.info("Starting cancelling order process for order number: {}", orderNumber);
         runtimeService.createMessageCorrelation(Messages.ORDER_CANCELLATION_RECEIVED.getName())
                 .processInstanceVariableEquals(Variables.ORDER_NUMBER.getName(), orderNumber)
                 .correlateWithResult();

@@ -1,10 +1,13 @@
 package de.kfzteile24.salesOrderHub.services;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreCancellationMessage;
+import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import lombok.SneakyThrows;
 import org.camunda.bpm.engine.RuntimeService;
 import org.junit.jupiter.api.Test;
@@ -32,50 +35,51 @@ import static org.mockito.Mockito.when;
 @SuppressWarnings("PMD.UnusedPrivateField")
 public class SqsReceiveServiceTest {
 
-  @Spy
-  private final ObjectMapper objectMapper = new ObjectMapperConfig().objectMapper();
-  @Mock
-  private RuntimeService runtimeService;
-  @Mock
-  private SalesOrderService salesOrderService;
-  @Mock
-  private CamundaHelper camundaHelper;
-  @InjectMocks
-  private SqsReceiveService sqsReceiveService;
+    @Spy
+    private final ObjectMapper objectMapper = new ObjectMapperConfig().objectMapper();
+    @Mock
+    private RuntimeService runtimeService;
+    @Mock
+    private SalesOrderService salesOrderService;
+    @Mock
+    private SalesOrderRowService salesOrderRowService;
+    @Mock
+    private CamundaHelper camundaHelper;
+    @InjectMocks
+    private SqsReceiveService sqsReceiveService;
 
-  @Test
-  public void testQueueListenerEcpShopOrdersWhenRecurringOrderReceived() {
-    var senderId = "Ecp";
-    String rawMessage =  readResource("examples/ecpOrderMessage.json");
-    SalesOrder salesOrder = getSalesOrder(rawMessage);
-    salesOrder.setRecurringOrder(false);
+    @Test
+    public void testQueueListenerEcpShopOrders() {
+        var senderId = "Ecp";
+        String rawMessage = readResource("examples/ecpOrderMessage.json");
+        SalesOrder salesOrder = getSalesOrder(rawMessage);
+        salesOrder.setRecurringOrder(false);
 
-    when(salesOrderService.createSalesOrder(any())).thenReturn(salesOrder);
+        when(salesOrderService.createSalesOrder(any())).thenReturn(salesOrder);
 
-    sqsReceiveService.queueListenerEcpShopOrders(rawMessage, senderId);
+        sqsReceiveService.queueListenerEcpShopOrders(rawMessage, senderId);
 
-    verify(camundaHelper).createOrderProcess(any(SalesOrder.class), any(Messages.class));
-  }
+        verify(camundaHelper).createOrderProcess(any(SalesOrder.class), any(Messages.class));
+    }
 
-  @Test
-  public void testQueueListenerEcpShopOrdersWhenNewOrderReceived() {
-    var senderId = "Ecp";
-    String rawMessage =  readResource("examples/ecpOrderMessage.json");
-    SalesOrder salesOrder = getSalesOrder(rawMessage);
-    salesOrder.setRecurringOrder(false);
+    @Test
+    public void testQueueListenerCoreCancellation() throws JsonProcessingException {
 
-    when(salesOrderService.createSalesOrder(any())).thenReturn(salesOrder);
+        var senderId = "Ecp";
+        String cancellationRawMessage = readResource("examples/coreCancellationOneRowMessage.json");
 
-    sqsReceiveService.queueListenerEcpShopOrders(rawMessage, senderId);
+        sqsReceiveService.queueListenerCoreCancellation(cancellationRawMessage, senderId, 1);
 
-    verify(camundaHelper).createOrderProcess(any(SalesOrder.class), any(Messages.class));
-  }
+        String body = objectMapper.readValue(cancellationRawMessage, SqsMessage.class).getBody();
+        CoreCancellationMessage coreCancellationMessage = objectMapper.readValue(body, CoreCancellationMessage.class);
+        verify(salesOrderRowService).cancelOrderRows(coreCancellationMessage);
+    }
 
-  @SneakyThrows({URISyntaxException.class, IOException.class})
-  private String readResource(String path) {
-    return java.nio.file.Files.readString(Paths.get(
-            Objects.requireNonNull(getClass().getClassLoader().getResource(path))
-                    .toURI()));
-  }
+    @SneakyThrows({URISyntaxException.class, IOException.class})
+    private String readResource(String path) {
+        return java.nio.file.Files.readString(Paths.get(
+                Objects.requireNonNull(getClass().getClassLoader().getResource(path))
+                        .toURI()));
+    }
 
 }

@@ -1,11 +1,9 @@
 package de.kfzteile24.salesOrderHub.services;
 
-import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
-import org.camunda.bpm.engine.RuntimeService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -32,8 +30,6 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings({"PMD.UnusedPrivateField", "PMD.UnusedPrivateMethod"})
 class SalesOrderServiceTest {
-    @Mock
-    private CamundaHelper camundaHelper;
 
     @Mock
     private SalesOrderRepository salesOrderRepository;
@@ -43,12 +39,6 @@ class SalesOrderServiceTest {
 
     @Mock
     private InvoiceService invoiceService;
-
-    @Mock
-    private RuntimeService runtimeService;
-
-    @Mock
-    private TimedPollingService pollingService;
 
     @InjectMocks
     private SalesOrderService salesOrderService;

@@ -6,6 +6,9 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
+import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreCancellationItem;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreCancellationMessage;
 import de.kfzteile24.salesOrderHub.helper.AuditLogUtil;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
@@ -16,7 +19,6 @@ import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.history.HistoricProcessInstance;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
-import org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,12 +31,14 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
-import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CANCELLED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ROW_CANCELLED;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
+import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.reset;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @SpringBootTest(
@@ -67,17 +71,16 @@ public class SalesOrderRowServiceIntegrationTest {
     private CamundaHelper camundaHelper;
 
     @Autowired
-    private TimedPollingService pollingService;
-
-    @Autowired
     private ProcessEngine processEngine;
 
     @BeforeEach
     public void setup() {
+        reset();
         init(processEngine);
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void orderRowsCanBeCancelledBeforePaymentSecuredHasBeenReceived() {
         final var salesOrder = salesOrderUtil.createPersistedSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
         final var orderNumber = salesOrder.getOrderNumber();
@@ -91,11 +94,18 @@ public class SalesOrderRowServiceIntegrationTest {
                 .isTrue();
         assertThatNoSubprocessExists(orderNumber, skuToCancel);
 
-        salesOrderRowService.cancelOrderRowWithoutSubprocess(orderNumber, skuToCancel);
+        CoreCancellationMessage coreCancellationMessage = getCoreCancellationMessage(salesOrder, skuToCancel);
+        salesOrderRowService.cancelOrderRows(coreCancellationMessage);
 
         final var updatedSalesOrder = salesOrderService.getOrderByOrderNumber(orderNumber);
-        updatedSalesOrder.get().getLatestJson().getOrderRows().forEach(orderRow ->
-        assertThat(orderRow.getIsCancelled()).isEqualTo(orderRow.getSku().equals(skuToCancel)));
+
+        for (OrderRows orderRows : updatedSalesOrder.get().getLatestJson().getOrderRows()) {
+            if (orderRows.getSku().equals(skuToCancel)) {
+                assertTrue(orderRows.getIsCancelled());
+            } else {
+                assertFalse(orderRows.getIsCancelled());
+            }
+        }
 
         HistoricProcessInstance historicProcessInstance = historyService.createHistoricProcessInstanceQuery()
                 .processDefinitionKey(SALES_ORDER_PROCESS.getName())
@@ -113,27 +123,18 @@ public class SalesOrderRowServiceIntegrationTest {
                 .isTrue();
     }
 
-    @Test
-    public void cancellingAllOrderRowsBeforePaymentSecuredHasBeenReceivedCancelsTheWholeOrder() {
-        final var salesOrder = salesOrderUtil.createPersistedSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
+    private CoreCancellationMessage getCoreCancellationMessage(SalesOrder salesOrder, String skuToCancel) {
+        List<CoreCancellationItem> items = salesOrder.getLatestJson().getOrderRows()
+                .stream().filter(orderRows -> orderRows.getSku().equals(skuToCancel))
+                .map(orderRows ->
+                        CoreCancellationItem.builder()
+                                .sku(orderRows.getSku())
+                                .quantity(orderRows.getQuantity().intValue()).build()).collect(toList());
 
-        final var processInstance = camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
-        assertThat(util.isProcessWaitingAtExpectedToken(processInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName()))
-                .isTrue();
-        assertThatNoSubprocessExists(salesOrder.getOrderNumber(),
-                salesOrder.getLatestJson().getOrderRows().get(0).getSku());
-
-        salesOrder.getLatestJson().getOrderRows().forEach(orderRow ->
-            salesOrderRowService.cancelOrderRowWithoutSubprocess(salesOrder.getOrderNumber(), orderRow.getSku()));
-
-        final var hasProcessEnded = pollingService.pollWithDefaultTiming(() -> {
-            BpmnAwareTests.assertThat(processInstance).isEnded();
-            return true;
-        });
-        assertThat(hasProcessEnded).isTrue();
-
-
-        auditLogUtil.assertAuditLogExists(salesOrder.getId(), ORDER_CANCELLED);
+        return CoreCancellationMessage.builder()
+                .orderNumber(salesOrder.getOrderNumber())
+                .items(items)
+                .build();
     }
 
     public void assertThatNoSubprocessExists(String orderNumber, String sku) {

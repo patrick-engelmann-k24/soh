@@ -31,4 +31,10 @@ public class AwsSnsConfig {
 
     @Value("${soh.sns.topic.deliveryAddressChanged}")
     private String snsDeliveryAddressChanged;
+
+    @Value("${soh.sns.topic.salesOrderRowCancelled}")
+    private String snsSalesOrderRowCancelled;
+
+    @Value("${soh.sns.topic.salesOrderCancelled}")
+    private String snsSalesOrderCancelled;
 }

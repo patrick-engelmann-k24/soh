@@ -24,29 +24,34 @@ module "application_module" {
   use_stickiness               = true
 
   environment_variables = {
-    SPRING_PROFILES_ACTIVE     = "default,${var.stage}"
-    name                       = "backend-${var.stage}"
-    java_opts                  = "-Xms3072m -Xmx3072m"
+    SPRING_PROFILES_ACTIVE                     = "default,${var.stage}"
+    name                                       = "backend-${var.stage}"
+    java_opts                                  = "-Xms3072m -Xmx3072m"
 
-    soh_db_host                = module.aurora.this_rds_cluster_endpoint
-    soh_db_port                = module.aurora.this_rds_cluster_port
-    soh_db_database            = "sales_order_hub"
-    soh_order_created          = data.aws_sns_topic.sns_soh_order_created_topic.arn
-    soh_order_created_v2       = data.aws_sns_topic.sns_soh_order_created_v2_topic.arn
-    soh_order_completed        = data.aws_sns_topic.sns_soh_order_completed_topic.arn
-    soh_order_item_cancelled   = data.aws_sns_topic.sns_soh_order_item_cancelled_topic.arn
-    soh_order_rows_cancelled   = data.aws_sns_topic.sns_soh_order_rows_cancelled_topic_v1.arn
-    soh_order_cancelled        = data.aws_sns_topic.sns_soh_order_cancelled_topic.arn
-    soh_invoice_address_changed = data.aws_sns_topic.sns_soh_invoice_address_changed_topic.arn
-    soh_delivery_address_changed = data.aws_sns_topic.sns_soh_delivery_address_changed_topic.arn
-    soh_sqs_ecp_shop_orders     = aws_sqs_queue.ecp_shop_orders.id
-    soh_sqs_order_item_shipped  = aws_sqs_queue.soh_order_item_shipped.id
-    soh_sqs_order_payment_secured = aws_sqs_queue.soh_order_payment_secured.id
+    soh_db_host                                = module.aurora.this_rds_cluster_endpoint
+    soh_db_port                                = module.aurora.this_rds_cluster_port
+    soh_db_database                            = "sales_order_hub"
+
+    soh_order_created                          = data.aws_sns_topic.sns_soh_order_created_topic.arn
+    soh_order_created_v2                       = data.aws_sns_topic.sns_soh_order_created_v2_topic.arn
+    soh_order_completed                        = data.aws_sns_topic.sns_soh_order_completed_topic.arn
+    soh_order_item_cancelled                   = data.aws_sns_topic.sns_soh_order_item_cancelled_topic.arn
+    soh_order_rows_cancelled                   = data.aws_sns_topic.sns_soh_order_rows_cancelled_topic_v1.arn
+    soh_order_cancelled                        = data.aws_sns_topic.sns_soh_order_cancelled_topic.arn
+    soh_invoice_address_changed                = data.aws_sns_topic.sns_soh_invoice_address_changed_topic.arn
+    soh_delivery_address_changed               = data.aws_sns_topic.sns_soh_delivery_address_changed_topic.arn
+    soh_sales_order_row_cancellation           = data.aws_sns_topic.sns_soh_sales_order_row_cancellation_v1.arn
+    soh_sales_order_cancellation               = data.aws_sns_topic.sns_soh_sales_order_cancellation_v1.arn
+
+    soh_sqs_ecp_shop_orders                    = aws_sqs_queue.ecp_shop_orders.id
+    soh_sqs_order_item_shipped                 = aws_sqs_queue.soh_order_item_shipped.id
+    soh_sqs_order_payment_secured              = aws_sqs_queue.soh_order_payment_secured.id
     soh_sqs_order_item_transmitted_to_logistic = aws_sqs_queue.soh_order_item_transmitted_to_logistic.id
-    soh_sqs_order_item_packing_started = aws_sqs_queue.soh_order_item_packing_started.id
-    soh_sqs_order_item_tracking_id_received = aws_sqs_queue.soh_order_item_tracking_id_received.id
-    soh_sqs_order_item_tour_started = aws_sqs_queue.soh_order_item_tour_started.id
-    soh_sqs_invoices_from_core = aws_sqs_queue.soh_invoices_from_core.id
+    soh_sqs_order_item_packing_started         = aws_sqs_queue.soh_order_item_packing_started.id
+    soh_sqs_order_item_tracking_id_received    = aws_sqs_queue.soh_order_item_tracking_id_received.id
+    soh_sqs_order_item_tour_started            = aws_sqs_queue.soh_order_item_tour_started.id
+    soh_sqs_invoices_from_core                 = aws_sqs_queue.soh_invoices_from_core.id
+    soh_sqs_core_cancellation                  = aws_sqs_queue.soh_core_cancellation.id
   }
 
   ssm_secrets_count = 7

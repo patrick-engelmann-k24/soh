@@ -24,6 +24,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.math.BigDecimal;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -130,8 +131,25 @@ public class SalesOrderUtil {
        return OrderRows.builder()
                .shippingType(shippingType.getName())
                .isCancelled(false)
+               .quantity(BigDecimal.ONE)
                .sku(sku)
                .build();
+    }
+
+    public static SalesOrder createSalesOrderFromOrder(Order order) {
+        return SalesOrder.builder()
+                .orderNumber(order.getOrderHeader()
+                        .getOrderNumber())
+                .orderGroupId(order.getOrderHeader()
+                        .getOrderGroupId())
+                .salesChannel(order.getOrderHeader()
+                        .getSalesChannel())
+                .customerEmail(order.getOrderHeader()
+                        .getCustomer()
+                        .getCustomerEmail())
+                .originalOrder(order)
+                .latestJson(order)
+                .build();
     }
 
     private SqsMessage readTestFile(InputStream testFileStream) {

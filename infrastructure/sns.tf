@@ -66,6 +66,18 @@ data "aws_sns_topic" "sns_core_sales_orders_created" {
   name = "core-sales-order-created-v1"
 }
 
+data "aws_sns_topic" "sns_core_cancellation_delivery_note_printed_v1" {
+  name = "core-cancellation-delivery-note-printed-v1"
+}
+
+data "aws_sns_topic" "sns_soh_sales_order_row_cancellation_v1" {
+  name = "soh-sales-order-row-cancelled-v1"
+}
+
+data "aws_sns_topic" "sns_soh_sales_order_cancellation_v1" {
+  name = "soh-sales-order-cancelled-v1"
+}
+
 # subscriptions of sqs to sns
 //resource "aws_sns_topic_subscription" "sns_subscription_ecp_orders" {
 //  endpoint = aws_sqs_queue.ecp_shop_orders.arn
@@ -135,4 +147,10 @@ resource "aws_sns_topic_subscription" "sns_subscription_invoices_from_core" {
   endpoint = aws_sqs_queue.soh_invoices_from_core.arn
   protocol = "sqs"
   topic_arn = var.invoices_from_core_sns
+}
+
+resource "aws_sns_topic_subscription" "sns_subscription_core_cancellation" {
+  endpoint = aws_sqs_queue.soh_core_cancellation.arn
+  protocol = "sqs"
+  topic_arn = data.aws_sns_topic.sns_core_cancellation_delivery_note_printed_v1.arn
 }

@@ -2,7 +2,6 @@ package de.kfzteile24.salesOrderHub.controller;
 
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.services.SalesOrderAddressService;
-import de.kfzteile24.salesOrderHub.services.SalesOrderRowService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.soh.order.dto.BillingAddress;
 import de.kfzteile24.soh.order.dto.Order;
@@ -11,6 +10,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +33,7 @@ import java.util.Optional;
  * @author Robert, Andreas
  * @version 1.0
  */
+@Slf4j
 @Api(value = "OrderController")
 @RestController
 @RequestMapping("/api/v1/order")
@@ -43,10 +44,6 @@ public class OrderController {
 
     @Autowired
     private SalesOrderAddressService orderAddressService;
-
-    @Autowired
-    private SalesOrderRowService orderRowService;
-
 
     /**
      * Change billing address if there no invoice exists
@@ -70,7 +67,7 @@ public class OrderController {
      * @param orderNumber The order number from the order where the order row is part of it
      * @param orderRowId The order row id where the address tried to changed
      * @param address The new delivery address
-     * @return
+     * @return Response entity with the result of the delivery address update
      */
     @ApiOperation(value = "Change delivery address for the order row if this is not over an defined state")
     @PutMapping("/{orderNumber}/{orderItemId}/deliveryAddress")
@@ -95,7 +92,8 @@ public class OrderController {
     public ResponseEntity<String> cancelOrder(
             @PathVariable("orderNumber") final String orderNumber
     ) {
-        return salesOrderService.cancelOrder(orderNumber);
+        log.info("Cancel order endpoint is not used anymore");
+        return ResponseEntity.notFound().build();
     }
 
     /**
@@ -123,7 +121,8 @@ public class OrderController {
             @PathVariable("orderNumber") final String orderNumber,
             @PathVariable("orderItemId") final String orderRowId
     ) {
-        return orderRowService.cancelOrderRow(orderNumber, orderRowId);
+        log.info("Cancel order row endpoint is not used anymore");
+        return ResponseEntity.notFound().build();
     }
 
     /**

@@ -27,6 +27,9 @@ TOPICS="
     soh-invoice-address-changed
     soh-invoices-from-core
     soh-ecp-shop-orders
+    soh-sales-order-row-cancelled
+    soh-sales-order-cancelled
+    soh-core-cancellation
     "
 
 # Outdated topics

@@ -7,6 +7,7 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreCancellationMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
 import de.kfzteile24.salesOrderHub.dto.sns.FulfillmentMessage;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
@@ -38,6 +39,7 @@ public class SqsReceiveService {
 
     @NonNull private final RuntimeService runtimeService;
     @NonNull private final SalesOrderService salesOrderService;
+    @NonNull private final SalesOrderRowService salesOrderRowService;
     @NonNull private final CamundaHelper camundaHelper;
     @NonNull private final ObjectMapper objectMapper;
 
@@ -55,23 +57,18 @@ public class SqsReceiveService {
         Order order = objectMapper.readValue(body, Order.class);
 
         try {
-        String orderNumber = order.getOrderHeader().getOrderNumber();
-        if (StringUtils.isEmpty(order.getOrderHeader().getOrderGroupId())) {
-            order.getOrderHeader().setOrderGroupId(orderNumber);
-        }
-        salesOrder = SalesOrder.builder()
-                .orderNumber(order.getOrderHeader()
-                        .getOrderNumber())
-                .orderGroupId(order.getOrderHeader()
-                        .getOrderGroupId())
-                .salesChannel(order.getOrderHeader()
-                        .getSalesChannel())
-                .customerEmail(order.getOrderHeader()
-                        .getCustomer()
-                        .getCustomerEmail())
-                .originalOrder(order)
-                .latestJson(order)
-                .build();
+            String orderNumber = order.getOrderHeader().getOrderNumber();
+            if (StringUtils.isEmpty(order.getOrderHeader().getOrderGroupId())) {
+                order.getOrderHeader().setOrderGroupId(orderNumber);
+            }
+            salesOrder = SalesOrder.builder()
+                    .orderNumber(order.getOrderHeader().getOrderNumber())
+                    .orderGroupId(order.getOrderHeader().getOrderGroupId())
+                    .salesChannel(order.getOrderHeader().getSalesChannel())
+                    .customerEmail(order.getOrderHeader().getCustomer().getCustomerEmail())
+                    .originalOrder(order)
+                    .latestJson(order)
+                    .build();
 
             log.info("Received message from ecp shop with sender id : {}, order number: {}, Platform: {} ", senderId, order.getOrderHeader().getOrderNumber(), order.getOrderHeader().getPlatform());
 
@@ -346,6 +343,39 @@ public class SqsReceiveService {
             log.info("Invoice {} from core for order-number {} successfully received", invoiceUrl, orderNumber);
         } catch (Exception e) {
             log.error("Invoice received from core message error - invoice url: {}\r\nErrorMessage: {}", invoiceUrl, e);
+            throw e;
+        }
+    }
+
+    /**
+     * Consume messages from sqs for event core cancellation
+     */
+    @SqsListener(value = "${soh.sqs.queue.coreCancellation}", deletionPolicy = ON_SUCCESS)
+    @SneakyThrows(JsonProcessingException.class)
+    @Trace(metricName = "Handling CoreCancellation message", dispatcher = true)
+    public void queueListenerCoreCancellation(String rawMessage,
+                                              @Header("SenderId") String senderId,
+                                              @Header("ApproximateReceiveCount") Integer receiveCount) {
+        logReceivedMessage(rawMessage, senderId, receiveCount);
+        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+
+        CoreCancellationMessage coreCancellationMessage = objectMapper.readValue(body, CoreCancellationMessage.class);
+
+        try {
+            final var orderNumber = coreCancellationMessage.getOrderNumber();
+            log.info("Received core cancellation with order number: {}, original delivery note: {} and cancellation delivery note: {}",
+                    orderNumber,
+                    coreCancellationMessage.getOriginalDeliveryNoteNumber(),
+                    coreCancellationMessage.getCancellationDeliveryNoteNumber());
+
+            salesOrderRowService.cancelOrderRows(coreCancellationMessage);
+
+            log.info("Core cancellation for order number {}, original delivery note: {} and cancellation delivery note: {}",
+                    orderNumber,
+                    coreCancellationMessage.getOriginalDeliveryNoteNumber(),
+                    coreCancellationMessage.getCancellationDeliveryNoteNumber());
+        } catch (Exception e) {
+            log.error("Core cancellation for order number: {} message error: ", coreCancellationMessage.getOrderNumber(), e);
             throw e;
         }
     }

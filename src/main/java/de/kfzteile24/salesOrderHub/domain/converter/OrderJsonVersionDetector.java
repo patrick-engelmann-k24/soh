@@ -24,10 +24,6 @@ public class OrderJsonVersionDetector {
         }
     }
 
-    public boolean isVersion2(String orderJson) throws JsonProcessingException {
-        return detectVersion(orderJson).startsWith("2.");
-    }
-
     public boolean isVersion3(String orderJson) throws JsonProcessingException {
         return detectVersion(orderJson).startsWith("3.");
     }
