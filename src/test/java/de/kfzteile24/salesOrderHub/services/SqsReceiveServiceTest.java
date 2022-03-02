@@ -23,9 +23,7 @@ import java.nio.file.Paths;
 import java.util.Objects;
 
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * @author vinaya
@@ -73,6 +71,22 @@ public class SqsReceiveServiceTest {
         String body = objectMapper.readValue(cancellationRawMessage, SqsMessage.class).getBody();
         CoreCancellationMessage coreCancellationMessage = objectMapper.readValue(body, CoreCancellationMessage.class);
         verify(salesOrderRowService).cancelOrderRows(coreCancellationMessage);
+  }
+
+  @Test
+  public void testQueueListenerSubsequentDeliveryReceived() {
+    var senderId = "Delivery";
+    var receiveCount = 1;
+    String rawMessage =  readResource("examples/ecpOrderMessage.json");
+    SalesOrder salesOrder = getSalesOrder(rawMessage);
+
+    when(salesOrderService.createSalesOrderForSubsequentDelivery(any(), any())).thenReturn(salesOrder);
+    when(salesOrderService.createSalesOrder(any())).thenReturn(salesOrder);
+
+    String subsequentDeliveryNoteMessage = readResource("examples/subsequentDeliveryNote.json");
+    sqsReceiveService.queueListenerSubsequentDeliveryReceived(subsequentDeliveryNoteMessage, senderId, receiveCount);
+
+    verify(camundaHelper).createOrderProcess(any(SalesOrder.class), any(Messages.class));
     }
 
     @SneakyThrows({URISyntaxException.class, IOException.class})

@@ -32,6 +32,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SALES_CHANNEL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SHIPMENT_METHOD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.VIRTUAL_ORDER_ROWS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.PLATFORM_TYPE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.VOUCHER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.DELIVERY_ADDRESS_CHANGE_POSSIBLE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.ORDER_ROW_ID;
@@ -84,8 +85,10 @@ public class CamundaHelper {
         List<String> virtualOrderRowSkus = new ArrayList<>();
         String shippingType;
         String paymentType;
+        String platformType;
         orderRowSkus = new ArrayList<>();
         final var order = (Order) salesOrder.getOriginalOrder();
+        platformType = order.getOrderHeader().getPlatform().name();
         paymentType = getPaymentType(order.getOrderHeader().getPayments());
         shippingType = order.getOrderRows().get(0).getShippingType();
         for (OrderRows orderRow : order.getOrderRows()) {
@@ -100,6 +103,7 @@ public class CamundaHelper {
 
         final Map<String, Object> processVariables = new HashMap<>();
         processVariables.put(SHIPMENT_METHOD.getName(), shippingType);
+        processVariables.put(PLATFORM_TYPE.getName(), platformType);
         processVariables.put(ORDER_NUMBER.getName(), orderNumber);
         processVariables.put(PAYMENT_TYPE.getName(), paymentType);
         processVariables.put(ORDER_ROWS.getName(), orderRowSkus);

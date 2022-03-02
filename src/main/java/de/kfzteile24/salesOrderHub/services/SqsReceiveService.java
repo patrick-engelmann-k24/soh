@@ -10,6 +10,7 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreCancellationMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
 import de.kfzteile24.salesOrderHub.dto.sns.FulfillmentMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.SubsequentDeliveryMessage;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.NonNull;
@@ -27,6 +28,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.Map;
 
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_CREATED_IN_SOH;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_ECP;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.INVOICE_URL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
@@ -79,7 +81,7 @@ public class SqsReceiveService {
                 log.info("New ecp order process started for order number: {}. Process-Instance-ID: {} ", order.getOrderHeader().getOrderNumber(), result.getProcessInstanceId());
             }
         } catch (Exception e) {
-            log.error("Order item shipped message error:\r\nError-Message: {}, Message Body: {}", e.getMessage(), body);
+            log.error("New ecp order process is failed by message error:\r\nError-Message: {}, Message Body: {}", e.getMessage(), body);
             throw e;
         }
     }
@@ -146,7 +148,7 @@ public class SqsReceiveService {
                     .correlateWithResult();
 
             if (!result.getExecution().getProcessInstanceId().isEmpty()) {
-                log.info("Order payment secured message for oder number " + coreDataReaderEvent.getOrderNumber() + " successfully received");
+                log.info("Order payment secured message for order number " + coreDataReaderEvent.getOrderNumber() + " successfully received");
             }
         } catch (Exception e) {
             log.error("Order payment secured message error:\r\nOrderNumber: {}\r\nError-Message: {}",
@@ -220,7 +222,7 @@ public class SqsReceiveService {
             );
 
             if (!result.getExecution().getProcessInstanceId().isEmpty()) {
-                log.info("Order item packing started message for oder-number {} and sku {} successfully received",
+                log.info("Order item packing started message for order-number {} and sku {} successfully received",
                         fulfillmentMessage.getOrderNumber(),
                         fulfillmentMessage.getOrderItemSku()
                 );
@@ -376,6 +378,44 @@ public class SqsReceiveService {
                     coreCancellationMessage.getCancellationDeliveryNoteNumber());
         } catch (Exception e) {
             log.error("Core cancellation for order number: {} message error: ", coreCancellationMessage.getOrderNumber(), e);
+            throw e;
+        }
+    }
+
+    /**
+     * Consume messages from sqs for subsequent delivery received
+     */
+    @SqsListener(value = "${soh.sqs.queue.subsequentDeliveryReceived}")
+    @SneakyThrows(JsonProcessingException.class)
+    @Transactional
+    @Trace(metricName = "Handling subsequent delivery note printed message", dispatcher = true)
+    public void queueListenerSubsequentDeliveryReceived(
+            String rawMessage,
+            @Header("SenderId") String senderId,
+            @Header("ApproximateReceiveCount") Integer receiveCount
+    ) {
+        logReceivedMessage(rawMessage, senderId, receiveCount);
+
+        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+        SubsequentDeliveryMessage subsequent = objectMapper.readValue(body, SubsequentDeliveryMessage.class);
+        String newOrderNumber = subsequent.getOrderNumber() + "-" + subsequent.getSubsequentDeliveryNoteNumber();
+        log.info("Received subsequent delivery note message with order number: {} ", subsequent.getOrderNumber());
+
+        try {
+            SalesOrder salesOrder = salesOrderService.createSalesOrderForSubsequentDelivery(subsequent, newOrderNumber);
+            ProcessInstance result = camundaHelper.createOrderProcess(
+                    salesOrderService.createSalesOrder(salesOrder), ORDER_CREATED_IN_SOH);
+
+            if (result != null) {
+                log.info("New soh order process started for subsequent delivery note with " +
+                                "order number: {}. Process-Instance-ID: {} ",
+                        newOrderNumber,
+                        result.getProcessInstanceId());
+            }
+        } catch (Exception e) {
+            log.error("Subsequent delivery received message error:\r\nOrderNumber: {}\r\nError-Message: {}",
+                    newOrderNumber,
+                    e.getMessage());
             throw e;
         }
     }

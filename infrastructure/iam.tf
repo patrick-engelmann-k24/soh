@@ -16,7 +16,8 @@ data "aws_iam_policy_document" "sns_sqs_access_policy" {
       data.aws_sns_topic.sns_soh_invoice_address_changed_topic.arn,
       data.aws_sns_topic.sns_soh_delivery_address_changed_topic.arn,
       data.aws_sns_topic.sns_soh_sales_order_row_cancellation_v1.arn,
-      data.aws_sns_topic.sns_soh_sales_order_cancellation_v1.arn
+      data.aws_sns_topic.sns_soh_sales_order_cancellation_v1.arn,
+      data.aws_sns_topic.sns_core_subsequent_delivery_note_printed.arn
     ]
   }
   statement {
@@ -35,7 +36,8 @@ data "aws_iam_policy_document" "sns_sqs_access_policy" {
       aws_sqs_queue.soh_order_item_tracking_id_received.arn,
       aws_sqs_queue.soh_order_item_tour_started.arn,
       aws_sqs_queue.soh_invoices_from_core.arn,
-      aws_sqs_queue.soh_core_cancellation.arn
+      aws_sqs_queue.soh_core_cancellation.arn,
+      aws_sqs_queue.soh_subsequent_delivery_received.arn
     ]
   }
 }

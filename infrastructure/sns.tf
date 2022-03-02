@@ -78,6 +78,10 @@ data "aws_sns_topic" "sns_soh_sales_order_cancellation_v1" {
   name = "soh-sales-order-cancelled-v1"
 }
 
+data "aws_sns_topic" "sns_core_subsequent_delivery_note_printed" {
+  name = "core-subsequent-delivery-note-printed-v1"
+}
+
 # subscriptions of sqs to sns
 //resource "aws_sns_topic_subscription" "sns_subscription_ecp_orders" {
 //  endpoint = aws_sqs_queue.ecp_shop_orders.arn
@@ -153,4 +157,11 @@ resource "aws_sns_topic_subscription" "sns_subscription_core_cancellation" {
   endpoint = aws_sqs_queue.soh_core_cancellation.arn
   protocol = "sqs"
   topic_arn = data.aws_sns_topic.sns_core_cancellation_delivery_note_printed_v1.arn
+}
+
+# subscription for core subsequent delivery notes
+resource "aws_sns_topic_subscription" "sns_subscription_subsequent_delivery_note" {
+  endpoint = aws_sqs_queue.soh_subsequent_delivery_received.arn
+  protocol = "sqs"
+  topic_arn = data.aws_sns_topic.sns_core_subsequent_delivery_note_printed.arn
 }

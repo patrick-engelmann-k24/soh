@@ -10,10 +10,7 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
-import de.kfzteile24.soh.order.dto.Order;
-import de.kfzteile24.soh.order.dto.OrderHeader;
-import de.kfzteile24.soh.order.dto.OrderRows;
-import de.kfzteile24.soh.order.dto.Payments;
+import de.kfzteile24.soh.order.dto.*;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -110,6 +107,7 @@ public class SalesOrderUtil {
                 .orderNumber(orderNumber)
                 .payments(payments)
                 .salesChannel("www-k24-at")
+                .platform(Platform.ECP)
                 .build();
 
         final Order order = Order.builder()
@@ -150,6 +148,22 @@ public class SalesOrderUtil {
                 .originalOrder(order)
                 .latestJson(order)
                 .build();
+    }
+
+    public static void updatePlatform(SalesOrder salesOrder, Platform platform) {
+        salesOrder.getLatestJson().getOrderHeader().setPlatform(platform);
+        salesOrder.setOriginalOrder(salesOrder.getLatestJson());
+    }
+
+    public static SalesOrder createNewSalesOrderV3WithPlatform(
+            boolean shouldContainVirtualItem,
+            ShipmentMethod shipmentMethod,
+            PaymentType paymentType,
+            Platform platformType,
+            CustomerType customerType) {
+        SalesOrder salesOrder = createNewSalesOrderV3(shouldContainVirtualItem, shipmentMethod, paymentType, customerType);
+        updatePlatform(salesOrder, platformType);
+        return salesOrder;
     }
 
     private SqsMessage readTestFile(InputStream testFileStream) {

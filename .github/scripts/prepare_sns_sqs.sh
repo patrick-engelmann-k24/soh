@@ -30,6 +30,7 @@ TOPICS="
     soh-sales-order-row-cancelled
     soh-sales-order-cancelled
     soh-core-cancellation
+    soh-subsequent-delivery-received
     "
 
 # Outdated topics

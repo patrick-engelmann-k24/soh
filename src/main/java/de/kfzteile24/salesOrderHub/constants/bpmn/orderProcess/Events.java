@@ -24,6 +24,7 @@ public enum Events implements BpmItem {
     START_MSG_ORDER_RECEIVED_FROM_ECP("eventStartMsgOrderReceivedFromECP"),
     START_MSG_ORDER_RECEIVED_FROM_GARAGE("eventStartMsgOrderReceivedFromGarage"),
     START_MSG_ORDER_RECEIVED_FROM_MARKETPLACE("eventStartMsgOrderReceivedFromMarketplace"),
+    START_MSG_ORDER_CREATED_IN_SOH("eventStartMsgOrderCreatedInSOH"),
 
     THROW_MSG_ORDER_CREATED("eventThrowMsgOrderCreated"),
     THROW_MSG_DELIVERY_ADDRESS_CHANGED("eventThrowMsgDeliveryAddressChanged"),

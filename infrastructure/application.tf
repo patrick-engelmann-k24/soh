@@ -52,6 +52,7 @@ module "application_module" {
     soh_sqs_order_item_tour_started            = aws_sqs_queue.soh_order_item_tour_started.id
     soh_sqs_invoices_from_core                 = aws_sqs_queue.soh_invoices_from_core.id
     soh_sqs_core_cancellation                  = aws_sqs_queue.soh_core_cancellation.id
+    soh_sqs_subsequent_delivery_received       = aws_sqs_queue.soh_subsequent_delivery_received.id
   }
 
   ssm_secrets_count = 7

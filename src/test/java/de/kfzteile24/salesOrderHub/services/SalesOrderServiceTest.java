@@ -2,8 +2,12 @@ package de.kfzteile24.salesOrderHub.services;
 
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
+import de.kfzteile24.salesOrderHub.dto.sns.SubsequentDeliveryMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.subsequent.SubsequentDeliveryItem;
+import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
+import de.kfzteile24.soh.order.dto.Platform;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -13,6 +17,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -21,9 +28,8 @@ import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.readResource;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -112,6 +118,57 @@ class SalesOrderServiceTest {
                 Arguments.of(1L, true),
                 Arguments.of(0L, false)
         );
+    }
+
+    @Test
+    public void createSalesOrderForSubsequentDelivery(){
+        String rawMessage =  readResource("examples/ecpOrderMessage.json");
+        SalesOrder salesOrder = getSalesOrder(rawMessage);
+        BigDecimal quantity = BigDecimal.valueOf(1L);
+        String sku = salesOrder.getLatestJson().getOrderRows().get(0).getSku();
+        String subsequentDeliveryNumber = "987654321";
+        SubsequentDeliveryItem item = new SubsequentDeliveryItem();
+        item.setSku(sku);
+        item.setQuantity(quantity);
+        SubsequentDeliveryMessage subsequent = new SubsequentDeliveryMessage();
+        subsequent.setOrderNumber(salesOrder.getOrderNumber());
+        subsequent.setItems(List.of(item));
+        subsequent.setSubsequentDeliveryNoteNumber(subsequentDeliveryNumber);
+        salesOrder.setOrderGroupId("33333"); //set order group id to a different value to observe the change
+        when(salesOrderRepository.getOrderByOrderNumber(any())).thenReturn(Optional.of(salesOrder));
+
+        SalesOrder createdSalesOrder = salesOrderService.createSalesOrderForSubsequentDelivery(subsequent, "22222");
+
+        assertThat(createdSalesOrder.getOrderNumber()).isEqualTo("22222");
+        assertThat(createdSalesOrder.getOrderGroupId()).isEqualTo("514000016");
+        assertThat(createdSalesOrder.getSalesChannel()).isEqualTo(salesOrder.getLatestJson().getOrderHeader().getSalesChannel());
+        assertThat(createdSalesOrder.getCustomerEmail()).isEqualTo(salesOrder.getLatestJson().getOrderHeader().getCustomer().getCustomerEmail());
+        assertThat(createdSalesOrder.getOriginalOrder()).isNotNull();
+        assertThat(createdSalesOrder.getLatestJson()).isNotNull();
+        assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getPlatform()).isNotNull();
+        assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getPlatform()).isEqualTo(Platform.SOH);
+
+    }
+
+    @Test
+    public void ifNewlyCreatedSalesOrderDoesNotIncludeTheSkuGivenSubsequentDeliveryItShouldThrowException(){
+        String rawMessage =  readResource("examples/ecpOrderMessage.json");
+        SalesOrder salesOrder = getSalesOrder(rawMessage);
+        BigDecimal quantity = BigDecimal.valueOf(1L);
+        String sku = "44444";
+        String subsequentDeliveryNumber = "987654321";
+        SubsequentDeliveryItem item = new SubsequentDeliveryItem();
+        item.setSku(sku);
+        item.setQuantity(quantity);
+        SubsequentDeliveryMessage subsequent = new SubsequentDeliveryMessage();
+        subsequent.setOrderNumber(salesOrder.getOrderNumber());
+        subsequent.setItems(List.of(item));
+        subsequent.setSubsequentDeliveryNoteNumber(subsequentDeliveryNumber);
+        salesOrder.setOrderGroupId("33333"); //set order group id to a different value to observe the change
+        when(salesOrderRepository.getOrderByOrderNumber(any())).thenReturn(Optional.of(salesOrder));
+
+        assertThatThrownBy(() -> salesOrderService.createSalesOrderForSubsequentDelivery(subsequent, "22222"))
+                .isInstanceOf(NotFoundException.class);
     }
 
 }

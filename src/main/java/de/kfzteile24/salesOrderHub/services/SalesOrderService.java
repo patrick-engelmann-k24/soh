@@ -4,14 +4,22 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
 import de.kfzteile24.salesOrderHub.domain.audit.AuditLog;
+import de.kfzteile24.salesOrderHub.dto.sns.SubsequentDeliveryMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.subsequent.SubsequentDeliveryItem;
+import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
+import de.kfzteile24.soh.order.dto.Order;
+import de.kfzteile24.soh.order.dto.OrderRows;
+import de.kfzteile24.soh.order.dto.Platform;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.MessageFormat;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -74,5 +82,46 @@ public class SalesOrderService {
      */
     public boolean isRecurringOrder(SalesOrder salesOrder) {
         return orderRepository.countByCustomerEmail(salesOrder.getCustomerEmail()) > 0;
+    }
+
+    @Transactional
+    public SalesOrder createSalesOrderForSubsequentDelivery(SubsequentDeliveryMessage subsequent, String newOrderNumber) {
+        Set<String> skuSet = subsequent.getItems().stream()
+                .map(SubsequentDeliveryItem::getSku)
+                .collect(Collectors.toSet());
+        Order order = getLatestOrderWithFilteredSkus(subsequent.getOrderNumber(), skuSet);
+        order.getOrderHeader().setPlatform(Platform.SOH);
+
+        return SalesOrder.builder()
+                .orderNumber(newOrderNumber)
+                .orderGroupId(subsequent.getOrderNumber())
+                .salesChannel(order.getOrderHeader().getSalesChannel())
+                .customerEmail(order.getOrderHeader().getCustomer().getCustomerEmail())
+                .originalOrder(order)
+                .latestJson(order)
+                .build();
+    }
+    protected Order getLatestOrderWithFilteredSkus(String orderNumber, Set<String> acceptableSkuSet) {
+        var originalSalesOrder = getOrderByOrderNumber(orderNumber)
+                .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
+
+        var order = originalSalesOrder.getLatestJson();
+        var subsequentOrder = Order.builder()
+                .version(order.getVersion())
+                .orderHeader(order.getOrderHeader())
+                .orderRows(filterOrderRows(order, acceptableSkuSet)).build();
+
+        if (subsequentOrder.getOrderRows().isEmpty()) {
+            throw new SalesOrderNotFoundException(MessageFormat.format("{0} with any order row for subsequent delivery",
+                    orderNumber));
+        }
+
+        return subsequentOrder;
+    }
+
+    protected List<OrderRows> filterOrderRows(Order order, Set<String> skuSet) {
+        return order.getOrderRows().stream()
+                .filter(row -> skuSet.contains(row.getSku()))
+                .collect(Collectors.toList());
     }
 }

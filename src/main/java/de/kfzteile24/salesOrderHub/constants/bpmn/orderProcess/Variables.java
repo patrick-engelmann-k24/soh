@@ -6,6 +6,7 @@ public enum Variables implements BpmItem {
     ORDER_NUMBER("orderNumber"),
     PAYMENT_TYPE("paymentType"),
     PAYMENT_STATUS("paymentStatus"),
+    PLATFORM_TYPE("platformType"),
     ORDER_VALID("orderValid"),
     ORDER_ROWS("orderRows"),
     /** Contains the SKU of each order row having the shipment method 'none'.
@@ -21,6 +22,7 @@ public enum Variables implements BpmItem {
     CUSTOMER_TYPE("customerType"),
     SALES_CHANNEL("salesChannel"),
     IS_BRANCH_ORDER("isBranchOrder"),
+    IS_SOH_ORDER("isSohOrder"),
     POSITIVE_PAYMENT_TYPE("positivePaymentType")
     ;
 
