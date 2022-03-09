@@ -1,5 +1,6 @@
 package de.kfzteile24.salesOrderHub.dto.sns;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,11 +14,15 @@ import java.util.List;
 @AllArgsConstructor
 public class CoreCancellationMessage {
 
+    @JsonProperty("OrderNumber")
     private String orderNumber;
 
+    @JsonProperty("CancellationDeliveryNoteNumber")
     private String cancellationDeliveryNoteNumber;
 
+    @JsonProperty("OriginalDeliveryNoteNumber")
     private String originalDeliveryNoteNumber;
 
+    @JsonProperty("Items")
     private List<CoreCancellationItem> items;
 }
