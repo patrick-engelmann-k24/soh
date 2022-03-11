@@ -5,17 +5,16 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
 import org.camunda.bpm.engine.RuntimeService;
+import org.camunda.bpm.engine.history.HistoricProcessInstance;
 import org.camunda.bpm.engine.runtime.MessageCorrelationBuilder;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_PAYMENT_SECURED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
@@ -24,9 +23,12 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMes
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.ROW_TRANSMITTED_TO_LOGISTICS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.TRACKING_ID_RECEIVED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.ORDER_ROW_ID;
-import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
+import static java.util.stream.Collectors.toUnmodifiableList;
+import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.*;
+import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.historyService;
 
 @Component
+@Slf4j
 @RequiredArgsConstructor
 public class BpmUtil {
 
@@ -118,6 +120,24 @@ public class BpmUtil {
             assertThat(processInstance).isWaitingAt(activityId);
             return true;
         });
+    }
+
+    public void cleanUp() {
+        try {
+            Optional.of(processInstanceQuery().list().stream()
+                            .map(ProcessInstance::getProcessInstanceId)
+                            .collect(toUnmodifiableList()))
+                    .filter(CollectionUtils::isNotEmpty)
+                    .ifPresent(pId -> runtimeService().deleteProcessInstancesIfExists(pId, "ANY", true, false, true));
+
+            Optional.of(historyService().createHistoricProcessInstanceQuery().list().stream()
+                            .map(HistoricProcessInstance::getId)
+                            .collect(toUnmodifiableList()))
+                    .filter(CollectionUtils::isNotEmpty)
+                    .ifPresent(historyService()::deleteHistoricProcessInstancesIfExists);
+        } catch (Throwable ignored) {
+            log.error(ignored.getMessage(), ignored);
+        }
     }
 
 }

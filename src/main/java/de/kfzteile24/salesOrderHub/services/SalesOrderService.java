@@ -14,6 +14,7 @@ import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Platform;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +28,7 @@ import java.util.stream.Collectors;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class SalesOrderService {
 
@@ -112,6 +114,11 @@ public class SalesOrderService {
                 .orderRows(filterOrderRows(order, acceptableSkuSet)).build();
 
         if (subsequentOrder.getOrderRows().isEmpty()) {
+            String skuList = String.join(",", acceptableSkuSet);
+            log.error(MessageFormat.format(
+                    "Order Row ID NotFoundException: " +
+                            "There is no order row id matching with the ones in subsequent delivery note msg. " +
+                    "Order number: {0}, Subsequent Delivery Note Sku Items: {1}", orderNumber, skuList));
             throw new SalesOrderNotFoundException(MessageFormat.format("{0} with any order row for subsequent delivery",
                     orderNumber));
         }
@@ -120,6 +127,17 @@ public class SalesOrderService {
     }
 
     protected List<OrderRows> filterOrderRows(Order order, Set<String> skuSet) {
+
+        // check if there is any mismatch
+        skuSet.stream()
+                .filter(sku -> order.getOrderRows().stream().noneMatch(row -> row.getSku().equals(sku)))
+                .forEach(sku ->
+                        log.error(MessageFormat.format(
+                        "Order Row ID MismatchingError: " +
+                                "The order row id, {0}, given in subsequent delivery note msg, " +
+                                "is not matching with any of the order row id in the original order with " +
+                                "order number: {1}", sku, order.getOrderHeader().getOrderNumber())));
+
         return order.getOrderRows().stream()
                 .filter(row -> skuSet.contains(row.getSku()))
                 .collect(Collectors.toList());

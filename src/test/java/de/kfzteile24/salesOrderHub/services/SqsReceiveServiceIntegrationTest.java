@@ -67,6 +67,7 @@ public class SqsReceiveServiceIntegrationTest {
     public void setup() {
         reset();
         init(processEngine);
+        bpmUtil.cleanUp();
     }
 
     @Test
@@ -126,6 +127,7 @@ public class SqsReceiveServiceIntegrationTest {
     public void cleanup() {
         salesOrderRepository.deleteAll();
         auditLogRepository.deleteAll();
+        bpmUtil.cleanUp();
     }
 
 }
