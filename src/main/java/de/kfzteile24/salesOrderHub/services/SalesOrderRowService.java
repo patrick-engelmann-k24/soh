@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import javax.transaction.Transactional;
 import java.text.MessageFormat;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
@@ -47,7 +48,13 @@ public class SalesOrderRowService {
 
         String orderNumber = coreCancellationMessage.getOrderNumber();
         for (CoreCancellationItem coreCancellationItem : coreCancellationMessage.getItems()) {
-            cancelOrderRow(orderNumber, coreCancellationItem.getSku());
+            List<String> originalOrderSkus = getOriginalOrderSkus(orderNumber);
+            String skuToCancel = coreCancellationItem.getSku();
+            if (originalOrderSkus.contains(skuToCancel)) {
+                cancelOrderRow(orderNumber, skuToCancel);
+            } else {
+                log.error("Sku: {} is not in original order with order number: {}", skuToCancel, orderNumber);
+            }
         }
     }
 
@@ -119,6 +126,14 @@ public class SalesOrderRowService {
                 Variables.ORDER_ROWS.getName());
         orderRows.remove(orderRowId);
         runtimeService.setVariable(processInstance.getId(), Variables.ORDER_ROWS.getName(), orderRows);
+    }
+
+    private List<String> getOriginalOrderSkus(String orderNumber) {
+
+        final var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
+                .orElseThrow(() -> new SalesOrderNotFoundException("Could not find order: " + orderNumber));
+        Order originalOrder = (Order) salesOrder.getOriginalOrder();
+        return originalOrder.getOrderRows().stream().map(OrderRows::getSku).collect(Collectors.toList());
     }
 
     private boolean isOrderFullyCancelled(Order order) {
