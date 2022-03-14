@@ -171,6 +171,9 @@
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${positivePaymentType}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:startEvent id="eventStartMsgOrderCreatedInSOH" name="sales order created in SOH" camunda:asyncBefore="true">
+      <bpmn:extensionElements>
+        <camunda:executionListener delegateExpression="${updateOrderEntityListener}" event="start" />
+      </bpmn:extensionElements>
       <bpmn:outgoing>Flow_1bfvqoa</bpmn:outgoing>
       <bpmn:messageEventDefinition id="MessageEventDefinition_06i0t0q" messageRef="Message_0cew8en" />
     </bpmn:startEvent>
@@ -229,6 +232,35 @@
   <bpmn:message id="Message_0cew8en" name="msgOrderCreatedInSoh" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="SalesOrderProcess_v2">
+      <bpmndi:BPMNEdge id="Flow_0pocctv_di" bpmnElement="Flow_0pocctv">
+        <di:waypoint x="610" y="305" />
+        <di:waypoint x="610" y="390" />
+        <di:waypoint x="1130" y="390" />
+        <di:waypoint x="1130" y="305" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="861" y="372" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0qkttas_di" bpmnElement="Flow_0qkttas">
+        <di:waypoint x="635" y="280" />
+        <di:waypoint x="705" y="280" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="663" y="262" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_01fom6v_di" bpmnElement="Flow_01fom6v">
+        <di:waypoint x="526" y="280" />
+        <di:waypoint x="585" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0azbdv8_di" bpmnElement="Flow_0azbdv8">
+        <di:waypoint x="380" y="655" />
+        <di:waypoint x="380" y="615" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1bfvqoa_di" bpmnElement="Flow_1bfvqoa">
+        <di:waypoint x="218" y="790" />
+        <di:waypoint x="380" y="790" />
+        <di:waypoint x="380" y="705" />
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0w4tu46_di" bpmnElement="Flow_0w4tu46">
         <di:waypoint x="850" y="255" />
         <di:waypoint x="850" y="200" />
@@ -257,10 +289,6 @@
         <bpmndi:BPMNLabel>
           <dc:Bounds x="1086" y="82" width="18" height="14" />
         </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_01fom6v_di" bpmnElement="Flow_01fom6v">
-        <di:waypoint x="526" y="280" />
-        <di:waypoint x="585" y="280" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_14ji7tw_di" bpmnElement="Flow_14ji7tw">
         <di:waypoint x="755" y="280" />
@@ -317,31 +345,6 @@
         <di:waypoint x="218" y="390" />
         <di:waypoint x="355" y="390" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_1bfvqoa_di" bpmnElement="Flow_1bfvqoa">
-        <di:waypoint x="218" y="790" />
-        <di:waypoint x="380" y="790" />
-        <di:waypoint x="380" y="705" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0azbdv8_di" bpmnElement="Flow_0azbdv8">
-        <di:waypoint x="380" y="655" />
-        <di:waypoint x="380" y="615" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0qkttas_di" bpmnElement="Flow_0qkttas">
-        <di:waypoint x="635" y="280" />
-        <di:waypoint x="705" y="280" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="663" y="262" width="15" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0pocctv_di" bpmnElement="Flow_0pocctv">
-        <di:waypoint x="610" y="305" />
-        <di:waypoint x="610" y="390" />
-        <di:waypoint x="1130" y="390" />
-        <di:waypoint x="1130" y="305" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="861" y="372" width="18" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="Event_128fdub_di" bpmnElement="eventThrowMsgOrderCreated" bioc:stroke="#000" bioc:fill="#fff">
         <dc:Bounds x="490" y="262" width="36" height="36" />
         <bpmndi:BPMNLabel>
@@ -364,21 +367,6 @@
         <dc:Bounds x="982" y="262" width="36" height="36" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="964" y="305" width="74" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_0ldzr4a_di" bpmnElement="eventStartMsgOrderCreatedInSOH" bioc:stroke="#000" bioc:fill="#fff">
-        <dc:Bounds x="182" y="772" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="163" y="815" width="76" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Gateway_0zcfgim_di" bpmnElement="gwXOROrderReceivedGarageOrSOH" isMarkerVisible="true">
-        <dc:Bounds x="355" y="655" width="50" height="50" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Gateway_1qw25em_di" bpmnElement="gwXORCheckPlatformType" isMarkerVisible="true">
-        <dc:Bounds x="585" y="255" width="50" height="50" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="579" y="233" width="62" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_0ttoph5_di" bpmnElement="activitySubProcessInvoiceAddressChange" isExpanded="true">
@@ -516,6 +504,21 @@
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_18pf8ry_di" bpmnElement="Gateway_18pf8ry" isMarkerVisible="true">
         <dc:Bounds x="1105" y="255" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0ldzr4a_di" bpmnElement="eventStartMsgOrderCreatedInSOH" bioc:stroke="#000" bioc:fill="#fff">
+        <dc:Bounds x="182" y="772" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="163" y="815" width="76" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0zcfgim_di" bpmnElement="gwXOROrderReceivedGarageOrSOH" isMarkerVisible="true">
+        <dc:Bounds x="355" y="655" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1qw25em_di" bpmnElement="gwXORCheckPlatformType" isMarkerVisible="true">
+        <dc:Bounds x="585" y="255" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="579" y="233" width="62" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="TextAnnotation_124vwel_di" bpmnElement="TextAnnotation_124vwel">
         <dc:Bounds x="500" y="130" width="140" height="70" />

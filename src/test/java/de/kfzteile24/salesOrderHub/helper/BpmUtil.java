@@ -25,7 +25,6 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMes
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.ORDER_ROW_ID;
 import static java.util.stream.Collectors.toUnmodifiableList;
 import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.*;
-import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.historyService;
 
 @Component
 @Slf4j

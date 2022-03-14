@@ -59,9 +59,38 @@ public class SalesOrderUtil {
 
         Order order = objectMapper.readValue(sqsMessage.getBody(), Order.class);
         order.getOrderHeader().setOrderNumber(bpmUtil.getRandomOrderNumber());
+        order.getOrderHeader().setOrderGroupId(order.getOrderHeader().getOrderNumber());
 
         final SalesOrder testOrder = SalesOrder.builder()
                 .orderNumber(order.getOrderHeader().getOrderNumber())
+                .orderGroupId(order.getOrderHeader().getOrderGroupId())
+                .salesChannel(order.getOrderHeader().getSalesChannel())
+                .originalOrder(order)
+                .latestJson(order)
+                .build();
+
+        testOrder.setSalesOrderInvoiceList(new HashSet<>());
+        salesOrderService.save(testOrder, ORDER_CREATED);
+        return testOrder;
+    }
+
+    @SneakyThrows(JsonProcessingException.class)
+    public SalesOrder createNewSalesOrderWithCustomSkusAndGroupId(String orderGroupId, String sku1, String sku2) {
+        InputStream testFileStream = getClass().getResourceAsStream("/examples/testmessage.json");
+        assertNotNull(testFileStream);
+
+        SqsMessage sqsMessage = readTestFile(testFileStream);
+        assertNotNull(sqsMessage);
+
+        Order order = objectMapper.readValue(sqsMessage.getBody(), Order.class);
+        order.getOrderHeader().setOrderNumber(bpmUtil.getRandomOrderNumber());
+        order.getOrderHeader().setOrderGroupId(orderGroupId);
+        order.getOrderRows().get(0).setSku(sku1);
+        order.getOrderRows().get(1).setSku(sku2);
+
+        final SalesOrder testOrder = SalesOrder.builder()
+                .orderNumber(order.getOrderHeader().getOrderNumber())
+                .orderGroupId(order.getOrderHeader().getOrderGroupId())
                 .salesChannel(order.getOrderHeader().getSalesChannel())
                 .originalOrder(order)
                 .latestJson(order)
@@ -79,6 +108,21 @@ public class SalesOrderUtil {
             CustomerType customerType) {
         final var salesOrder = createNewSalesOrderV3(
                 shouldContainVirtualItem, shipmentMethod, paymentType, customerType);
+
+        salesOrderService.save(salesOrder, ORDER_CREATED);
+
+        return salesOrder;
+    }
+
+    public SalesOrder createPersistedSalesOrderV3WithDiffGroupId(
+            boolean shouldContainVirtualItem,
+            ShipmentMethod shipmentMethod,
+            PaymentType paymentType,
+            CustomerType customerType,
+            String orderGroupId) {
+        final var salesOrder = createNewSalesOrderV3(
+                shouldContainVirtualItem, shipmentMethod, paymentType, customerType);
+        salesOrder.setOrderGroupId(orderGroupId);
 
         salesOrderService.save(salesOrder, ORDER_CREATED);
 
@@ -141,6 +185,7 @@ public class SalesOrderUtil {
 
         return SalesOrder.builder()
                 .orderNumber(orderNumber)
+                .orderGroupId(orderNumber)
                 .salesChannel(order.getOrderHeader().getSalesChannel())
                 .originalOrder(order)
                 .latestJson(order)

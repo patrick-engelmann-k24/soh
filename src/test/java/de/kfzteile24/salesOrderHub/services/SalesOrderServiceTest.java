@@ -5,6 +5,7 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.dto.sns.SubsequentDeliveryMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.subsequent.SubsequentDeliveryItem;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
+import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundCustomException;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.soh.order.dto.Platform;
@@ -15,13 +16,12 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.stubbing.Answer;
 
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
@@ -123,52 +123,156 @@ class SalesOrderServiceTest {
     @Test
     public void createSalesOrderForSubsequentDelivery(){
         String rawMessage =  readResource("examples/ecpOrderMessage.json");
-        SalesOrder salesOrder = getSalesOrder(rawMessage);
-        BigDecimal quantity = BigDecimal.valueOf(1L);
-        String sku = salesOrder.getLatestJson().getOrderRows().get(0).getSku();
-        String subsequentDeliveryNumber = "987654321";
-        SubsequentDeliveryItem item = new SubsequentDeliveryItem();
-        item.setSku(sku);
-        item.setQuantity(quantity);
-        SubsequentDeliveryMessage subsequent = new SubsequentDeliveryMessage();
-        subsequent.setOrderNumber(salesOrder.getOrderNumber());
-        subsequent.setItems(List.of(item));
-        subsequent.setSubsequentDeliveryNoteNumber(subsequentDeliveryNumber);
-        salesOrder.setOrderGroupId("33333"); //set order group id to a different value to observe the change
+        var salesOrder = getSalesOrder(rawMessage);
+        updateRowIsCancelledFieldAsTrue(salesOrder); //In order to observe change
+        String newOrderNumber = "22222";
+
+        // Prepare sub-sequent delivery note obj
+        var subsequentDeliveryMessage = createSubsequentDeliveryNote(
+                salesOrder.getOrderNumber(),
+                salesOrder.getLatestJson().getOrderRows().get(0).getSku());
+
         when(salesOrderRepository.getOrderByOrderNumber(any())).thenReturn(Optional.of(salesOrder));
+        when(invoiceService.getInvoicesByOrderNumber(any())).thenReturn(Set.of());
+        when(salesOrderRepository.save(any())).thenAnswer(new Answer<SalesOrder>() {
+            @Override
+            public SalesOrder answer(InvocationOnMock invocation) throws Throwable {
+                return invocation.getArgument(0);
+            }
+        });
 
-        SalesOrder createdSalesOrder = salesOrderService.createSalesOrderForSubsequentDelivery(subsequent, "22222");
+        salesOrder.setOrderGroupId("33333"); //set order group id to a different value to observe the change
+        var createdSalesOrder = salesOrderService.createSalesOrderForSubsequentDelivery(
+                subsequentDeliveryMessage,
+                newOrderNumber);
 
-        assertThat(createdSalesOrder.getOrderNumber()).isEqualTo("22222");
-        assertThat(createdSalesOrder.getOrderGroupId()).isEqualTo("514000016");
-        assertThat(createdSalesOrder.getSalesChannel()).isEqualTo(salesOrder.getLatestJson().getOrderHeader().getSalesChannel());
-        assertThat(createdSalesOrder.getCustomerEmail()).isEqualTo(salesOrder.getLatestJson().getOrderHeader().getCustomer().getCustomerEmail());
+        assertThat(createdSalesOrder.getOrderNumber()).isEqualTo(newOrderNumber);
+        assertThat(createdSalesOrder.getOrderGroupId()).isEqualTo(subsequentDeliveryMessage.getOrderNumber());
         assertThat(createdSalesOrder.getOriginalOrder()).isNotNull();
         assertThat(createdSalesOrder.getLatestJson()).isNotNull();
         assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getPlatform()).isNotNull();
         assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getPlatform()).isEqualTo(Platform.SOH);
+        assertThat(createdSalesOrder.getLatestJson().getOrderRows().get(0).getIsCancelled()).isEqualTo(false);
 
     }
 
     @Test
     public void ifNewlyCreatedSalesOrderDoesNotIncludeTheSkuGivenSubsequentDeliveryItShouldThrowException(){
         String rawMessage =  readResource("examples/ecpOrderMessage.json");
-        SalesOrder salesOrder = getSalesOrder(rawMessage);
-        BigDecimal quantity = BigDecimal.valueOf(1L);
-        String sku = "44444";
-        String subsequentDeliveryNumber = "987654321";
-        SubsequentDeliveryItem item = new SubsequentDeliveryItem();
-        item.setSku(sku);
-        item.setQuantity(quantity);
-        SubsequentDeliveryMessage subsequent = new SubsequentDeliveryMessage();
-        subsequent.setOrderNumber(salesOrder.getOrderNumber());
-        subsequent.setItems(List.of(item));
-        subsequent.setSubsequentDeliveryNoteNumber(subsequentDeliveryNumber);
+        var salesOrder = getSalesOrder(rawMessage);
+        var subsequent = createSubsequentDeliveryNote(salesOrder.getOrderNumber(), "44444");
         salesOrder.setOrderGroupId("33333"); //set order group id to a different value to observe the change
         when(salesOrderRepository.getOrderByOrderNumber(any())).thenReturn(Optional.of(salesOrder));
 
         assertThatThrownBy(() -> salesOrderService.createSalesOrderForSubsequentDelivery(subsequent, "22222"))
                 .isInstanceOf(NotFoundException.class);
+    }
+
+    private SubsequentDeliveryMessage createSubsequentDeliveryNote(String orderNumber, String sku) {
+        BigDecimal quantity = BigDecimal.valueOf(1L);
+        String subsequentDeliveryNumber = "987654321";
+        SubsequentDeliveryItem item = new SubsequentDeliveryItem();
+        item.setSku(sku);
+        item.setQuantity(quantity);
+        SubsequentDeliveryMessage subsequent = new SubsequentDeliveryMessage();
+        subsequent.setOrderNumber(orderNumber);
+        subsequent.setItems(List.of(item));
+        subsequent.setSubsequentDeliveryNoteNumber(subsequentDeliveryNumber);
+        return subsequent;
+    }
+
+    private void updateRowIsCancelledFieldAsTrue(SalesOrder salesOrder) {
+        var order = salesOrder.getLatestJson();
+        order.getOrderRows().forEach(r -> r.setIsCancelled(true));
+        salesOrder.setLatestJson(order);
+        salesOrder.setOriginalOrder(order);
+    }
+
+    @Test
+    public void testGetOrderNumberListByOrderGroupIdForMultipleSalesOrdersHavingRightSku(){
+        var salesOrderList = new ArrayList<SalesOrder>();
+        String rawMessage =  readResource("examples/ecpOrderMessage.json");
+
+        // create multiple sales orders to be accepted and returned as result
+        var salesOrder = getSalesOrder(rawMessage);
+        salesOrder.setOrderNumber("1111");
+        salesOrder.setOrderGroupId("123");
+        salesOrderList.add(salesOrder); // 1 order
+        var salesOrder2 = getSalesOrder(rawMessage);
+        salesOrder2.setOrderNumber("2222");
+        salesOrder2.setOrderGroupId("123");
+        salesOrderList.add(salesOrder2); // 2 orders
+
+        // create sales order to be rejected due to is cancelled field in row
+        var salesOrderToBeRejected = getSalesOrder(rawMessage);
+        updateRowIsCancelledFieldAsTrue(salesOrderToBeRejected); //In order to observe change
+        salesOrderToBeRejected.setOrderNumber("3333");
+        salesOrderToBeRejected.setOrderGroupId("123");
+        salesOrderList.add(salesOrderToBeRejected); // 3 orders
+
+        // create sales order to be rejected due to different sku number
+        var salesOrderToBeRejected2 = getSalesOrder(rawMessage);
+        updateRowIsCancelledFieldAsTrue(salesOrderToBeRejected2); //In order to observe change
+        salesOrderToBeRejected2.setOrderNumber("4444");
+        salesOrderToBeRejected2.setOrderGroupId("123");
+        salesOrderToBeRejected2.getLatestJson().getOrderRows().get(0).setSku("98765432");
+        salesOrderList.add(salesOrderToBeRejected2); // 4 orders
+
+        when(salesOrderRepository.findAllByOrderGroupId(any())).thenReturn(Optional.of(salesOrderList));
+
+        var orderNumberList = salesOrderService.getOrderNumberListByOrderGroupIdAndFilterNotCancelled(
+                "123",
+                salesOrder2.getLatestJson().getOrderRows().get(0).getSku());
+
+        assertThat(orderNumberList).contains("1111");
+        assertThat(orderNumberList).contains("2222");
+        assertThat(orderNumberList).doesNotContain("3333");
+        assertThat(orderNumberList).doesNotContain("4444");
+    }
+
+    @Test
+    public void testGetOrderNumberListByOrderGroupIdForNoneSalesOrderHavingRightSku(){
+        var salesOrderList = new ArrayList<SalesOrder>();
+        String rawMessage =  readResource("examples/ecpOrderMessage.json");
+
+        // create sales order to be rejected due to different sku number
+        var salesOrder = getSalesOrder(rawMessage);
+        updateRowIsCancelledFieldAsTrue(salesOrder); //In order to observe change
+        salesOrder.setOrderGroupId("123");
+        salesOrder.getLatestJson().getOrderRows().get(0).setSku("98765432");
+        salesOrderList.add(salesOrder); // 4 orders
+
+        when(salesOrderRepository.findAllByOrderGroupId(any())).thenReturn(Optional.of(salesOrderList));
+
+        assertThatThrownBy(() -> salesOrderService.getOrderNumberListByOrderGroupIdAndFilterNotCancelled(
+                "123",
+                salesOrder.getLatestJson().getOrderRows().get(0).getSku()))
+                .isInstanceOf(SalesOrderNotFoundCustomException.class)
+                .hasMessageContaining("Sales order not found for the given order group id",
+                        salesOrder.getOrderGroupId());
+    }
+
+    @Test
+    public void testGetOrderNumberListByOrderGroupIdForNoneSalesOrderInGroupId(){
+        var salesOrderList = new ArrayList<SalesOrder>();
+        String rawMessage =  readResource("examples/ecpOrderMessage.json");
+
+        // create sales order to be rejected due to different sku number
+        var salesOrder = getSalesOrder(rawMessage);
+        updateRowIsCancelledFieldAsTrue(salesOrder); //In order to observe change
+        salesOrder.getLatestJson().getOrderRows().get(0).setSku("98765432");
+        salesOrderList.add(salesOrder); // 4 orders
+
+        when(salesOrderRepository.findAllByOrderGroupId(any())).thenReturn(Optional.of(salesOrderList));
+
+        assertThatThrownBy(() -> salesOrderService.getOrderNumberListByOrderGroupIdAndFilterNotCancelled(
+                "123",
+                salesOrder.getLatestJson().getOrderRows().get(0).getSku()))
+                .isInstanceOf(SalesOrderNotFoundCustomException.class)
+                .hasMessageContaining("Sales order not found for the given order group id",
+                        salesOrder.getOrderGroupId(),
+                        "order row sku number",
+                        salesOrder.getLatestJson().getOrderRows().get(0).getSku());
     }
 
 }

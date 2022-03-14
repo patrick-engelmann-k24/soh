@@ -39,11 +39,16 @@ import static org.springframework.cloud.aws.messaging.listener.SqsMessageDeletio
 @RequiredArgsConstructor
 public class SqsReceiveService {
 
-    @NonNull private final RuntimeService runtimeService;
-    @NonNull private final SalesOrderService salesOrderService;
-    @NonNull private final SalesOrderRowService salesOrderRowService;
-    @NonNull private final CamundaHelper camundaHelper;
-    @NonNull private final ObjectMapper objectMapper;
+    @NonNull
+    private final RuntimeService runtimeService;
+    @NonNull
+    private final SalesOrderService salesOrderService;
+    @NonNull
+    private final SalesOrderRowService salesOrderRowService;
+    @NonNull
+    private final CamundaHelper camundaHelper;
+    @NonNull
+    private final ObjectMapper objectMapper;
 
     /**
      * Consume sqs for new orders from ecp shop
@@ -103,25 +108,12 @@ public class SqsReceiveService {
         FulfillmentMessage fulfillmentMessage = objectMapper.readValue(body, FulfillmentMessage.class);
         log.info("Received item shipped  message with order number: {} ", fulfillmentMessage.getOrderNumber());
 
-        try {
-            MessageCorrelationResult result = sendOrderRowMessage(
-                    RowMessages.ROW_SHIPPED,
-                    fulfillmentMessage.getOrderNumber(),
-                    fulfillmentMessage.getOrderItemSku()
-            );
-
-            if (!result.getExecution().getProcessInstanceId().isEmpty()) {
-                log.info("Order item shipped message for order number {} successfully received", fulfillmentMessage.getOrderNumber());
-            }
-        } catch (Exception e) {
-            log.error("Order item shipped message error:\r\nOrderNumber: {}\r\nOrderItem-SKU: {}\r\nError-Message: {}",
-                    fulfillmentMessage.getOrderNumber(),
-                    fulfillmentMessage.getOrderItemSku(),
-                    e.getMessage()
-            );
-            throw e;
-        }
-
+        salesOrderRowService.publishOrderRowMsg(
+                RowMessages.ROW_SHIPPED,
+                fulfillmentMessage.getOrderNumber(),
+                fulfillmentMessage.getOrderItemSku(),
+                "Order item shipped",
+                rawMessage);
     }
 
     /**
@@ -173,28 +165,12 @@ public class SqsReceiveService {
         FulfillmentMessage fulfillmentMessage = objectMapper.readValue(body, FulfillmentMessage.class);
         log.info("Received order item transmitted to logistic message with order number: {} ", fulfillmentMessage.getOrderNumber());
 
-        try {
-            MessageCorrelationResult result = sendOrderRowMessage(
-                    RowMessages.ROW_TRANSMITTED_TO_LOGISTICS,
-                    fulfillmentMessage.getOrderNumber(),
-                    fulfillmentMessage.getOrderItemSku()
-            );
-
-            if (!result.getExecution().getProcessInstanceId().isEmpty()) {
-                log.info("Order item transmitted to logistic message for order-number {} and sku {} successfully received",
-                        fulfillmentMessage.getOrderNumber(),
-                        fulfillmentMessage.getOrderItemSku()
-                );
-            }
-        } catch (Exception e) {
-            log.error("Order item transmitted to logistic message error: \r\nOrderNumber: {}\r\nOrderItem-SKU: {}\r\nSQS-Message: {}\r\nError-Message: {}",
-                    fulfillmentMessage.getOrderNumber(),
-                    fulfillmentMessage.getOrderItemSku(),
-                    rawMessage,
-                    e.getMessage()
-            );
-            throw e;
-        }
+        salesOrderRowService.publishOrderRowMsg(
+                RowMessages.ROW_TRANSMITTED_TO_LOGISTICS,
+                fulfillmentMessage.getOrderNumber(),
+                fulfillmentMessage.getOrderItemSku(),
+                "Order item transmitted to logistic",
+                rawMessage);
     }
 
     /**
@@ -214,27 +190,12 @@ public class SqsReceiveService {
         FulfillmentMessage fulfillmentMessage = objectMapper.readValue(body, FulfillmentMessage.class);
         log.info("Received order item packing message with order number: {} ", fulfillmentMessage.getOrderNumber());
 
-        try {
-            MessageCorrelationResult result = sendOrderRowMessage(
-                    RowMessages.PACKING_STARTED,
-                    fulfillmentMessage.getOrderNumber(),
-                    fulfillmentMessage.getOrderItemSku()
-            );
-
-            if (!result.getExecution().getProcessInstanceId().isEmpty()) {
-                log.info("Order item packing started message for order-number {} and sku {} successfully received",
-                        fulfillmentMessage.getOrderNumber(),
-                        fulfillmentMessage.getOrderItemSku()
-                );
-            }
-        } catch (Exception e) {
-            log.error("Order item packing started message error:\r\nOrderNumber: {}\r\nOrderItem-SKU: {}\r\nSQS-Message: {}\r\nError-Message: {}",
-                    fulfillmentMessage.getOrderNumber(),
-                    fulfillmentMessage.getOrderItemSku(),
-                    rawMessage,
-                    e.getMessage());
-            throw e;
-        }
+        salesOrderRowService.publishOrderRowMsg(
+                RowMessages.PACKING_STARTED,
+                fulfillmentMessage.getOrderNumber(),
+                fulfillmentMessage.getOrderItemSku(),
+                "Order item packing started",
+                rawMessage);
     }
 
     /**
@@ -254,28 +215,12 @@ public class SqsReceiveService {
         FulfillmentMessage fulfillmentMessage = objectMapper.readValue(body, FulfillmentMessage.class);
         log.info("Received order item tracking id message with order number: {} ", fulfillmentMessage.getOrderNumber());
 
-        try {
-            MessageCorrelationResult result = sendOrderRowMessage(
-                    RowMessages.TRACKING_ID_RECEIVED,
-                    fulfillmentMessage.getOrderNumber(),
-                    fulfillmentMessage.getOrderItemSku()
-                    );
-
-            if (!result.getExecution().getProcessInstanceId().isEmpty()) {
-                log.info("Order item tracking id received message for order-number {} and sku {} successfully received",
-                        fulfillmentMessage.getOrderNumber(),
-                        fulfillmentMessage.getOrderItemSku()
-                );
-            }
-        } catch (Exception e) {
-            log.error("Order item tracking id received message error:\r\nOrderNumber: {}\r\nOrderItem-SKU: {}\r\nSQS-Message: {}\r\nError-Message: {}\r\n",
-                    fulfillmentMessage.getOrderNumber(),
-                    fulfillmentMessage.getOrderItemSku(),
-                    rawMessage,
-                    e.getMessage()
-            );
-            throw e;
-        }
+        salesOrderRowService.publishOrderRowMsg(
+                RowMessages.TRACKING_ID_RECEIVED,
+                fulfillmentMessage.getOrderNumber(),
+                fulfillmentMessage.getOrderItemSku(),
+                "Order item tracking id received",
+                rawMessage);
     }
 
     /**
@@ -292,31 +237,15 @@ public class SqsReceiveService {
         logReceivedMessage(rawMessage, senderId, receiveCount);
 
         String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-        FulfillmentMessage fulfillmentMessage =objectMapper.readValue(body, FulfillmentMessage.class);
+        FulfillmentMessage fulfillmentMessage = objectMapper.readValue(body, FulfillmentMessage.class);
         log.info("Received order item tour started message with order number: {} ", fulfillmentMessage.getOrderNumber());
 
-        try {
-            MessageCorrelationResult result = sendOrderRowMessage(
-                    RowMessages.TOUR_STARTED,
-                    fulfillmentMessage.getOrderNumber(),
-                    fulfillmentMessage.getOrderItemSku()
-            );
-
-            if (!result.getExecution().getProcessInstanceId().isEmpty()) {
-                log.info("Order item tour started message for order-number {} and sku {} successfully received",
-                        fulfillmentMessage.getOrderNumber(),
-                        fulfillmentMessage.getOrderItemSku()
-                );
-            }
-        } catch (Exception e) {
-            log.error("Order item tour started message error:\r\nOrderNumber: {}\r\nOrderItem-SKU: {}\r\nSQS-Message: {}\r\nError-Message: {}",
-                    fulfillmentMessage.getOrderNumber(),
-                    fulfillmentMessage.getOrderItemSku(),
-                    rawMessage,
-                    e.getMessage()
-            );
-            throw e;
-        }
+        salesOrderRowService.publishOrderRowMsg(
+                RowMessages.TOUR_STARTED,
+                fulfillmentMessage.getOrderNumber(),
+                fulfillmentMessage.getOrderItemSku(),
+                "Order item tour started",
+                rawMessage);
     }
 
     /**
@@ -403,8 +332,7 @@ public class SqsReceiveService {
 
         try {
             SalesOrder salesOrder = salesOrderService.createSalesOrderForSubsequentDelivery(subsequent, newOrderNumber);
-            ProcessInstance result = camundaHelper.createOrderProcess(
-                    salesOrderService.createSalesOrder(salesOrder), ORDER_CREATED_IN_SOH);
+            ProcessInstance result = camundaHelper.createOrderProcess(salesOrder, ORDER_CREATED_IN_SOH);
 
             if (result != null) {
                 log.info("New soh order process started for subsequent delivery note with " +
@@ -421,14 +349,14 @@ public class SqsReceiveService {
     }
 
     private String extractOrderNumber(final String invoiceUrl) {
-       final var afterLastSlash = invoiceUrl.lastIndexOf('/') + 1;
+        final var afterLastSlash = invoiceUrl.lastIndexOf('/') + 1;
 
-       if (afterLastSlash > 0) {
-           final var minus = invoiceUrl.indexOf('-', afterLastSlash);
-           if (minus != -1) {
-               return invoiceUrl.substring(afterLastSlash, minus);
-           }
-       }
+        if (afterLastSlash > 0) {
+            final var minus = invoiceUrl.indexOf('-', afterLastSlash);
+            if (minus != -1) {
+                return invoiceUrl.substring(afterLastSlash, minus);
+            }
+        }
 
         throw new IllegalArgumentException("Cannot parse OrderNumber from invoice url: " + invoiceUrl);
     }
@@ -439,15 +367,6 @@ public class SqsReceiveService {
                 receiveCount.toString(),
                 rawMessage
         );
-    }
-
-    /**
-     * Send message to bpmn engine
-     */
-    private MessageCorrelationResult sendOrderRowMessage(RowMessages itemMessages, String orderNumber, String orderItemSku) {
-        return runtimeService.createMessageCorrelation(itemMessages.getName())
-                .processInstanceBusinessKey(orderNumber + "#" +orderItemSku)
-                .correlateWithResult();
     }
 
 }

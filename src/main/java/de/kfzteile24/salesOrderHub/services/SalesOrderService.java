@@ -6,6 +6,7 @@ import de.kfzteile24.salesOrderHub.domain.audit.Action;
 import de.kfzteile24.salesOrderHub.domain.audit.AuditLog;
 import de.kfzteile24.salesOrderHub.dto.sns.SubsequentDeliveryMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.subsequent.SubsequentDeliveryItem;
+import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundCustomException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
@@ -33,6 +34,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
+import static java.text.MessageFormat.format;
 
 @Service
 @Slf4j
@@ -55,6 +57,10 @@ public class SalesOrderService {
 
     public Optional<SalesOrder> getOrderByOrderNumber(String orderNumber) {
         return orderRepository.getOrderByOrderNumber(orderNumber);
+    }
+
+    public Optional<List<SalesOrder>> getOrderByOrderGroupId(String orderGroupId) {
+        return orderRepository.findAllByOrderGroupId(orderGroupId);
     }
 
     @Transactional
@@ -102,7 +108,7 @@ public class SalesOrderService {
         order.getOrderHeader().setPlatform(Platform.SOH);
         recalculateOrder(order);
 
-        return SalesOrder.builder()
+        var salesOrder = SalesOrder.builder()
                 .orderNumber(newOrderNumber)
                 .orderGroupId(subsequent.getOrderNumber())
                 .salesChannel(order.getOrderHeader().getSalesChannel())
@@ -110,6 +116,7 @@ public class SalesOrderService {
                 .originalOrder(order)
                 .latestJson(order)
                 .build();
+        return createSalesOrder(salesOrder);
     }
 
     protected Order getLatestOrderWithFilteredSkus(String orderNumber, Set<String> acceptableSkuSet) {
@@ -126,7 +133,7 @@ public class SalesOrderService {
             String skuList = String.join(",", acceptableSkuSet);
             log.error(MessageFormat.format(
                     "Order Row ID NotFoundException: " +
-                            "There is no order row id matching with the ones in subsequent delivery note msg. " +
+                            "There is no order row id matching in original order. " +
                     "Order number: {0}, Subsequent Delivery Note Sku Items: {1}", orderNumber, skuList));
             throw new SalesOrderNotFoundException(MessageFormat.format("{0} with any order row for subsequent delivery",
                     orderNumber));
@@ -147,11 +154,63 @@ public class SalesOrderService {
                                 "is not matching with any of the order row id in the original order with " +
                                 "order number: {1}", sku, order.getOrderHeader().getOrderNumber())));
 
-        return order.getOrderRows().stream()
+        List<OrderRows> orderRows = order.getOrderRows().stream()
                 .filter(row -> skuSet.contains(row.getSku()))
                 .collect(Collectors.toList());
+        orderRows.forEach(row -> row.setIsCancelled(false));
+        return orderRows;
     }
 
+    public List<String> getOrderNumberListByOrderGroupId(String orderGroupId, String orderItemSku) {
+        var fetchedSalesOrders = getOrderByOrderGroupId(orderGroupId)
+                .orElseThrow(() -> new SalesOrderNotFoundCustomException(
+                        format("for the given order group id {0}", orderGroupId)));
+
+        return filterBySku(orderGroupId, orderItemSku, fetchedSalesOrders);
+    }
+
+    public List<String> getOrderNumberListByOrderGroupIdAndFilterNotCancelled(String orderGroupId, String orderItemSku) {
+        var fetchedSalesOrders = getOrderByOrderGroupId(orderGroupId)
+                .orElseThrow(() -> new SalesOrderNotFoundCustomException(
+                        format("for the given order group id {0}", orderGroupId)));
+
+        return filterBySkuAndIsCancelled(orderGroupId, orderItemSku, fetchedSalesOrders);
+    }
+
+    protected List<String> filterBySku(String orderGroupId, String orderItemSku, List<SalesOrder> fetchedSalesOrders) {
+        var foundSalesOrders = fetchedSalesOrders.stream()
+                .filter(salesOrder -> salesOrder.getLatestJson().getOrderRows().stream()
+                        .anyMatch(row -> row.getSku().equals(orderItemSku)))
+                .collect(Collectors.toList());
+
+        if (foundSalesOrders.isEmpty()) {
+            throw new SalesOrderNotFoundCustomException(
+                    format("for the given order group id {0} and given order row sku number {1}",
+                            orderGroupId,
+                            orderItemSku));
+        }
+
+        return foundSalesOrders.stream().map(SalesOrder::getOrderNumber).distinct().collect(Collectors.toList());
+    }
+
+    protected List<String> filterBySkuAndIsCancelled(String orderGroupId, String orderItemSku, List<SalesOrder> fetchedSalesOrders) {
+        var foundSalesOrders = fetchedSalesOrders.stream()
+                .filter(salesOrder -> salesOrder.getLatestJson().getOrderRows().stream()
+                        .anyMatch(row -> row.getSku().equals(orderItemSku)))
+                .filter(salesOrder -> salesOrder.getLatestJson().getOrderRows().stream()
+                        .noneMatch(OrderRows::getIsCancelled))
+                .collect(Collectors.toList());
+
+        if (foundSalesOrders.isEmpty()) {
+            throw new SalesOrderNotFoundCustomException(
+                    format("for the given order group id {0} and given order row sku number {1}",
+                            orderGroupId,
+                            orderItemSku));
+        }
+
+        return foundSalesOrders.stream().map(SalesOrder::getOrderNumber).distinct().collect(Collectors.toList());
+    }
+  
     private void recalculateOrder(Order order) {
 
         List<OrderRows> orderRows = order.getOrderRows();

@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.RuntimeService;
+import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
@@ -75,24 +76,28 @@ public class SalesOrderRowService {
         }
     }
 
-    private void cancelOrderRow(String orderNumber, String orderRowId) {
+    private void cancelOrderRow(String orderGroupId, String orderRowId) {
 
-        if (helper.checkIfOrderRowProcessExists(orderNumber, orderRowId)) {
-            correlateMessageForOrderRowCancelCancellation(orderNumber, orderRowId);
+        salesOrderService.getOrderNumberListByOrderGroupId(orderGroupId, orderRowId).forEach(orderNumber -> {
 
-        } else {
-            log.debug("Sales order row process does not exist for order number {} and order row: {}",
-                    orderNumber, orderRowId);
-        }
+            if (helper.checkIfOrderRowProcessExists(orderNumber, orderRowId)) {
+                correlateMessageForOrderRowCancelCancellation(orderNumber, orderRowId);
 
-        if (helper.checkIfActiveProcessExists(orderNumber)) {
-            removeCancelledOrderRowFromProcessVariables(orderNumber, orderRowId);
-        } else {
-            log.debug("Sales order process does not exist for order number {}", orderNumber);
-        }
+            } else {
+                log.debug("Sales order row process does not exist for order number {} and order row: {}",
+                        orderNumber, orderRowId);
+            }
 
-        markOrderRowAsCancelled(orderNumber, orderRowId);
-        log.info("Order row cancelled for order number: {} and order row: {}", orderNumber, orderRowId);
+            if (helper.checkIfActiveProcessExists(orderNumber)) {
+                removeCancelledOrderRowFromProcessVariables(orderNumber, orderRowId);
+            } else {
+                log.debug("Sales order process does not exist for order number {}", orderNumber);
+            }
+
+            markOrderRowAsCancelled(orderNumber, orderRowId);
+            log.info("Order row cancelled for order number: {} and order row: {}", orderNumber, orderRowId);
+
+        });
     }
 
     @SuppressWarnings("unchecked")
@@ -179,5 +184,34 @@ public class SalesOrderRowService {
         runtimeService.createMessageCorrelation(Messages.ORDER_CANCELLATION_RECEIVED.getName())
                 .processInstanceVariableEquals(Variables.ORDER_NUMBER.getName(), orderNumber)
                 .correlateWithResult();
+    }
+
+    public void publishOrderRowMsg(RowMessages rowMessage,
+                                   String orderGroupId,
+                                   String orderItemSku,
+                                   String logMessage,
+                                   String rawMessage) {
+        salesOrderService.getOrderNumberListByOrderGroupIdAndFilterNotCancelled(orderGroupId, orderItemSku).forEach(orderNumber -> {
+            try {
+                MessageCorrelationResult result = helper.createOrderRowProcess(rowMessage, orderNumber, orderGroupId, orderItemSku);
+
+                if (!result.getExecution().getProcessInstanceId().isEmpty()) {
+                    log.info("{} message for order-number {} and sku {} successfully received",
+                            logMessage,
+                            orderNumber,
+                            orderItemSku
+                    );
+                }
+            } catch (Exception e) {
+                log.error("{} message error: \r\nOrderNumber: {}\r\nOrderItem-SKU: {}\r\nSQS-Message: {}\r\nError-Message: {}",
+                        logMessage,
+                        orderNumber,
+                        orderItemSku,
+                        rawMessage,
+                        e.getMessage()
+                );
+                throw e;
+            }
+        });
     }
 }

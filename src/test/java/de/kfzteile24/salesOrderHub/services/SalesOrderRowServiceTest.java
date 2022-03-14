@@ -65,14 +65,15 @@ class SalesOrderRowServiceTest {
         Order latestJson = salesOrder.getLatestJson();
         var orderRowIds = latestJson.getOrderRows().stream().map(OrderRows::getSku).collect(toList());
         final var originalOrderRowCount = orderRowIds.size();
+        final var indexToCancel = 0;
+        OrderRows orderRowsToCancel = latestJson.getOrderRows().get(indexToCancel);
+        CoreCancellationMessage coreCancellationMessage = getCoreCancellationMessage(salesOrder, orderRowsToCancel);
 
+        when(salesOrderService.getOrderNumberListByOrderGroupId(orderNumber, orderRowsToCancel.getSku())).thenReturn(List.of(salesOrder.getOrderNumber()));
         when(salesOrderService.getOrderByOrderNumber(orderNumber)).thenReturn(Optional.of(salesOrder));
         when(runtimeService.getVariable(any(), any())).thenReturn(orderRowIds);
         when(camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())).thenReturn(true);
 
-        final var indexToCancel = 0;
-        OrderRows orderRowsToCancel = latestJson.getOrderRows().get(indexToCancel);
-        CoreCancellationMessage coreCancellationMessage = getCoreCancellationMessage(salesOrder, orderRowsToCancel);
         salesOrderRowService.cancelOrderRows(coreCancellationMessage);
 
         checkTotalsValues(salesOrder.getLatestJson().getOrderHeader().getTotals());
