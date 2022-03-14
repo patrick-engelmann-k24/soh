@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.Objects;
+import java.util.Optional;
 
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
 import static org.mockito.Mockito.*;
@@ -58,6 +59,23 @@ public class SqsReceiveServiceTest {
         sqsReceiveService.queueListenerEcpShopOrders(rawMessage, senderId);
 
         verify(camundaHelper).createOrderProcess(any(SalesOrder.class), any(Messages.class));
+        verify(salesOrderService, never()).getOrderByOrderNumber(eq("524001240"));
+    }
+
+    @Test
+    public void testQueueListenerCoreDuplicateShopOrders() {
+        //This test case can be removed if no more duplicate items are expected from core publisher.
+        var senderId = "Core";
+        String rawMessage = readResource("examples/coreOrderMessage.json");
+        SalesOrder salesOrder = getSalesOrder(rawMessage);
+        salesOrder.setRecurringOrder(false);
+
+        when(salesOrderService.getOrderByOrderNumber("524001240")).thenReturn(Optional.of(salesOrder));
+
+        sqsReceiveService.queueListenerEcpShopOrders(rawMessage, senderId);
+
+        verify(camundaHelper, never()).createOrderProcess(any(SalesOrder.class), any(Messages.class));
+        verify(salesOrderService).getOrderByOrderNumber(eq("524001240"));
     }
 
     @Test

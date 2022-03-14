@@ -13,6 +13,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.FulfillmentMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SubsequentDeliveryMessage;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.soh.order.dto.Order;
+import de.kfzteile24.soh.order.dto.Platform;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -78,6 +79,14 @@ public class SqsReceiveService {
                     .build();
 
             log.info("Received message from ecp shop with sender id : {}, order number: {}, Platform: {} ", senderId, order.getOrderHeader().getOrderNumber(), order.getOrderHeader().getPlatform());
+
+            //This condition is introduced temporarily because the self pick up items created in BC are coming back from core orders which raises duplicate issue.
+            if(Platform.CORE.equals(order.getOrderHeader().getPlatform())
+                &&  salesOrderService.getOrderByOrderNumber(order.getOrderHeader().getOrderNumber()).isPresent()) {
+                    log.error("The following order won't be processed because it exists in SOH system already from another source. " +
+                            "Platform: {}, Order Number: {}", order.getOrderHeader().getPlatform(), order.getOrderHeader().getOrderNumber());
+                    return;
+            }
 
             ProcessInstance result = camundaHelper.createOrderProcess(
                     salesOrderService.createSalesOrder(salesOrder), ORDER_RECEIVED_ECP);
