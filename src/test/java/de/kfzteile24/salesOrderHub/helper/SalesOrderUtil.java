@@ -105,6 +105,29 @@ public class SalesOrderUtil {
 
         final OrderHeader orderHeader = OrderHeader.builder()
                 .orderNumber(orderNumber)
+                .totals(Totals.builder()
+                        .goodsTotalGross(BigDecimal.valueOf(100))
+                        .goodsTotalNet(BigDecimal.valueOf(80))
+                        .shippingCostGross(BigDecimal.valueOf(100))
+                        .shippingCostNet(BigDecimal.valueOf(80))
+                        .totalDiscountGross(BigDecimal.valueOf(100))
+                        .totalDiscountNet(BigDecimal.valueOf(80))
+                        .surcharges(Surcharges.builder()
+                                .depositGross(BigDecimal.valueOf(100))
+                                .depositNet(BigDecimal.valueOf(80))
+                                .riskyGoodsGross(BigDecimal.valueOf(100))
+                                .riskyGoodsNet(BigDecimal.valueOf(80))
+                                .bulkyGoodsGross(BigDecimal.valueOf(100))
+                                .bulkyGoodsNet(BigDecimal.valueOf(80))
+                                .paymentGross(BigDecimal.valueOf(100))
+                                .paymentNet(BigDecimal.valueOf(80))
+                                .build())
+                        .grandTotalTaxes(List.of(GrandTotalTaxes.builder()
+                                .type("test")
+                                .value(BigDecimal.ONE)
+                                .rate(BigDecimal.ONE)
+                                .build()))
+                        .build())
                 .payments(payments)
                 .salesChannel("www-k24-at")
                 .platform(Platform.ECP)
@@ -126,12 +149,21 @@ public class SalesOrderUtil {
     }
 
     public static OrderRows createOrderRow(String sku, ShipmentMethod shippingType) {
-       return OrderRows.builder()
-               .shippingType(shippingType.getName())
-               .isCancelled(false)
-               .quantity(BigDecimal.ONE)
-               .sku(sku)
-               .build();
+        return OrderRows.builder()
+                .sumValues(SumValues.builder()
+                        .goodsValueGross(BigDecimal.TEN)
+                        .goodsValueNet(BigDecimal.ONE)
+                        .discountGross(BigDecimal.TEN)
+                        .discountNet(BigDecimal.ONE)
+                        .totalDiscountedGross(BigDecimal.TEN)
+                        .totalDiscountedNet(BigDecimal.ONE)
+                        .build())
+                .shippingType(shippingType.getName())
+                .isCancelled(false)
+                .taxRate(BigDecimal.valueOf(21))
+                .quantity(BigDecimal.ONE)
+                .sku(sku)
+                .build();
     }
 
     public static SalesOrder createSalesOrderFromOrder(Order order) {
@@ -187,11 +219,11 @@ public class SalesOrderUtil {
     @SneakyThrows({URISyntaxException.class, IOException.class})
     public static String readResource(String path) {
         return Files.readString(Paths.get(
-            Objects.requireNonNull(SalesOrderUtil.class.getClassLoader().getResource(path))
-                .toURI()));
+                Objects.requireNonNull(SalesOrderUtil.class.getClassLoader().getResource(path))
+                        .toURI()));
     }
 
-    public static SalesOrder getSalesOrder(String rawMessage){
+    public static SalesOrder getSalesOrder(String rawMessage) {
         final var order = getOrder(rawMessage);
         return SalesOrder.builder()
                 .orderNumber("514000016")
@@ -205,7 +237,7 @@ public class SalesOrderUtil {
     }
 
     @SneakyThrows(JsonProcessingException.class)
-    public static Order getOrder(String rawMessage){
+    public static Order getOrder(String rawMessage) {
         ObjectMapper mapper = new ObjectMapperConfig().objectMapper();
         final var sqsMessage = mapper.readValue(rawMessage, SqsMessage.class);
         return mapper.readValue(sqsMessage.getBody(), Order.class);

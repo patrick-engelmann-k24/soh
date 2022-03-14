@@ -13,6 +13,8 @@ import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
+import de.kfzteile24.soh.order.dto.SumValues;
+import de.kfzteile24.soh.order.dto.Totals;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -21,6 +23,7 @@ import org.camunda.bpm.engine.RuntimeService;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import java.math.BigDecimal;
 import java.text.MessageFormat;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -42,6 +45,20 @@ public class SalesOrderRowService {
     @NonNull
     private final SalesOrderService salesOrderService;
 
+    public void cancelOrderProcessIfFullyCancelled(SalesOrder salesOrder) {
+
+        if (isOrderFullyCancelled(salesOrder.getLatestJson())) {
+            log.info("Order with order number: {} is fully cancelled, cancelling the order process", salesOrder.getOrderNumber());
+            for (OrderRows orderRow : salesOrder.getLatestJson().getOrderRows()) {
+                if (!helper.isShipped(orderRow.getShippingType())) {
+                    orderRow.setIsCancelled(true);
+                }
+            }
+            salesOrderService.save(salesOrder, Action.ORDER_CANCELLED);
+            correlateMessageForOrderCancellation(salesOrder.getOrderNumber());
+        }
+    }
+
     @SneakyThrows
     @Transactional
     public void cancelOrderRows(CoreCancellationMessage coreCancellationMessage) {
@@ -58,14 +75,7 @@ public class SalesOrderRowService {
         }
     }
 
-    public void cancelOrderProcessIfFullyCancelled(SalesOrder salesOrder) {
-
-        if (isOrderFullyCancelled(salesOrder.getLatestJson())) {
-            cancelOrderProcess(salesOrder);
-        }
-    }
-
-    public void cancelOrderRow(String orderNumber, String orderRowId) {
+    private void cancelOrderRow(String orderNumber, String orderRowId) {
 
         if (helper.checkIfOrderRowProcessExists(orderNumber, orderRowId)) {
             correlateMessageForOrderRowCancelCancellation(orderNumber, orderRowId);
@@ -85,36 +95,6 @@ public class SalesOrderRowService {
         log.info("Order row cancelled for order number: {} and order row: {}", orderNumber, orderRowId);
     }
 
-    public void cancelOrderProcess(SalesOrder salesOrder) {
-
-        log.info("Order with order number: {} is fully cancelled, cancelling the order process", salesOrder.getOrderNumber());
-        for (OrderRows orderRow : salesOrder.getLatestJson().getOrderRows()) {
-            if (!helper.isShipped(orderRow.getShippingType())) {
-                orderRow.setIsCancelled(true);
-            }
-        }
-        salesOrderService.save(salesOrder, Action.ORDER_CANCELLED);
-        correlateMessageForOrderCancellation(salesOrder.getOrderNumber());
-
-
-    }
-
-    public void markOrderRowAsCancelled(String orderNumber, String orderRowId) {
-        final var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
-                .orElseThrow(() -> new SalesOrderNotFoundException("Could not find order: " + orderNumber));
-
-        final var latestJson = salesOrder.getLatestJson();
-        latestJson.getOrderRows().stream()
-                .filter(row -> orderRowId.equals(row.getSku()))
-                .findFirst()
-                .orElseThrow(() -> new NotFoundException(
-                        MessageFormat.format("Could not find order row with SKU {0} for order {1}",
-                                orderRowId, orderNumber)))
-                .setIsCancelled(true);
-
-        salesOrderService.save(salesOrder, Action.ORDER_ROW_CANCELLED);
-    }
-
     @SuppressWarnings("unchecked")
     private void removeCancelledOrderRowFromProcessVariables(String orderNumber, String orderRowId) {
         var processInstance = runtimeService.createProcessInstanceQuery()
@@ -126,6 +106,49 @@ public class SalesOrderRowService {
                 Variables.ORDER_ROWS.getName());
         orderRows.remove(orderRowId);
         runtimeService.setVariable(processInstance.getId(), Variables.ORDER_ROWS.getName(), orderRows);
+    }
+
+    private void markOrderRowAsCancelled(String orderNumber, String orderRowId) {
+
+        final var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
+                .orElseThrow(() -> new SalesOrderNotFoundException("Could not find order: " + orderNumber));
+
+        final var latestJson = salesOrder.getLatestJson();
+        OrderRows cancelledOrderRow = latestJson.getOrderRows().stream()
+                .filter(row -> orderRowId.equals(row.getSku())).findFirst()
+                .orElseThrow(() -> new NotFoundException(
+                        MessageFormat.format("Could not find order row with SKU {0} for order {1}",
+                                orderRowId, orderNumber)));
+        cancelledOrderRow.setIsCancelled(true);
+
+        recalculateOrder(latestJson, cancelledOrderRow);
+        salesOrderService.save(salesOrder, Action.ORDER_ROW_CANCELLED);
+    }
+
+    private void recalculateOrder(Order latestJson, OrderRows cancelledOrderRow) {
+
+        SumValues sumValues = cancelledOrderRow.getSumValues();
+        Totals totals = latestJson.getOrderHeader().getTotals();
+
+        BigDecimal goodsTotalGross = totals.getGoodsTotalGross().subtract(sumValues.getGoodsValueGross());
+        BigDecimal goodsTotalNet = totals.getGoodsTotalNet().subtract(sumValues.getGoodsValueNet());
+        BigDecimal totalDiscountGross = totals.getTotalDiscountGross().subtract(sumValues.getTotalDiscountedGross());
+        BigDecimal totalDiscountNet = totals.getTotalDiscountNet().subtract(sumValues.getTotalDiscountedNet());
+        BigDecimal grandTotalGross = goodsTotalGross.subtract(totalDiscountGross);
+        BigDecimal grantTotalNet = goodsTotalNet.subtract(totalDiscountNet);
+        BigDecimal cancelledOrderRowTaxValue = sumValues.getGoodsValueGross().subtract(sumValues.getGoodsValueNet());
+        totals.getGrandTotalTaxes().stream()
+                .filter(tax -> tax.getRate().equals(cancelledOrderRow.getTaxRate())).findFirst()
+                .ifPresent(tax -> tax.setValue(tax.getValue().subtract(cancelledOrderRowTaxValue)));
+
+        totals.setGoodsTotalGross(goodsTotalGross);
+        totals.setGoodsTotalNet(goodsTotalNet);
+        totals.setTotalDiscountGross(totalDiscountGross);
+        totals.setTotalDiscountNet(totalDiscountNet);
+        totals.setGrandTotalGross(grandTotalGross);
+        totals.setGrandTotalNet(grantTotalNet);
+        totals.setPaymentTotal(grandTotalGross);
+        latestJson.getOrderHeader().setTotals(totals);
     }
 
     private List<String> getOriginalOrderSkus(String orderNumber) {

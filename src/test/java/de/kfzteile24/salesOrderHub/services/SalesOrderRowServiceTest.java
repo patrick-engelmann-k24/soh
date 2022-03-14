@@ -4,8 +4,9 @@ import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreCancellationItem;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreCancellationMessage;
-import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
+import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
+import de.kfzteile24.soh.order.dto.Totals;
 import org.assertj.core.util.Lists;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
@@ -16,6 +17,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,8 +26,10 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ROW_CANCELLED;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createNewSalesOrderV3;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -35,7 +39,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings("PMD.UnusedPrivateField")
 class SalesOrderRowServiceTest {
 
     @Mock
@@ -56,10 +59,11 @@ class SalesOrderRowServiceTest {
     @Test
     public void cancellingAnOrderRow() {
         final String processId = prepareOrderProcessMocks();
-        final var salesOrder = SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
+        final var salesOrder = createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
         final var orderNumber = salesOrder.getOrderNumber();
 
-        var orderRowIds = salesOrder.getLatestJson().getOrderRows().stream().map(OrderRows::getSku).collect(toList());
+        Order latestJson = salesOrder.getLatestJson();
+        var orderRowIds = latestJson.getOrderRows().stream().map(OrderRows::getSku).collect(toList());
         final var originalOrderRowCount = orderRowIds.size();
 
         when(salesOrderService.getOrderByOrderNumber(orderNumber)).thenReturn(Optional.of(salesOrder));
@@ -67,10 +71,11 @@ class SalesOrderRowServiceTest {
         when(camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())).thenReturn(true);
 
         final var indexToCancel = 0;
-        OrderRows orderRowsToCancel = salesOrder.getLatestJson().getOrderRows().get(indexToCancel);
+        OrderRows orderRowsToCancel = latestJson.getOrderRows().get(indexToCancel);
         CoreCancellationMessage coreCancellationMessage = getCoreCancellationMessage(salesOrder, orderRowsToCancel);
         salesOrderRowService.cancelOrderRows(coreCancellationMessage);
 
+        checkTotalsValues(salesOrder.getLatestJson().getOrderHeader().getTotals());
         assertThat(orderRowIds.size()).isEqualTo(originalOrderRowCount - 1);
         verify(salesOrderService).save(
                 argThat(order -> order.getLatestJson().getOrderRows().get(indexToCancel).getIsCancelled()),
@@ -93,6 +98,17 @@ class SalesOrderRowServiceTest {
                 .orderNumber(salesOrder.getOrderNumber())
                 .items(items)
                 .build();
+    }
+
+    private void checkTotalsValues(Totals totals) {
+
+        assertEquals(BigDecimal.valueOf(90), totals.getGoodsTotalGross());
+        assertEquals(BigDecimal.valueOf(79), totals.getGoodsTotalNet());
+        assertEquals(BigDecimal.valueOf(90), totals.getTotalDiscountGross());
+        assertEquals(BigDecimal.valueOf(79), totals.getGoodsTotalNet());
+        assertEquals(BigDecimal.valueOf(0), totals.getGrandTotalGross());
+        assertEquals(BigDecimal.valueOf(0), totals.getGrandTotalNet());
+        assertEquals(BigDecimal.valueOf(0), totals.getPaymentTotal());
     }
 
     private String prepareOrderProcessMocks() {

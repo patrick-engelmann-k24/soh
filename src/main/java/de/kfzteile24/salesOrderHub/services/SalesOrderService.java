@@ -9,20 +9,27 @@ import de.kfzteile24.salesOrderHub.dto.sns.subsequent.SubsequentDeliveryItem;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
+import de.kfzteile24.soh.order.dto.GrandTotalTaxes;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Platform;
+import de.kfzteile24.soh.order.dto.SumValues;
+import de.kfzteile24.soh.order.dto.Surcharges;
+import de.kfzteile24.soh.order.dto.Totals;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.text.MessageFormat;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
@@ -93,6 +100,7 @@ public class SalesOrderService {
                 .collect(Collectors.toSet());
         Order order = getLatestOrderWithFilteredSkus(subsequent.getOrderNumber(), skuSet);
         order.getOrderHeader().setPlatform(Platform.SOH);
+        recalculateOrder(order);
 
         return SalesOrder.builder()
                 .orderNumber(newOrderNumber)
@@ -103,6 +111,7 @@ public class SalesOrderService {
                 .latestJson(order)
                 .build();
     }
+
     protected Order getLatestOrderWithFilteredSkus(String orderNumber, Set<String> acceptableSkuSet) {
         var originalSalesOrder = getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
@@ -141,5 +150,69 @@ public class SalesOrderService {
         return order.getOrderRows().stream()
                 .filter(row -> skuSet.contains(row.getSku()))
                 .collect(Collectors.toList());
+    }
+
+    private void recalculateOrder(Order order) {
+
+        List<OrderRows> orderRows = order.getOrderRows();
+        List<SumValues> sumValues = orderRows.stream().map(OrderRows::getSumValues).collect(Collectors.toList());
+        BigDecimal goodsTotalGross = getSumValue(SumValues::getGoodsValueGross, sumValues);
+        BigDecimal goodsTotalNet = getSumValue(SumValues::getGoodsValueNet, sumValues);
+        BigDecimal totalDiscountGross = getSumValue(SumValues::getTotalDiscountedGross, sumValues);
+        BigDecimal totalDiscountNet = getSumValue(SumValues::getTotalDiscountedNet, sumValues);
+        BigDecimal grandTotalGross = goodsTotalGross.subtract(totalDiscountGross);
+        BigDecimal grantTotalNet = goodsTotalNet.subtract(totalDiscountNet);
+
+        Totals totals = Totals.builder()
+                .goodsTotalGross(goodsTotalGross)
+                .goodsTotalNet(goodsTotalNet)
+                .totalDiscountGross(totalDiscountGross)
+                .totalDiscountNet(totalDiscountNet)
+                .grandTotalGross(grandTotalGross)
+                .grandTotalNet(grantTotalNet)
+                .paymentTotal(grandTotalGross)
+                .grandTotalTaxes(calculateGrandTotalTaxes(order))
+                .surcharges(Surcharges.builder().build())
+                .shippingCostGross(null)
+                .shippingCostNet(null)
+                .build();
+
+        order.getOrderHeader().setTotals(totals);
+    }
+
+    private List<GrandTotalTaxes> calculateGrandTotalTaxes(Order order) {
+
+        List<GrandTotalTaxes> oldGrandTotalTaxesList = order.getOrderHeader().getTotals().getGrandTotalTaxes();
+        List<GrandTotalTaxes> grandTotalTaxesList = order.getOrderRows().stream()
+                .map(this::createGrandTotalTaxesFromOrderRow).distinct().collect(Collectors.toList());
+
+        for (OrderRows orderRow : order.getOrderRows()) {
+            BigDecimal taxValue = orderRow.getSumValues().getGoodsValueGross()
+                    .subtract(orderRow.getSumValues().getGoodsValueNet());
+            String taxType = oldGrandTotalTaxesList.stream()
+                    .filter(tax -> tax.getRate().equals(orderRow.getTaxRate()))
+                    .map(GrandTotalTaxes::getType).findFirst().orElse(null);
+
+            grandTotalTaxesList.stream()
+                    .filter(tax -> tax.getRate().equals(orderRow.getTaxRate())).findFirst()
+                    .ifPresent(grandTotalTaxes -> {
+                        grandTotalTaxes.setValue(grandTotalTaxes.getValue().add(taxValue));
+                        grandTotalTaxes.setType(taxType);
+                    });
+        }
+        return grandTotalTaxesList;
+    }
+
+    private GrandTotalTaxes createGrandTotalTaxesFromOrderRow(OrderRows row) {
+
+        return GrandTotalTaxes.builder()
+                .rate(row.getTaxRate())
+                .value(BigDecimal.ZERO)
+                .build();
+    }
+
+    private BigDecimal getSumValue(Function<SumValues, BigDecimal> function, List<SumValues> sumValues) {
+
+        return sumValues.stream().map(function).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }
