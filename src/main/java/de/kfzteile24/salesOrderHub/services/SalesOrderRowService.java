@@ -27,6 +27,7 @@ import javax.transaction.Transactional;
 import java.math.BigDecimal;
 import java.text.MessageFormat;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -137,8 +138,14 @@ public class SalesOrderRowService {
 
         BigDecimal goodsTotalGross = totals.getGoodsTotalGross().subtract(sumValues.getGoodsValueGross());
         BigDecimal goodsTotalNet = totals.getGoodsTotalNet().subtract(sumValues.getGoodsValueNet());
-        BigDecimal totalDiscountGross = totals.getTotalDiscountGross().subtract(sumValues.getTotalDiscountedGross());
-        BigDecimal totalDiscountNet = totals.getTotalDiscountNet().subtract(sumValues.getTotalDiscountedNet());
+        BigDecimal totalDiscountGross = Optional.ofNullable(totals.getTotalDiscountGross()).orElse(null);
+        if (totalDiscountGross != null && sumValues.getTotalDiscountedGross() != null) {
+            totalDiscountGross = totalDiscountGross.subtract(sumValues.getTotalDiscountedGross());
+        }
+        BigDecimal totalDiscountNet = Optional.ofNullable(totals.getTotalDiscountNet()).orElse(null);
+        if (totalDiscountNet != null && sumValues.getTotalDiscountedNet() != null) {
+            totalDiscountNet = totalDiscountNet.subtract(sumValues.getTotalDiscountedNet());
+        }
         BigDecimal grandTotalGross = goodsTotalGross.subtract(totalDiscountGross);
         BigDecimal grantTotalNet = goodsTotalNet.subtract(totalDiscountNet);
         BigDecimal cancelledOrderRowTaxValue = sumValues.getGoodsValueGross().subtract(sumValues.getGoodsValueNet());
