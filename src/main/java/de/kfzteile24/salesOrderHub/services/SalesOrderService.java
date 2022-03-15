@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.INVOICE_RECEIVED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
 import static java.text.MessageFormat.format;
 
@@ -117,6 +118,17 @@ public class SalesOrderService {
                 .latestJson(order)
                 .build();
         return createSalesOrder(salesOrder);
+    }
+
+
+    @Transactional
+    public SalesOrder addSalesOrderInvoice(SalesOrder salesOrder, SalesOrderInvoice salesOrderInvoice) {
+        salesOrder.getLatestJson()
+                .getOrderHeader()
+                .setDocumentRefNumber(salesOrder.getOrderNumber());
+        salesOrderInvoice.setSalesOrder(salesOrder);
+        salesOrder.getSalesOrderInvoiceList().add(salesOrderInvoice);
+        return save(salesOrder, INVOICE_RECEIVED);
     }
 
     protected Order getLatestOrderWithFilteredSkus(String orderNumber, Set<String> acceptableSkuSet) {
@@ -210,7 +222,7 @@ public class SalesOrderService {
 
         return foundSalesOrders.stream().map(SalesOrder::getOrderNumber).distinct().collect(Collectors.toList());
     }
-  
+
     private void recalculateOrder(Order order) {
 
         List<OrderRows> orderRows = order.getOrderRows();

@@ -7,6 +7,7 @@ import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.events.OrderRowCancelledEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInfoEvent;
+import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInvoiceCreatedEvent;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.soh.order.dto.OrderRows;
@@ -36,6 +37,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 /**
  * @author vinaya
@@ -201,6 +203,30 @@ public class SnsPublishServiceTest {
 
         verifyPublishedEvent(expectedTopic, expectedSubject,
                 throwingConsumerWrapper(snsPublishService::publishInvoiceAddressChanged));
+    }
+
+    @Test
+    @SneakyThrows
+    void testPublishOrderInvoiceCreated() {
+        final var expectedTopic = "order-invoice-created";
+        final var expectedSubject = "Sales order invoice created V1";
+
+        final var salesOrder = createNewSalesOrderV3(true, REGULAR, CREDIT_CARD, NEW);
+
+        when(awsSnsConfig.getSnsOrderInvoiceCreatedV1()).thenReturn(expectedTopic);
+        when(salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber())).thenReturn(Optional.of(salesOrder));
+
+        final var expectedSalesOrderInvoiceCreatedEvent = SalesOrderInvoiceCreatedEvent.builder()
+                .order(salesOrder.getLatestJson())
+                .build();
+
+        snsPublishService.publishOrderInvoiceCreated(salesOrder.getOrderNumber());
+
+        verify(notificationMessagingTemplate).sendNotification(
+                expectedTopic,
+                objectMapper.writeValueAsString(expectedSalesOrderInvoiceCreatedEvent),
+                expectedSubject
+        );
     }
 
     @SneakyThrows(Exception.class)

@@ -31,6 +31,7 @@ TOPICS="
     soh-sales-order-cancelled
     soh-core-cancellation
     soh-subsequent-delivery-received
+    soh-order-invoice-created-v1
     "
 
 # Outdated topics

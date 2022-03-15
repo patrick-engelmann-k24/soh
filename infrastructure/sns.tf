@@ -82,12 +82,9 @@ data "aws_sns_topic" "sns_core_subsequent_delivery_note_printed" {
   name = "core-subsequent-delivery-note-printed-v1"
 }
 
-# subscriptions of sqs to sns
-//resource "aws_sns_topic_subscription" "sns_subscription_ecp_orders" {
-//  endpoint = aws_sqs_queue.ecp_shop_orders.arn
-//  protocol = "sqs"
-//  topic_arn = var.ecp_new_order_sns
-//}
+data "aws_sns_topic" "sns_soh_order_invoice_created_v1" {
+  name = "soh-order-invoice-created-v1"
+}
 
 # subscriptions of sqs to sns
 resource "aws_sns_topic_subscription" "sns_subscription_ecp_orders_v3" {

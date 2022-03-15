@@ -56,6 +56,7 @@ soh:
       deliveryAddressChanged: ${soh_delivery_address_changed}
       salesOrderRowCancelled: ${soh_sales_order_row_cancellation}
       salesOrderCancelled: ${soh_sales_order_cancellation}
+      orderInvoiceCreatedV1: ${soh_order_invoice_created_v1}
   sqs:
     queue:
       ecpShopOrders: ${soh_sqs_ecp_shop_orders}

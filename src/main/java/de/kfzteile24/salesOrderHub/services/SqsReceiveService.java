@@ -261,7 +261,7 @@ public class SqsReceiveService {
         final var invoiceUrl = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
 
         try {
-            final var orderNumber = extractOrderNumber(invoiceUrl);
+            final var orderNumber = InvoiceUrlExtractor.extractOrderNumber(invoiceUrl);
 
             log.info("Received invoice from core with order number: {} ", orderNumber);
 
@@ -346,19 +346,6 @@ public class SqsReceiveService {
                     e.getMessage());
             throw e;
         }
-    }
-
-    private String extractOrderNumber(final String invoiceUrl) {
-        final var afterLastSlash = invoiceUrl.lastIndexOf('/') + 1;
-
-        if (afterLastSlash > 0) {
-            final var minus = invoiceUrl.indexOf('-', afterLastSlash);
-            if (minus != -1) {
-                return invoiceUrl.substring(afterLastSlash, minus);
-            }
-        }
-
-        throw new IllegalArgumentException("Cannot parse OrderNumber from invoice url: " + invoiceUrl);
     }
 
     private void logReceivedMessage(final String rawMessage, final String senderId, final Integer receiveCount) {

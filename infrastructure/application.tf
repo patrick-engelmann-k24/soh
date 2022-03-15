@@ -42,6 +42,7 @@ module "application_module" {
     soh_delivery_address_changed               = data.aws_sns_topic.sns_soh_delivery_address_changed_topic.arn
     soh_sales_order_row_cancellation           = data.aws_sns_topic.sns_soh_sales_order_row_cancellation_v1.arn
     soh_sales_order_cancellation               = data.aws_sns_topic.sns_soh_sales_order_cancellation_v1.arn
+    soh_order_invoice_created_v1               = data.aws_sns_topic.sns_soh_order_invoice_created_v1.arn
 
     soh_sqs_ecp_shop_orders                    = aws_sqs_queue.ecp_shop_orders.id
     soh_sqs_order_item_shipped                 = aws_sqs_queue.soh_order_item_shipped.id

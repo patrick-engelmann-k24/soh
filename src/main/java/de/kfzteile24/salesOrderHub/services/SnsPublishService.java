@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.AwsSnsConfig;
 import de.kfzteile24.salesOrderHub.dto.events.OrderRowCancelledEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInfoEvent;
+import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInvoiceCreatedEvent;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -61,6 +62,18 @@ public class SnsPublishService {
 
     public void publishOrderCompleted(String orderNumber) {
         sendLatestOrderJson(config.getSnsOrderCompletedTopic(), "Sales order completed", orderNumber);
+    }
+
+    public void publishOrderInvoiceCreated(String orderNumber) {
+        final var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
+                .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
+
+        final var salesOrderInvoiceCreatedEvent = SalesOrderInvoiceCreatedEvent.builder()
+                .order(salesOrder.getLatestJson())
+                .build();
+
+        publishEvent(config.getSnsOrderInvoiceCreatedV1(), "Sales order invoice created V1",
+                salesOrderInvoiceCreatedEvent, orderNumber);
     }
 
     protected void sendLatestOrderJson(String topic, String subject, String orderNumber) {

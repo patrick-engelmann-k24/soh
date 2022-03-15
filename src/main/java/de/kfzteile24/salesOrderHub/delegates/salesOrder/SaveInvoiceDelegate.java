@@ -3,8 +3,8 @@ package de.kfzteile24.salesOrderHub.delegates.salesOrder;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.services.InvoiceService;
+import de.kfzteile24.salesOrderHub.services.InvoiceUrlExtractor;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
@@ -13,16 +13,12 @@ import org.springframework.stereotype.Component;
 
 import javax.transaction.Transactional;
 
-import static de.kfzteile24.salesOrderHub.domain.audit.Action.INVOICE_RECEIVED;
-
 @Component
 @Slf4j
 @RequiredArgsConstructor
-public class SaveInvoiceDelegate implements JavaDelegate {
-    @NonNull
-    private final SalesOrderService salesOrderService;
+class SaveInvoiceDelegate implements JavaDelegate {
 
-    @NonNull
+    private final SalesOrderService salesOrderService;
     private final InvoiceService invoiceService;
 
     @Override
@@ -30,35 +26,23 @@ public class SaveInvoiceDelegate implements JavaDelegate {
     public void execute(DelegateExecution delegateExecution) throws Exception {
         final var orderNumber = (String) delegateExecution.getVariable(Variables.ORDER_NUMBER.getName());
         final var invoiceUrl = (String) delegateExecution.getVariable(Variables.INVOICE_URL.getName());
-        final var invoiceNumber = extractInvoiceNumber(invoiceUrl);
 
-        final var salesOrderOpt = salesOrderService.getOrderByOrderNumber(orderNumber);
+        var salesOrderInvoice = createAndSaveSalesOrderInvoice(orderNumber, invoiceUrl);
 
-        var invoice = SalesOrderInvoice.builder()
+        salesOrderService.getOrderByOrderNumber(orderNumber)
+                .ifPresent(salesOrder -> salesOrderService.addSalesOrderInvoice(salesOrder, salesOrderInvoice));
+    }
+
+    private SalesOrderInvoice createAndSaveSalesOrderInvoice(String orderNumber, String invoiceUrl) {
+
+        final var invoiceNumber = InvoiceUrlExtractor.extractInvoiceNumber(invoiceUrl);
+
+        var salesOrderInvoice = SalesOrderInvoice.builder()
                 .orderNumber(orderNumber)
                 .invoiceNumber(invoiceNumber)
                 .url(invoiceUrl)
                 .build();
-        invoice = invoiceService.saveInvoice(invoice);
 
-        if (salesOrderOpt.isPresent()) {
-            final var salesOrder = salesOrderOpt.get();
-            invoice.setSalesOrder(salesOrder);
-            salesOrder.getSalesOrderInvoiceList().add(invoice);
-            salesOrderService.save(salesOrder, INVOICE_RECEIVED);
-        }
-    }
-
-    private String extractInvoiceNumber(final String invoiceUrl) {
-        final var afterLastMinus = invoiceUrl.lastIndexOf('-') + 1;
-
-        if (afterLastMinus > 0) {
-            final var dot = invoiceUrl.indexOf('.', afterLastMinus);
-            if (dot != -1) {
-                return invoiceUrl.substring(afterLastMinus, dot);
-            }
-        }
-
-        throw new IllegalArgumentException("Cannot parse InvoiceNumber from invoice url: " + invoiceUrl);
+        return invoiceService.saveInvoice(salesOrderInvoice);
     }
 }
