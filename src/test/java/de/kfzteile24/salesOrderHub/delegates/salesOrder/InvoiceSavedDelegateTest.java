@@ -29,7 +29,7 @@ class InvoiceSavedDelegateTest {
 
     @Test
     @SneakyThrows
-    void whenDropshipmentInvoiceUrl_thenPublishInvoiceCreatedEvent() {
+    void whenDropshipmentInvoiceUrlThenPublishInvoiceCreatedEvent() {
 
         final var expectedOrderNumber = "123";
         final var expectedInvoiceUrl = "s3://production-k24-invoices/dropshipment/2021/06/04/514073754-710108946.pdf";
@@ -43,7 +43,7 @@ class InvoiceSavedDelegateTest {
 
     @Test
     @SneakyThrows
-    void whenNotDropshipmentInvoiceUrl_thenSkipPublishInvoiceCreatedEvent() {
+    void whenNotDropshipmentInvoiceUrlThenSkipPublishInvoiceCreatedEvent() {
 
         final var expectedOrderNumber = "123";
         final var expectedInvoiceUrl = "s3://production-k24-invoices/anyFolder/2021/06/04/514073754-710108946.pdf";
