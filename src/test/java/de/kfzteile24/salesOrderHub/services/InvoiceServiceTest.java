@@ -1,17 +1,6 @@
 package de.kfzteile24.salesOrderHub.services;
 
 
-import de.kfzteile24.salesOrderHub.domain.audit.AuditLog;
-import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
-import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.time.LocalDateTime;
-
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
@@ -22,6 +11,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+
+import de.kfzteile24.salesOrderHub.domain.audit.AuditLog;
+import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
+import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
+import java.time.LocalDateTime;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class InvoiceServiceTest {
@@ -36,7 +35,7 @@ class InvoiceServiceTest {
     private InvoiceService invoiceService;
 
     @Test
-    public void addingASalesOrderToAnInvoiceUpdatesTheInvoiceAndCreatesAnAuditLogEntry() {
+    void addingASalesOrderToAnInvoiceUpdatesTheInvoiceAndCreatesAnAuditLogEntry() {
         final var salesOrder = createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
         var invoice = createSalesOrderInvoice(salesOrder.getOrderNumber(), false);
         invoice.setCreatedAt(LocalDateTime.MIN);

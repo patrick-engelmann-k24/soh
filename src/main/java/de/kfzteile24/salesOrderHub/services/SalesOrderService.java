@@ -55,6 +55,7 @@ public class SalesOrderService {
         return orderRepository.save(salesOrder);
     }
 
+    @Transactional(readOnly = true)
     public Optional<SalesOrder> getOrderByOrderNumber(String orderNumber) {
         return orderRepository.getOrderByOrderNumber(orderNumber);
     }

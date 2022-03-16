@@ -46,6 +46,10 @@ variable "ecp_new_order_sns_v3" {
   type = string
 }
 
+variable "d365_payment_secured_sns" {
+  type = string
+}
+
 variable "invoices_from_core_sns" {
   type = string
 }

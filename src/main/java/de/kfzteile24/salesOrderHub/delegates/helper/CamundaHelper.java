@@ -1,5 +1,6 @@
 package de.kfzteile24.salesOrderHub.delegates.helper;
 
+import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
@@ -9,7 +10,6 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Payments;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.camunda.bpm.engine.HistoryService;
 import org.camunda.bpm.engine.RuntimeService;
@@ -33,10 +33,10 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROWS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.PAYMENT_TYPE;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.PLATFORM_TYPE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SALES_CHANNEL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SHIPMENT_METHOD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.VIRTUAL_ORDER_ROWS;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.PLATFORM_TYPE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.VOUCHER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.DELIVERY_ADDRESS_CHANGE_POSSIBLE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.ORDER_ROW_ID;
@@ -46,10 +46,7 @@ import static java.util.stream.Collectors.toList;
 @RequiredArgsConstructor
 public class CamundaHelper {
 
-    @NonNull
     private final HistoryService historyService;
-
-    @NonNull
     private final RuntimeService runtimeService;
 
     public boolean hasPassed(final String processInstance, final String activityId) {
@@ -68,6 +65,16 @@ public class CamundaHelper {
         return !hasPassed(processInstance, activityId);
     }
 
+    public MessageCorrelationResult sendOrderRowMessage(BpmItem itemMessage, String orderNumber, String orderItemSku) {
+        return correlateMessageByBusinessKey(itemMessage, String.format("%s#%s", orderNumber, orderItemSku));
+    }
+
+    public MessageCorrelationResult correlateMessageByBusinessKey(BpmItem message, String businessKey) {
+        return runtimeService
+            .createMessageCorrelation(message.getName())
+            .processInstanceBusinessKey(businessKey)
+            .correlateWithResult();
+    }
 
     protected HistoricActivityInstanceQuery historicActivityInstanceQuery(final String processInstance) {
         return historyService.createHistoricActivityInstanceQuery()
@@ -122,7 +129,7 @@ public class CamundaHelper {
         return processVariables;
     }
 
-    private String getPaymentType(List<Payments> payments) {
+    public String getPaymentType(List<Payments> payments) {
         return payments.stream()
                 .map(Payments::getType)
                 .filter(paymentType -> !VOUCHER.getName().equals(paymentType))

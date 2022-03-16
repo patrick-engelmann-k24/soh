@@ -1,17 +1,13 @@
 package de.kfzteile24.salesOrderHub.configuration;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.soh.order.dto.Order;
-import lombok.SneakyThrows;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
-
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -20,19 +16,22 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Objects;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import lombok.SneakyThrows;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith(SpringExtension.class)
 @Import(ObjectMapperConfig.class)
-public class JsonOrderConfigTest {
+class JsonOrderConfigTest {
     @Autowired
     private ObjectMapper objectMapper;
 
     @Test
     @SneakyThrows(JsonProcessingException.class)
-    public void testEncodeAndDecodeJson() {
+    void testEncodeAndDecodeJson() {
         var coreDataReader = new CoreDataReaderEvent();
 
         coreDataReader.setCreatedAt(LocalDateTime.now().toString());
@@ -47,7 +46,7 @@ public class JsonOrderConfigTest {
     }
 
     @Test
-    public void orderToObject() throws IOException {
+    void orderToObject() throws IOException {
         final String orderNUmber = "524001248";
 
         final var sqsMessage = objectMapper.readValue(loadJson(), SqsMessage.class);
@@ -72,7 +71,7 @@ public class JsonOrderConfigTest {
     }
 
     @Test
-    public void jsonToLocalDateTime() {
+    void jsonToLocalDateTime() {
         // ISO_LOCAL_DATE_TIME
         assertDateString("2020-12-18T11:47:25.682190");
         assertDateString("2020-12-18T11:47:25");
@@ -86,7 +85,7 @@ public class JsonOrderConfigTest {
 
     @Test
     @SneakyThrows(JsonProcessingException.class)
-    public void localDateTimeToJson() {
+    void localDateTimeToJson() {
         final var time = OffsetDateTime.of(2020, 10, 26, 9, 51, 11, 0, ZoneOffset.UTC);
         var serializedTime = objectMapper.writeValueAsString(time);
         assertEquals("\"2020-10-26T09:51:11Z\"", serializedTime);

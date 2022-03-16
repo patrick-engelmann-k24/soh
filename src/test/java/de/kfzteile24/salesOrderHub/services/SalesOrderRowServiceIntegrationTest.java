@@ -17,6 +17,7 @@ import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Totals;
+import java.util.List;
 import org.camunda.bpm.engine.HistoryService;
 import org.camunda.bpm.engine.MismatchingMessageCorrelationException;
 import org.camunda.bpm.engine.ProcessEngine;
@@ -52,10 +53,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@SpringBootTest(
-        classes = SalesOrderHubProcessApplication.class
-)
-public class SalesOrderRowServiceIntegrationTest {
+@SpringBootTest
+class SalesOrderRowServiceIntegrationTest {
 
     @Autowired
     private SalesOrderRowService salesOrderRowService;
@@ -95,9 +94,8 @@ public class SalesOrderRowServiceIntegrationTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void orderRowCancelledBeforePaymentSecuredHasBeenReceived() {
-        final var salesOrder =
-                salesOrderUtil.createPersistedSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
+    void orderRowsCanBeCancelledBeforePaymentSecuredHasBeenReceived() {
+        final var salesOrder = salesOrderUtil.createPersistedSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
         final var orderNumber = salesOrder.getOrderNumber();
         final var orderRowSkus = salesOrder.getLatestJson().getOrderRows().stream()
                 .map(OrderRows::getSku)

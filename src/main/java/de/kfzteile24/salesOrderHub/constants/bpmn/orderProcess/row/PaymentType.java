@@ -15,6 +15,7 @@ public enum PaymentType implements BpmItem {
     B2B_INVOICE("business_to_business_invoice"),
     AMAZON("amazonmarketplace"),
     EBAY("ebay_payment"),
+    PAYPAL("paypal"),
     VOUCHER("voucher");
 
     private final String name;

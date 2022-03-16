@@ -503,3 +503,45 @@ resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_subsequent_delivery_
   queue_url = aws_sqs_queue.soh_subsequent_delivery_received.id
   policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_subsequent_delivery_received.json
 }
+
+data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_d365_order_payment_secured" {
+  statement {
+    sid = "SNS-d365-order-payment-secured"
+    effect = "Allow"
+
+    actions = [
+      "sqs:SendMessage",
+    ]
+
+    principals {
+      identifiers = ["*"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.d365_order_payment_secured
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sqs:*",
+    ]
+
+    principals {
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.d365_order_payment_secured.arn
+    ]
+  }
+}
+
+resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_d365_order_payment_secured" {
+  queue_url = aws_sqs_queue.d365_order_payment_secured.id
+  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_d365_order_payment_secured.json
+}

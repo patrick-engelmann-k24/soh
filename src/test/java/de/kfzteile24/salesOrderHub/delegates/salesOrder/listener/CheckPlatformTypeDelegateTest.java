@@ -1,5 +1,9 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder.listener;
 
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.verify;
+
 import lombok.SneakyThrows;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.junit.jupiter.api.Test;
@@ -7,10 +11,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class CheckPlatformTypeDelegateTest {
@@ -24,7 +24,7 @@ class CheckPlatformTypeDelegateTest {
 
     @Test
     @SneakyThrows(Exception.class)
-    public void testSoh() {
+    void testSoh() {
 
         //Prepare the data
         doReturn("11111111111111").when(delegateExecution).getVariable(eq("orderNumber"));
@@ -39,7 +39,7 @@ class CheckPlatformTypeDelegateTest {
 
     @Test
     @SneakyThrows(Exception.class)
-    public void testAnyOtherPlatformType() {
+    void testAnyOtherPlatformType() {
         //Prepare the data
         doReturn("11111111111111").when(delegateExecution).getVariable(eq("orderNumber"));
         doReturn("ECP").when(delegateExecution).getVariable(eq("platformType"));

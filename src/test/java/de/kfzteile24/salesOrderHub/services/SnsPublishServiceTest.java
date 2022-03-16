@@ -11,6 +11,8 @@ import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInvoiceCreatedEvent;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.soh.order.dto.OrderRows;
+import java.util.Optional;
+import java.util.function.Consumer;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,7 +45,7 @@ import static org.mockito.Mockito.when;
  * @author vinaya
  */
 @ExtendWith(MockitoExtension.class)
-public class SnsPublishServiceTest {
+class SnsPublishServiceTest {
 
     @Mock
     private NotificationMessagingTemplate notificationMessagingTemplate;
@@ -59,7 +61,7 @@ public class SnsPublishServiceTest {
 
     @Test
     @SneakyThrows(Exception.class)
-    public void testPublishOrderCreatedPublishesBothOrderCreatedEventsIfTheOriginalOrderJsonIsV21() {
+    void testPublishOrderCreatedPublishesBothOrderCreatedEventsIfTheOriginalOrderJsonIsV21() {
         final var expectedTopic2 = "order-created-v2";
         final var expectedSubject2 = "Sales order created V2";
         String rawMessage = readResource("examples/ecpOrderMessage.json");
@@ -85,7 +87,7 @@ public class SnsPublishServiceTest {
 
     @Test
     @SneakyThrows(Exception.class)
-    public void testPublishOrderCreatedPublishesOnlyTheOrderCreatedV2EventIfTheOriginalOrderJsonIsV3() {
+    void testPublishOrderCreatedPublishesOnlyTheOrderCreatedV2EventIfTheOriginalOrderJsonIsV3() {
         final var expectedTopic2 = "order-created-v2";
         final var expectedSubject2 = "Sales order created V2";
         String rawMessage = readResource("examples/ecpOrderMessage.json");
@@ -112,7 +114,7 @@ public class SnsPublishServiceTest {
 
     @Test
     @SneakyThrows(Exception.class)
-    public void testSendOrderWhenSalesOrderNotFound() {
+    void testSendOrderWhenSalesOrderNotFound() {
         String rawMessage = readResource("examples/ecpOrderMessage.json");
 
         var orderNumber = "514000018";
@@ -136,7 +138,7 @@ public class SnsPublishServiceTest {
 
     @Test
     @SneakyThrows(Exception.class)
-    public void testPublishOrderRowsCancelled() {
+    void testPublishOrderRowsCancelled() {
         final var expectedTopic = "order-row-cancelled";
         final var expectedSubject = "Sales order row cancelled";
 
@@ -171,7 +173,7 @@ public class SnsPublishServiceTest {
 
     @Test
     @SneakyThrows(Exception.class)
-    public void testPublishOrderCompleted() {
+    void testPublishOrderCompleted() {
         final var expectedTopic = "order-completed";
         final var expectedSubject = "Sales order completed";
 
@@ -183,7 +185,7 @@ public class SnsPublishServiceTest {
 
     @Test
     @SneakyThrows(Exception.class)
-    public void testPublishDeliveryAddressChanged() {
+    void testPublishDeliveryAddressChanged() {
         final var expectedTopic = "delivery-address changed";
         final var expectedSubject = "Sales order delivery address changed";
 
@@ -195,7 +197,7 @@ public class SnsPublishServiceTest {
 
     @Test
     @SneakyThrows(Exception.class)
-    public void testPublishInvoiceAddressChanged() {
+    void testPublishInvoiceAddressChanged() {
         final var expectedTopic = "invoice-address changed";
         final var expectedSubject = "Sales order invoice address changed";
 

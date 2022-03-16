@@ -7,6 +7,8 @@ import de.kfzteile24.salesOrderHub.dto.sns.CoreCancellationMessage;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Totals;
+import java.util.List;
+import java.util.Optional;
 import org.assertj.core.util.Lists;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
@@ -57,7 +59,7 @@ class SalesOrderRowServiceTest {
     private SalesOrderRowService salesOrderRowService;
 
     @Test
-    public void cancellingAnOrderRow() {
+    void cancellingAnOrderRow() {
         final String processId = prepareOrderProcessMocks();
         final var salesOrder = createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
         final var orderNumber = salesOrder.getOrderNumber();

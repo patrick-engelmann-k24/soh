@@ -7,6 +7,10 @@ import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.soh.order.dto.Totals;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.Paths;
+import java.util.Objects;
 import lombok.SneakyThrows;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.junit.jupiter.api.AfterEach;
@@ -33,8 +37,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@SpringBootTest(classes = SalesOrderHubProcessApplication.class)
-public class SalesOrderCreatedInSohIntegrationTest {
+@SpringBootTest
+class SalesOrderCreatedInSohIntegrationTest {
 
     @Autowired
     private CamundaHelper camundaHelper;

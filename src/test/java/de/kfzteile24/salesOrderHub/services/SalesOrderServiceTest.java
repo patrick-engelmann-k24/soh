@@ -21,7 +21,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
@@ -29,7 +33,9 @@ import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.readResource;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -51,7 +57,7 @@ class SalesOrderServiceTest {
 
     @ParameterizedTest
     @MethodSource("provideParamsForRecurringOrderTest")
-    public void recurringOrdersAreIdentifiedCorrectly(long orderCount, boolean expectedResult) {
+    void recurringOrdersAreIdentifiedCorrectly(long orderCount, boolean expectedResult) {
         final var salesOrder = getSalesOrder(readResource("examples/ecpOrderMessage.json"));
 
         when(salesOrderRepository.countByCustomerEmail(salesOrder.getCustomerEmail())).thenReturn(orderCount);
@@ -61,7 +67,7 @@ class SalesOrderServiceTest {
     }
 
     @Test
-    public void createSalesOrder(){
+    void createSalesOrder() {
         String rawMessage =  readResource("examples/ecpOrderMessage.json");
         SalesOrder salesOrder = getSalesOrder(rawMessage);
         salesOrder.setRecurringOrder(false);
@@ -97,7 +103,7 @@ class SalesOrderServiceTest {
     }
 
     @Test
-    public void savingAnOrderAlsoInsertsAnAuditLogEntry() {
+    void savingAnOrderAlsoInsertsAnAuditLogEntry() {
         var salesOrder = getSalesOrder(readResource("examples/ecpOrderMessage.json"));
         salesOrder.setId(UUID.randomUUID());
         when(salesOrderRepository.save(eq(salesOrder))).thenReturn(salesOrder);
@@ -121,7 +127,7 @@ class SalesOrderServiceTest {
     }
 
     @Test
-    public void createSalesOrderForSubsequentDelivery(){
+    void createSalesOrderForSubsequentDelivery() {
         String rawMessage =  readResource("examples/ecpOrderMessage.json");
         var salesOrder = getSalesOrder(rawMessage);
         updateRowIsCancelledFieldAsTrue(salesOrder); //In order to observe change
@@ -157,7 +163,7 @@ class SalesOrderServiceTest {
     }
 
     @Test
-    public void ifNewlyCreatedSalesOrderDoesNotIncludeTheSkuGivenSubsequentDeliveryItShouldThrowException(){
+    void ifNewlyCreatedSalesOrderDoesNotIncludeTheSkuGivenSubsequentDeliveryItShouldThrowException(){
         String rawMessage =  readResource("examples/ecpOrderMessage.json");
         var salesOrder = getSalesOrder(rawMessage);
         var subsequent = createSubsequentDeliveryNote(salesOrder.getOrderNumber(), "44444");

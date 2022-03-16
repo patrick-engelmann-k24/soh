@@ -32,6 +32,7 @@ TOPICS="
     soh-core-cancellation
     soh-subsequent-delivery-received
     soh-order-invoice-created-v1
+    soh-d365-order-payment-secured
     "
 
 # Outdated topics

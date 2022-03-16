@@ -1,8 +1,30 @@
 package de.kfzteile24.salesOrderHub.delegates.helper;
 
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.RECURRING;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.CUSTOMER_TYPE;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROWS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.PAYMENT_TYPE;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.PLATFORM_TYPE;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SHIPMENT_METHOD;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.VIRTUAL_ORDER_ROWS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.VOUCHER;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.NONE;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createNewSalesOrderV3;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createNewSalesOrderV3WithPlatform;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createOrderRow;
+import static de.kfzteile24.soh.order.dto.Platform.SOH;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Payments;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.camunda.bpm.engine.HistoryService;
 import org.camunda.bpm.engine.RuntimeService;
 import org.junit.jupiter.api.Test;
@@ -10,21 +32,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.RECURRING;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.*;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.VOUCHER;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.NONE;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.*;
-import static de.kfzteile24.soh.order.dto.Platform.SOH;
-import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings("PMD.UnusedPrivateField")
@@ -40,7 +47,7 @@ class CamundaHelperTest {
     private CamundaHelper camundaHelper;
 
     @Test
-    public void theProcessVariablesAreCreatedCorrectly() {
+    void theProcessVariablesAreCreatedCorrectly() {
         final var shipmentMethod = REGULAR;
         final var paymentType = CREDIT_CARD;
         final var platformType = SOH;
@@ -67,7 +74,7 @@ class CamundaHelperTest {
     }
 
     @Test
-    public void ifAnOrderHasNoVirtualItemsThenTheProcessVariablesDoNotContainTheVirtualOrderRowsVariable() {
+    void ifAnOrderHasNoVirtualItemsThenTheProcessVariablesDoNotContainTheVirtualOrderRowsVariable() {
         final var salesOrder = createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
 
         final var processVariables = camundaHelper.createProcessVariables(salesOrder);
@@ -75,7 +82,7 @@ class CamundaHelperTest {
     }
 
     @Test
-    public void recurringOrdersCreateTheCorrectCustomerTypeProcessVariable() {
+    void recurringOrdersCreateTheCorrectCustomerTypeProcessVariable() {
         final var salesOrder = createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, RECURRING);
 
         final var processVariables = camundaHelper.createProcessVariables(salesOrder);
@@ -83,7 +90,7 @@ class CamundaHelperTest {
     }
 
     @Test
-    public void multipleVirtualItemsAreHandledCorrectly() {
+    void multipleVirtualItemsAreHandledCorrectly() {
         final var salesOrder = createNewSalesOrderV3(true, REGULAR, CREDIT_CARD, NEW);
         Order orderJson = (Order) salesOrder.getOriginalOrder();
         var orderRows = new ArrayList<>(orderJson.getOrderRows());
@@ -101,7 +108,7 @@ class CamundaHelperTest {
     }
 
     @Test
-    public void thePaymentTypeVoucherIsNotAddedToTheProcessVariables() {
+    void thePaymentTypeVoucherIsNotAddedToTheProcessVariables() {
         final var salesOrder = createNewSalesOrderV3(true, REGULAR, CREDIT_CARD, NEW);
         Order orderJson = (Order) salesOrder.getOriginalOrder();
         final var payments = List.of(

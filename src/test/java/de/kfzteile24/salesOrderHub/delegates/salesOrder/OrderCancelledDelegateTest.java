@@ -26,7 +26,7 @@ class OrderCancelledDelegateTest {
 
     @Test
     @SneakyThrows(Exception.class)
-    public void theDelegateUpdatesTheSalesOrderPublishesAnOrderRowsCancelledEvent() {
+    void theDelegateUpdatesTheSalesOrderPublishesAnOrderRowsCancelledEvent() {
         final var expectedOrderNumber = "123";
         when(delegateExecution.getVariable(Variables.ORDER_NUMBER.getName())).thenReturn(expectedOrderNumber);
 

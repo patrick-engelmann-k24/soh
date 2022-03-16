@@ -20,7 +20,9 @@ locals {
     core_cancellation = "${var.environment}-${local.service_prefix}-core-cancellation-${local.version}",
     core_cancellation_dlq = "${var.environment}-${local.service_prefix}-core-cancellation-${local.version}-dlq",
     subsequent_delivery_received = "${var.environment}-${local.service_prefix}-subsequent-delivery-received-${local.version}",
-    subsequent_delivery_received_dlq = "${var.environment}-${local.service_prefix}-subsequent-delivery-received-${local.version}-dlq"
+    subsequent_delivery_received_dlq = "${var.environment}-${local.service_prefix}-subsequent-delivery-received-${local.version}-dlq",
+    d365_order_payment_secured = "${var.environment}-${local.service_prefix}-d365_order_payment_secured-${local.version}",
+    d365_order_payment_secured_dlq = "${var.environment}-${local.service_prefix}-d365_order_payment_secured-${local.version}-dlq"
   }
 }
 
@@ -114,4 +116,13 @@ resource "aws_sqs_queue" "soh_subsequent_delivery_received_dlq" {
 resource "aws_sqs_queue" "soh_subsequent_delivery_received" {
   name = local.sqs_queues.subsequent_delivery_received
   redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.soh_subsequent_delivery_received_dlq.arn}\",\"maxReceiveCount\":4}"
+}
+
+resource "aws_sqs_queue" "d365_order_payment_secured_dlq" {
+  name = local.sqs_queues.d365_order_payment_secured_dlq
+}
+
+resource "aws_sqs_queue" "d365_order_payment_secured" {
+  name = local.sqs_queues.d365_order_payment_secured
+  redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.d365_order_payment_secured_dlq.arn}\",\"maxReceiveCount\":4}"
 }

@@ -1,25 +1,5 @@
 package de.kfzteile24.salesOrderHub.controller;
 
-import de.kfzteile24.salesOrderHub.SalesOrderHubProcessApplication;
-import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
-import de.kfzteile24.salesOrderHub.helper.BpmUtil;
-import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
-import de.kfzteile24.salesOrderHub.services.InvoiceService;
-import de.kfzteile24.soh.order.dto.BillingAddress;
-import de.kfzteile24.soh.order.dto.OrderRows;
-import de.kfzteile24.soh.order.dto.ShippingAddress;
-import org.camunda.bpm.engine.ProcessEngine;
-import org.camunda.bpm.engine.RuntimeService;
-import org.camunda.bpm.engine.runtime.ProcessInstance;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
-
-import java.util.List;
-
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.MSG_ORDER_PAYMENT_SECURED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_MARKETPLACE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_PAYMENT_SECURED;
@@ -41,11 +21,26 @@ import static org.springframework.http.HttpStatus.CONFLICT;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.OK;
 
+import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
+import de.kfzteile24.salesOrderHub.helper.BpmUtil;
+import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
+import de.kfzteile24.salesOrderHub.services.InvoiceService;
+import de.kfzteile24.soh.order.dto.BillingAddress;
+import de.kfzteile24.soh.order.dto.OrderRows;
+import de.kfzteile24.soh.order.dto.ShippingAddress;
+import java.util.List;
+import org.camunda.bpm.engine.ProcessEngine;
+import org.camunda.bpm.engine.RuntimeService;
+import org.camunda.bpm.engine.runtime.ProcessInstance;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
+
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@SpringBootTest(
-        classes = SalesOrderHubProcessApplication.class,
-        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
-)
+@SpringBootTest
 class OrderControllerIntegrationTest {
 
     @Autowired
@@ -70,7 +65,7 @@ class OrderControllerIntegrationTest {
     }
 
     @Test
-    public void updateDeliveryAddressForOrder() {
+    void updateDeliveryAddressForOrder() {
         var testOrder = salesOrderUtil.createNewSalesOrder();
         final String orderNumber = testOrder.getOrderNumber();
         final List<String> orderItems = testOrder.getLatestJson().getOrderRows().stream()
@@ -96,7 +91,7 @@ class OrderControllerIntegrationTest {
     }
 
     @Test
-    public void ifTheDeliveryAddressOfAnOrderRowCannotBeUpdatedBecauseOfTheProcessStateTheStatusCONFLICTIsReturned() {
+    void ifTheDeliveryAddressOfAnOrderRowCannotBeUpdatedBecauseOfTheProcessStateTheStatusCONFLICTIsReturned() {
         final String orderNumber = testOrder.getOrderNumber();
         final List<String> orderItems = util.getOrderRows(orderNumber, 5);
 
@@ -116,7 +111,7 @@ class OrderControllerIntegrationTest {
     }
 
     @Test
-    public void updatingTheInvoiceAddressSuccessfullyReturnsTheStatusOK() {
+    void updatingTheInvoiceAddressSuccessfullyReturnsTheStatusOK() {
         var testOrder = salesOrderUtil.createNewSalesOrder();
         final String orderNumber = testOrder.getOrderNumber();
         final List<String> orderRows = util.getOrderRows(orderNumber, 5);
@@ -136,7 +131,7 @@ class OrderControllerIntegrationTest {
     }
 
     @Test
-    public void ifTheInvoiceAddressCannotBeUpdatedBecauseOfTheProcessStateTheStatusCONFLICTIsReturned() {
+    void ifTheInvoiceAddressCannotBeUpdatedBecauseOfTheProcessStateTheStatusCONFLICTIsReturned() {
         var testOrder = salesOrderUtil.createNewSalesOrder();
         final String orderNumber = testOrder.getOrderNumber();
         final List<String> orderRows = util.getOrderRows(orderNumber, 5);
@@ -160,7 +155,7 @@ class OrderControllerIntegrationTest {
     }
 
     @Test
-    public void cancellingAnOrderRowSuccessfullyReturnsTheStatusOK() {
+    void cancellingAnOrderRowSuccessfullyReturnsTheStatusOK() {
 
         //This endpoint is not used anymore
         final var result = controller.cancelOrderRow("orderNumber", "orderRows");
@@ -168,7 +163,7 @@ class OrderControllerIntegrationTest {
     }
 
     @Test
-    public void cancellingAnOrderSuccessfullyReturnsTheStatusOK() {
+    void cancellingAnOrderSuccessfullyReturnsTheStatusOK() {
 
         //This endpoint is not used anymore
         final var result = controller.cancelOrder("orderNumber");
@@ -176,7 +171,7 @@ class OrderControllerIntegrationTest {
     }
 
     @Test
-    public void ifAnOrderCannotBeCancelledBecauseOfTheProcessStateTheStatusCONFLICTIsReturned() {
+    void ifAnOrderCannotBeCancelledBecauseOfTheProcessStateTheStatusCONFLICTIsReturned() {
 
         //This endpoint is not used anymore
         final var result = controller.cancelOrder("orderNumber");

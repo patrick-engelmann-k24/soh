@@ -14,7 +14,12 @@ import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Random;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_PAYMENT_SECURED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
@@ -24,7 +29,10 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMes
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.TRACKING_ID_RECEIVED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.ORDER_ROW_ID;
 import static java.util.stream.Collectors.toUnmodifiableList;
-import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.*;
+import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
+import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.historyService;
+import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.processInstanceQuery;
+import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.runtimeService;
 
 @Component
 @Slf4j
@@ -101,7 +109,7 @@ public class BpmUtil {
         return result;
     }
 
-   public void finishOrderProcess(final ProcessInstance orderProcess, final String orderNumber) {
+    public void finishOrderProcess(final ProcessInstance orderProcess, final String orderNumber) {
         // start subprocess
         sendMessage(ORDER_RECEIVED_PAYMENT_SECURED, orderNumber);
 
@@ -111,7 +119,7 @@ public class BpmUtil {
         sendMessage(TRACKING_ID_RECEIVED, orderNumber);
         sendMessage(ROW_SHIPPED, orderNumber);
 
-       assertThat(orderProcess).isEnded().hasPassed(Events.END_MSG_ORDER_COMPLETED.getName());
+        assertThat(orderProcess).isEnded().hasPassed(Events.END_MSG_ORDER_COMPLETED.getName());
     }
 
     public boolean isProcessWaitingAtExpectedToken(final ProcessInstance processInstance, final String activityId) {
@@ -124,19 +132,18 @@ public class BpmUtil {
     public void cleanUp() {
         try {
             Optional.of(processInstanceQuery().list().stream()
-                            .map(ProcessInstance::getProcessInstanceId)
-                            .collect(toUnmodifiableList()))
+                    .map(ProcessInstance::getProcessInstanceId)
+                    .collect(toUnmodifiableList()))
                     .filter(CollectionUtils::isNotEmpty)
                     .ifPresent(pId -> runtimeService().deleteProcessInstancesIfExists(pId, "ANY", true, false, true));
 
             Optional.of(historyService().createHistoricProcessInstanceQuery().list().stream()
-                            .map(HistoricProcessInstance::getId)
-                            .collect(toUnmodifiableList()))
+                    .map(HistoricProcessInstance::getId)
+                    .collect(toUnmodifiableList()))
                     .filter(CollectionUtils::isNotEmpty)
                     .ifPresent(historyService()::deleteHistoricProcessInstancesIfExists);
         } catch (Throwable ignored) {
             log.error(ignored.getMessage(), ignored);
         }
     }
-
 }

@@ -8,6 +8,6 @@ provider "aws" {
 }
 
 provider "github" {
-  token        = data.aws_ssm_parameter.github_token.value
-  organization = "kfzteile24"
+  token = data.aws_ssm_parameter.github_token.value
+  owner = "kfzteile24"
 }

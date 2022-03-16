@@ -34,6 +34,7 @@ env:
   soh_sqs_invoices_from_core: 'http://localhost:4566/000000000000/soh-invoices-from-core-queue'
   soh_sqs_core_cancellation: 'http://localhost:4566/000000000000/soh-core-cancellation-queue'
   soh_sqs_subsequent_delivery_received: 'http://localhost:4566/000000000000/soh-subsequent-delivery-received-queue'
+  soh_sqs_d365_order_payment_secured: 'http://localhost:4566/000000000000/soh-d365-order-payment-secured-queue'
 
 on: [push]
 
