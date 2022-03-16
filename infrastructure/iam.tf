@@ -17,7 +17,8 @@ data "aws_iam_policy_document" "sns_sqs_access_policy" {
       data.aws_sns_topic.sns_soh_delivery_address_changed_topic.arn,
       data.aws_sns_topic.sns_soh_sales_order_row_cancellation_v1.arn,
       data.aws_sns_topic.sns_soh_sales_order_cancellation_v1.arn,
-      data.aws_sns_topic.sns_core_subsequent_delivery_note_printed.arn
+      data.aws_sns_topic.sns_core_subsequent_delivery_note_printed.arn,
+      data.aws_sns_topic.sns_soh_order_invoice_created_v1.arn
     ]
   }
   statement {
