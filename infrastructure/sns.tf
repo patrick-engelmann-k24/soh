@@ -167,5 +167,5 @@ resource "aws_sns_topic_subscription" "sns_subscription_subsequent_delivery_note
 resource "aws_sns_topic_subscription" "sns_subscription_d365_order_payment_secured" {
   endpoint = aws_sqs_queue.d365_order_payment_secured.arn
   protocol = "sqs"
-  topic_arn = var.d365_payment_secured_sns
+  topic_arn = var.d365_payment_secured_sns.arn
 }
