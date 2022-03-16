@@ -519,7 +519,7 @@ data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_d365_order_p
     }
 
     resources = [
-      aws_sqs_queue.d365_order_payment_secured
+      aws_sqs_queue.d365_order_payment_secured.arn
     ]
   }
 
