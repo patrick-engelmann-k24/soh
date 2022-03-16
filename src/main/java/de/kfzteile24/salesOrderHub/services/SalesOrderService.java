@@ -24,7 +24,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.text.MessageFormat;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -143,28 +142,24 @@ public class SalesOrderService {
 
         if (subsequentOrder.getOrderRows().isEmpty()) {
             String skuList = String.join(",", acceptableSkuSet);
-            log.error(MessageFormat.format(
-                    "Order Row ID NotFoundException: " +
-                            "There is no order row id matching in original order. " +
-                    "Order number: {0}, Subsequent Delivery Note Sku Items: {1}", orderNumber, skuList));
-            throw new SalesOrderNotFoundException(MessageFormat.format("{0} with any order row for subsequent delivery",
+            log.error("Order Row ID NotFoundException: " +
+                    "There is no order row id matching in original order. " +
+                    "Order number: {}, Subsequent Delivery Note Sku Items: {}", orderNumber, skuList);
+            throw new SalesOrderNotFoundException(format("{0} with any order row for subsequent delivery",
                     orderNumber));
         }
-
         return subsequentOrder;
     }
 
     protected List<OrderRows> filterOrderRows(Order order, Set<String> skuSet) {
-
         // check if there is any mismatch
         skuSet.stream()
                 .filter(sku -> order.getOrderRows().stream().noneMatch(row -> row.getSku().equals(sku)))
                 .forEach(sku ->
-                        log.error(MessageFormat.format(
-                        "Order Row ID MismatchingError: " +
-                                "The order row id, {0}, given in subsequent delivery note msg, " +
+                        log.error("Order Row ID MismatchingError: " +
+                                "The order row id, {}, given in subsequent delivery note msg, " +
                                 "is not matching with any of the order row id in the original order with " +
-                                "order number: {1}", sku, order.getOrderHeader().getOrderNumber())));
+                                "order number: {}", sku, order.getOrderHeader().getOrderNumber()));
 
         List<OrderRows> orderRows = order.getOrderRows().stream()
                 .filter(row -> skuSet.contains(row.getSku()))
