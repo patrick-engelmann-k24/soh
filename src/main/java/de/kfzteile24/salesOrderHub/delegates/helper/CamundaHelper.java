@@ -1,6 +1,9 @@
 package de.kfzteile24.salesOrderHub.delegates.helper;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.soh.order.dto.Order;
@@ -13,6 +16,7 @@ import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.history.HistoricActivityInstance;
 import org.camunda.bpm.engine.history.HistoricActivityInstanceQuery;
 import org.camunda.bpm.engine.runtime.Execution;
+import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Component;
 
@@ -32,6 +36,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SALES_CHANNEL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SHIPMENT_METHOD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.VIRTUAL_ORDER_ROWS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.PLATFORM_TYPE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.VOUCHER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.DELIVERY_ADDRESS_CHANGE_POSSIBLE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.ORDER_ROW_ID;
@@ -84,8 +89,10 @@ public class CamundaHelper {
         List<String> virtualOrderRowSkus = new ArrayList<>();
         String shippingType;
         String paymentType;
+        String platformType;
         orderRowSkus = new ArrayList<>();
         final var order = (Order) salesOrder.getOriginalOrder();
+        platformType = order.getOrderHeader().getPlatform().name();
         paymentType = getPaymentType(order.getOrderHeader().getPayments());
         shippingType = order.getOrderRows().get(0).getShippingType();
         for (OrderRows orderRow : order.getOrderRows()) {
@@ -100,14 +107,15 @@ public class CamundaHelper {
 
         final Map<String, Object> processVariables = new HashMap<>();
         processVariables.put(SHIPMENT_METHOD.getName(), shippingType);
+        processVariables.put(PLATFORM_TYPE.getName(), platformType);
         processVariables.put(ORDER_NUMBER.getName(), orderNumber);
         processVariables.put(PAYMENT_TYPE.getName(), paymentType);
         processVariables.put(ORDER_ROWS.getName(), orderRowSkus);
         processVariables.put(CUSTOMER_TYPE.getName(),
-                salesOrder.isRecurringOrder() ? RECURRING.getType(): NEW.getType());
+                salesOrder.isRecurringOrder() ? RECURRING.getType() : NEW.getType());
         processVariables.put(SALES_CHANNEL.getName(), salesOrder.getSalesChannel());
 
-        if(!virtualOrderRowSkus.isEmpty()) {
+        if (!virtualOrderRowSkus.isEmpty()) {
             processVariables.put(VIRTUAL_ORDER_ROWS.getName(), virtualOrderRowSkus);
         }
 
@@ -152,5 +160,20 @@ public class CamundaHelper {
 
     public boolean isShipped(String shippingType) {
         return !ShipmentMethod.NONE.getName().equals(shippingType);
+    }
+
+
+    /**
+     * Send message to bpmn engine
+     */
+    public MessageCorrelationResult createOrderRowProcess(RowMessages itemMessages,
+                                                          String orderNumber,
+                                                          String orderGroupId,
+                                                          String orderItemSku) {
+        return runtimeService.createMessageCorrelation(itemMessages.getName())
+                .processInstanceBusinessKey(orderNumber + "#" + orderItemSku)
+                .setVariable(Variables.ORDER_GROUP_ID.getName(), orderGroupId)
+                .setVariable(RowVariables.ORDER_ROW_ID.getName(), orderItemSku)
+                .correlateWithResult();
     }
 }

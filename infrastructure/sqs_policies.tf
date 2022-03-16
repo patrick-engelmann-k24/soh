@@ -402,3 +402,104 @@ resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_invoices_from_core" 
   queue_url = aws_sqs_queue.soh_invoices_from_core.id
   policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_invoices_from_core.json
 }
+
+data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_core_cancellation" {
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sqs:*",
+    ]
+
+    principals {
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_core_cancellation.arn
+    ]
+  }
+
+  statement {
+    sid = "SNS-core-cancellation"
+    effect = "Allow"
+
+    actions = [
+      "sqs:SendMessage",
+    ]
+
+    principals {
+      identifiers = ["*"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_core_cancellation.arn
+    ]
+
+    condition {
+      test     = "ArnEquals"
+      variable = "aws:SourceArn"
+      values = [
+        data.aws_sns_topic.sns_core_cancellation_delivery_note_printed_v1.arn
+      ]
+    }
+  }
+}
+
+resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_core_cancellation" {
+  queue_url = aws_sqs_queue.soh_core_cancellation.id
+  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_core_cancellation.json
+}
+
+data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_subsequent_delivery_received" {
+  statement {
+    sid = "SNS-subsequent-delivery-received"
+    effect = "Allow"
+
+    actions = [
+      "sqs:SendMessage",
+    ]
+
+    principals {
+      identifiers = ["*"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_subsequent_delivery_received.arn
+    ]
+
+    condition {
+      test     = "ArnEquals"
+      variable = "aws:SourceArn"
+      values = [
+        data.aws_sns_topic.sns_core_subsequent_delivery_note_printed.arn,
+      ]
+    }
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sqs:*",
+    ]
+
+    principals {
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_subsequent_delivery_received.arn
+    ]
+  }
+}
+
+resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_subsequent_delivery_received" {
+  queue_url = aws_sqs_queue.soh_subsequent_delivery_received.id
+  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_subsequent_delivery_received.json
+}

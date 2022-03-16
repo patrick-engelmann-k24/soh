@@ -3,22 +3,16 @@ package de.kfzteile24.salesOrderHub.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.AwsSnsConfig;
-import de.kfzteile24.salesOrderHub.dto.events.OrderRowsCancelledEvent;
+import de.kfzteile24.salesOrderHub.dto.events.OrderRowCancelledEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInfoEvent;
+import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInvoiceCreatedEvent;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
-import de.kfzteile24.soh.order.dto.Order;
-import de.kfzteile24.soh.order.dto.OrderRows;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.aws.messaging.core.NotificationMessagingTemplate;
 import org.springframework.stereotype.Service;
-
-import java.time.OffsetDateTime;
-import java.util.List;
-
-import static java.util.stream.Collectors.toList;
 
 @Service
 @RequiredArgsConstructor
@@ -47,20 +41,39 @@ public class SnsPublishService {
         sendLatestOrderJson(config.getSnsDeliveryAddressChanged(), "Sales order delivery address changed", orderNumber);
     }
 
-    public void publishOrderRowsCancelled(Order order, List<OrderRows> cancelledRows, boolean isFullCancellation) {
-        final var orderRowsCancelled = OrderRowsCancelledEvent.builder()
-                .cancelledRows(cancelledRows.stream().map(OrderRows::getSku).collect(toList()))
-                .order(order)
-                .isFullCancellation(isFullCancellation)
-                .cancellationDate(OffsetDateTime.now())
+    public void publishOrderRowCancelled(String orderNumber, String orderRowId) {
+        final var orderRowCancelled = OrderRowCancelledEvent.builder()
+                .orderNumber(orderNumber)
+                .orderRowNumber(orderRowId)
                 .build();
 
-        publishEvent(config.getSnsOrderRowsCancelledTopic(), "Sales order rows cancelled",
-                orderRowsCancelled, order.getOrderHeader().getOrderNumber());
+        publishEvent(config.getSnsSalesOrderRowCancelled(), "Sales order row cancelled",
+                orderRowCancelled, orderNumber);
+    }
+
+    public void publishOrderCancelled(String orderNumber) {
+        final var orderCancelled = OrderRowCancelledEvent.builder()
+                .orderNumber(orderNumber)
+                .build();
+
+        publishEvent(config.getSnsSalesOrderCancelled(), "Sales order cancelled",
+                orderCancelled, orderNumber);
     }
 
     public void publishOrderCompleted(String orderNumber) {
         sendLatestOrderJson(config.getSnsOrderCompletedTopic(), "Sales order completed", orderNumber);
+    }
+
+    public void publishOrderInvoiceCreated(String orderNumber) {
+        final var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
+                .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
+
+        final var salesOrderInvoiceCreatedEvent = SalesOrderInvoiceCreatedEvent.builder()
+                .order(salesOrder.getLatestJson())
+                .build();
+
+        publishEvent(config.getSnsOrderInvoiceCreatedV1(), "Sales order invoice created V1",
+                salesOrderInvoiceCreatedEvent, orderNumber);
     }
 
     protected void sendLatestOrderJson(String topic, String subject, String orderNumber) {

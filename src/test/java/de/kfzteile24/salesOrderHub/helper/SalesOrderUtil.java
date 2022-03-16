@@ -10,10 +10,7 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
-import de.kfzteile24.soh.order.dto.Order;
-import de.kfzteile24.soh.order.dto.OrderHeader;
-import de.kfzteile24.soh.order.dto.OrderRows;
-import de.kfzteile24.soh.order.dto.Payments;
+import de.kfzteile24.soh.order.dto.*;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -24,6 +21,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.math.BigDecimal;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -61,9 +59,38 @@ public class SalesOrderUtil {
 
         Order order = objectMapper.readValue(sqsMessage.getBody(), Order.class);
         order.getOrderHeader().setOrderNumber(bpmUtil.getRandomOrderNumber());
+        order.getOrderHeader().setOrderGroupId(order.getOrderHeader().getOrderNumber());
 
         final SalesOrder testOrder = SalesOrder.builder()
                 .orderNumber(order.getOrderHeader().getOrderNumber())
+                .orderGroupId(order.getOrderHeader().getOrderGroupId())
+                .salesChannel(order.getOrderHeader().getSalesChannel())
+                .originalOrder(order)
+                .latestJson(order)
+                .build();
+
+        testOrder.setSalesOrderInvoiceList(new HashSet<>());
+        salesOrderService.save(testOrder, ORDER_CREATED);
+        return testOrder;
+    }
+
+    @SneakyThrows(JsonProcessingException.class)
+    public SalesOrder createNewSalesOrderWithCustomSkusAndGroupId(String orderGroupId, String sku1, String sku2) {
+        InputStream testFileStream = getClass().getResourceAsStream("/examples/testmessage.json");
+        assertNotNull(testFileStream);
+
+        SqsMessage sqsMessage = readTestFile(testFileStream);
+        assertNotNull(sqsMessage);
+
+        Order order = objectMapper.readValue(sqsMessage.getBody(), Order.class);
+        order.getOrderHeader().setOrderNumber(bpmUtil.getRandomOrderNumber());
+        order.getOrderHeader().setOrderGroupId(orderGroupId);
+        order.getOrderRows().get(0).setSku(sku1);
+        order.getOrderRows().get(1).setSku(sku2);
+
+        final SalesOrder testOrder = SalesOrder.builder()
+                .orderNumber(order.getOrderHeader().getOrderNumber())
+                .orderGroupId(order.getOrderHeader().getOrderGroupId())
                 .salesChannel(order.getOrderHeader().getSalesChannel())
                 .originalOrder(order)
                 .latestJson(order)
@@ -81,6 +108,21 @@ public class SalesOrderUtil {
             CustomerType customerType) {
         final var salesOrder = createNewSalesOrderV3(
                 shouldContainVirtualItem, shipmentMethod, paymentType, customerType);
+
+        salesOrderService.save(salesOrder, ORDER_CREATED);
+
+        return salesOrder;
+    }
+
+    public SalesOrder createPersistedSalesOrderV3WithDiffGroupId(
+            boolean shouldContainVirtualItem,
+            ShipmentMethod shipmentMethod,
+            PaymentType paymentType,
+            CustomerType customerType,
+            String orderGroupId) {
+        final var salesOrder = createNewSalesOrderV3(
+                shouldContainVirtualItem, shipmentMethod, paymentType, customerType);
+        salesOrder.setOrderGroupId(orderGroupId);
 
         salesOrderService.save(salesOrder, ORDER_CREATED);
 
@@ -107,8 +149,32 @@ public class SalesOrderUtil {
 
         final OrderHeader orderHeader = OrderHeader.builder()
                 .orderNumber(orderNumber)
+                .totals(Totals.builder()
+                        .goodsTotalGross(BigDecimal.valueOf(100))
+                        .goodsTotalNet(BigDecimal.valueOf(80))
+                        .shippingCostGross(BigDecimal.valueOf(100))
+                        .shippingCostNet(BigDecimal.valueOf(80))
+                        .totalDiscountGross(BigDecimal.valueOf(100))
+                        .totalDiscountNet(BigDecimal.valueOf(80))
+                        .surcharges(Surcharges.builder()
+                                .depositGross(BigDecimal.valueOf(100))
+                                .depositNet(BigDecimal.valueOf(80))
+                                .riskyGoodsGross(BigDecimal.valueOf(100))
+                                .riskyGoodsNet(BigDecimal.valueOf(80))
+                                .bulkyGoodsGross(BigDecimal.valueOf(100))
+                                .bulkyGoodsNet(BigDecimal.valueOf(80))
+                                .paymentGross(BigDecimal.valueOf(100))
+                                .paymentNet(BigDecimal.valueOf(80))
+                                .build())
+                        .grandTotalTaxes(List.of(GrandTotalTaxes.builder()
+                                .type("test")
+                                .value(BigDecimal.ONE)
+                                .rate(BigDecimal.ONE)
+                                .build()))
+                        .build())
                 .payments(payments)
                 .salesChannel("www-k24-at")
+                .platform(Platform.ECP)
                 .build();
 
         final Order order = Order.builder()
@@ -119,6 +185,7 @@ public class SalesOrderUtil {
 
         return SalesOrder.builder()
                 .orderNumber(orderNumber)
+                .orderGroupId(orderNumber)
                 .salesChannel(order.getOrderHeader().getSalesChannel())
                 .originalOrder(order)
                 .latestJson(order)
@@ -127,11 +194,53 @@ public class SalesOrderUtil {
     }
 
     public static OrderRows createOrderRow(String sku, ShipmentMethod shippingType) {
-       return OrderRows.builder()
-               .shippingType(shippingType.getName())
-               .isCancelled(false)
-               .sku(sku)
-               .build();
+        return OrderRows.builder()
+                .sumValues(SumValues.builder()
+                        .goodsValueGross(BigDecimal.TEN)
+                        .goodsValueNet(BigDecimal.ONE)
+                        .discountGross(BigDecimal.TEN)
+                        .discountNet(BigDecimal.ONE)
+                        .totalDiscountedGross(BigDecimal.TEN)
+                        .totalDiscountedNet(BigDecimal.ONE)
+                        .build())
+                .shippingType(shippingType.getName())
+                .isCancelled(false)
+                .taxRate(BigDecimal.valueOf(21))
+                .quantity(BigDecimal.ONE)
+                .sku(sku)
+                .build();
+    }
+
+    public static SalesOrder createSalesOrderFromOrder(Order order) {
+        return SalesOrder.builder()
+                .orderNumber(order.getOrderHeader()
+                        .getOrderNumber())
+                .orderGroupId(order.getOrderHeader()
+                        .getOrderGroupId())
+                .salesChannel(order.getOrderHeader()
+                        .getSalesChannel())
+                .customerEmail(order.getOrderHeader()
+                        .getCustomer()
+                        .getCustomerEmail())
+                .originalOrder(order)
+                .latestJson(order)
+                .build();
+    }
+
+    public static void updatePlatform(SalesOrder salesOrder, Platform platform) {
+        salesOrder.getLatestJson().getOrderHeader().setPlatform(platform);
+        salesOrder.setOriginalOrder(salesOrder.getLatestJson());
+    }
+
+    public static SalesOrder createNewSalesOrderV3WithPlatform(
+            boolean shouldContainVirtualItem,
+            ShipmentMethod shipmentMethod,
+            PaymentType paymentType,
+            Platform platformType,
+            CustomerType customerType) {
+        SalesOrder salesOrder = createNewSalesOrderV3(shouldContainVirtualItem, shipmentMethod, paymentType, customerType);
+        updatePlatform(salesOrder, platformType);
+        return salesOrder;
     }
 
     private SqsMessage readTestFile(InputStream testFileStream) {
@@ -155,11 +264,11 @@ public class SalesOrderUtil {
     @SneakyThrows({URISyntaxException.class, IOException.class})
     public static String readResource(String path) {
         return Files.readString(Paths.get(
-            Objects.requireNonNull(SalesOrderUtil.class.getClassLoader().getResource(path))
-                .toURI()));
+                Objects.requireNonNull(SalesOrderUtil.class.getClassLoader().getResource(path))
+                        .toURI()));
     }
 
-    public static SalesOrder getSalesOrder(String rawMessage){
+    public static SalesOrder getSalesOrder(String rawMessage) {
         final var order = getOrder(rawMessage);
         return SalesOrder.builder()
                 .orderNumber("514000016")
@@ -173,7 +282,7 @@ public class SalesOrderUtil {
     }
 
     @SneakyThrows(JsonProcessingException.class)
-    public static Order getOrder(String rawMessage){
+    public static Order getOrder(String rawMessage) {
         ObjectMapper mapper = new ObjectMapperConfig().objectMapper();
         final var sqsMessage = mapper.readValue(rawMessage, SqsMessage.class);
         return mapper.readValue(sqsMessage.getBody(), Order.class);

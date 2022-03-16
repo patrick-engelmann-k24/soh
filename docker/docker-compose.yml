@@ -7,7 +7,7 @@ services:
     image: localstack/localstack-full
     network_mode: bridge
     healthcheck:
-      test: http://localhost:4566/health
+      test: curl -i http://localhost:4566/health
     ports:
       - "4566:4566"
       - "${PORT_WEB_UI-8081}:8081"
@@ -26,6 +26,8 @@ services:
     container_name: soh-bpmn-db
     image: library/postgres:11
     network_mode: bridge
+    healthcheck:
+      test: pg_isready
     ports:
       - "5432:5432"
     environment:

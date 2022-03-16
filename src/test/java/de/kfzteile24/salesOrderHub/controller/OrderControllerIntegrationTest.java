@@ -38,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.http.HttpStatus.CONFLICT;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.OK;
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
@@ -160,67 +161,26 @@ class OrderControllerIntegrationTest {
 
     @Test
     public void cancellingAnOrderRowSuccessfullyReturnsTheStatusOK() {
-        var testOrder = salesOrderUtil.createNewSalesOrder();
-        final String orderNumber = testOrder.getOrderNumber();
-        final List<String> orderRows = util.getOrderRows(orderNumber, 5);
 
-        final var processInstance = createProcessInstance(orderNumber, orderRows);
-        assertTrue(util.isProcessWaitingAtExpectedToken(processInstance, MSG_ORDER_PAYMENT_SECURED.getName()));
-
-        util.sendMessage(ORDER_RECEIVED_PAYMENT_SECURED, orderNumber);
-
-        final var result = controller.cancelOrderRow(orderNumber, orderRows.get(0));
-        assertThat(result.getStatusCode()).isEqualTo(OK);
-    }
-
-    @Test
-    public void ifAnOrderRowCannotBeCancelledBecauseOfTheProcessStateTheStatusCONFLICTIsReturned() {
-        var testOrder = salesOrderUtil.createNewSalesOrder();
-        final String orderNumber = testOrder.getOrderNumber();
-        final List<String> orderRows = util.getOrderRows(orderNumber, 5);
-
-        final var processInstance = createProcessInstance(orderNumber, orderRows);
-        assertTrue(util.isProcessWaitingAtExpectedToken(processInstance, MSG_ORDER_PAYMENT_SECURED.getName()));
-        util.sendMessage(ORDER_RECEIVED_PAYMENT_SECURED, orderNumber);
-
-        util.sendMessage(ROW_TRANSMITTED_TO_LOGISTICS, orderNumber);
-        util.sendMessage(PACKING_STARTED, orderNumber);
-        util.sendMessage(TRACKING_ID_RECEIVED, orderNumber);
-
-        final var result = controller.cancelOrderRow(orderNumber, orderRows.get(0));
-        assertThat(result.getStatusCode()).isEqualTo(CONFLICT);
+        //This endpoint is not used anymore
+        final var result = controller.cancelOrderRow("orderNumber", "orderRows");
+        assertThat(result.getStatusCode()).isEqualTo(NOT_FOUND);
     }
 
     @Test
     public void cancellingAnOrderSuccessfullyReturnsTheStatusOK() {
-        var testOrder = salesOrderUtil.createNewSalesOrder();
-        final String orderNumber = testOrder.getOrderNumber();
-        final List<String> orderRows = util.getOrderRows(orderNumber, 5);
 
-        final var processInstance = createProcessInstance(orderNumber, orderRows);
-        assertTrue(util.isProcessWaitingAtExpectedToken(processInstance, MSG_ORDER_PAYMENT_SECURED.getName()));
-
-        final var result = controller.cancelOrder(orderNumber);
-        assertThat(result.getStatusCode()).isEqualTo(OK);
+        //This endpoint is not used anymore
+        final var result = controller.cancelOrder("orderNumber");
+        assertThat(result.getStatusCode()).isEqualTo(NOT_FOUND);
     }
 
     @Test
     public void ifAnOrderCannotBeCancelledBecauseOfTheProcessStateTheStatusCONFLICTIsReturned() {
-        var testOrder = salesOrderUtil.createNewSalesOrder();
-        final String orderNumber = testOrder.getOrderNumber();
-        final List<String> orderRows = util.getOrderRows(orderNumber, 5);
 
-        final var processInstance = createProcessInstance(orderNumber, orderRows);
-        assertTrue(util.isProcessWaitingAtExpectedToken(processInstance, MSG_ORDER_PAYMENT_SECURED.getName()));
-
-        util.sendMessage(ORDER_RECEIVED_PAYMENT_SECURED, orderNumber);
-
-        util.sendMessage(ROW_TRANSMITTED_TO_LOGISTICS, orderNumber, orderRows.get(0));
-        util.sendMessage(PACKING_STARTED, orderNumber, orderRows.get(0));
-        util.sendMessage(TRACKING_ID_RECEIVED, orderNumber, orderRows.get(0));
-
-        final var result = controller.cancelOrder(orderNumber);
-        assertThat(result.getStatusCode()).isEqualTo(CONFLICT);
+        //This endpoint is not used anymore
+        final var result = controller.cancelOrder("orderNumber");
+        assertThat(result.getStatusCode()).isEqualTo(NOT_FOUND);
     }
 
     private ProcessInstance createProcessInstance(String orderNumber, List<String> orderItems) {

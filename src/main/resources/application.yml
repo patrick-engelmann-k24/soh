@@ -54,6 +54,9 @@ soh:
       orderRowsCancelled: ${soh_order_rows_cancelled}
       invoiceAddressChanged: ${soh_invoice_address_changed}
       deliveryAddressChanged: ${soh_delivery_address_changed}
+      salesOrderRowCancelled: ${soh_sales_order_row_cancellation}
+      salesOrderCancelled: ${soh_sales_order_cancellation}
+      orderInvoiceCreatedV1: ${soh_order_invoice_created_v1}
   sqs:
     queue:
       ecpShopOrders: ${soh_sqs_ecp_shop_orders}
@@ -64,6 +67,8 @@ soh:
       orderItemTrackingIdReceived: ${soh_sqs_order_item_tracking_id_received}
       orderItemTourStarted: ${soh_sqs_order_item_tour_started}
       invoicesFromCore: ${soh_sqs_invoices_from_core}
+      coreCancellation: ${soh_sqs_core_cancellation}
+      subsequentDeliveryReceived: ${soh_sqs_subsequent_delivery_received}
   aws:
     config:
       maxNumberOfMessages: 10
@@ -84,7 +89,7 @@ camunda:
     admin-user:
       id: ${soh_camunda_username:demo}
       password: ${soh_camunda_password:demo}
-      firstName: K24Admin 
+      firstName: K24Admin
     filter:
       create: All tasks
     history-level: FULL

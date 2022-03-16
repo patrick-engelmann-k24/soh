@@ -4,7 +4,6 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 
 public enum RowActivities implements BpmItem {
     CHANGE_DELIVERY_ADDRESS("activityChangeDeliveryAddress"),
-    CHECK_CANCELLATION_POSSIBLE("activityCheckCancellationPossible"),
     CHECK_DELIVERY_ADDRESS_CHANGE_POSSIBLE("activityCheckDeliveryAddressChangePossible"),
     HANDLE_CANCELLATION_SHIPMENT("activityHandleCancellationShipment"),
     ;
