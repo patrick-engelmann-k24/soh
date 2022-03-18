@@ -64,12 +64,13 @@ public class SnsPublishService {
         sendLatestOrderJson(config.getSnsOrderCompletedTopic(), "Sales order completed", orderNumber);
     }
 
-    public void publishOrderInvoiceCreated(String orderNumber) {
+    public void publishOrderInvoiceCreated(String orderNumber, String invoiceUrl) {
         final var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
 
         final var salesOrderInvoiceCreatedEvent = SalesOrderInvoiceCreatedEvent.builder()
                 .order(salesOrder.getLatestJson())
+                .invoiceDocumentLink(invoiceUrl)
                 .build();
 
         publishEvent(config.getSnsOrderInvoiceCreatedV1(), "Sales order invoice created V1",

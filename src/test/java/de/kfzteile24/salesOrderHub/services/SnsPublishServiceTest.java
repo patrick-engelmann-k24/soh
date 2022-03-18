@@ -11,8 +11,6 @@ import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInvoiceCreatedEvent;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.soh.order.dto.OrderRows;
-import java.util.Optional;
-import java.util.function.Consumer;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -214,15 +212,17 @@ class SnsPublishServiceTest {
         final var expectedSubject = "Sales order invoice created V1";
 
         final var salesOrder = createNewSalesOrderV3(true, REGULAR, CREDIT_CARD, NEW);
+        final var invoiceUrl = "s3://production-k24-invoices/dropshipment/2021/06/04/xxxxxxxxx-xxxxxxxxx.pdf";
 
         when(awsSnsConfig.getSnsOrderInvoiceCreatedV1()).thenReturn(expectedTopic);
         when(salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber())).thenReturn(Optional.of(salesOrder));
 
         final var expectedSalesOrderInvoiceCreatedEvent = SalesOrderInvoiceCreatedEvent.builder()
                 .order(salesOrder.getLatestJson())
+                .invoiceDocumentLink(invoiceUrl)
                 .build();
 
-        snsPublishService.publishOrderInvoiceCreated(salesOrder.getOrderNumber());
+        snsPublishService.publishOrderInvoiceCreated(salesOrder.getOrderNumber(), invoiceUrl);
 
         verify(notificationMessagingTemplate).sendNotification(
                 expectedTopic,

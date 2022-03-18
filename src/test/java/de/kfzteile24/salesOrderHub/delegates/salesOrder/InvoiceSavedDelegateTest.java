@@ -32,13 +32,13 @@ class InvoiceSavedDelegateTest {
     void whenDropshipmentInvoiceUrlThenPublishInvoiceCreatedEvent() {
 
         final var expectedOrderNumber = "123";
-        final var expectedInvoiceUrl = "s3://production-k24-invoices/dropshipment/2021/06/04/514073754-710108946.pdf";
+        final var expectedInvoiceUrl = "s3://production-k24-invoices/dropshipment/2021/06/04/xxxxxxxxx-xxxxxxxxx.pdf";
         when(delegateExecution.getVariable(Variables.ORDER_NUMBER.getName())).thenReturn(expectedOrderNumber);
         when(delegateExecution.getVariable(Variables.INVOICE_URL.getName())).thenReturn(expectedInvoiceUrl);
 
         invoiceSavedDelegate.execute(delegateExecution);
 
-        verify(snsPublishService).publishOrderInvoiceCreated(expectedOrderNumber);
+        verify(snsPublishService).publishOrderInvoiceCreated(expectedOrderNumber, expectedInvoiceUrl);
     }
 
     @Test
@@ -46,12 +46,12 @@ class InvoiceSavedDelegateTest {
     void whenNotDropshipmentInvoiceUrlThenSkipPublishInvoiceCreatedEvent() {
 
         final var expectedOrderNumber = "123";
-        final var expectedInvoiceUrl = "s3://production-k24-invoices/anyFolder/2021/06/04/514073754-710108946.pdf";
+        final var expectedInvoiceUrl = "s3://production-k24-invoices/anyFolder/2021/06/04/xxxxxxxxx-xxxxxxxxx.pdf";
         when(delegateExecution.getVariable(Variables.ORDER_NUMBER.getName())).thenReturn(expectedOrderNumber);
         when(delegateExecution.getVariable(Variables.INVOICE_URL.getName())).thenReturn(expectedInvoiceUrl);
 
         invoiceSavedDelegate.execute(delegateExecution);
 
-        verify(snsPublishService, never()).publishOrderInvoiceCreated(anyString());
+        verify(snsPublishService, never()).publishOrderInvoiceCreated(anyString(), anyString());
     }
 }
