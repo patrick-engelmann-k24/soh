@@ -5,11 +5,15 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreCancellationItem;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreCancellationMessage;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
+import de.kfzteile24.salesOrderHub.domain.audit.Action;
+import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Totals;
+
 import java.util.List;
 import java.util.Optional;
+
 import org.assertj.core.util.Lists;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
@@ -21,13 +25,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.Optional;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROWS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_BOOKED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ROW_CANCELLED;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createNewSalesOrderV3;
 import static java.util.stream.Collectors.toList;
@@ -37,6 +40,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -63,7 +68,7 @@ class SalesOrderRowServiceTest {
     private SalesOrderRowService salesOrderRowService;
 
     @Test
-    void cancellingAnOrderRow() {
+    void testCancellingAnOrderRow() {
         final String processId = prepareOrderProcessMocks();
         final var salesOrder = createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
         final var orderNumber = salesOrder.getOrderNumber();
@@ -73,7 +78,6 @@ class SalesOrderRowServiceTest {
         final var originalOrderRowCount = orderRowIds.size();
         final var indexToCancel = 0;
         OrderRows orderRowsToCancel = latestJson.getOrderRows().get(indexToCancel);
-        CoreCancellationMessage coreCancellationMessage = getCoreCancellationMessage(salesOrder, orderRowsToCancel);
 
         when(salesOrderService.getOrderNumberListByOrderGroupId(orderNumber, orderRowsToCancel.getSku())).thenReturn(List.of(salesOrder.getOrderNumber()));
         when(salesOrderService.getOrderByOrderNumber(orderNumber)).thenReturn(Optional.of(salesOrder));
@@ -81,7 +85,7 @@ class SalesOrderRowServiceTest {
         when(camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())).thenReturn(true);
         when(orderUtil.removeCancelledOrderRowsFromLatestJson(any())).thenReturn(salesOrder);
 
-        salesOrderRowService.cancelOrderRows(coreCancellationMessage);
+        salesOrderRowService.cancelOrderRows(salesOrder.getOrderNumber(), Lists.newArrayList(orderRowsToCancel.getSku()));
 
         checkTotalsValues(salesOrder.getLatestJson().getOrderHeader().getTotals());
         assertThat(orderRowIds.size()).isEqualTo(originalOrderRowCount - 1);
@@ -95,17 +99,59 @@ class SalesOrderRowServiceTest {
         verifyNoInteractions(snsPublishService);
     }
 
-    private CoreCancellationMessage getCoreCancellationMessage(SalesOrder salesOrder, OrderRows orderRowsToCancel) {
-        CoreCancellationItem coreCancellationItem = CoreCancellationItem.builder()
-                .sku(orderRowsToCancel.getSku())
-                .quantity(orderRowsToCancel.getQuantity().intValue())
-                .build();
-        List<CoreCancellationItem> items = Lists.list(coreCancellationItem);
+    @Test
+    void testHandleDropshipmentPurchaseOrderBooked() {
 
-        return CoreCancellationMessage.builder()
-                .orderNumber(salesOrder.getOrderNumber())
-                .items(items)
+        final var salesOrder = createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
+        final var orderNumber = salesOrder.getOrderNumber();
+
+        when(salesOrderService.getOrderByOrderNumber(orderNumber)).thenReturn(Optional.of(salesOrder));
+
+        DropshipmentPurchaseOrderBookedMessage message = DropshipmentPurchaseOrderBookedMessage.builder()
+                .salesOrderNumber(salesOrder.getOrderNumber())
+                .purchaseOrderNumber("52.3")
+                .booked(true)
                 .build();
+        salesOrderRowService.handleDropshipmentPurchaseOrderBooked(message);
+
+        assertEquals("52.3", salesOrder.getLatestJson().getOrderHeader().getOrderNumberExternal());
+        verify(salesOrderService).save(
+                argThat(order -> order.getLatestJson().getOrderHeader().getOrderNumberExternal().equals("52.3")),
+                eq(DROPSHIPMENT_PURCHASE_ORDER_BOOKED)
+        );
+
+        verifyNoInteractions(snsPublishService);
+        verify(salesOrderService, never()).getOrderByOrderGroupId(any());
+    }
+
+    @Test
+    void testHandleDropshipmentPurchaseOrderBookedFalse() {
+
+        final var salesOrder = createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
+        final var orderNumber = salesOrder.getOrderNumber();
+
+        when(salesOrderService.getOrderNumberListByOrderGroupId(eq(orderNumber), any())).thenReturn(List.of(salesOrder.getOrderNumber()));
+        when(salesOrderService.getOrderByOrderNumber(orderNumber)).thenReturn(Optional.of(salesOrder));
+        when(salesOrderService.save(any(), eq(DROPSHIPMENT_PURCHASE_ORDER_BOOKED))).thenReturn(salesOrder);
+        when(camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())).thenReturn(false);
+        when(camundaHelper.checkIfOrderRowProcessExists(eq(salesOrder.getOrderNumber()), any())).thenReturn(false);
+
+        DropshipmentPurchaseOrderBookedMessage message = DropshipmentPurchaseOrderBookedMessage.builder()
+                .salesOrderNumber(salesOrder.getOrderNumber())
+                .purchaseOrderNumber("27.9")
+                .booked(false)
+                .build();
+        salesOrderRowService.handleDropshipmentPurchaseOrderBooked(message);
+
+        assertEquals("27.9", salesOrder.getLatestJson().getOrderHeader().getOrderNumberExternal());
+        verify(salesOrderService).save(
+                argThat(order -> order.getLatestJson().getOrderHeader().getOrderNumberExternal().equals("27.9")),
+                eq(DROPSHIPMENT_PURCHASE_ORDER_BOOKED)
+        );
+
+        verify(salesOrderService, times(3)).getOrderNumberListByOrderGroupId(eq(salesOrder.getOrderGroupId()), any());
+        verify(salesOrderService, times(3)).save(any(), eq(Action.ORDER_ROW_CANCELLED));
+        verifyNoInteractions(snsPublishService);
     }
 
     private void checkTotalsValues(Totals totals) {

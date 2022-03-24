@@ -1,5 +1,6 @@
 package de.kfzteile24.salesOrderHub.services;
 
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
@@ -36,6 +37,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -111,21 +113,25 @@ class SqsReceiveServiceIntegrationTest {
         String orderRawMessage = readResource("examples/ecpOrderMessageWithTwoRows.json");
         Order order = getOrder(orderRawMessage);
         SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(order));
-        ProcessInstance orderProcess = camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
+        camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
         bpmUtil.sendMessage(ORDER_RECEIVED_PAYMENT_SECURED, salesOrder.getOrderNumber());
 
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), "2270-13012")));
+        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+                camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())) &&
+                camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), "2270-13012")
+        );
 
         String cancellationRawMessage = readResource("examples/coreCancellationOneRowMessage.json");
         sqsReceiveService.queueListenerCoreCancellation(cancellationRawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
-        assertFalse(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), "2270-13012")));
+        assertTrue(timerService.pollWithDefaultTiming(
+                () -> camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
+        assertFalse(timerService.pollWithDefaultTiming(
+                () -> camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), "2270-13012")));
 
-        SalesOrder updatedOrder = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber()).orElse(null);
-        assertNotNull(updatedOrder);
-        Totals totals = updatedOrder.getLatestJson().getOrderHeader().getTotals();
+        SalesOrder updated = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber()).orElse(null);
+        assertNotNull(updated);
+        Totals totals = updated.getLatestJson().getOrderHeader().getTotals();
         assertEquals(new BigDecimal("100.00"), totals.getGoodsTotalGross());
         assertEquals(new BigDecimal("100.00"), totals.getGoodsTotalNet());
         assertEquals(new BigDecimal("50.00"), totals.getTotalDiscountGross());
@@ -133,10 +139,6 @@ class SqsReceiveServiceIntegrationTest {
         assertEquals(new BigDecimal("50.00"), totals.getGrandTotalGross());
         assertEquals(new BigDecimal("70.00"), totals.getGrandTotalNet());
         assertEquals(new BigDecimal("50.00"), totals.getPaymentTotal());
-
-        //cleanup to remove the uncancelled process
-        runtimeService.deleteProcessInstance(orderProcess.getProcessInstanceId(), "test");
-
     }
 
     @Test
@@ -145,24 +147,27 @@ class SqsReceiveServiceIntegrationTest {
         String orderRawMessage = readResource("examples/ecpOrderMessageWithTwoRows.json");
         Order order = getOrder(orderRawMessage);
         SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(order));
-        ProcessInstance orderProcessInstance = camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
+        camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
         bpmUtil.sendMessage(Messages.ORDER_RECEIVED_PAYMENT_SECURED.getName(), salesOrder.getOrderNumber());
 
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), "2270-13012")));
+        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+                camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())) &&
+                camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), "2270-13012") &&
+                camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), "2270-13013")
+        );
 
         String cancellationRawMessage = readResource("examples/coreCancellationTwoRowsMessage.json");
         sqsReceiveService.queueListenerCoreCancellation(cancellationRawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
-        final var hasProcessEnded = timerService.pollWithDefaultTiming(() -> {
-            BpmnAwareTests.assertThat(orderProcessInstance).isEnded();
-            return true;
-        });
-        assertThat(hasProcessEnded).isTrue();
+        assertFalse(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+                camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber()) &&
+                        camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), "2270-13012") &&
+                        camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), "2270-13013")
+        ));
 
-        SalesOrder updatedOrder = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber()).orElse(null);
-        assertNotNull(updatedOrder);
-        Totals totals = updatedOrder.getLatestJson().getOrderHeader().getTotals();
+        SalesOrder updated = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber()).orElse(null);
+        assertNotNull(updated);
+        Totals totals = updated.getLatestJson().getOrderHeader().getTotals();
         assertEquals(new BigDecimal("86.69"), totals.getGoodsTotalGross());
         assertEquals(new BigDecimal("88.82"), totals.getGoodsTotalNet());
         assertEquals(new BigDecimal("49.60"), totals.getTotalDiscountGross());
@@ -387,6 +392,59 @@ class SqsReceiveServiceIntegrationTest {
                     return true;
                 }
         ));
+    }
+
+    @Test
+    void testQueueListenerDropshipmentOrderPurchasedBooked() {
+
+        String orderRawMessage = readResource("examples/ecpOrderMessageWithTwoRows.json");
+        Order order = getOrder(orderRawMessage);
+        SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(order));
+        camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
+        bpmUtil.sendMessage(ORDER_RECEIVED_PAYMENT_SECURED, salesOrder.getOrderNumber());
+
+        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
+
+        String message = readResource("examples/dropshipmentOrderPurchasedBooked.json");
+        message = message.replace("123", salesOrder.getOrderNumber());
+        sqsReceiveService.queueListenerDropshipmentPurchaseOrderBooked(message, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+
+        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+                camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
+
+        SalesOrder updatedOrder = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber()).orElse(null);
+        assertNotNull(updatedOrder);
+        assertEquals("13.2", updatedOrder.getLatestJson().getOrderHeader().getOrderNumberExternal());
+    }
+
+    @Test
+    void testQueueListenerDropshipmentOrderPurchasedBookedFalse() {
+
+        String orderRawMessage = readResource("examples/ecpOrderMessageWithTwoRows.json");
+        Order order = getOrder(orderRawMessage);
+        SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(order));
+        camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
+        bpmUtil.sendMessage(ORDER_RECEIVED_PAYMENT_SECURED, salesOrder.getOrderNumber());
+
+        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+                camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())) &&
+                camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), "2270-13012") &&
+                camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), "2270-13013")
+        );
+
+        String message = readResource("examples/dropshipmentOrderPurchasedBookedFalse.json");
+        message = message.replace("123", salesOrder.getOrderNumber());
+        sqsReceiveService.queueListenerDropshipmentPurchaseOrderBooked(message, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+
+        assertFalse(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+                camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), "2270-13012") &&
+                        camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), "2270-13013") &&
+                        camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())
+        ));
+
+        SalesOrder updated = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber()).orElse(null);
+        assertNotNull(updated);
+        assertEquals("13.2", updated.getLatestJson().getOrderHeader().getOrderNumberExternal());
     }
 
     @SneakyThrows({URISyntaxException.class, IOException.class})

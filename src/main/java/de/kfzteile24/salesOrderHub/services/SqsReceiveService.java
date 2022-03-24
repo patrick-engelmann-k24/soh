@@ -7,13 +7,16 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.domain.audit.Action;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreCancellationMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
+import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.FulfillmentMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.OrderPaymentSecuredMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.ShipmentConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SubsequentDeliveryMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
+import de.kfzteile24.salesOrderHub.dto.sns.cancellation.CoreCancellationItem;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.soh.order.dto.Order;
@@ -32,11 +35,13 @@ import org.springframework.util.StringUtils;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_CREATED_IN_SOH;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_ECP;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.INVOICE_URL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_BOOKED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ITEM_SHIPPED;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toUnmodifiableSet;
@@ -295,7 +300,9 @@ public class SqsReceiveService {
                     coreCancellationMessage.getOriginalDeliveryNoteNumber(),
                     coreCancellationMessage.getCancellationDeliveryNoteNumber());
 
-            salesOrderRowService.cancelOrderRows(coreCancellationMessage);
+            List<String> skuList = coreCancellationMessage.getItems().stream()
+                    .map(CoreCancellationItem::getSku).collect(Collectors.toList());
+            salesOrderRowService.cancelOrderRows(coreCancellationMessage.getOrderNumber(), skuList);
 
             log.info("Core cancellation for order number {}, original delivery note: {} and cancellation delivery note: {}",
                     orderNumber,
@@ -404,5 +411,26 @@ public class SqsReceiveService {
                 .collect(toUnmodifiableSet());
 
         snsPublishService.publishSalesOrderShipmentConfirmedEvent(persistedSalesOrder, trackingLinks);
+    }
+
+    /**
+     * Consume messages from sqs for dropshipment purchase order booked
+     */
+    @SqsListener(value = "${soh.sqs.queue.dropshipmentPurchaseOrderBooked}", deletionPolicy = ON_SUCCESS)
+    @SneakyThrows(JsonProcessingException.class)
+    @Trace(metricName = "Handling Dropshipment Purchase Order Booked message", dispatcher = true)
+    public void queueListenerDropshipmentPurchaseOrderBooked(
+            String rawMessage,
+            @Header("SenderId") String senderId,
+            @Header("ApproximateReceiveCount") Integer receiveCount) {
+
+        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+        DropshipmentPurchaseOrderBookedMessage message =
+                objectMapper.readValue(body, DropshipmentPurchaseOrderBookedMessage.class);
+
+        log.info("Received dropshipment order purchased booked message with purchase order number : {}",
+                message.getPurchaseOrderNumber());
+
+        salesOrderRowService.handleDropshipmentPurchaseOrderBooked(message);
     }
 }

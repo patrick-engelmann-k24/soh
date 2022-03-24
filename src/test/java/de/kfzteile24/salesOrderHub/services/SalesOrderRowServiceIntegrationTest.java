@@ -1,14 +1,11 @@
 package de.kfzteile24.salesOrderHub.services;
 
-import de.kfzteile24.salesOrderHub.SalesOrderHubProcessApplication;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.dto.sns.CoreCancellationItem;
-import de.kfzteile24.salesOrderHub.dto.sns.CoreCancellationMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.AuditLogUtil;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
@@ -18,6 +15,8 @@ import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Totals;
 import java.util.List;
+
+import org.assertj.core.util.Lists;
 import org.camunda.bpm.engine.HistoryService;
 import org.camunda.bpm.engine.MismatchingMessageCorrelationException;
 import org.camunda.bpm.engine.ProcessEngine;
@@ -32,7 +31,6 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -107,8 +105,7 @@ class SalesOrderRowServiceIntegrationTest {
         assertTrue(util.isProcessWaitingAtExpectedToken(processInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName()));
         assertThatNoSubprocessExists(orderNumber, skuToCancel);
 
-        CoreCancellationMessage coreCancellationMessage = getCoreCancellationMessage(salesOrder, skuToCancel);
-        salesOrderRowService.cancelOrderRows(coreCancellationMessage);
+        salesOrderRowService.cancelOrderRows(salesOrder.getOrderNumber(), Lists.newArrayList(skuToCancel));
 
         final var updatedSalesOrder = salesOrderService.getOrderByOrderNumber(orderNumber);
         assertTrue(updatedSalesOrder.isPresent());
@@ -147,8 +144,7 @@ class SalesOrderRowServiceIntegrationTest {
         assertTrue(util.isProcessWaitingAtExpectedToken(processInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName()));
         util.sendMessage(ORDER_RECEIVED_PAYMENT_SECURED, salesOrder.getOrderNumber());
 
-        CoreCancellationMessage coreCancellationMessage = getCoreCancellationMessage(salesOrder, skuToCancel);
-        salesOrderRowService.cancelOrderRows(coreCancellationMessage);
+        salesOrderRowService.cancelOrderRows(salesOrder.getOrderNumber(), Lists.newArrayList(skuToCancel));
 
         final var updatedSalesOrder = salesOrderService.getOrderByOrderNumber(orderNumber);
         assertTrue(updatedSalesOrder.isPresent());
@@ -169,20 +165,6 @@ class SalesOrderRowServiceIntegrationTest {
 
         auditLogUtil.assertAuditLogExists(salesOrder.getId(), ORDER_ROW_CANCELLED);
         assertThatNoSubprocessExists(orderNumber, skuToCancel);
-    }
-
-    private CoreCancellationMessage getCoreCancellationMessage(SalesOrder salesOrder, String skuToCancel) {
-        List<CoreCancellationItem> items = salesOrder.getLatestJson().getOrderRows()
-                .stream().filter(orderRows -> orderRows.getSku().equals(skuToCancel))
-                .map(orderRows ->
-                        CoreCancellationItem.builder()
-                                .sku(orderRows.getSku())
-                                .quantity(orderRows.getQuantity().intValue()).build()).collect(toList());
-
-        return CoreCancellationMessage.builder()
-                .orderNumber(salesOrder.getOrderNumber())
-                .items(items)
-                .build();
     }
 
     private void checkTotalsValues(Totals totals) {
@@ -207,7 +189,6 @@ class SalesOrderRowServiceIntegrationTest {
 
     @Test
     @Transactional
-    @SuppressWarnings("unchecked")
     public void multipleOrderRowCancellationCanBeDoneAccordingToSameOrderGroupId() {
 
         // create first sales order
@@ -223,11 +204,9 @@ class SalesOrderRowServiceIntegrationTest {
 
         try {
             camundaHelper.createOrderProcess(salesOrder1, Messages.ORDER_RECEIVED_ECP);
-            CoreCancellationMessage coreCancellationMessage = getCoreCancellationMessage(salesOrder1, skuToCancel);
-
             assertThat(compareIsCancelledFields(salesOrder1, orderRowSkus)).isTrue();
             assertThat(compareIsCancelledFields(salesOrder2, orderRowSkus)).isTrue();
-            salesOrderRowService.cancelOrderRows(coreCancellationMessage);
+            salesOrderRowService.cancelOrderRows(salesOrder1.getOrderNumber(), Lists.newArrayList(skuToCancel));
 
 
             assertThat(compareIsCancelledFields(salesOrder1, aliveSkus)).isTrue();

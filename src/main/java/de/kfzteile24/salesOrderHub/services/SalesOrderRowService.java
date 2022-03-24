@@ -7,8 +7,7 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
-import de.kfzteile24.salesOrderHub.dto.sns.CoreCancellationItem;
-import de.kfzteile24.salesOrderHub.dto.sns.CoreCancellationMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
@@ -33,6 +32,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_BOOKED;
 
 @Service
 @Slf4j
@@ -65,25 +65,38 @@ public class SalesOrderRowService {
         }
     }
 
+    @Transactional
+    public void handleDropshipmentPurchaseOrderBooked(DropshipmentPurchaseOrderBookedMessage message) {
+
+        String orderNumber = message.getSalesOrderNumber();
+        var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
+                .orElseThrow(() -> new SalesOrderNotFoundException("Could not find order: " + orderNumber));
+        salesOrder.getLatestJson().getOrderHeader().setOrderNumberExternal(message.getPurchaseOrderNumber());
+        salesOrder = salesOrderService.save(salesOrder, DROPSHIPMENT_PURCHASE_ORDER_BOOKED);
+        if (!message.getBooked()) {
+            for (OrderRows orderRows : ((Order) salesOrder.getOriginalOrder()).getOrderRows())
+                cancelOrderRow(orderNumber, orderRows.getSku());
+        }
+    }
+
     @SneakyThrows
     @Transactional
-    public void cancelOrderRows(CoreCancellationMessage coreCancellationMessage) {
+    public void cancelOrderRows(String orderNumber, List<String> skuList) {
 
-        String orderNumber = coreCancellationMessage.getOrderNumber();
-        for (CoreCancellationItem coreCancellationItem : coreCancellationMessage.getItems()) {
+        for (String sku : skuList) {
             List<String> originalOrderSkus = getOriginalOrderSkus(orderNumber);
-            String skuToCancel = coreCancellationItem.getSku();
-            if (originalOrderSkus.contains(skuToCancel)) {
-                cancelOrderRow(orderNumber, skuToCancel);
+            if (originalOrderSkus.contains(sku)) {
+                cancelOrderRow(orderNumber, sku);
             } else {
-                log.error("Sku: {} is not in original order with order number: {}", skuToCancel, orderNumber);
+                log.error("Sku: {} is not in original order with order number: {}", sku, orderNumber);
             }
         }
     }
 
     private void cancelOrderRow(String orderGroupId, String orderRowId) {
 
-        salesOrderService.getOrderNumberListByOrderGroupId(orderGroupId, orderRowId).forEach(orderNumber -> {
+        List<String> orderNumberListByOrderGroupId = salesOrderService.getOrderNumberListByOrderGroupId(orderGroupId, orderRowId);
+        for (String orderNumber : orderNumberListByOrderGroupId) {
 
             if (helper.checkIfOrderRowProcessExists(orderNumber, orderRowId)) {
                 correlateMessageForOrderRowCancelCancellation(orderNumber, orderRowId);
@@ -102,7 +115,7 @@ public class SalesOrderRowService {
             markOrderRowAsCancelled(orderNumber, orderRowId);
             log.info("Order row cancelled for order number: {} and order row: {}", orderNumber, orderRowId);
 
-        });
+        }
     }
 
     @SuppressWarnings("unchecked")

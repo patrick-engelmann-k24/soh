@@ -51,6 +51,7 @@ soh:
       subsequentDeliveryReceived:     http://localhost:4566/000000000000/soh-subsequent-delivery-received-queue
       d365OrderPaymentSecured:        http://localhost:4566/000000000000/soh-d365-order-payment-secured-queue
       dropshipmentShipmentConfirmed:  http://localhost:4566/000000000000/soh-dropshipment-shipment-confirmed-queue
+      dropshipmentPurchaseOrderBooked: http://localhost:4566/000000000000/soh-dropshipment-purchase-order-booked-queue
   aws:
     config:
       maxNumberOfMessages: 10

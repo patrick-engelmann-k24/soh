@@ -1,5 +1,6 @@
 package de.kfzteile24.salesOrderHub.dto.events;
 
+import de.kfzteile24.soh.order.dto.Order;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,5 +14,5 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 public class OrderCancelledEvent {
 
-    private String orderNumber;
+    private Order order;
 }

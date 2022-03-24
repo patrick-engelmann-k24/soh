@@ -18,7 +18,8 @@ data "aws_iam_policy_document" "sns_sqs_access_policy" {
       data.aws_sns_topic.sns_soh_sales_order_cancellation_v1.arn,
       data.aws_sns_topic.sns_core_subsequent_delivery_note_printed.arn,
       data.aws_sns_topic.sns_soh_order_invoice_created_v1.arn,
-      data.aws_sns_topic.sns_soh_shipment_confirmed_v1.arn
+      data.aws_sns_topic.sns_soh_shipment_confirmed_v1.arn,
+      data.aws_sns_topic.sns_soh_dropshipment_purchase_order_booked_v1.arn
     ]
   }
   statement {
@@ -42,7 +43,8 @@ data "aws_iam_policy_document" "sns_sqs_access_policy" {
       aws_sqs_queue.soh_core_cancellation.arn,
       aws_sqs_queue.soh_subsequent_delivery_received.arn,
       aws_sqs_queue.d365_order_payment_secured.arn,
-      aws_sqs_queue.soh_dropshipment_shipment_confirmed.arn
+      aws_sqs_queue.soh_dropshipment_shipment_confirmed.arn,
+      aws_sqs_queue.dropshipment_purchase_order_booked.arn
     ]
   }
 }

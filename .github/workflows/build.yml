@@ -37,6 +37,7 @@ env:
   soh_sqs_subsequent_delivery_received: 'http://localhost:4566/000000000000/soh-subsequent-delivery-received-queue'
   soh_sqs_d365_order_payment_secured: 'http://localhost:4566/000000000000/soh-d365-order-payment-secured-queue'
   soh_sqs_dropshipment_shipment_confirmed:  'http://localhost:4566/000000000000/soh-dropshipment-shipment-confirmed-queue'
+  soh_sqs_dropshipment_purchase_order_booked: 'http://localhost:4566/000000000000/soh-dropshipment-purchase-order-booked-queue'
 
 on: [push]
 

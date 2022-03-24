@@ -7,9 +7,13 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreCancellationMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.cancellation.CoreCancellationItem;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
+import de.kfzteile24.soh.order.dto.Order;
+import de.kfzteile24.soh.order.dto.OrderHeader;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
@@ -24,8 +28,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
@@ -106,8 +112,9 @@ class SqsReceiveServiceTest {
         sqsReceiveService.queueListenerCoreCancellation(cancellationRawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
         String body = objectMapper.readValue(cancellationRawMessage, SqsMessage.class).getBody();
-        CoreCancellationMessage coreCancellationMessage = objectMapper.readValue(body, CoreCancellationMessage.class);
-        verify(salesOrderRowService).cancelOrderRows(coreCancellationMessage);
+        CoreCancellationMessage message = objectMapper.readValue(body, CoreCancellationMessage.class);
+        List<String> skus = message.getItems().stream().map(CoreCancellationItem::getSku).collect(Collectors.toList());
+        verify(salesOrderRowService).cancelOrderRows(message.getOrderNumber(), skus);
     }
 
     @Test
@@ -234,6 +241,20 @@ class SqsReceiveServiceTest {
         assertThatThrownBy(() -> sqsReceiveService.queueListenerD365OrderPaymentSecured(rawMessage, ANY_SENDER_ID,
                 ANY_RECEIVE_COUNT)).isExactlyInstanceOf(RuntimeException.class);
 
+    }
+
+    @Test
+    @SneakyThrows
+    void testQueueListenerDropshipmentPurchaseOrderBooked() {
+
+        String rawMessage = readResource("examples/dropshipmentOrderPurchasedBooked.json");
+
+        sqsReceiveService.queueListenerDropshipmentPurchaseOrderBooked(rawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+
+        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+        DropshipmentPurchaseOrderBookedMessage message =
+                objectMapper.readValue(body, DropshipmentPurchaseOrderBookedMessage.class);
+        verify(salesOrderRowService).handleDropshipmentPurchaseOrderBooked(message);
     }
 
     @SneakyThrows({URISyntaxException.class, IOException.class})
