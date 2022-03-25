@@ -3,6 +3,10 @@ locals {
   sqs_queues = {
     ecp_shop_orders = "${var.environment}-${local.service_prefix}-ecp-shop-orders-${local.version}",
     ecp_shop_orders_dlq = "${var.environment}-${local.service_prefix}-ecp-shop-orders-${local.version}-dlq",
+    bc_shop_orders = "${var.environment}-${local.service_prefix}-bc-shop-orders-${local.version}",
+    bc_shop_orders_dlq = "${var.environment}-${local.service_prefix}-bc-shop-orders-${local.version}-dlq",
+    core_shop_orders = "${var.environment}-${local.service_prefix}-core-shop-orders-${local.version}",
+    core_shop_orders_dlq = "${var.environment}-${local.service_prefix}-core-shop-orders-${local.version}-dlq",
     order_item_shipped = "${var.environment}-${local.service_prefix}-order-item-shipped-${local.version}",
     order_item_shipped_dlq = "${var.environment}-${local.service_prefix}-order-item-shipped-${local.version}-dlq",
     order_payment_secured = "${var.environment}-${local.service_prefix}-order-payment-secured-${local.version}"
@@ -33,6 +37,24 @@ resource "aws_sqs_queue" "ecp_shop_orders_dlq" {
 resource "aws_sqs_queue" "ecp_shop_orders" {
   name = local.sqs_queues.ecp_shop_orders
   redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.ecp_shop_orders_dlq.arn}\",\"maxReceiveCount\":4}"
+}
+
+resource "aws_sqs_queue" "bc_shop_orders_dlq" {
+  name = local.sqs_queues.bc_shop_orders_dlq
+}
+
+resource "aws_sqs_queue" "bc_shop_orders" {
+  name = local.sqs_queues.bc_shop_orders
+  redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.bc_shop_orders_dlq.arn}\",\"maxReceiveCount\":4}"
+}
+
+resource "aws_sqs_queue" "core_shop_orders_dlq" {
+  name = local.sqs_queues.core_shop_orders_dlq
+}
+
+resource "aws_sqs_queue" "core_shop_orders" {
+  name = local.sqs_queues.core_shop_orders
+  redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.core_shop_orders_dlq.arn}\",\"maxReceiveCount\":4}"
 }
 
 resource "aws_sqs_queue" "soh_order_item_shipped_dlq" {

@@ -10,4 +10,10 @@ public class AwsSqsConfig {
 
     @Value("${soh.sqs.queue.ecpShopOrders}")
     private String sqsEcpShopOrders;
+
+    @Value("${soh.sqs.queue.bcShopOrders}")
+    private String sqsBcShopOrders;
+
+    @Value("${soh.sqs.queue.coreShopOrders}")
+    private String sqsCoreShopOrders;
 }

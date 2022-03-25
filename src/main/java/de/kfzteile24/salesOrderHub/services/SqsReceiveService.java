@@ -52,7 +52,11 @@ public class SqsReceiveService {
     /**
      * Consume sqs for new orders from ecp shop
      */
-    @SqsListener("${soh.sqs.queue.ecpShopOrders}")
+    @SqsListener({
+            "${soh.sqs.queue.ecpShopOrders}",
+            "${soh.sqs.queue.bcShopOrders}",
+            "${soh.sqs.queue.coreShopOrders}"
+    })
     @SneakyThrows(JsonProcessingException.class)
     @Transactional
     @Trace(metricName = "Handling shop order message", dispatcher = true)

@@ -7,7 +7,6 @@ data "aws_iam_policy_document" "sns_sqs_access_policy" {
     ]
 
     resources = [
-      data.aws_sns_topic.sns_soh_order_created_topic.arn,
       data.aws_sns_topic.sns_soh_order_created_v2_topic.arn,
       data.aws_sns_topic.sns_soh_order_completed_topic.arn,
       data.aws_sns_topic.sns_soh_order_cancelled_topic.arn,
@@ -30,6 +29,8 @@ data "aws_iam_policy_document" "sns_sqs_access_policy" {
 
     resources = [
       aws_sqs_queue.ecp_shop_orders.arn,
+      aws_sqs_queue.bc_shop_orders.arn,
+      aws_sqs_queue.core_shop_orders.arn,
       aws_sqs_queue.soh_order_item_shipped.arn,
       aws_sqs_queue.soh_order_payment_secured.arn,
       aws_sqs_queue.soh_order_item_transmitted_to_logistic.arn,

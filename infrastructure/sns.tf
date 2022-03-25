@@ -1,7 +1,3 @@
-data "aws_sns_topic" "sns_soh_order_created_topic" {
-  name = "soh-order-created"
-}
-
 data "aws_sns_topic" "sns_soh_order_created_v2_topic" {
   name = "soh-order-created-v2"
 }
@@ -95,14 +91,14 @@ resource "aws_sns_topic_subscription" "sns_subscription_ecp_orders_v3" {
 
 # subscription for de-shop orders
 resource "aws_sns_topic_subscription" "sns_subscription_braincraft_orders" {
-  endpoint = aws_sqs_queue.ecp_shop_orders.arn
+  endpoint = aws_sqs_queue.bc_shop_orders.arn
   protocol = "sqs"
   topic_arn = data.aws_sns_topic.sns_braincraft_order_received.arn
 }
 
 # subscription for core aka offline orders
 resource "aws_sns_topic_subscription" "sns_subscription_core_orders" {
-  endpoint = aws_sqs_queue.ecp_shop_orders.arn
+  endpoint = aws_sqs_queue.core_shop_orders.arn
   protocol = "sqs"
   topic_arn = data.aws_sns_topic.sns_core_sales_orders_created.arn
 }

@@ -19,14 +19,6 @@ data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_soh_ecp_shop
     resources = [
       aws_sqs_queue.ecp_shop_orders.arn
     ]
-
-//    condition {
-//      test     = "ArnEquals"
-//      variable = "aws:SourceArn"
-//      values = [
-//        "arn:aws:sns:eu-central-1:726569450381:development-order-export",
-//      ]
-//    }
   }
 
   statement {
@@ -50,6 +42,90 @@ data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_soh_ecp_shop
 resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_ecp_order" {
   queue_url = aws_sqs_queue.ecp_shop_orders.id
   policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_soh_ecp_shop_orders.json
+}
+
+data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_soh_bc_shop_orders" {
+  statement {
+    sid = "SNS-bc-shop-orders"
+    effect = "Allow"
+
+    actions = [
+      "sqs:SendMessage",
+    ]
+
+    principals {
+      identifiers = ["*"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.bc_shop_orders.arn
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sqs:*",
+    ]
+
+    principals {
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.bc_shop_orders.arn
+    ]
+  }
+}
+
+resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_bc_order" {
+  queue_url = aws_sqs_queue.bc_shop_orders.id
+  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_soh_bc_shop_orders.json
+}
+
+data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_soh_core_shop_orders" {
+  statement {
+    sid = "SNS-core-shop-orders"
+    effect = "Allow"
+
+    actions = [
+      "sqs:SendMessage",
+    ]
+
+    principals {
+      identifiers = ["*"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.core_shop_orders.arn
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sqs:*",
+    ]
+
+    principals {
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.core_shop_orders.arn
+    ]
+  }
+}
+
+resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_core_order" {
+  queue_url = aws_sqs_queue.core_shop_orders.id
+  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_soh_core_shop_orders.json
 }
 
 data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_soh_order_item_shipped" {

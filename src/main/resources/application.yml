@@ -46,7 +46,6 @@ cloud:
 soh:
   sns:
     topic:
-      orderCreated: ${soh_order_created}
       orderCreatedV2: ${soh_order_created_v2}
       orderCompleted: ${soh_order_completed}
       orderCancelled: ${soh_order_cancelled}
@@ -60,6 +59,8 @@ soh:
   sqs:
     queue:
       ecpShopOrders: ${soh_sqs_ecp_shop_orders}
+      bcShopOrders: ${soh_sqs_bc_shop_orders}
+      coreShopOrders: ${soh_sqs_core_shop_orders}
       orderItemShipped: ${soh_sqs_order_item_shipped}
       orderPaymentSecured: ${soh_sqs_order_payment_secured}
       orderItemTransmittedToLogistic: ${soh_sqs_order_item_transmitted_to_logistic}

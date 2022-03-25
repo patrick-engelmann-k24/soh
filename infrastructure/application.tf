@@ -32,7 +32,6 @@ module "application_module" {
     soh_db_port                                = module.aurora.this_rds_cluster_port
     soh_db_database                            = "sales_order_hub"
 
-    soh_order_created                          = data.aws_sns_topic.sns_soh_order_created_topic.arn
     soh_order_created_v2                       = data.aws_sns_topic.sns_soh_order_created_v2_topic.arn
     soh_order_completed                        = data.aws_sns_topic.sns_soh_order_completed_topic.arn
     soh_order_item_cancelled                   = data.aws_sns_topic.sns_soh_order_item_cancelled_topic.arn
@@ -45,6 +44,8 @@ module "application_module" {
     soh_order_invoice_created_v1               = data.aws_sns_topic.sns_soh_order_invoice_created_v1.arn
 
     soh_sqs_ecp_shop_orders                    = aws_sqs_queue.ecp_shop_orders.id
+    soh_sqs_bc_shop_orders                     = aws_sqs_queue.bc_shop_orders.id
+    soh_sqs_core_shop_orders                   = aws_sqs_queue.core_shop_orders.id
     soh_sqs_order_item_shipped                 = aws_sqs_queue.soh_order_item_shipped.id
     soh_sqs_order_payment_secured              = aws_sqs_queue.soh_order_payment_secured.id
     soh_sqs_order_item_transmitted_to_logistic = aws_sqs_queue.soh_order_item_transmitted_to_logistic.id

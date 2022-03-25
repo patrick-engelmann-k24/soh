@@ -11,7 +11,6 @@ export AWS_ACCESS_KEY_ID=000000000000
 
 TOPICS="
     soh-delivery-address-changed
-    soh-order-created
     soh-order-created-v2
     soh-order-completed
     soh-order-cancelled
@@ -27,6 +26,8 @@ TOPICS="
     soh-invoice-address-changed
     soh-invoices-from-core
     soh-ecp-shop-orders
+    soh-bc-shop-orders
+    soh-core-shop-orders
     soh-sales-order-row-cancelled
     soh-sales-order-cancelled
     soh-core-cancellation
