@@ -34,6 +34,7 @@ soh:
       salesOrderRowCancelled: arn:aws:sns:eu-central-1:000000000000:soh-sales-order-row-cancelled
       salesOrderCancelled:    arn:aws:sns:eu-central-1:000000000000:soh-sales-order-cancelled
       orderInvoiceCreatedV1:  arn:aws:sns:eu-central-1:000000000000:soh-order-invoice-created-v1
+      shipmentConfirmedV1: arn:aws:sns:eu-central-1:000000000000:soh-shipment-confirmed-v1
   sqs:
     queue:
       ecpShopOrders:                  http://localhost:4566/000000000000/soh-ecp-shop-orders-queue
@@ -49,6 +50,7 @@ soh:
       coreCancellation:               http://localhost:4566/000000000000/soh-core-cancellation-queue
       subsequentDeliveryReceived:     http://localhost:4566/000000000000/soh-subsequent-delivery-received-queue
       d365OrderPaymentSecured:        http://localhost:4566/000000000000/soh-d365-order-payment-secured-queue
+      dropshipmentShipmentConfirmed:  http://localhost:4566/000000000000/soh-dropshipment-shipment-confirmed-queue
   aws:
     config:
       maxNumberOfMessages: 10

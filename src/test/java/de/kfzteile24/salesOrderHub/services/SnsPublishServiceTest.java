@@ -8,6 +8,7 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.events.OrderRowCancelledEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInfoEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInvoiceCreatedEvent;
+import de.kfzteile24.salesOrderHub.dto.events.SalesOrderShipmentConfirmedEvent;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.soh.order.dto.OrderRows;
@@ -20,6 +21,7 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.cloud.aws.messaging.core.NotificationMessagingTemplate;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -227,6 +229,33 @@ class SnsPublishServiceTest {
         verify(notificationMessagingTemplate).sendNotification(
                 expectedTopic,
                 objectMapper.writeValueAsString(expectedSalesOrderInvoiceCreatedEvent),
+                expectedSubject
+        );
+    }
+
+    @Test
+    @SneakyThrows
+    void testPublishShipmentConfirmed() {
+        final var expectedTopic = "shipment-confirmed-created";
+        final var expectedSubject = "Sales order shipment confirmed V1";
+
+        final var salesOrder = createNewSalesOrderV3(true, REGULAR, CREDIT_CARD, NEW);
+        final var trackingLinks = List.of(
+                "http://abc1",
+                "http://abc2");
+
+        when(awsSnsConfig.getSnsShipmentConfirmedV1()).thenReturn(expectedTopic);
+
+        final var salesOrderShipmentConfirmedEvent = SalesOrderShipmentConfirmedEvent.builder()
+                .order(salesOrder.getLatestJson())
+                .trackingLinks(trackingLinks)
+                .build();
+
+        snsPublishService.publishSalesOrderShipmentConfirmedEvent(salesOrder, trackingLinks);
+
+        verify(notificationMessagingTemplate).sendNotification(
+                expectedTopic,
+                objectMapper.writeValueAsString(salesOrderShipmentConfirmedEvent),
                 expectedSubject
         );
     }

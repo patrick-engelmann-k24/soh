@@ -34,6 +34,8 @@ TOPICS="
     soh-subsequent-delivery-received
     soh-order-invoice-created-v1
     soh-d365-order-payment-secured
+    soh-dropshipment-shipment-confirmed
+    soh-shipment-confirmed-v1
     "
 
 # Outdated topics

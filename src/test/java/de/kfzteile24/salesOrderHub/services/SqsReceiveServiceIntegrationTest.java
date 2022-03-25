@@ -1,12 +1,12 @@
 package de.kfzteile24.salesOrderHub.services;
 
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
-import de.kfzteile24.salesOrderHub.SalesOrderHubProcessApplication;
 import de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.domain.audit.Action;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
@@ -14,17 +14,22 @@ import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.Totals;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
+import org.assertj.core.api.AutoCloseableSoftAssertions;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.annotation.DirtiesContext;
 
 import java.io.IOException;
@@ -36,9 +41,13 @@ import java.util.Map;
 import java.util.Objects;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_ECP;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_PAYMENT_SECURED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.*;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_GROUP_ID;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SHIPMENT_METHOD;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.ORDER_ROW_ID;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrderFromOrder;
@@ -46,7 +55,13 @@ import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getOrder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.reset;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 
 /**
  * @author stefand
@@ -54,6 +69,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @SpringBootTest
+@Slf4j
 class SqsReceiveServiceIntegrationTest {
 
     private static final String ANY_SENDER_ID = RandomStringUtils.randomAlphabetic(10);
@@ -79,6 +95,8 @@ class SqsReceiveServiceIntegrationTest {
     private ProcessEngine processEngine;
     @Autowired
     private SalesOrderUtil salesOrderUtil;
+    @SpyBean
+    private SnsPublishService snsPublishService;
 
     @BeforeEach
     public void setup() {
@@ -324,6 +342,52 @@ class SqsReceiveServiceIntegrationTest {
 
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), "1130-0713")));
 
+    }
+
+    @Test
+    @DisplayName("IT testing dropshipment shipment confirmed event handling")
+    void testQueueListenerDropshipmentShipmentConfirmed(TestInfo testInfo) {
+
+        log.info(testInfo.getDisplayName());
+
+        var salesOrder = SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
+        salesOrder.setOrderNumber("580309129");
+
+        salesOrderService.save(salesOrder, Action.ORDER_CREATED);
+
+        var dropshipmentShipmentConfirmed =  readResource("examples/dropshipmentShipmentConfirmed.json");
+        sqsReceiveService.queueListenerDropshipmentShipmentConfirmed(dropshipmentShipmentConfirmed, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+
+        var optUpdatedSalesOrder = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber());
+        assertThat(optUpdatedSalesOrder).isNotEmpty();
+        var updatedSalesOrder = optUpdatedSalesOrder.get();
+        var updatedOrderRows = updatedSalesOrder.getLatestJson().getOrderRows();
+        assertThat(updatedOrderRows).hasSize(3);
+
+        var sku1Row = updatedOrderRows.get(0);
+        var sku2Row = updatedOrderRows.get(1);
+        var sku3Row = updatedOrderRows.get(2);
+
+        try (AutoCloseableSoftAssertions softly = new AutoCloseableSoftAssertions()) {
+            softly.assertThat(sku1Row.getSku()).as("sku-1").isEqualTo("sku-1");
+            softly.assertThat(sku1Row.getTrackingNumbers()).as("Size of tracking numbers sku-1").hasSize(1);
+            softly.assertThat(sku1Row.getTrackingNumbers().get(0)).as("sku-1 tracking number").isEqualTo("00F8F0LT");
+
+            softly.assertThat(sku2Row.getSku()).as("sku-2").isEqualTo("sku-2");
+            softly.assertThat(sku2Row.getTrackingNumbers()).as("Size of tracking numbers sku-2").isNull();
+
+            softly.assertThat(sku3Row.getSku()).as("sku-3").isEqualTo("sku-3");
+            softly.assertThat(sku3Row.getTrackingNumbers()).as("Size of tracking numbers sku-3").hasSize(1);
+            softly.assertThat(sku3Row.getTrackingNumbers().get(0)).as("sku-3 tracking number").isEqualTo("00F8F0LT2");
+        }
+
+        verify(snsPublishService).publishSalesOrderShipmentConfirmedEvent(eq(updatedSalesOrder), argThat(
+                trackingNumbers -> {
+                    assertThat(trackingNumbers).hasSize(2);
+                    assertThat(trackingNumbers).containsExactlyInAnyOrder("http://abc1", "http://abc2");
+                    return true;
+                }
+        ));
     }
 
     @SneakyThrows({URISyntaxException.class, IOException.class})

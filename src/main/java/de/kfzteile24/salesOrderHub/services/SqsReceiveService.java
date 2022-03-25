@@ -11,7 +11,9 @@ import de.kfzteile24.salesOrderHub.dto.sns.CoreCancellationMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
 import de.kfzteile24.salesOrderHub.dto.sns.FulfillmentMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.OrderPaymentSecuredMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.ShipmentConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SubsequentDeliveryMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.soh.order.dto.Order;
@@ -27,6 +29,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -34,7 +37,9 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.O
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_ECP;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.INVOICE_URL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ITEM_SHIPPED;
 import static java.util.function.Predicate.not;
+import static java.util.stream.Collectors.toUnmodifiableSet;
 import static org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy.ON_SUCCESS;
 
 @Service
@@ -48,6 +53,7 @@ public class SqsReceiveService {
     private final CamundaHelper camundaHelper;
     private final ObjectMapper objectMapper;
     private final SalesOrderPaymentSecuredService salesOrderPaymentSecuredService;
+    private final SnsPublishService snsPublishService;
 
     /**
      * Consume sqs for new orders from ecp shop
@@ -355,5 +361,48 @@ public class SqsReceiveService {
             orderPaymentSecuredMessage.getData().getOrderGroupId(),  orderNumbers);
 
         salesOrderPaymentSecuredService.correlateOrderReceivedPaymentSecured(orderNumbers);
+    }
+
+    /**
+     * Consume messages from sqs for dropshipment shipment confirmed published by P&R
+     */
+    @SqsListener(value = "${soh.sqs.queue.dropshipmentShipmentConfirmed}", deletionPolicy = ON_SUCCESS)
+    @SneakyThrows(JsonProcessingException.class)
+    @Trace(metricName = "Handling dropshipment shipment confirmed message", dispatcher = true)
+    public void queueListenerDropshipmentShipmentConfirmed(
+            String rawMessage,
+            @Header("SenderId") String senderId,
+            @Header("ApproximateReceiveCount") Integer receiveCount) {
+
+        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+        ShipmentConfirmedMessage shipmentConfirmedMessage = objectMapper.readValue(body, ShipmentConfirmedMessage.class);
+        var orderNumber = shipmentConfirmedMessage.getSalesOrderNumber();
+        log.info("Received dropshipment shipment confirmed message with order number: {}", orderNumber);
+
+        SalesOrder salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
+                .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
+
+        var orderRows = salesOrder.getLatestJson().getOrderRows();
+        var shippedItems = shipmentConfirmedMessage.getItems();
+
+        shippedItems.forEach(item ->
+                    orderRows.stream()
+                            .filter(row -> StringUtils.pathEquals(row.getSku(), item.getProductNumber()))
+                            .findFirst()
+                            .ifPresent(row -> {
+                                var parcelNumber = item.getParcelNumber();
+                                Optional.ofNullable(row.getTrackingNumbers())
+                                        .ifPresentOrElse(trackingNumbers -> trackingNumbers.add(parcelNumber),
+                                                () -> row.setTrackingNumbers(List.of(parcelNumber)));
+                            })
+        );
+
+        var persistedSalesOrder = salesOrderService.save(salesOrder, ORDER_ITEM_SHIPPED);
+
+        var trackingLinks = shippedItems.stream()
+                .map(ShipmentItem::getTrackingLink)
+                .collect(toUnmodifiableSet());
+
+        snsPublishService.publishSalesOrderShipmentConfirmedEvent(persistedSalesOrder, trackingLinks);
     }
 }

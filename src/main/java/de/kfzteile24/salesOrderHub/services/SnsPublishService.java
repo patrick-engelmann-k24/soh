@@ -3,9 +3,11 @@ package de.kfzteile24.salesOrderHub.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.AwsSnsConfig;
+import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.events.OrderRowCancelledEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInfoEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInvoiceCreatedEvent;
+import de.kfzteile24.salesOrderHub.dto.events.SalesOrderShipmentConfirmedEvent;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +15,8 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.aws.messaging.core.NotificationMessagingTemplate;
 import org.springframework.stereotype.Service;
+
+import java.util.Collection;
 
 @Service
 @RequiredArgsConstructor
@@ -75,6 +79,18 @@ public class SnsPublishService {
 
         publishEvent(config.getSnsOrderInvoiceCreatedV1(), "Sales order invoice created V1",
                 salesOrderInvoiceCreatedEvent, orderNumber);
+    }
+
+    public void publishSalesOrderShipmentConfirmedEvent(SalesOrder salesOrder, Collection<String> trackingLinks) {
+
+        var salesOrderShipmentConfirmedEvent = SalesOrderShipmentConfirmedEvent.builder()
+                .order(salesOrder.getLatestJson())
+                .trackingLinks(trackingLinks)
+                .build();
+
+        publishEvent(config.getSnsShipmentConfirmedV1(), "Sales order shipment confirmed V1",
+                salesOrderShipmentConfirmedEvent, salesOrder.getOrderNumber());
+
     }
 
     protected void sendLatestOrderJson(String topic, String subject, String orderNumber) {

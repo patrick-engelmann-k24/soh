@@ -27,6 +27,8 @@ locals {
     subsequent_delivery_received_dlq = "${var.environment}-${local.service_prefix}-subsequent-delivery-received-${local.version}-dlq",
     d365_order_payment_secured = "${var.environment}-${local.service_prefix}-d365_order_payment_secured-${local.version}",
     d365_order_payment_secured_dlq = "${var.environment}-${local.service_prefix}-d365_order_payment_secured-${local.version}-dlq"
+    dropshipment_shipment_confirmed = "${var.environment}-${local.service_prefix}-dropshipment-shipment-confirmed-${local.version}",
+    dropshipment_shipment_confirmed_dlq = "${var.environment}-${local.service_prefix}-dropshipment-shipment-confirmed-${local.version}-dlq"
   }
 }
 
@@ -147,4 +149,13 @@ resource "aws_sqs_queue" "d365_order_payment_secured_dlq" {
 resource "aws_sqs_queue" "d365_order_payment_secured" {
   name = local.sqs_queues.d365_order_payment_secured
   redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.d365_order_payment_secured_dlq.arn}\",\"maxReceiveCount\":4}"
+}
+
+resource "aws_sqs_queue" "soh_dropshipment_shipment_confirmed_dlq" {
+  name = local.sqs_queues.dropshipment_shipment_confirmed_dlq
+}
+
+resource "aws_sqs_queue" "soh_dropshipment_shipment_confirmed" {
+  name = local.sqs_queues.dropshipment_shipment_confirmed
+  redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.soh_dropshipment_shipment_confirmed_dlq.arn}\",\"maxReceiveCount\":4}"
 }

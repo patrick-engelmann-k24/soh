@@ -621,3 +621,45 @@ resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_d365_order_payment_s
   queue_url = aws_sqs_queue.d365_order_payment_secured.id
   policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_d365_order_payment_secured.json
 }
+
+data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_dropshipment_shipment_confirmed" {
+  statement {
+    sid = "SNS-dropshipment-shipment-confirmed"
+    effect = "Allow"
+
+    actions = [
+      "sqs:SendMessage",
+    ]
+
+    principals {
+      identifiers = ["*"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_dropshipment_shipment_confirmed.arn
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sqs:*",
+    ]
+
+    principals {
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_dropshipment_shipment_confirmed.arn
+    ]
+  }
+}
+
+resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_dropshipment_shipment_confirmed" {
+  queue_url = aws_sqs_queue.soh_dropshipment_shipment_confirmed.id
+  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_d365_order_payment_secured.json
+}

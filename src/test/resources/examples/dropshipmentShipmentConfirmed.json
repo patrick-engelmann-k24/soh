@@ -1,0 +1,3 @@
+{
+  "Message": "{\n  \"SupplierInternalId\": 45445308,\n  \"PurchaseOrderNumber\": \"123-PO\",\n  \"SalesOrderNumber\": \"580309129\",\n  \"ServiceProviderName\": \"GLS\",\n  \"ShipmentDate\": \"2021-10-14\",\n  \"Items\": [\n    {\n      \"ProductNumber\": \"sku-1\",\n      \"ParcelNumber\": \"00F8F0LT\",\n      \"TrackingLink\": \"http://abc1\",\n      \"Quantity\": 2\n    },\n    {\n      \"ProductNumber\": \"sku-3\",\n      \"ParcelNumber\": \"00F8F0LT2\",\n      \"TrackingLink\": \"http://abc2\",\n      \"Quantity\": 2\n    }\n  ]\n}"
+}

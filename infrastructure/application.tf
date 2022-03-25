@@ -42,6 +42,8 @@ module "application_module" {
     soh_sales_order_row_cancellation           = data.aws_sns_topic.sns_soh_sales_order_row_cancellation_v1.arn
     soh_sales_order_cancellation               = data.aws_sns_topic.sns_soh_sales_order_cancellation_v1.arn
     soh_order_invoice_created_v1               = data.aws_sns_topic.sns_soh_order_invoice_created_v1.arn
+    soh_order_invoice_created_v1               = data.aws_sns_topic.sns_soh_order_invoice_created_v1.arn
+    sns_soh_shipment_confirmed_v1              = data.aws_sns_topic.sns_soh_shipment_confirmed_v1.arn
 
     soh_sqs_ecp_shop_orders                    = aws_sqs_queue.ecp_shop_orders.id
     soh_sqs_bc_shop_orders                     = aws_sqs_queue.bc_shop_orders.id
@@ -56,6 +58,7 @@ module "application_module" {
     soh_sqs_core_cancellation                  = aws_sqs_queue.soh_core_cancellation.id
     soh_sqs_subsequent_delivery_received       = aws_sqs_queue.soh_subsequent_delivery_received.id
     soh_sqs_d365_order_payment_secured         = aws_sqs_queue.d365_order_payment_secured.id
+    soh_sqs_dropshipment_shipment_confirmed    = aws_sqs_queue.soh_dropshipment_shipment_confirmed.id
   }
 
   ssm_secrets_count = 7

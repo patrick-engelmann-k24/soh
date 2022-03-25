@@ -37,4 +37,7 @@ public class AwsSnsConfig {
 
     @Value("${soh.sns.topic.orderInvoiceCreatedV1}")
     private String snsOrderInvoiceCreatedV1;
+
+    @Value("${soh.sns.topic.shipmentConfirmedV1}")
+    private String snsShipmentConfirmedV1;
 }

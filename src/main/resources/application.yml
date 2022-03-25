@@ -56,6 +56,7 @@ soh:
       salesOrderRowCancelled: ${soh_sales_order_row_cancellation}
       salesOrderCancelled: ${soh_sales_order_cancellation}
       orderInvoiceCreatedV1: ${soh_order_invoice_created_v1}
+      shipmentConfirmedV1: ${sns_soh_shipment_confirmed_v1}
   sqs:
     queue:
       ecpShopOrders: ${soh_sqs_ecp_shop_orders}
@@ -71,6 +72,7 @@ soh:
       coreCancellation: ${soh_sqs_core_cancellation}
       subsequentDeliveryReceived: ${soh_sqs_subsequent_delivery_received}
       d365OrderPaymentSecured: ${soh_sqs_d365_order_payment_secured}
+      dropshipmentShipmentConfirmed: ${soh_sqs_dropshipment_shipment_confirmed}
   aws:
     config:
       maxNumberOfMessages: 10
