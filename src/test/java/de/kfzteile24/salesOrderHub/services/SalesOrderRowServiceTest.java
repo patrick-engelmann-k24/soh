@@ -1,9 +1,6 @@
 package de.kfzteile24.salesOrderHub.services;
 
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
-import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.dto.sns.CoreCancellationItem;
-import de.kfzteile24.salesOrderHub.dto.sns.CoreCancellationMessage;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
@@ -145,7 +142,7 @@ class SalesOrderRowServiceTest {
 
         assertEquals("27.9", salesOrder.getLatestJson().getOrderHeader().getOrderNumberExternal());
         verify(salesOrderService).save(
-                argThat(order -> order.getLatestJson().getOrderHeader().getOrderNumberExternal().equals("27.9")),
+                eq(salesOrder),
                 eq(DROPSHIPMENT_PURCHASE_ORDER_BOOKED)
         );
 
