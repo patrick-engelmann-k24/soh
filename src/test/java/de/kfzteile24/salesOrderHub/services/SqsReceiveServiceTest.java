@@ -117,7 +117,7 @@ class SqsReceiveServiceTest {
 
         when(salesOrderService.createSalesOrderForSubsequentDelivery(any(), any())).thenReturn(salesOrder);
 
-        String subsequentDeliveryNoteMessage = readResource("examples/subsequentDeliveryNote.json");
+        String subsequentDeliveryNoteMessage = readResource("examples/subsequentDeliveryNoteWithOneItem.json");
         sqsReceiveService.queueListenerSubsequentDeliveryReceived(subsequentDeliveryNoteMessage, ANY_SENDER_ID,
                 ANY_RECEIVE_COUNT);
 

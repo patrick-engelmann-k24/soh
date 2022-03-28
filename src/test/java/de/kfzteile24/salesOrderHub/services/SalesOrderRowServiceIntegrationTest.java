@@ -35,6 +35,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
@@ -113,14 +114,8 @@ class SalesOrderRowServiceIntegrationTest {
         assertTrue(updatedSalesOrder.isPresent());
 
         Order latestJson = updatedSalesOrder.get().getLatestJson();
-        for (OrderRows orderRows : latestJson.getOrderRows()) {
-            if (orderRows.getSku().equals(skuToCancel)) {
-                assertTrue(orderRows.getIsCancelled());
-                checkTotalsValues(latestJson.getOrderHeader().getTotals());
-            } else {
-                assertFalse(orderRows.getIsCancelled());
-            }
-        }
+        assertThat(latestJson.getOrderRows().stream().filter(OrderRows::getIsCancelled).count()).isZero();
+        checkTotalsValues(latestJson.getOrderHeader().getTotals());
 
         HistoricProcessInstance historicProcessInstance = historyService.createHistoricProcessInstanceQuery()
                 .processDefinitionKey(SALES_ORDER_PROCESS.getName())
@@ -159,14 +154,8 @@ class SalesOrderRowServiceIntegrationTest {
         assertTrue(updatedSalesOrder.isPresent());
 
         Order latestJson = updatedSalesOrder.get().getLatestJson();
-        for (OrderRows orderRows : latestJson.getOrderRows()) {
-            if (orderRows.getSku().equals(skuToCancel)) {
-                assertTrue(orderRows.getIsCancelled());
-                checkTotalsValues(latestJson.getOrderHeader().getTotals());
-            } else {
-                assertFalse(orderRows.getIsCancelled());
-            }
-        }
+        assertThat(latestJson.getOrderRows().stream().filter(OrderRows::getIsCancelled).count()).isZero();
+        checkTotalsValues(latestJson.getOrderHeader().getTotals());
 
         HistoricProcessInstance historicProcessInstance = historyService.createHistoricProcessInstanceQuery()
                 .processDefinitionKey(SALES_ORDER_PROCESS.getName())
@@ -198,13 +187,13 @@ class SalesOrderRowServiceIntegrationTest {
 
     private void checkTotalsValues(Totals totals) {
 
-        assertEquals(BigDecimal.valueOf(90), totals.getGoodsTotalGross());
-        assertEquals(BigDecimal.valueOf(79), totals.getGoodsTotalNet());
-        assertEquals(BigDecimal.valueOf(90), totals.getTotalDiscountGross());
-        assertEquals(BigDecimal.valueOf(79), totals.getGoodsTotalNet());
-        assertEquals(BigDecimal.valueOf(0), totals.getGrandTotalGross());
-        assertEquals(BigDecimal.valueOf(0), totals.getPaymentTotal());
-        assertEquals(BigDecimal.valueOf(0), totals.getGrandTotalNet());
+        assertEquals(BigDecimal.valueOf(91), totals.getGoodsTotalGross());
+        assertEquals(BigDecimal.valueOf(77), totals.getGoodsTotalNet());
+        assertEquals(BigDecimal.valueOf(87), totals.getTotalDiscountGross());
+        assertEquals(BigDecimal.valueOf(69), totals.getTotalDiscountNet());
+        assertEquals(BigDecimal.valueOf(4), totals.getGrandTotalGross());
+        assertEquals(BigDecimal.valueOf(4), totals.getPaymentTotal());
+        assertEquals(BigDecimal.valueOf(8), totals.getGrandTotalNet());
     }
 
     public void assertThatNoSubprocessExists(String orderNumber, String sku) {
@@ -227,6 +216,7 @@ class SalesOrderRowServiceIntegrationTest {
                 .map(OrderRows::getSku)
                 .collect(toList());
         final var skuToCancel = orderRowSkus.get(1);
+        final var aliveSkus = orderRowSkus.stream().filter(sku -> !sku.equals(skuToCancel)).collect(Collectors.toList());
 
         // create second sales order with same values except order number
         final var salesOrder2 = salesOrderUtil.createPersistedSalesOrderV3WithDiffGroupId(false, REGULAR, CREDIT_CARD, NEW, salesOrder1.getOrderGroupId());
@@ -235,13 +225,13 @@ class SalesOrderRowServiceIntegrationTest {
             camundaHelper.createOrderProcess(salesOrder1, Messages.ORDER_RECEIVED_ECP);
             CoreCancellationMessage coreCancellationMessage = getCoreCancellationMessage(salesOrder1, skuToCancel);
 
-            assertThat(compareIsCancelledFields(salesOrder1, List.of(false, false, false))).isTrue();
-            assertThat(compareIsCancelledFields(salesOrder2, List.of(false, false, false))).isTrue();
+            assertThat(compareIsCancelledFields(salesOrder1, orderRowSkus)).isTrue();
+            assertThat(compareIsCancelledFields(salesOrder2, orderRowSkus)).isTrue();
             salesOrderRowService.cancelOrderRows(coreCancellationMessage);
 
 
-            assertThat(compareIsCancelledFields(salesOrder1, List.of(false, true, false))).isTrue();
-            assertThat(compareIsCancelledFields(salesOrder2, List.of(false, true, false))).isTrue();
+            assertThat(compareIsCancelledFields(salesOrder1, aliveSkus)).isTrue();
+            assertThat(compareIsCancelledFields(salesOrder2, aliveSkus)).isTrue();
         } finally {
             assert salesOrder1.getId() != null;
             assert salesOrder2.getId() != null;
@@ -249,19 +239,17 @@ class SalesOrderRowServiceIntegrationTest {
         }
     }
 
-    private boolean compareIsCancelledFields(SalesOrder salesOrder, List<Boolean> isCancelledList) {
+    private boolean compareIsCancelledFields(SalesOrder salesOrder, List<String> skuList) {
 
 
         assert salesOrder.getId() != null;
         var foundSalesOrder = salesOrderRepository.findById(salesOrder.getId());
         if (foundSalesOrder.isPresent()) {
             AtomicBoolean result = new AtomicBoolean(true);
-            List<OrderRows> orderRows = foundSalesOrder.get().getLatestJson().getOrderRows();
-            IntStream.range(0, orderRows.size())
-                    .forEach(idx ->
-                            result.set(result.get() && isCancelledList.get(idx).equals(orderRows.get(idx).getIsCancelled()))
-                    );
-            return result.get();
+            return foundSalesOrder.get().getLatestJson().getOrderRows().stream()
+                    .map(OrderRows::getSku)
+                    .collect(Collectors.toList())
+                    .containsAll(skuList);
 
         } else {
             throw new SalesOrderNotFoundException(salesOrder.getOrderNumber());

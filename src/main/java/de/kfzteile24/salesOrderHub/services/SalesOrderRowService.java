@@ -11,6 +11,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.CoreCancellationItem;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreCancellationMessage;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
+import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.SumValues;
@@ -47,6 +48,9 @@ public class SalesOrderRowService {
     @NonNull
     private final SalesOrderService salesOrderService;
 
+    @NonNull
+    private final OrderUtil orderUtil;
+
     public void cancelOrderProcessIfFullyCancelled(SalesOrder salesOrder) {
 
         if (isOrderFullyCancelled(salesOrder.getLatestJson())) {
@@ -56,7 +60,7 @@ public class SalesOrderRowService {
                     orderRow.setIsCancelled(true);
                 }
             }
-            salesOrderService.save(salesOrder, Action.ORDER_CANCELLED);
+            salesOrderService.save(orderUtil.removeCancelledOrderRowsFromLatestJson(salesOrder), Action.ORDER_CANCELLED);
             correlateMessageForOrderCancellation(salesOrder.getOrderNumber());
         }
     }
@@ -128,7 +132,7 @@ public class SalesOrderRowService {
         cancelledOrderRow.setIsCancelled(true);
 
         recalculateOrder(latestJson, cancelledOrderRow);
-        salesOrderService.save(salesOrder, Action.ORDER_ROW_CANCELLED);
+        salesOrderService.save(orderUtil.removeCancelledOrderRowsFromLatestJson(salesOrder), Action.ORDER_ROW_CANCELLED);
     }
 
     private void recalculateOrder(Order latestJson, OrderRows cancelledOrderRow) {
@@ -139,9 +143,9 @@ public class SalesOrderRowService {
         BigDecimal goodsTotalGross = totals.getGoodsTotalGross().subtract(sumValues.getGoodsValueGross());
         BigDecimal goodsTotalNet = totals.getGoodsTotalNet().subtract(sumValues.getGoodsValueNet());
         BigDecimal totalDiscountGross = Optional.ofNullable(totals.getTotalDiscountGross()).orElse(BigDecimal.ZERO)
-                .subtract(Optional.ofNullable(sumValues.getTotalDiscountedGross()).orElse(BigDecimal.ZERO));
+                .subtract(Optional.ofNullable(sumValues.getDiscountGross()).orElse(BigDecimal.ZERO));
         BigDecimal totalDiscountNet = Optional.ofNullable(totals.getTotalDiscountNet()).orElse(BigDecimal.ZERO)
-                .subtract(Optional.ofNullable(sumValues.getTotalDiscountedNet()).orElse(BigDecimal.ZERO));
+                .subtract(Optional.ofNullable(sumValues.getDiscountNet()).orElse(BigDecimal.ZERO));
         BigDecimal grandTotalGross = goodsTotalGross.subtract(totalDiscountGross);
         BigDecimal grantTotalNet = goodsTotalNet.subtract(totalDiscountNet);
         BigDecimal cancelledOrderRowTaxValue = sumValues.getGoodsValueGross().subtract(sumValues.getGoodsValueNet());

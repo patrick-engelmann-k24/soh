@@ -4,10 +4,12 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.dto.sns.SubsequentDeliveryMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.subsequent.SubsequentDeliveryItem;
-import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundCustomException;
+import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
+import de.kfzteile24.soh.order.dto.GrandTotalTaxes;
+import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Platform;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,6 +53,9 @@ class SalesOrderServiceTest {
 
     @Mock
     private InvoiceService invoiceService;
+
+    @Mock
+    private OrderUtil orderUtil;
 
     @InjectMocks
     private SalesOrderService salesOrderService;
@@ -128,18 +133,22 @@ class SalesOrderServiceTest {
 
     @Test
     void createSalesOrderForSubsequentDelivery() {
-        String rawMessage =  readResource("examples/ecpOrderMessage.json");
+        // Prepare sales order
+        String rawMessage =  readResource("examples/testmessage.json");
         var salesOrder = getSalesOrder(rawMessage);
         updateRowIsCancelledFieldAsTrue(salesOrder); //In order to observe change
         String newOrderNumber = "22222";
+        OrderRows orderRow = salesOrder.getLatestJson().getOrderRows().get(0);
 
         // Prepare sub-sequent delivery note obj
         var subsequentDeliveryMessage = createSubsequentDeliveryNote(
                 salesOrder.getOrderNumber(),
-                salesOrder.getLatestJson().getOrderRows().get(0).getSku());
+                orderRow.getSku());
 
+        // Mock services
         when(salesOrderRepository.getOrderByOrderNumber(any())).thenReturn(Optional.of(salesOrder));
         when(invoiceService.getInvoicesByOrderNumber(any())).thenReturn(Set.of());
+        when(orderUtil.createOrderFromOriginalSalesOrder(any(), any(), any())).thenReturn(orderRow);
         when(salesOrderRepository.save(any())).thenAnswer(new Answer<SalesOrder>() {
             @Override
             public SalesOrder answer(InvocationOnMock invocation) throws Throwable {
@@ -147,7 +156,14 @@ class SalesOrderServiceTest {
             }
         });
 
+        // Establish some updates before the test in order to see the change
         salesOrder.setOrderGroupId("33333"); //set order group id to a different value to observe the change
+        GrandTotalTaxes actualGrandTotalTax = GrandTotalTaxes.builder()
+                .rate(BigDecimal.TEN)
+                .value(BigDecimal.TEN)
+                .build();
+        salesOrder.getLatestJson().getOrderHeader().getTotals().setGrandTotalTaxes(List.of(actualGrandTotalTax));
+
         var createdSalesOrder = salesOrderService.createSalesOrderForSubsequentDelivery(
                 subsequentDeliveryMessage,
                 newOrderNumber);
@@ -158,20 +174,18 @@ class SalesOrderServiceTest {
         assertThat(createdSalesOrder.getLatestJson()).isNotNull();
         assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getPlatform()).isNotNull();
         assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getPlatform()).isEqualTo(Platform.SOH);
-        assertThat(createdSalesOrder.getLatestJson().getOrderRows().get(0).getIsCancelled()).isEqualTo(false);
-
-    }
-
-    @Test
-    void ifNewlyCreatedSalesOrderDoesNotIncludeTheSkuGivenSubsequentDeliveryItShouldThrowException(){
-        String rawMessage =  readResource("examples/ecpOrderMessage.json");
-        var salesOrder = getSalesOrder(rawMessage);
-        var subsequent = createSubsequentDeliveryNote(salesOrder.getOrderNumber(), "44444");
-        salesOrder.setOrderGroupId("33333"); //set order group id to a different value to observe the change
-        when(salesOrderRepository.getOrderByOrderNumber(any())).thenReturn(Optional.of(salesOrder));
-
-        assertThatThrownBy(() -> salesOrderService.createSalesOrderForSubsequentDelivery(subsequent, "22222"))
-                .isInstanceOf(NotFoundException.class);
+        assertThat(createdSalesOrder.getId()).isNull();
+        assertThat(createdSalesOrder.getLatestJson().getOrderRows()).hasSize(1);
+        assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getTotals().getGoodsTotalGross()).isEqualTo(orderRow.getSumValues().getGoodsValueGross());
+        assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getTotals().getGoodsTotalNet()).isEqualTo(orderRow.getSumValues().getGoodsValueNet());
+        assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getTotals().getTotalDiscountGross()).isEqualTo(orderRow.getSumValues().getDiscountGross());
+        assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getTotals().getGrandTotalGross()).isEqualTo(orderRow.getSumValues().getGoodsValueGross().subtract(orderRow.getSumValues().getDiscountGross()));
+        assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getTotals().getGrandTotalTaxes()).isEqualTo(
+                List.of(GrandTotalTaxes.builder()
+                        .rate(orderRow.getTaxRate())
+                        .value(new BigDecimal("33.50"))
+                        .build())
+        );
     }
 
     private SubsequentDeliveryMessage createSubsequentDeliveryNote(String orderNumber, String sku) {
@@ -180,6 +194,9 @@ class SalesOrderServiceTest {
         SubsequentDeliveryItem item = new SubsequentDeliveryItem();
         item.setSku(sku);
         item.setQuantity(quantity);
+        item.setUnitPriceGross(BigDecimal.TEN);
+        item.setSalesPriceGross(BigDecimal.TEN.multiply(quantity));
+        item.setTaxRate(BigDecimal.TEN);
         SubsequentDeliveryMessage subsequent = new SubsequentDeliveryMessage();
         subsequent.setOrderNumber(orderNumber);
         subsequent.setItems(List.of(item));

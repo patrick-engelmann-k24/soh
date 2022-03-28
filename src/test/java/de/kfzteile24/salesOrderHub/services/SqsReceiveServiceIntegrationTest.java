@@ -128,11 +128,11 @@ class SqsReceiveServiceIntegrationTest {
         Totals totals = updatedOrder.getLatestJson().getOrderHeader().getTotals();
         assertEquals(new BigDecimal("100.00"), totals.getGoodsTotalGross());
         assertEquals(new BigDecimal("100.00"), totals.getGoodsTotalNet());
-        assertEquals(new BigDecimal("37.49"), totals.getTotalDiscountGross());
-        assertEquals(new BigDecimal("19.50"), totals.getTotalDiscountNet());
-        assertEquals(new BigDecimal("62.51"), totals.getGrandTotalGross());
-        assertEquals(new BigDecimal("80.50"), totals.getGrandTotalNet());
-        assertEquals(new BigDecimal("62.51"), totals.getPaymentTotal());
+        assertEquals(new BigDecimal("50.00"), totals.getTotalDiscountGross());
+        assertEquals(new BigDecimal("30.00"), totals.getTotalDiscountNet());
+        assertEquals(new BigDecimal("50.00"), totals.getGrandTotalGross());
+        assertEquals(new BigDecimal("70.00"), totals.getGrandTotalNet());
+        assertEquals(new BigDecimal("50.00"), totals.getPaymentTotal());
 
         //cleanup to remove the uncancelled process
         runtimeService.deleteProcessInstance(orderProcess.getProcessInstanceId(), "test");
@@ -165,11 +165,11 @@ class SqsReceiveServiceIntegrationTest {
         Totals totals = updatedOrder.getLatestJson().getOrderHeader().getTotals();
         assertEquals(new BigDecimal("86.69"), totals.getGoodsTotalGross());
         assertEquals(new BigDecimal("88.82"), totals.getGoodsTotalNet());
-        assertEquals(new BigDecimal("24.58"), totals.getTotalDiscountGross());
-        assertEquals(new BigDecimal("8.66"), totals.getTotalDiscountNet());
-        assertEquals(new BigDecimal("62.11"), totals.getGrandTotalGross());
-        assertEquals(new BigDecimal("80.16"), totals.getGrandTotalNet());
-        assertEquals(new BigDecimal("62.11"), totals.getPaymentTotal());
+        assertEquals(new BigDecimal("49.60"), totals.getTotalDiscountGross());
+        assertEquals(new BigDecimal("29.66"), totals.getTotalDiscountNet());
+        assertEquals(new BigDecimal("37.09"), totals.getGrandTotalGross());
+        assertEquals(new BigDecimal("59.16"), totals.getGrandTotalNet());
+        assertEquals(new BigDecimal("37.09"), totals.getPaymentTotal());
     }
 
     @Test
@@ -202,7 +202,6 @@ class SqsReceiveServiceIntegrationTest {
     }
 
     @Test
-//    @Transactional
     public void testQueueListenerItemTrackingIdReceivedIfMultipleOrderExistsForSameGroupId() {
 
         var senderId = "Ecp";

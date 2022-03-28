@@ -1,5 +1,5 @@
 terraform_role_arn             = "arn:aws:iam::967623133951:role/K24.Terraform"
-source_repo_branch             = "feature/DEV-32421_Process_Shipping_confirmation_from_P&R"
+source_repo_branch             = "feature/DEV-33196-update-virtual-items-for-subsequent-delivery-note"
 db_instance_class              = "db.t3.medium"
 domain_name                    = "dev.kfzteile24.io"
 environment                    = "dev"

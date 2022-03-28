@@ -4,6 +4,7 @@ import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreCancellationItem;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreCancellationMessage;
+import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Totals;
@@ -53,6 +54,9 @@ class SalesOrderRowServiceTest {
     private SalesOrderService salesOrderService;
 
     @Mock
+    private OrderUtil orderUtil;
+
+    @Mock
     private SnsPublishService snsPublishService;
 
     @InjectMocks
@@ -75,6 +79,7 @@ class SalesOrderRowServiceTest {
         when(salesOrderService.getOrderByOrderNumber(orderNumber)).thenReturn(Optional.of(salesOrder));
         when(runtimeService.getVariable(any(), any())).thenReturn(orderRowIds);
         when(camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())).thenReturn(true);
+        when(orderUtil.removeCancelledOrderRowsFromLatestJson(any())).thenReturn(salesOrder);
 
         salesOrderRowService.cancelOrderRows(coreCancellationMessage);
 
@@ -105,13 +110,13 @@ class SalesOrderRowServiceTest {
 
     private void checkTotalsValues(Totals totals) {
 
-        assertEquals(BigDecimal.valueOf(90), totals.getGoodsTotalGross());
-        assertEquals(BigDecimal.valueOf(79), totals.getGoodsTotalNet());
-        assertEquals(BigDecimal.valueOf(90), totals.getTotalDiscountGross());
-        assertEquals(BigDecimal.valueOf(79), totals.getGoodsTotalNet());
-        assertEquals(BigDecimal.valueOf(0), totals.getGrandTotalGross());
-        assertEquals(BigDecimal.valueOf(0), totals.getGrandTotalNet());
-        assertEquals(BigDecimal.valueOf(0), totals.getPaymentTotal());
+        assertEquals(BigDecimal.valueOf(91), totals.getGoodsTotalGross());
+        assertEquals(BigDecimal.valueOf(77), totals.getGoodsTotalNet());
+        assertEquals(BigDecimal.valueOf(87), totals.getTotalDiscountGross());
+        assertEquals(BigDecimal.valueOf(69), totals.getTotalDiscountNet());
+        assertEquals(BigDecimal.valueOf(4), totals.getGrandTotalGross());
+        assertEquals(BigDecimal.valueOf(8), totals.getGrandTotalNet());
+        assertEquals(BigDecimal.valueOf(4), totals.getPaymentTotal());
     }
 
     private String prepareOrderProcessMocks() {

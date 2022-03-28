@@ -89,7 +89,7 @@ public class SqsReceiveService {
 
             log.info("Received message from ecp shop with sender id : {}, order number: {}, Platform: {} ", senderId, order.getOrderHeader().getOrderNumber(), order.getOrderHeader().getPlatform());
 
-            //This condition is introduced temporarily because the self pick up items created in BC are coming back from core orders which raises duplicate issue.
+            //This condition is introduced temporarily because the self pick-up items created in BC are coming back from core orders which raises duplicate issue.
             if(Platform.CORE.equals(order.getOrderHeader().getPlatform())
                 &&  salesOrderService.getOrderByOrderNumber(order.getOrderHeader().getOrderNumber()).isPresent()) {
                     log.error("The following order won't be processed because it exists in SOH system already from another source. " +

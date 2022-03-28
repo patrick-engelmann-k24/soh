@@ -5,9 +5,9 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
 import de.kfzteile24.salesOrderHub.domain.audit.AuditLog;
 import de.kfzteile24.salesOrderHub.dto.sns.SubsequentDeliveryMessage;
-import de.kfzteile24.salesOrderHub.dto.sns.subsequent.SubsequentDeliveryItem;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundCustomException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
+import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.soh.order.dto.GrandTotalTaxes;
@@ -26,14 +26,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.INVOICE_RECEIVED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
+import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getSumValue;
 import static java.text.MessageFormat.format;
 
 @Service
@@ -49,6 +48,9 @@ public class SalesOrderService {
 
     @NonNull
     private final InvoiceService invoiceService;
+
+    @NonNull
+    private final OrderUtil orderUtil;
 
     public SalesOrder updateOrder(final SalesOrder salesOrder) {
         salesOrder.setUpdatedAt(LocalDateTime.now());
@@ -102,10 +104,7 @@ public class SalesOrderService {
 
     @Transactional
     public SalesOrder createSalesOrderForSubsequentDelivery(SubsequentDeliveryMessage subsequent, String newOrderNumber) {
-        Set<String> skuSet = subsequent.getItems().stream()
-                .map(SubsequentDeliveryItem::getSku)
-                .collect(Collectors.toSet());
-        Order order = getLatestOrderWithFilteredSkus(subsequent.getOrderNumber(), skuSet);
+        Order order = createOrderFromSubsequentDelivery(subsequent);
         order.getOrderHeader().setPlatform(Platform.SOH);
         recalculateOrder(order);
 
@@ -131,42 +130,23 @@ public class SalesOrderService {
         return save(salesOrder, INVOICE_RECEIVED);
     }
 
-    protected Order getLatestOrderWithFilteredSkus(String orderNumber, Set<String> acceptableSkuSet) {
-        var originalSalesOrder = getOrderByOrderNumber(orderNumber)
-                .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
+    protected Order createOrderFromSubsequentDelivery(SubsequentDeliveryMessage subsequent) {
+        var originalSalesOrder = getOrderByOrderNumber(subsequent.getOrderNumber())
+                .orElseThrow(() -> new SalesOrderNotFoundException(subsequent.getOrderNumber()));
+
+        var orderRows = subsequent.getItems().stream()
+                .map(item -> orderUtil.createOrderFromOriginalSalesOrder(
+                        originalSalesOrder,
+                        item,
+                        orderUtil.getLastRowKey(originalSalesOrder)))
+                .collect(Collectors.toList());
 
         var order = originalSalesOrder.getLatestJson();
-        var subsequentOrder = Order.builder()
+        return Order.builder()
                 .version(order.getVersion())
                 .orderHeader(order.getOrderHeader())
-                .orderRows(filterOrderRows(order, acceptableSkuSet)).build();
-
-        if (subsequentOrder.getOrderRows().isEmpty()) {
-            String skuList = String.join(",", acceptableSkuSet);
-            log.error("Order Row ID NotFoundException: " +
-                    "There is no order row id matching in original order. " +
-                    "Order number: {}, Subsequent Delivery Note Sku Items: {}", orderNumber, skuList);
-            throw new SalesOrderNotFoundException(format("{0} with any order row for subsequent delivery",
-                    orderNumber));
-        }
-        return subsequentOrder;
-    }
-
-    protected List<OrderRows> filterOrderRows(Order order, Set<String> skuSet) {
-        // check if there is any mismatch
-        skuSet.stream()
-                .filter(sku -> order.getOrderRows().stream().noneMatch(row -> row.getSku().equals(sku)))
-                .forEach(sku ->
-                        log.error("Order Row ID MismatchingError: " +
-                                "The order row id, {}, given in subsequent delivery note msg, " +
-                                "is not matching with any of the order row id in the original order with " +
-                                "order number: {}", sku, order.getOrderHeader().getOrderNumber()));
-
-        List<OrderRows> orderRows = order.getOrderRows().stream()
-                .filter(row -> skuSet.contains(row.getSku()))
-                .collect(Collectors.toList());
-        orderRows.forEach(row -> row.setIsCancelled(false));
-        return orderRows;
+                .orderRows(orderRows)
+                .build();
     }
 
     public List<String> getOrderNumberListByOrderGroupId(String orderGroupId, String orderItemSku) {
@@ -225,8 +205,8 @@ public class SalesOrderService {
         List<SumValues> sumValues = orderRows.stream().map(OrderRows::getSumValues).collect(Collectors.toList());
         BigDecimal goodsTotalGross = getSumValue(SumValues::getGoodsValueGross, sumValues);
         BigDecimal goodsTotalNet = getSumValue(SumValues::getGoodsValueNet, sumValues);
-        BigDecimal totalDiscountGross = getSumValue(SumValues::getTotalDiscountedGross, sumValues);
-        BigDecimal totalDiscountNet = getSumValue(SumValues::getTotalDiscountedNet, sumValues);
+        BigDecimal totalDiscountGross = getSumValue(SumValues::getDiscountGross, sumValues);
+        BigDecimal totalDiscountNet = getSumValue(SumValues::getDiscountNet, sumValues);
         BigDecimal grandTotalGross = goodsTotalGross.subtract(totalDiscountGross);
         BigDecimal grantTotalNet = goodsTotalNet.subtract(totalDiscountNet);
 
@@ -276,10 +256,5 @@ public class SalesOrderService {
                 .rate(row.getTaxRate())
                 .value(BigDecimal.ZERO)
                 .build();
-    }
-
-    private BigDecimal getSumValue(Function<SumValues, BigDecimal> function, List<SumValues> sumValues) {
-
-        return sumValues.stream().map(function).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }
