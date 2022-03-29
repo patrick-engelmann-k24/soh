@@ -90,6 +90,10 @@ data "aws_sns_topic" "sns_soh_shipment_confirmed_v1" {
   name = "soh-shipment-confirmed-v1"
 }
 
+data "aws_sns_topic" "sns_soh_dropshipment_purchase_order_booked_v1" {
+  name = "dropshipment-purchase-order-booked-v1"
+}
+
 # subscriptions of sqs to sns
 resource "aws_sns_topic_subscription" "sns_subscription_ecp_orders_v3" {
   endpoint = aws_sqs_queue.ecp_shop_orders.arn
@@ -180,3 +184,10 @@ resource "aws_sns_topic_subscription" "sns_subscription_dropshipment_shipment_co
   protocol = "sqs"
   topic_arn = data.aws_sns_topic.sns_dropshipment_shipment_confirmed_v1.arn
 }
+
+resource "aws_sns_topic_subscription" "dropshipment-purchase_order_booked" {
+  endpoint  = aws_sqs_queue.dropshipment_purchase_order_booked.arn
+  protocol  = "sqs"
+  topic_arn = data.aws_sns_topic.sns_soh_dropshipment_purchase_order_booked_v1.arn
+}
+

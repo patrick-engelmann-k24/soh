@@ -26,9 +26,11 @@ locals {
     subsequent_delivery_received = "${var.environment}-${local.service_prefix}-subsequent-delivery-received-${local.version}",
     subsequent_delivery_received_dlq = "${var.environment}-${local.service_prefix}-subsequent-delivery-received-${local.version}-dlq",
     d365_order_payment_secured = "${var.environment}-${local.service_prefix}-d365_order_payment_secured-${local.version}",
-    d365_order_payment_secured_dlq = "${var.environment}-${local.service_prefix}-d365_order_payment_secured-${local.version}-dlq"
+    d365_order_payment_secured_dlq = "${var.environment}-${local.service_prefix}-d365_order_payment_secured-${local.version}-dlq",
     dropshipment_shipment_confirmed = "${var.environment}-${local.service_prefix}-dropshipment-shipment-confirmed-${local.version}",
-    dropshipment_shipment_confirmed_dlq = "${var.environment}-${local.service_prefix}-dropshipment-shipment-confirmed-${local.version}-dlq"
+    dropshipment_shipment_confirmed_dlq = "${var.environment}-${local.service_prefix}-dropshipment-shipment-confirmed-${local.version}-dlq",
+    dropshipment_purchase_order_booked = "${var.environment}-${local.service_prefix}-dropshipment-purchase-order-booked-${local.version}",
+    dropshipment_purchase_order_booked_dlq = "${var.environment}-${local.service_prefix}-dropshipment-purchase-order-booked-${local.version}-dlq"
   }
 }
 
@@ -158,4 +160,13 @@ resource "aws_sqs_queue" "soh_dropshipment_shipment_confirmed_dlq" {
 resource "aws_sqs_queue" "soh_dropshipment_shipment_confirmed" {
   name = local.sqs_queues.dropshipment_shipment_confirmed
   redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.soh_dropshipment_shipment_confirmed_dlq.arn}\",\"maxReceiveCount\":4}"
+}
+
+resource "aws_sqs_queue" "dropshipment_purchase_order_booked_dlq" {
+  name = local.sqs_queues.dropshipment_purchase_order_booked_dlq
+}
+
+resource "aws_sqs_queue" "dropshipment_purchase_order_booked" {
+  name = local.sqs_queues.dropshipment_purchase_order_booked
+  redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.dropshipment_purchase_order_booked_dlq.arn}\",\"maxReceiveCount\":4}"
 }

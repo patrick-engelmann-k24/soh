@@ -1,4 +1,4 @@
-package de.kfzteile24.salesOrderHub.dto.sns;
+package de.kfzteile24.salesOrderHub.dto.sns.cancellation;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;

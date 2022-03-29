@@ -36,6 +36,7 @@ TOPICS="
     soh-d365-order-payment-secured
     soh-dropshipment-shipment-confirmed
     soh-shipment-confirmed-v1
+    soh-dropshipment-purchase-order-booked
     "
 
 # Outdated topics

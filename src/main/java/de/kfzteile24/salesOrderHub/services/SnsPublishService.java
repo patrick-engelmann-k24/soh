@@ -3,12 +3,14 @@ package de.kfzteile24.salesOrderHub.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.AwsSnsConfig;
+import de.kfzteile24.salesOrderHub.dto.events.OrderCancelledEvent;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.events.OrderRowCancelledEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInfoEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInvoiceCreatedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderShipmentConfirmedEvent;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
+import de.kfzteile24.soh.order.dto.Order;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -55,13 +57,13 @@ public class SnsPublishService {
                 orderRowCancelled, orderNumber);
     }
 
-    public void publishOrderCancelled(String orderNumber) {
-        final var orderCancelled = OrderRowCancelledEvent.builder()
-                .orderNumber(orderNumber)
+    public void publishOrderCancelled(Order order) {
+        final var orderCancelled = OrderCancelledEvent.builder()
+                .order(order)
                 .build();
 
         publishEvent(config.getSnsSalesOrderCancelled(), "Sales order cancelled",
-                orderCancelled, orderNumber);
+                orderCancelled, order.getOrderHeader().getOrderNumber());
     }
 
     public void publishOrderCompleted(String orderNumber) {
