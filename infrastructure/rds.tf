@@ -2,7 +2,7 @@ module "aurora" {
   source                          = "git@github.com:kfzteile24/bop-terraform-module-aurora.git"
   name                            = "${local.service}-aurora-serverless"
   engine                          = "aurora-postgresql"
-  engine_version                  = "11.9"
+  engine_version                  = "11.13"
   replica_scale_enabled           = false
   replica_count                   = var.db_instance_scale
   backtrack_window                = 10 # ignored in serverless
@@ -15,5 +15,6 @@ module "aurora" {
   apply_immediately               = true
   skip_final_snapshot             = true
   storage_encrypted               = true
+  auto_minor_version_upgrade      = false
   performance_insights_enabled    = var.db_performance_insight
 }
