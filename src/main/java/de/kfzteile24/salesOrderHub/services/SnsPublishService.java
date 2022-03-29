@@ -6,6 +6,7 @@ import de.kfzteile24.salesOrderHub.configuration.AwsSnsConfig;
 import de.kfzteile24.salesOrderHub.dto.events.OrderCancelledEvent;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.events.OrderRowCancelledEvent;
+import de.kfzteile24.salesOrderHub.dto.events.SalesOrderCompletedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInfoEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInvoiceCreatedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderShipmentConfirmedEvent;
@@ -67,7 +68,7 @@ public class SnsPublishService {
     }
 
     public void publishOrderCompleted(String orderNumber) {
-        sendLatestOrderJson(config.getSnsOrderCompletedTopic(), "Sales order completed", orderNumber);
+        sendSalesOrderCompletedJson(config.getSnsOrderCompletedTopic(), "Sales order completed", orderNumber);
     }
 
     public void publishOrderInvoiceCreated(String orderNumber, String invoiceUrl) {
@@ -105,6 +106,12 @@ public class SnsPublishService {
                 .build();
 
         publishEvent(topic, subject, salesOrderInfo, orderNumber);
+    }
+
+    protected void sendSalesOrderCompletedJson(String topic, String subject, String orderNumber) {
+        final var salesOrderCompleted = SalesOrderCompletedEvent.builder().orderNumber(orderNumber);
+
+        publishEvent(topic, subject, salesOrderCompleted, orderNumber);
     }
 
     @SneakyThrows({JsonProcessingException.class})
