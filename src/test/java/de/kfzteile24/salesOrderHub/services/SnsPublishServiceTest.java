@@ -6,6 +6,7 @@ import de.kfzteile24.salesOrderHub.configuration.AwsSnsConfig;
 import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.events.OrderRowCancelledEvent;
+import de.kfzteile24.salesOrderHub.dto.events.SalesOrderCompletedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInfoEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInvoiceCreatedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderShipmentConfirmedEvent;
@@ -30,6 +31,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Paymen
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createNewSalesOrderV3;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrderCompletedEvent;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.readResource;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -179,7 +181,7 @@ class SnsPublishServiceTest {
 
         given(awsSnsConfig.getSnsOrderCompletedTopic()).willReturn(expectedTopic);
 
-        verifyPublishedEvent(expectedTopic, expectedSubject,
+        verifyPublishedOrderCompletedEvent(expectedTopic, expectedSubject,
                 throwingConsumerWrapper(snsPublishService::publishOrderCompleted));
     }
 
@@ -277,6 +279,18 @@ class SnsPublishServiceTest {
         verify(notificationMessagingTemplate).sendNotification(
                 expectedTopic,
                 objectMapper.writeValueAsString(expectedSalesOrderInfo),
+                expectedSubject
+        );
+    }
+
+    @SneakyThrows(Exception.class)
+    private void verifyPublishedOrderCompletedEvent(String expectedTopic, String expectedSubject, Consumer<String> executor) {
+        final String rawMessage = readResource("examples/salesOrderCompleted.json");
+        final SalesOrderCompletedEvent salesOrderCompleted = getSalesOrderCompletedEvent(rawMessage);
+
+        verify(notificationMessagingTemplate).sendNotification(
+                expectedTopic,
+                objectMapper.writeValueAsString(salesOrderCompleted),
                 expectedSubject
         );
     }
