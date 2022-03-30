@@ -45,12 +45,6 @@ class SalesOrderServiceIntegrationTest {
         salesOrder.getLatestJson().getOrderRows().get(1).setIsCancelled(true);
         assertThatThrownBy(() -> salesOrderService.save(salesOrder, ORDER_ROW_CANCELLED))
                 .isInstanceOf(ObjectOptimisticLockingFailureException.class);
-    }
-
-    @Test
-    void savingASalesOrderAddsACorrespondingEntryInTheAudiLogTable() {
-        final var salesOrder = salesOrderService.save(
-                SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW), ORDER_CREATED);
 
         auditLogUtil.assertAuditLogExists(salesOrder.getId(), ORDER_CREATED);
     }

@@ -4,6 +4,7 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.exception.CorrelateOrderException;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderHeader;
 import lombok.NonNull;
@@ -53,7 +54,7 @@ public class SalesOrderPaymentSecuredService {
         }
 
         if (CollectionUtils.isNotEmpty(exceptions)) {
-            throw new RuntimeException(collectErrorMessages(exceptions));
+            throw new CorrelateOrderException(collectErrorMessages(exceptions));
         }
     }
 

@@ -3,6 +3,7 @@ package de.kfzteile24.salesOrderHub.services;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.exception.CorrelateOrderException;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import org.apache.commons.lang3.StringUtils;
@@ -79,7 +80,7 @@ class SalesOrderPaymentSecuredServiceTest {
                 .thenReturn(messageCorrelationResult);
 
         assertThatThrownBy(() -> salesOrderPaymentSecuredService.correlateOrderReceivedPaymentSecured("4567787", "4567858"))
-                .isExactlyInstanceOf(RuntimeException.class);
+                .isExactlyInstanceOf(CorrelateOrderException.class);
 
         verify(camundaHelper, times(1)).correlateMessageByBusinessKey(
             argThat(message -> message == Messages.ORDER_RECEIVED_PAYMENT_SECURED),

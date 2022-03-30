@@ -2,10 +2,7 @@ package de.kfzteile24.salesOrderHub.helper;
 
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.sns.subsequent.SubsequentDeliveryItem;
-import de.kfzteile24.soh.order.dto.Order;
-import de.kfzteile24.soh.order.dto.OrderRows;
-import de.kfzteile24.soh.order.dto.SumValues;
-import de.kfzteile24.soh.order.dto.UnitValues;
+import de.kfzteile24.soh.order.dto.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -15,6 +12,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.*;
+import static java.math.RoundingMode.HALF_DOWN;
+import static java.math.RoundingMode.HALF_UP;
 
 /**
  * @author samet
@@ -77,25 +76,25 @@ public class OrderUtil {
                 .sku(item.getSku())
                 .quantity(Optional.ofNullable(item.getQuantity()).orElse(BigDecimal.ONE))
                 .taxRate(Optional.ofNullable(item.getTaxRate()).orElse(BigDecimal.ZERO))
-                .unitValues(UnitValues.builder()
+                .unitValues(roundUnitValues(UnitValues.builder()
                         .goodsValueGross(unitPriceGross)
                         .goodsValueNet(unitPriceNet)
                         .discountedGross(unitPriceGross)
                         .discountedNet(unitPriceNet)
-                        .build())
-                .sumValues(SumValues.builder()
+                        .build()))
+                .sumValues(roundSumValues(SumValues.builder()
                         .goodsValueGross(sumOfGoodsPriceGross)
                         .goodsValueNet(sumOfGoodsPriceNet)
                         .totalDiscountedGross(sumOfGoodsPriceGross)
                         .totalDiscountedNet(sumOfGoodsPriceNet)
-                        .build())
+                        .build()))
                 .build();
     }
 
     private OrderRows filterFromOrder(SubsequentDeliveryItem item, Order latestOrder) {
-        var orderRow = latestOrder.getOrderRows().stream()
+        var orderRow = OrderMapper.INSTANCE.toOrderRow(latestOrder.getOrderRows().stream()
                 .filter(row -> row.getSku().equals(item.getSku()))
-                .findFirst().orElse(null);
+                .findFirst().orElse(null));
         updateOrderRowByNewItemValues(orderRow, item);
         return orderRow;
     }
@@ -122,23 +121,63 @@ public class OrderUtil {
 
     private void updateOrderRowByTaxRate(OrderRows row, BigDecimal taxRate) {
         row.setTaxRate(taxRate);
-        row.setUnitValues(OrderMapper.INSTANCE.updateByTaxRate(row.getUnitValues(), taxRate));
-        row.setSumValues(OrderMapper.INSTANCE.toSumValues(row.getUnitValues(), row.getQuantity()));
+        row.setUnitValues(roundUnitValues(OrderMapper.INSTANCE.updateByTaxRate(row.getUnitValues(), taxRate)));
+        row.setSumValues(roundSumValues(OrderMapper.INSTANCE.toSumValues(row.getUnitValues(), row.getQuantity())));
     }
 
     private void updateOrderRowByQuantity(OrderRows row, BigDecimal quantity) {
         row.setQuantity(quantity);
-        row.setSumValues(OrderMapper.INSTANCE.toSumValues(row.getUnitValues(), quantity));
+        row.setSumValues(roundSumValues(OrderMapper.INSTANCE.toSumValues(row.getUnitValues(), quantity)));
     }
 
     private void updateOrderRowByUnitPriceGross(OrderRows row, BigDecimal unitPriceGross) {
         var unitPriceNet = getNetValue(unitPriceGross, row.getTaxRate());
-        row.setUnitValues(OrderMapper.INSTANCE.updateByGoodsValue(row.getUnitValues(), unitPriceGross, unitPriceNet));
-        row.setSumValues(OrderMapper.INSTANCE.toSumValues(row.getUnitValues(), row.getQuantity()));
+        row.setUnitValues(roundUnitValues(OrderMapper.INSTANCE.updateByGoodsValue(row.getUnitValues(), unitPriceGross, unitPriceNet)));
+        row.setSumValues(roundSumValues(OrderMapper.INSTANCE.toSumValues(row.getUnitValues(), row.getQuantity())));
     }
 
     private void updateOrderRowBySalesPriceGross(OrderRows row, BigDecimal salesPriceGross) {
         BigDecimal salesPriceNet = getSumOfGoodsNetFromSumOfGoodsGross(salesPriceGross, row.getQuantity(), row.getTaxRate());
-        row.setSumValues(OrderMapper.INSTANCE.updateByGoodsValue(row.getSumValues(), salesPriceGross, salesPriceNet));
+        row.setSumValues(roundSumValues(OrderMapper.INSTANCE.updateByGoodsValue(row.getSumValues(), salesPriceGross, salesPriceNet)));
+    }
+
+    private UnitValues roundUnitValues(UnitValues unitValues) {
+        //Rounding Modes are given as in the calculation-service repo
+        unitValues.setGoodsValueGross(round(unitValues.getGoodsValueGross(), HALF_UP));
+        unitValues.setGoodsValueNet(round(unitValues.getGoodsValueNet(), HALF_UP));
+        unitValues.setDiscountGross(round(unitValues.getDiscountGross(), HALF_UP));
+        unitValues.setDiscountNet(round(unitValues.getDiscountNet(), HALF_UP));
+        unitValues.setDiscountedGross(round(unitValues.getDiscountedGross(), HALF_UP));
+        unitValues.setDiscountedNet(round(unitValues.getDiscountedNet(), HALF_UP));
+        unitValues.setRrpGross(round(unitValues.getRrpGross(), HALF_UP));
+        unitValues.setRrpNet(round(unitValues.getRrpNet(), HALF_UP));
+        unitValues.setDepositGross(round(unitValues.getDepositGross(), HALF_UP));
+        unitValues.setDepositNet(round(unitValues.getDepositNet(), HALF_UP));
+        unitValues.setBulkyGoodsGross(round(unitValues.getBulkyGoodsGross(), HALF_UP));
+        unitValues.setBulkyGoodsNet(round(unitValues.getBulkyGoodsNet(), HALF_UP));
+        unitValues.setRiskyGoodsGross(round(unitValues.getRiskyGoodsGross(), HALF_UP));
+        unitValues.setRiskyGoodsNet(round(unitValues.getRiskyGoodsNet(), HALF_UP));
+        unitValues.setExchangePartValueGross(round(unitValues.getExchangePartValueGross(), HALF_UP));
+        unitValues.setExchangePartValueNet(round(unitValues.getExchangePartValueNet(), HALF_UP));
+        return unitValues;
+    }
+
+    private SumValues roundSumValues(SumValues sumValues) {
+        //Rounding Modes are given as in the calculation-service repo
+        sumValues.setGoodsValueGross(round(sumValues.getGoodsValueGross(), HALF_UP));
+        sumValues.setGoodsValueNet(round(sumValues.getGoodsValueNet(), HALF_UP));
+        sumValues.setDiscountGross(round(sumValues.getDiscountGross(), HALF_UP));
+        sumValues.setDiscountNet(round(sumValues.getDiscountNet(), HALF_UP));
+        sumValues.setTotalDiscountedGross(round(sumValues.getTotalDiscountedGross(), HALF_DOWN));
+        sumValues.setTotalDiscountedNet(round(sumValues.getTotalDiscountedNet(), HALF_DOWN));
+        sumValues.setDepositGross(round(sumValues.getDepositGross(), HALF_UP));
+        sumValues.setDepositNet(round(sumValues.getDepositNet(), HALF_UP));
+        sumValues.setBulkyGoodsGross(round(sumValues.getBulkyGoodsGross(), HALF_UP));
+        sumValues.setBulkyGoodsNet(round(sumValues.getBulkyGoodsNet(), HALF_UP));
+        sumValues.setRiskyGoodsGross(round(sumValues.getRiskyGoodsGross(), HALF_UP));
+        sumValues.setRiskyGoodsNet(round(sumValues.getRiskyGoodsNet(), HALF_UP));
+        sumValues.setExchangePartValueGross(round(sumValues.getExchangePartValueGross(), HALF_UP));
+        sumValues.setExchangePartValueNet(round(sumValues.getExchangePartValueNet(), HALF_UP));
+        return sumValues;
     }
 }

@@ -1,5 +1,7 @@
 package de.kfzteile24.salesOrderHub.helper;
 
+import de.kfzteile24.soh.order.dto.OrderHeader;
+import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.SumValues;
 import de.kfzteile24.soh.order.dto.UnitValues;
 import org.mapstruct.Context;
@@ -19,6 +21,10 @@ import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.*;
 @Mapper
 public interface OrderMapper {
     OrderMapper INSTANCE = Mappers.getMapper(OrderMapper.class);
+
+    OrderHeader toOrderHeader(OrderHeader orderHeader);
+
+    OrderRows toOrderRow(OrderRows orderRow);
 
     @Mapping(target = "rrpGross", source = "rrpNet", qualifiedByName = "calculateGross")
     @Mapping(target = "goodsValueGross", source = "goodsValueNet", qualifiedByName = "calculateGross")

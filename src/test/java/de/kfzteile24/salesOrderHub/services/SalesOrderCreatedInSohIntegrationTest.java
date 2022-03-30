@@ -7,11 +7,14 @@ import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.soh.order.dto.OrderRows;
+import de.kfzteile24.soh.order.dto.SumValues;
 import de.kfzteile24.soh.order.dto.Totals;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.Objects;
+
+import de.kfzteile24.soh.order.dto.UnitValues;
 import lombok.SneakyThrows;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.junit.jupiter.api.AfterEach;
@@ -167,54 +170,66 @@ class SalesOrderCreatedInSohIntegrationTest {
                 1,
                 "2",
                 "20.0",
-                new BigDecimal("201.00"),
-                new BigDecimal("167.50"),
-                new BigDecimal("30.15"),
-                new BigDecimal("25.13"),
-                new BigDecimal("170.85"),
-                new BigDecimal("142.37"),
-                new BigDecimal("402.00"),
-                new BigDecimal("335.00"),
-                new BigDecimal("60.30"),
-                new BigDecimal("50.26"),
-                new BigDecimal("341.70"),
-                new BigDecimal("284.74"));
+                UnitValues.builder()
+                        .goodsValueGross(new BigDecimal("201.00"))
+                        .goodsValueNet(new BigDecimal("167.50"))
+                        .discountGross(new BigDecimal("30.15"))
+                        .discountNet(new BigDecimal("25.13"))
+                        .discountedGross(new BigDecimal("170.85"))
+                        .discountedNet(new BigDecimal("142.37"))
+                        .build(),
+                SumValues.builder()
+                        .goodsValueGross(new BigDecimal("402.00"))
+                        .goodsValueNet(new BigDecimal("335.00"))
+                        .discountGross(new BigDecimal("60.30"))
+                        .discountNet(new BigDecimal("50.26"))
+                        .totalDiscountedGross(new BigDecimal("341.70"))
+                        .totalDiscountedNet(new BigDecimal("284.74"))
+                        .build());
         checkOrderRowValues(
                 orderRows.get(1),
                 sku2,
                 2,
                 "2",
                 "19",
-                new BigDecimal("10"),
-                new BigDecimal("8.40"),
-                new BigDecimal("0"),
-                new BigDecimal("0"),
-                new BigDecimal("10"),
-                new BigDecimal("8.40"),
-                new BigDecimal("20"),
-                new BigDecimal("16.80"),
-                new BigDecimal("0"),
-                new BigDecimal("0"),
-                new BigDecimal("20"),
-                new BigDecimal("16.80"));
+                UnitValues.builder()
+                        .goodsValueGross(new BigDecimal("10"))
+                        .goodsValueNet(new BigDecimal("8.40"))
+                        .discountGross(new BigDecimal("0"))
+                        .discountNet(new BigDecimal("0"))
+                        .discountedGross(new BigDecimal("10"))
+                        .discountedNet(new BigDecimal("8.40"))
+                        .build(),
+                SumValues.builder()
+                        .goodsValueGross(new BigDecimal("20"))
+                        .goodsValueNet(new BigDecimal("16.80"))
+                        .discountGross(new BigDecimal("0"))
+                        .discountNet(new BigDecimal("0"))
+                        .totalDiscountedGross(new BigDecimal("20"))
+                        .totalDiscountedNet(new BigDecimal("16.80"))
+                        .build());
         checkOrderRowValues(
                 orderRows.get(2),
                 sku3,
                 3,
                 "1",
                 "19",
-                new BigDecimal("10.52"),
-                new BigDecimal("8.84"),
-                null,
-                null,
-                new BigDecimal("10.52"),
-                new BigDecimal("8.84"),
-                new BigDecimal("10.52"),
-                new BigDecimal("8.84"),
-                null,
-                null,
-                new BigDecimal("10.52"),
-                new BigDecimal("8.84"));
+                UnitValues.builder()
+                        .goodsValueGross(new BigDecimal("10.52"))
+                        .goodsValueNet(new BigDecimal("8.84"))
+                        .discountGross(null)
+                        .discountNet(null)
+                        .discountedGross(new BigDecimal("10.52"))
+                        .discountedNet(new BigDecimal("8.84"))
+                        .build(),
+                SumValues.builder()
+                        .goodsValueGross(new BigDecimal("10.52"))
+                        .goodsValueNet(new BigDecimal("8.84"))
+                        .discountGross(null)
+                        .discountNet(null)
+                        .totalDiscountedGross(new BigDecimal("10.52"))
+                        .totalDiscountedNet(new BigDecimal("8.84"))
+                        .build());
     }
 
     private void checkOrderRowValues(OrderRows row,
@@ -222,35 +237,25 @@ class SalesOrderCreatedInSohIntegrationTest {
                                      Integer rowKey,
                                      String quantity,
                                      String taxRate,
-                                     BigDecimal unitGoodsValueGross,
-                                     BigDecimal unitGoodsValueNet,
-                                     BigDecimal unitDiscountGross,
-                                     BigDecimal unitDiscountNet,
-                                     BigDecimal unitDiscountedGross,
-                                     BigDecimal unitDiscountedNet,
-                                     BigDecimal sumGoodsValueGross,
-                                     BigDecimal sumGoodsValueNet,
-                                     BigDecimal sumDiscountGross,
-                                     BigDecimal sumDiscountNet,
-                                     BigDecimal sumTotalDiscountedGross,
-                                     BigDecimal sumTotalDiscountedNet) {
+                                     UnitValues expectedUnitValues,
+                                     SumValues expectedSumValues) {
         assertEquals(sku, row.getSku());
         assertEquals(rowKey, row.getRowKey());
         assertEquals("shipment_regular", row.getShippingType());
         assertEquals(new BigDecimal(quantity), row.getQuantity());
         assertEquals(new BigDecimal(taxRate), row.getTaxRate());
-        assertEquals(unitGoodsValueGross, row.getUnitValues().getGoodsValueGross());
-        assertEquals(unitGoodsValueNet, row.getUnitValues().getGoodsValueNet());
-        assertEquals(unitDiscountGross, row.getUnitValues().getDiscountGross());
-        assertEquals(unitDiscountNet, row.getUnitValues().getDiscountNet());
-        assertEquals(unitDiscountedGross, row.getUnitValues().getDiscountedGross());
-        assertEquals(unitDiscountedNet, row.getUnitValues().getDiscountedNet());
-        assertEquals(sumGoodsValueGross, row.getSumValues().getGoodsValueGross());
-        assertEquals(sumGoodsValueNet, row.getSumValues().getGoodsValueNet());
-        assertEquals(sumDiscountGross, row.getSumValues().getDiscountGross());
-        assertEquals(sumDiscountNet, row.getSumValues().getDiscountNet());
-        assertEquals(sumTotalDiscountedGross, row.getSumValues().getTotalDiscountedGross());
-        assertEquals(sumTotalDiscountedNet, row.getSumValues().getTotalDiscountedNet());
+        assertEquals(expectedUnitValues.getGoodsValueGross(), row.getUnitValues().getGoodsValueGross());
+        assertEquals(expectedUnitValues.getGoodsValueNet(), row.getUnitValues().getGoodsValueNet());
+        assertEquals(expectedUnitValues.getDiscountGross(), row.getUnitValues().getDiscountGross());
+        assertEquals(expectedUnitValues.getDiscountNet(), row.getUnitValues().getDiscountNet());
+        assertEquals(expectedUnitValues.getDiscountedGross(), row.getUnitValues().getDiscountedGross());
+        assertEquals(expectedUnitValues.getDiscountedNet(), row.getUnitValues().getDiscountedNet());
+        assertEquals(expectedSumValues.getGoodsValueGross(), row.getSumValues().getGoodsValueGross());
+        assertEquals(expectedSumValues.getGoodsValueNet(), row.getSumValues().getGoodsValueNet());
+        assertEquals(expectedSumValues.getDiscountGross(), row.getSumValues().getDiscountGross());
+        assertEquals(expectedSumValues.getDiscountNet(), row.getSumValues().getDiscountNet());
+        assertEquals(expectedSumValues.getTotalDiscountedGross(), row.getSumValues().getTotalDiscountedGross());
+        assertEquals(expectedSumValues.getTotalDiscountedNet(), row.getSumValues().getTotalDiscountedNet());
     }
 
     @SneakyThrows({URISyntaxException.class, IOException.class})

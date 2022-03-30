@@ -7,6 +7,7 @@ import de.kfzteile24.salesOrderHub.domain.audit.AuditLog;
 import de.kfzteile24.salesOrderHub.dto.sns.SubsequentDeliveryMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundCustomException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
+import de.kfzteile24.salesOrderHub.helper.OrderMapper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
@@ -144,7 +145,7 @@ public class SalesOrderService {
         var order = originalSalesOrder.getLatestJson();
         return Order.builder()
                 .version(order.getVersion())
-                .orderHeader(order.getOrderHeader())
+                .orderHeader(OrderMapper.INSTANCE.toOrderHeader(order.getOrderHeader()))
                 .orderRows(orderRows)
                 .build();
     }
