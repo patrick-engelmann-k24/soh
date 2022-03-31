@@ -59,6 +59,9 @@ class SalesOrderRowServiceTest {
     private OrderUtil orderUtil;
 
     @Mock
+    private TimedPollingService timedPollingService;
+
+    @Mock
     private SnsPublishService snsPublishService;
 
     @InjectMocks
