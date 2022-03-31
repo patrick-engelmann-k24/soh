@@ -11,7 +11,7 @@ RUN apt-get -qq update && apt-get -qq install -y --no-install-recommends unzip &
 
 FROM openjdk:14-slim-buster
 
-COPY --from=MAVEN target/sales-order-hub-bpmn-0.0.1.jar app.jar
+COPY --from=MAVEN target/soh-bpmn.jar app.jar
 COPY --from=MAVEN docker-flyway.conf /docker-flyway.conf
 COPY --from=MAVEN entrypoint.sh /entrypoint.sh
 COPY --from=MAVEN src/main/resources/db/migration/* /migrations/
