@@ -30,7 +30,6 @@ cloud:
 soh:
   sns:
     topic:
-      orderCreated:           arn:aws:sns:eu-central-1:000000000000:soh-order-created
       orderCreatedV2:         arn:aws:sns:eu-central-1:000000000000:soh-order-created-v2
       orderCompleted:         arn:aws:sns:eu-central-1:000000000000:soh-order-completed
       orderCancelled:         arn:aws:sns:eu-central-1:000000000000:soh-order-cancelled
@@ -41,18 +40,24 @@ soh:
       salesOrderRowCancelled: arn:aws:sns:eu-central-1:000000000000:soh-sales-order-row-cancelled
       salesOrderCancelled:    arn:aws:sns:eu-central-1:000000000000:soh-sales-order-cancelled
       orderInvoiceCreatedV1:  arn:aws:sns:eu-central-1:000000000000:soh-order-invoice-created-v1
+      shipmentConfirmedV1: arn:aws:sns:eu-central-1:000000000000:soh-shipment-confirmed-v1
   sqs:
     queue:
       ecpShopOrders:                  http://localhost:4566/000000000000/soh-ecp-shop-orders-queue
+      bcShopOrders:                  http://localhost:4566/000000000000/soh-bc-shop-orders-queue
+      coreShopOrders:                  http://localhost:4566/000000000000/soh-core-shop-orders-queue
       orderItemShipped:               http://localhost:4566/000000000000/soh-order-item-shipped-queue
       orderPaymentSecured:            http://localhost:4566/000000000000/soh-order-payment-secured-queue
       orderItemTransmittedToLogistic: http://localhost:4566/000000000000/soh-order-item-transmitted-to-logistic-queue
-      orderItemPackingStarted:      http://localhost:4566/000000000000/soh-order-item-packing-started-queue
-      orderItemTrackingIdReceived:  http://localhost:4566/000000000000/soh-order-item-tracking-id-received-queue
-      orderItemTourStarted:         http://localhost:4566/000000000000/soh-order-item-tour-started-queue
-      invoicesFromCore:             http://localhost:4566/000000000000/soh-invoices-from-core-queue
+      orderItemPackingStarted:        http://localhost:4566/000000000000/soh-order-item-packing-started-queue
+      orderItemTrackingIdReceived:    http://localhost:4566/000000000000/soh-order-item-tracking-id-received-queue
+      orderItemTourStarted:           http://localhost:4566/000000000000/soh-order-item-tour-started-queue
+      invoicesFromCore:               http://localhost:4566/000000000000/soh-invoices-from-core-queue
       coreCancellation:               http://localhost:4566/000000000000/soh-core-cancellation-queue
-      subsequentDeliveryReceived:   http://localhost:4566/000000000000/soh-subsequent-delivery-received-queue
+      subsequentDeliveryReceived:     http://localhost:4566/000000000000/soh-subsequent-delivery-received-queue
+      d365OrderPaymentSecured:        http://localhost:4566/000000000000/soh-d365-order-payment-secured-queue
+      dropshipmentShipmentConfirmed:  http://localhost:4566/000000000000/soh-dropshipment-shipment-confirmed-queue
+      dropshipmentPurchaseOrderBooked: http://localhost:4566/000000000000/soh-dropshipment-purchase-order-booked-queue
   aws:
     config:
       maxNumberOfMessages: 10

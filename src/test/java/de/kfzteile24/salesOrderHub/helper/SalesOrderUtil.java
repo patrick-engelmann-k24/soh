@@ -101,6 +101,36 @@ public class SalesOrderUtil {
         return testOrder;
     }
 
+    @SneakyThrows(JsonProcessingException.class)
+    public SalesOrder createNewSalesOrderHavingCancelledRow() {
+        InputStream testFileStream = getClass().getResourceAsStream("/examples/testmessage.json");
+        assertNotNull(testFileStream);
+
+        SqsMessage sqsMessage = readTestFile(testFileStream);
+        assertNotNull(sqsMessage);
+
+        Order order = objectMapper.readValue(sqsMessage.getBody(), Order.class);
+        order.getOrderHeader().setOrderNumber(bpmUtil.getRandomOrderNumber());
+        order.getOrderHeader().setOrderGroupId(order.getOrderHeader().getOrderNumber());
+
+        Order latestJson = objectMapper.readValue(sqsMessage.getBody(), Order.class);
+        latestJson.getOrderHeader().setOrderNumber(order.getOrderHeader().getOrderNumber());
+        latestJson.getOrderHeader().setOrderGroupId(order.getOrderHeader().getOrderNumber());
+        latestJson.setOrderRows(List.of(latestJson.getOrderRows().get(1)));
+
+        final SalesOrder testOrder = SalesOrder.builder()
+                .orderNumber(order.getOrderHeader().getOrderNumber())
+                .orderGroupId(order.getOrderHeader().getOrderGroupId())
+                .salesChannel(order.getOrderHeader().getSalesChannel())
+                .originalOrder(order)
+                .latestJson(latestJson)
+                .build();
+
+        testOrder.setSalesOrderInvoiceList(new HashSet<>());
+        salesOrderService.save(testOrder, ORDER_CREATED);
+        return testOrder;
+    }
+
     public SalesOrder createPersistedSalesOrderV3(
             boolean shouldContainVirtualItem,
             ShipmentMethod shipmentMethod,
@@ -154,8 +184,8 @@ public class SalesOrderUtil {
                         .goodsTotalNet(BigDecimal.valueOf(80))
                         .shippingCostGross(BigDecimal.valueOf(100))
                         .shippingCostNet(BigDecimal.valueOf(80))
-                        .totalDiscountGross(BigDecimal.valueOf(100))
-                        .totalDiscountNet(BigDecimal.valueOf(80))
+                        .totalDiscountGross(BigDecimal.valueOf(90))
+                        .totalDiscountNet(BigDecimal.valueOf(70))
                         .surcharges(Surcharges.builder()
                                 .depositGross(BigDecimal.valueOf(100))
                                 .depositNet(BigDecimal.valueOf(80))
@@ -196,12 +226,12 @@ public class SalesOrderUtil {
     public static OrderRows createOrderRow(String sku, ShipmentMethod shippingType) {
         return OrderRows.builder()
                 .sumValues(SumValues.builder()
-                        .goodsValueGross(BigDecimal.TEN)
-                        .goodsValueNet(BigDecimal.ONE)
-                        .discountGross(BigDecimal.TEN)
-                        .discountNet(BigDecimal.ONE)
-                        .totalDiscountedGross(BigDecimal.TEN)
-                        .totalDiscountedNet(BigDecimal.ONE)
+                        .goodsValueGross(BigDecimal.valueOf(9))
+                        .goodsValueNet(BigDecimal.valueOf(3))
+                        .discountGross(BigDecimal.valueOf(3))
+                        .discountNet(BigDecimal.valueOf(1))
+                        .totalDiscountedGross(BigDecimal.valueOf(6))
+                        .totalDiscountedNet(BigDecimal.valueOf(2))
                         .build())
                 .shippingType(shippingType.getName())
                 .isCancelled(false)

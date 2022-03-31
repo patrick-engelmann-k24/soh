@@ -11,4 +11,5 @@ import lombok.extern.jackson.Jacksonized;
 public class SalesOrderInvoiceCreatedEvent {
 
     Order order;
+    String invoiceDocumentLink;
 }

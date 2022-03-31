@@ -32,7 +32,6 @@ module "application_module" {
     soh_db_port                                = module.aurora.this_rds_cluster_port
     soh_db_database                            = "sales_order_hub"
 
-    soh_order_created                          = data.aws_sns_topic.sns_soh_order_created_topic.arn
     soh_order_created_v2                       = data.aws_sns_topic.sns_soh_order_created_v2_topic.arn
     soh_order_completed                        = data.aws_sns_topic.sns_soh_order_completed_topic.arn
     soh_order_item_cancelled                   = data.aws_sns_topic.sns_soh_order_item_cancelled_topic.arn
@@ -43,8 +42,12 @@ module "application_module" {
     soh_sales_order_row_cancellation           = data.aws_sns_topic.sns_soh_sales_order_row_cancellation_v1.arn
     soh_sales_order_cancellation               = data.aws_sns_topic.sns_soh_sales_order_cancellation_v1.arn
     soh_order_invoice_created_v1               = data.aws_sns_topic.sns_soh_order_invoice_created_v1.arn
+    soh_order_invoice_created_v1               = data.aws_sns_topic.sns_soh_order_invoice_created_v1.arn
+    sns_soh_shipment_confirmed_v1              = data.aws_sns_topic.sns_soh_shipment_confirmed_v1.arn
 
     soh_sqs_ecp_shop_orders                    = aws_sqs_queue.ecp_shop_orders.id
+    soh_sqs_bc_shop_orders                     = aws_sqs_queue.bc_shop_orders.id
+    soh_sqs_core_shop_orders                   = aws_sqs_queue.core_shop_orders.id
     soh_sqs_order_item_shipped                 = aws_sqs_queue.soh_order_item_shipped.id
     soh_sqs_order_payment_secured              = aws_sqs_queue.soh_order_payment_secured.id
     soh_sqs_order_item_transmitted_to_logistic = aws_sqs_queue.soh_order_item_transmitted_to_logistic.id
@@ -54,6 +57,9 @@ module "application_module" {
     soh_sqs_invoices_from_core                 = aws_sqs_queue.soh_invoices_from_core.id
     soh_sqs_core_cancellation                  = aws_sqs_queue.soh_core_cancellation.id
     soh_sqs_subsequent_delivery_received       = aws_sqs_queue.soh_subsequent_delivery_received.id
+    soh_sqs_d365_order_payment_secured         = aws_sqs_queue.d365_order_payment_secured.id
+    soh_sqs_dropshipment_shipment_confirmed    = aws_sqs_queue.soh_dropshipment_shipment_confirmed.id
+    soh_sqs_dropshipment_purchase_order_booked = aws_sqs_queue.dropshipment_purchase_order_booked.id
   }
 
   ssm_secrets_count = 7

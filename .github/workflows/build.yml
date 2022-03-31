@@ -13,7 +13,6 @@ env:
   POSTGRES_PASSWORD: 'soh'
   AWS_HOST: localstack
   SERVICES: sns,sqs # Add more services depending on your test case
-  soh_order_created: 'arn:aws:sns:eu-central-1:000000000000:soh-order-created'
   soh_order_created_v2: 'arn:aws:sns:eu-central-1:000000000000:soh-order-created-v2'
   soh_order_completed: 'arn:aws:sns:eu-central-1:000000000000:soh-order-completed'
   soh_order_cancelled: 'arn:aws:sns:eu-central-1:000000000000:soh-order-cancelled'
@@ -25,6 +24,8 @@ env:
   soh_sales_order_cancellation:  'arn:aws:sns:eu-central-1:000000000000:soh-sales-order-cancellation'
   soh_order_invoice_created_v1:  'arn:aws:sns:eu-central-1:000000000000:soh-order-invoice-created-v1'
   soh_sqs_ecp_shop_orders: 'http://localhost:4566/000000000000/soh-ecp-shop-orders-queue'
+  soh_sqs_bc_shop_orders: 'http://localhost:4566/000000000000/soh-bc-shop-orders-queue'
+  soh_sqs_core_shop_orders: 'http://localhost:4566/000000000000/soh-core-shop-orders-queue'
   soh_sqs_order_item_shipped: 'http://localhost:4566/000000000000/soh-order-item-shipped-queue'
   soh_sqs_order_payment_secured: 'http://localhost:4566/000000000000/soh-order-payment-secured-queue'
   soh_sqs_order_item_transmitted_to_logistic: 'http://localhost:4566/000000000000/soh-order-item-transmitted-to-logistic-queue'
@@ -34,6 +35,9 @@ env:
   soh_sqs_invoices_from_core: 'http://localhost:4566/000000000000/soh-invoices-from-core-queue'
   soh_sqs_core_cancellation: 'http://localhost:4566/000000000000/soh-core-cancellation-queue'
   soh_sqs_subsequent_delivery_received: 'http://localhost:4566/000000000000/soh-subsequent-delivery-received-queue'
+  soh_sqs_d365_order_payment_secured: 'http://localhost:4566/000000000000/soh-d365-order-payment-secured-queue'
+  soh_sqs_dropshipment_shipment_confirmed:  'http://localhost:4566/000000000000/soh-dropshipment-shipment-confirmed-queue'
+  soh_sqs_dropshipment_purchase_order_booked: 'http://localhost:4566/000000000000/soh-dropshipment-purchase-order-booked-queue'
 
 on: [push]
 

@@ -1,5 +1,8 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder;
 
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import lombok.SneakyThrows;
@@ -9,9 +12,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class OrderCompletedDelegateTest {
@@ -26,7 +26,7 @@ class OrderCompletedDelegateTest {
 
     @Test
     @SneakyThrows(Exception.class)
-    public void theDelegatePublishesAnOrderCompletedChangedEvent() {
+    void theDelegatePublishesAnOrderCompletedChangedEvent() {
         final var expectedOrderNumber = "123";
         when(delegateExecution.getVariable(Variables.ORDER_NUMBER.getName())).thenReturn(expectedOrderNumber);
 

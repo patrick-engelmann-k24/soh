@@ -10,7 +10,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @ExtendWith(MockitoExtension.class)
-public class OrderJsonConverterTest {
+class OrderJsonConverterTest {
     @Mock
     private OrderJsonVersionDetector detector;
 
@@ -21,7 +21,7 @@ public class OrderJsonConverterTest {
     private OrderJsonConverter orderJsonConverter;
 
     @Test
-    public void anExceptionIsThrownIfTheVersionOfTheOrderJsonIsNotSupported() {
+    void anExceptionIsThrownIfTheVersionOfTheOrderJsonIsNotSupported() {
 
         assertThatThrownBy(() -> orderJsonConverter.convertToEntityAttribute(""))
                 .isInstanceOf(IllegalStateException.class);

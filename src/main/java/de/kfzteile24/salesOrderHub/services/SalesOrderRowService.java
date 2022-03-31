@@ -7,10 +7,10 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
-import de.kfzteile24.salesOrderHub.dto.sns.CoreCancellationItem;
-import de.kfzteile24.salesOrderHub.dto.sns.CoreCancellationMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
+import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.SumValues;
@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_BOOKED;
 
 @Service
 @Slf4j
@@ -47,6 +48,9 @@ public class SalesOrderRowService {
     @NonNull
     private final SalesOrderService salesOrderService;
 
+    @NonNull
+    private final OrderUtil orderUtil;
+
     public void cancelOrderProcessIfFullyCancelled(SalesOrder salesOrder) {
 
         if (isOrderFullyCancelled(salesOrder.getLatestJson())) {
@@ -56,30 +60,43 @@ public class SalesOrderRowService {
                     orderRow.setIsCancelled(true);
                 }
             }
-            salesOrderService.save(salesOrder, Action.ORDER_CANCELLED);
+            salesOrderService.save(orderUtil.removeCancelledOrderRowsFromLatestJson(salesOrder), Action.ORDER_CANCELLED);
             correlateMessageForOrderCancellation(salesOrder.getOrderNumber());
+        }
+    }
+
+    @Transactional
+    public void handleDropshipmentPurchaseOrderBooked(DropshipmentPurchaseOrderBookedMessage message) {
+
+        String orderNumber = message.getSalesOrderNumber();
+        var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
+                .orElseThrow(() -> new SalesOrderNotFoundException("Could not find order: " + orderNumber));
+        salesOrder.getLatestJson().getOrderHeader().setOrderNumberExternal(message.getPurchaseOrderNumber());
+        salesOrder = salesOrderService.save(salesOrder, DROPSHIPMENT_PURCHASE_ORDER_BOOKED);
+        if (!message.getBooked()) {
+            for (OrderRows orderRows : ((Order) salesOrder.getOriginalOrder()).getOrderRows())
+                cancelOrderRow(orderNumber, orderRows.getSku());
         }
     }
 
     @SneakyThrows
     @Transactional
-    public void cancelOrderRows(CoreCancellationMessage coreCancellationMessage) {
+    public void cancelOrderRows(String orderNumber, List<String> skuList) {
 
-        String orderNumber = coreCancellationMessage.getOrderNumber();
-        for (CoreCancellationItem coreCancellationItem : coreCancellationMessage.getItems()) {
+        for (String sku : skuList) {
             List<String> originalOrderSkus = getOriginalOrderSkus(orderNumber);
-            String skuToCancel = coreCancellationItem.getSku();
-            if (originalOrderSkus.contains(skuToCancel)) {
-                cancelOrderRow(orderNumber, skuToCancel);
+            if (originalOrderSkus.contains(sku)) {
+                cancelOrderRow(orderNumber, sku);
             } else {
-                log.error("Sku: {} is not in original order with order number: {}", skuToCancel, orderNumber);
+                log.error("Sku: {} is not in original order with order number: {}", sku, orderNumber);
             }
         }
     }
 
     private void cancelOrderRow(String orderGroupId, String orderRowId) {
 
-        salesOrderService.getOrderNumberListByOrderGroupId(orderGroupId, orderRowId).forEach(orderNumber -> {
+        List<String> orderNumberListByOrderGroupId = salesOrderService.getOrderNumberListByOrderGroupId(orderGroupId, orderRowId);
+        for (String orderNumber : orderNumberListByOrderGroupId) {
 
             if (helper.checkIfOrderRowProcessExists(orderNumber, orderRowId)) {
                 correlateMessageForOrderRowCancelCancellation(orderNumber, orderRowId);
@@ -98,7 +115,7 @@ public class SalesOrderRowService {
             markOrderRowAsCancelled(orderNumber, orderRowId);
             log.info("Order row cancelled for order number: {} and order row: {}", orderNumber, orderRowId);
 
-        });
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -128,7 +145,7 @@ public class SalesOrderRowService {
         cancelledOrderRow.setIsCancelled(true);
 
         recalculateOrder(latestJson, cancelledOrderRow);
-        salesOrderService.save(salesOrder, Action.ORDER_ROW_CANCELLED);
+        salesOrderService.save(orderUtil.removeCancelledOrderRowsFromLatestJson(salesOrder), Action.ORDER_ROW_CANCELLED);
     }
 
     private void recalculateOrder(Order latestJson, OrderRows cancelledOrderRow) {
@@ -139,9 +156,9 @@ public class SalesOrderRowService {
         BigDecimal goodsTotalGross = totals.getGoodsTotalGross().subtract(sumValues.getGoodsValueGross());
         BigDecimal goodsTotalNet = totals.getGoodsTotalNet().subtract(sumValues.getGoodsValueNet());
         BigDecimal totalDiscountGross = Optional.ofNullable(totals.getTotalDiscountGross()).orElse(BigDecimal.ZERO)
-                .subtract(Optional.ofNullable(sumValues.getTotalDiscountedGross()).orElse(BigDecimal.ZERO));
+                .subtract(Optional.ofNullable(sumValues.getDiscountGross()).orElse(BigDecimal.ZERO));
         BigDecimal totalDiscountNet = Optional.ofNullable(totals.getTotalDiscountNet()).orElse(BigDecimal.ZERO)
-                .subtract(Optional.ofNullable(sumValues.getTotalDiscountedNet()).orElse(BigDecimal.ZERO));
+                .subtract(Optional.ofNullable(sumValues.getDiscountNet()).orElse(BigDecimal.ZERO));
         BigDecimal grandTotalGross = goodsTotalGross.subtract(totalDiscountGross);
         BigDecimal grantTotalNet = goodsTotalNet.subtract(totalDiscountNet);
         BigDecimal cancelledOrderRowTaxValue = sumValues.getGoodsValueGross().subtract(sumValues.getGoodsValueNet());

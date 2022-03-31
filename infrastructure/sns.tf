@@ -1,7 +1,3 @@
-data "aws_sns_topic" "sns_soh_order_created_topic" {
-  name = "soh-order-created"
-}
-
 data "aws_sns_topic" "sns_soh_order_created_v2_topic" {
   name = "soh-order-created-v2"
 }
@@ -86,6 +82,18 @@ data "aws_sns_topic" "sns_soh_order_invoice_created_v1" {
   name = "soh-order-invoice-created-v1"
 }
 
+data "aws_sns_topic" "sns_dropshipment_shipment_confirmed_v1" {
+  name = "dropshipment-shipment-confirmed-v1"
+}
+
+data "aws_sns_topic" "sns_soh_shipment_confirmed_v1" {
+  name = "soh-shipment-confirmed-v1"
+}
+
+data "aws_sns_topic" "sns_soh_dropshipment_purchase_order_booked_v1" {
+  name = "dropshipment-purchase-order-booked-v1"
+}
+
 # subscriptions of sqs to sns
 resource "aws_sns_topic_subscription" "sns_subscription_ecp_orders_v3" {
   endpoint = aws_sqs_queue.ecp_shop_orders.arn
@@ -95,14 +103,14 @@ resource "aws_sns_topic_subscription" "sns_subscription_ecp_orders_v3" {
 
 # subscription for de-shop orders
 resource "aws_sns_topic_subscription" "sns_subscription_braincraft_orders" {
-  endpoint = aws_sqs_queue.ecp_shop_orders.arn
+  endpoint = aws_sqs_queue.bc_shop_orders.arn
   protocol = "sqs"
   topic_arn = data.aws_sns_topic.sns_braincraft_order_received.arn
 }
 
 # subscription for core aka offline orders
 resource "aws_sns_topic_subscription" "sns_subscription_core_orders" {
-  endpoint = aws_sqs_queue.ecp_shop_orders.arn
+  endpoint = aws_sqs_queue.core_shop_orders.arn
   protocol = "sqs"
   topic_arn = data.aws_sns_topic.sns_core_sales_orders_created.arn
 }
@@ -162,3 +170,24 @@ resource "aws_sns_topic_subscription" "sns_subscription_subsequent_delivery_note
   protocol = "sqs"
   topic_arn = data.aws_sns_topic.sns_core_subsequent_delivery_note_printed.arn
 }
+
+# subscription for payment secured published by ECP
+resource "aws_sns_topic_subscription" "sns_subscription_d365_order_payment_secured" {
+  endpoint = aws_sqs_queue.d365_order_payment_secured.arn
+  protocol = "sqs"
+  topic_arn = var.d365_order_payment_secured_sns
+}
+
+# subscription for dropshipment shipment confirmed published by P&R
+resource "aws_sns_topic_subscription" "sns_subscription_dropshipment_shipment_confirmed" {
+  endpoint = aws_sqs_queue.soh_dropshipment_shipment_confirmed.arn
+  protocol = "sqs"
+  topic_arn = data.aws_sns_topic.sns_dropshipment_shipment_confirmed_v1.arn
+}
+
+resource "aws_sns_topic_subscription" "dropshipment-purchase_order_booked" {
+  endpoint  = aws_sqs_queue.dropshipment_purchase_order_booked.arn
+  protocol  = "sqs"
+  topic_arn = data.aws_sns_topic.sns_soh_dropshipment_purchase_order_booked_v1.arn
+}
+

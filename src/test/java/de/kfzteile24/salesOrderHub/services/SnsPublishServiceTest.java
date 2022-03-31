@@ -8,6 +8,7 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.events.OrderRowCancelledEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInfoEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInvoiceCreatedEvent;
+import de.kfzteile24.salesOrderHub.dto.events.SalesOrderShipmentConfirmedEvent;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.soh.order.dto.OrderRows;
@@ -20,6 +21,7 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.cloud.aws.messaging.core.NotificationMessagingTemplate;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -43,7 +45,7 @@ import static org.mockito.Mockito.when;
  * @author vinaya
  */
 @ExtendWith(MockitoExtension.class)
-public class SnsPublishServiceTest {
+class SnsPublishServiceTest {
 
     @Mock
     private NotificationMessagingTemplate notificationMessagingTemplate;
@@ -59,7 +61,7 @@ public class SnsPublishServiceTest {
 
     @Test
     @SneakyThrows(Exception.class)
-    public void testPublishOrderCreatedPublishesBothOrderCreatedEventsIfTheOriginalOrderJsonIsV21() {
+    void testPublishOrderCreatedPublishesBothOrderCreatedEventsIfTheOriginalOrderJsonIsV21() {
         final var expectedTopic2 = "order-created-v2";
         final var expectedSubject2 = "Sales order created V2";
         String rawMessage = readResource("examples/ecpOrderMessage.json");
@@ -85,7 +87,7 @@ public class SnsPublishServiceTest {
 
     @Test
     @SneakyThrows(Exception.class)
-    public void testPublishOrderCreatedPublishesOnlyTheOrderCreatedV2EventIfTheOriginalOrderJsonIsV3() {
+    void testPublishOrderCreatedPublishesOnlyTheOrderCreatedV2EventIfTheOriginalOrderJsonIsV3() {
         final var expectedTopic2 = "order-created-v2";
         final var expectedSubject2 = "Sales order created V2";
         String rawMessage = readResource("examples/ecpOrderMessage.json");
@@ -112,7 +114,7 @@ public class SnsPublishServiceTest {
 
     @Test
     @SneakyThrows(Exception.class)
-    public void testSendOrderWhenSalesOrderNotFound() {
+    void testSendOrderWhenSalesOrderNotFound() {
         String rawMessage = readResource("examples/ecpOrderMessage.json");
 
         var orderNumber = "514000018";
@@ -136,7 +138,7 @@ public class SnsPublishServiceTest {
 
     @Test
     @SneakyThrows(Exception.class)
-    public void testPublishOrderRowsCancelled() {
+    void testPublishOrderRowsCancelled() {
         final var expectedTopic = "order-row-cancelled";
         final var expectedSubject = "Sales order row cancelled";
 
@@ -171,7 +173,7 @@ public class SnsPublishServiceTest {
 
     @Test
     @SneakyThrows(Exception.class)
-    public void testPublishOrderCompleted() {
+    void testPublishOrderCompleted() {
         final var expectedTopic = "order-completed";
         final var expectedSubject = "Sales order completed";
 
@@ -183,7 +185,7 @@ public class SnsPublishServiceTest {
 
     @Test
     @SneakyThrows(Exception.class)
-    public void testPublishDeliveryAddressChanged() {
+    void testPublishDeliveryAddressChanged() {
         final var expectedTopic = "delivery-address changed";
         final var expectedSubject = "Sales order delivery address changed";
 
@@ -195,7 +197,7 @@ public class SnsPublishServiceTest {
 
     @Test
     @SneakyThrows(Exception.class)
-    public void testPublishInvoiceAddressChanged() {
+    void testPublishInvoiceAddressChanged() {
         final var expectedTopic = "invoice-address changed";
         final var expectedSubject = "Sales order invoice address changed";
 
@@ -212,19 +214,48 @@ public class SnsPublishServiceTest {
         final var expectedSubject = "Sales order invoice created V1";
 
         final var salesOrder = createNewSalesOrderV3(true, REGULAR, CREDIT_CARD, NEW);
+        final var invoiceUrl = "s3://production-k24-invoices/dropshipment/2021/06/04/xxxxxxxxx-xxxxxxxxx.pdf";
 
         when(awsSnsConfig.getSnsOrderInvoiceCreatedV1()).thenReturn(expectedTopic);
         when(salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber())).thenReturn(Optional.of(salesOrder));
 
         final var expectedSalesOrderInvoiceCreatedEvent = SalesOrderInvoiceCreatedEvent.builder()
                 .order(salesOrder.getLatestJson())
+                .invoiceDocumentLink(invoiceUrl)
                 .build();
 
-        snsPublishService.publishOrderInvoiceCreated(salesOrder.getOrderNumber());
+        snsPublishService.publishOrderInvoiceCreated(salesOrder.getOrderNumber(), invoiceUrl);
 
         verify(notificationMessagingTemplate).sendNotification(
                 expectedTopic,
                 objectMapper.writeValueAsString(expectedSalesOrderInvoiceCreatedEvent),
+                expectedSubject
+        );
+    }
+
+    @Test
+    @SneakyThrows
+    void testPublishShipmentConfirmed() {
+        final var expectedTopic = "shipment-confirmed-created";
+        final var expectedSubject = "Sales order shipment confirmed V1";
+
+        final var salesOrder = createNewSalesOrderV3(true, REGULAR, CREDIT_CARD, NEW);
+        final var trackingLinks = List.of(
+                "http://abc1",
+                "http://abc2");
+
+        when(awsSnsConfig.getSnsShipmentConfirmedV1()).thenReturn(expectedTopic);
+
+        final var salesOrderShipmentConfirmedEvent = SalesOrderShipmentConfirmedEvent.builder()
+                .order(salesOrder.getLatestJson())
+                .trackingLinks(trackingLinks)
+                .build();
+
+        snsPublishService.publishSalesOrderShipmentConfirmedEvent(salesOrder, trackingLinks);
+
+        verify(notificationMessagingTemplate).sendNotification(
+                expectedTopic,
+                objectMapper.writeValueAsString(salesOrderShipmentConfirmedEvent),
                 expectedSubject
         );
     }

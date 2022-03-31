@@ -12,10 +12,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.JavaDelegate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
-@Slf4j
 public class OrderRowCancelledDelegate implements JavaDelegate {
 
     @NonNull
@@ -28,6 +29,7 @@ public class OrderRowCancelledDelegate implements JavaDelegate {
     private final SalesOrderService salesOrderService;
 
     @Override
+    @Transactional
     public void execute(DelegateExecution delegateExecution) throws Exception {
         final var orderNumber = (String) delegateExecution.getVariable(Variables.ORDER_NUMBER.getName());
         final var orderRowId = (String) delegateExecution.getVariable(RowVariables.ORDER_ROW_ID.getName());

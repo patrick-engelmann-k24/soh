@@ -3,6 +3,10 @@ locals {
   sqs_queues = {
     ecp_shop_orders = "${var.environment}-${local.service_prefix}-ecp-shop-orders-${local.version}",
     ecp_shop_orders_dlq = "${var.environment}-${local.service_prefix}-ecp-shop-orders-${local.version}-dlq",
+    bc_shop_orders = "${var.environment}-${local.service_prefix}-bc-shop-orders-${local.version}",
+    bc_shop_orders_dlq = "${var.environment}-${local.service_prefix}-bc-shop-orders-${local.version}-dlq",
+    core_shop_orders = "${var.environment}-${local.service_prefix}-core-shop-orders-${local.version}",
+    core_shop_orders_dlq = "${var.environment}-${local.service_prefix}-core-shop-orders-${local.version}-dlq",
     order_item_shipped = "${var.environment}-${local.service_prefix}-order-item-shipped-${local.version}",
     order_item_shipped_dlq = "${var.environment}-${local.service_prefix}-order-item-shipped-${local.version}-dlq",
     order_payment_secured = "${var.environment}-${local.service_prefix}-order-payment-secured-${local.version}"
@@ -20,7 +24,13 @@ locals {
     core_cancellation = "${var.environment}-${local.service_prefix}-core-cancellation-${local.version}",
     core_cancellation_dlq = "${var.environment}-${local.service_prefix}-core-cancellation-${local.version}-dlq",
     subsequent_delivery_received = "${var.environment}-${local.service_prefix}-subsequent-delivery-received-${local.version}",
-    subsequent_delivery_received_dlq = "${var.environment}-${local.service_prefix}-subsequent-delivery-received-${local.version}-dlq"
+    subsequent_delivery_received_dlq = "${var.environment}-${local.service_prefix}-subsequent-delivery-received-${local.version}-dlq",
+    d365_order_payment_secured = "${var.environment}-${local.service_prefix}-d365_order_payment_secured-${local.version}",
+    d365_order_payment_secured_dlq = "${var.environment}-${local.service_prefix}-d365_order_payment_secured-${local.version}-dlq",
+    dropshipment_shipment_confirmed = "${var.environment}-${local.service_prefix}-dropshipment-shipment-confirmed-${local.version}",
+    dropshipment_shipment_confirmed_dlq = "${var.environment}-${local.service_prefix}-dropshipment-shipment-confirmed-${local.version}-dlq",
+    dropshipment_purchase_order_booked = "${var.environment}-${local.service_prefix}-dropshipment-purchase-order-booked-${local.version}",
+    dropshipment_purchase_order_booked_dlq = "${var.environment}-${local.service_prefix}-dropshipment-purchase-order-booked-${local.version}-dlq"
   }
 }
 
@@ -31,6 +41,24 @@ resource "aws_sqs_queue" "ecp_shop_orders_dlq" {
 resource "aws_sqs_queue" "ecp_shop_orders" {
   name = local.sqs_queues.ecp_shop_orders
   redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.ecp_shop_orders_dlq.arn}\",\"maxReceiveCount\":4}"
+}
+
+resource "aws_sqs_queue" "bc_shop_orders_dlq" {
+  name = local.sqs_queues.bc_shop_orders_dlq
+}
+
+resource "aws_sqs_queue" "bc_shop_orders" {
+  name = local.sqs_queues.bc_shop_orders
+  redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.bc_shop_orders_dlq.arn}\",\"maxReceiveCount\":4}"
+}
+
+resource "aws_sqs_queue" "core_shop_orders_dlq" {
+  name = local.sqs_queues.core_shop_orders_dlq
+}
+
+resource "aws_sqs_queue" "core_shop_orders" {
+  name = local.sqs_queues.core_shop_orders
+  redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.core_shop_orders_dlq.arn}\",\"maxReceiveCount\":4}"
 }
 
 resource "aws_sqs_queue" "soh_order_item_shipped_dlq" {
@@ -114,4 +142,31 @@ resource "aws_sqs_queue" "soh_subsequent_delivery_received_dlq" {
 resource "aws_sqs_queue" "soh_subsequent_delivery_received" {
   name = local.sqs_queues.subsequent_delivery_received
   redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.soh_subsequent_delivery_received_dlq.arn}\",\"maxReceiveCount\":4}"
+}
+
+resource "aws_sqs_queue" "d365_order_payment_secured_dlq" {
+  name = local.sqs_queues.d365_order_payment_secured_dlq
+}
+
+resource "aws_sqs_queue" "d365_order_payment_secured" {
+  name = local.sqs_queues.d365_order_payment_secured
+  redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.d365_order_payment_secured_dlq.arn}\",\"maxReceiveCount\":4}"
+}
+
+resource "aws_sqs_queue" "soh_dropshipment_shipment_confirmed_dlq" {
+  name = local.sqs_queues.dropshipment_shipment_confirmed_dlq
+}
+
+resource "aws_sqs_queue" "soh_dropshipment_shipment_confirmed" {
+  name = local.sqs_queues.dropshipment_shipment_confirmed
+  redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.soh_dropshipment_shipment_confirmed_dlq.arn}\",\"maxReceiveCount\":4}"
+}
+
+resource "aws_sqs_queue" "dropshipment_purchase_order_booked_dlq" {
+  name = local.sqs_queues.dropshipment_purchase_order_booked_dlq
+}
+
+resource "aws_sqs_queue" "dropshipment_purchase_order_booked" {
+  name = local.sqs_queues.dropshipment_purchase_order_booked
+  redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.dropshipment_purchase_order_booked_dlq.arn}\",\"maxReceiveCount\":4}"
 }

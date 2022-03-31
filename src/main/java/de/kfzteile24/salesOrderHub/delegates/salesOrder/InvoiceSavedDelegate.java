@@ -20,7 +20,7 @@ class InvoiceSavedDelegate implements JavaDelegate {
         final var invoiceUrl = (String) delegateExecution.getVariable(Variables.INVOICE_URL.getName());
 
         if (InvoiceUrlExtractor.isDropShipmentRelated(invoiceUrl)) {
-            snsPublishService.publishOrderInvoiceCreated(orderNumber);
+            snsPublishService.publishOrderInvoiceCreated(orderNumber, invoiceUrl);
         }
     }
 }

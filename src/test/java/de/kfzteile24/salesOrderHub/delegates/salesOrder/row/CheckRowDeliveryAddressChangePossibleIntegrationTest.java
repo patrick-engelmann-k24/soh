@@ -1,30 +1,5 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder.row;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import de.kfzteile24.salesOrderHub.SalesOrderHubProcessApplication;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
-import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.helper.AuditLogUtil;
-import de.kfzteile24.salesOrderHub.helper.BpmUtil;
-import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
-import de.kfzteile24.salesOrderHub.services.TimedPollingService;
-import de.kfzteile24.soh.order.dto.ShippingAddress;
-import lombok.SneakyThrows;
-import org.camunda.bpm.engine.ProcessEngine;
-import org.camunda.bpm.engine.RuntimeService;
-import org.camunda.bpm.engine.runtime.ProcessInstance;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
-
-import java.util.HashMap;
-import java.util.Map;
-
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SHIPMENT_METHOD;
@@ -49,11 +24,32 @@ import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertT
 import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.withVariables;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
+import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.helper.AuditLogUtil;
+import de.kfzteile24.salesOrderHub.helper.BpmUtil;
+import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
+import de.kfzteile24.salesOrderHub.services.TimedPollingService;
+import de.kfzteile24.soh.order.dto.ShippingAddress;
+import java.util.HashMap;
+import java.util.Map;
+import lombok.SneakyThrows;
+import org.camunda.bpm.engine.ProcessEngine;
+import org.camunda.bpm.engine.RuntimeService;
+import org.camunda.bpm.engine.runtime.ProcessInstance;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
+
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@SpringBootTest(
-        classes = SalesOrderHubProcessApplication.class
-)
-public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
+@SpringBootTest
+class CheckRowDeliveryAddressChangePossibleIntegrationTest {
 
     @Autowired
     public ProcessEngine processEngine;
@@ -82,7 +78,7 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
     }
 
     @Test
-    public void testChangeAddressNotPossibleOnParcelShipmentAfterPackingStarted() {
+    void testChangeAddressNotPossibleOnParcelShipmentAfterPackingStarted() {
         final SalesOrder testOrder = salesOrderUtil.createNewSalesOrder();
         final Map<String, Object> processVariables = new HashMap<>();
         final String orderNumber = testOrder.getOrderNumber();
@@ -126,7 +122,7 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
 
     @Test
     @SneakyThrows(JsonProcessingException.class)
-    public void testChangeAddressPossibleOnParcelShipment() {
+    void testChangeAddressPossibleOnParcelShipment() {
         final Map<String, Object> processVariables = new HashMap<>();
         final SalesOrder testOrder = salesOrderUtil.createNewSalesOrder();
         final String orderNumber = testOrder.getOrderNumber();
@@ -183,7 +179,7 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
     }
 
     @Test
-    public void testChangeAddressNotPossibleOnOwnDeliveryShipmentAfterTourStarted() {
+    void testChangeAddressNotPossibleOnOwnDeliveryShipmentAfterTourStarted() {
         final Map<String, Object> processVariables = new HashMap<>();
         final SalesOrder testOrder = salesOrderUtil.createNewSalesOrder();
         final String orderNumber = testOrder.getOrderNumber();
@@ -216,7 +212,7 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
 
     @Test
     @SneakyThrows(JsonProcessingException.class)
-    public void testChangeAddressPossibleOnOwnDeliveryShipment() {
+    void testChangeAddressPossibleOnOwnDeliveryShipment() {
         final Map<String, Object> processVariables = new HashMap<>();
         final SalesOrder testOrder = salesOrderUtil.createNewSalesOrder();
         final String orderNumber = testOrder.getOrderNumber();
@@ -267,7 +263,7 @@ public class CheckRowDeliveryAddressChangePossibleIntegrationTest {
     }
 
     @Test
-    public void testChangeAddressNotPossibleOnPickup() {
+    void testChangeAddressNotPossibleOnPickup() {
         final Map<String, Object> processVariables = new HashMap<>();
         final SalesOrder testOrder = salesOrderUtil.createNewSalesOrder();
         final String orderNumber = testOrder.getOrderNumber();

@@ -1,35 +1,5 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder;
 
-import de.kfzteile24.salesOrderHub.SalesOrderHubProcessApplication;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
-import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
-import de.kfzteile24.salesOrderHub.helper.AuditLogUtil;
-import de.kfzteile24.salesOrderHub.helper.BpmUtil;
-import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
-import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
-import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
-import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
-import de.kfzteile24.salesOrderHub.services.TimedPollingService;
-import org.camunda.bpm.engine.ProcessEngine;
-import org.camunda.bpm.engine.RuntimeService;
-import org.camunda.bpm.engine.runtime.ProcessInstance;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.support.TransactionCallbackWithoutResult;
-import org.springframework.transaction.support.TransactionTemplate;
-
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.MSG_ORDER_PAYMENT_SECURED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.INVOICE_CREATED;
@@ -52,11 +22,37 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
+import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
+import de.kfzteile24.salesOrderHub.helper.AuditLogUtil;
+import de.kfzteile24.salesOrderHub.helper.BpmUtil;
+import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
+import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
+import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
+import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
+import de.kfzteile24.salesOrderHub.services.TimedPollingService;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.camunda.bpm.engine.ProcessEngine;
+import org.camunda.bpm.engine.RuntimeService;
+import org.camunda.bpm.engine.runtime.ProcessInstance;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.TransactionCallbackWithoutResult;
+import org.springframework.transaction.support.TransactionTemplate;
+
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@SpringBootTest(
-        classes = SalesOrderHubProcessApplication.class
-)
-public class SaveInvoiceDelegateIntegrationTest {
+@SpringBootTest
+class SaveInvoiceDelegateIntegrationTest {
     @Autowired
     private ProcessEngine processEngine;
 
@@ -93,7 +89,7 @@ public class SaveInvoiceDelegateIntegrationTest {
     }
 
     @Test
-    public void testInvoiceIsStoredCorrectlyWithSubsequentInvoice() {
+    void testInvoiceIsStoredCorrectlyWithSubsequentInvoice() {
         final var testOrder = salesOrderUtil.createNewSalesOrder();
         final var orderProcess = createOrderProcess(testOrder);
         final var orderNumber = testOrder.getOrderNumber();
@@ -136,7 +132,7 @@ public class SaveInvoiceDelegateIntegrationTest {
     }
 
     @Test
-    public void testInvoiceIsStoredCorrectlyWithSubsequentInvoiceAfterOrderProcessIsCompleted() {
+    void testInvoiceIsStoredCorrectlyWithSubsequentInvoiceAfterOrderProcessIsCompleted() {
         final var testOrder = salesOrderUtil.createNewSalesOrder();
         final var orderProcess = createOrderProcess(testOrder);
         final var orderNumber = testOrder.getOrderNumber();
@@ -181,7 +177,7 @@ public class SaveInvoiceDelegateIntegrationTest {
     }
 
     @Test
-    public void invoicesAreAlsoStoredWhenNoCorrespondingSalesOrderExistsYet() {
+    void invoicesAreAlsoStoredWhenNoCorrespondingSalesOrderExistsYet() {
         final var testOrder = SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
         final var orderNumber = testOrder.getOrderNumber();
         final var invoice = createSalesOrderInvoice(orderNumber, false);

@@ -1,12 +1,19 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder.row;
 
-import de.kfzteile24.salesOrderHub.SalesOrderHubProcessApplication;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SHIPMENT_METHOD;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
+import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
+import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
+
 import de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowGateways;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
+import java.util.HashMap;
+import java.util.Map;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
@@ -16,20 +23,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SHIPMENT_METHOD;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
-import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
-import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
-
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@SpringBootTest(
-        classes = SalesOrderHubProcessApplication.class
-)
-public class CheckRowCancellationPossibleIntegrationTest {
+@SpringBootTest
+class CheckRowCancellationPossibleIntegrationTest {
 
     @Autowired
     public ProcessEngine processEngine;
@@ -46,7 +42,7 @@ public class CheckRowCancellationPossibleIntegrationTest {
     }
 
     @Test
-    public void testPassThroughOnParcelShipmentRegular() {
+    void testPassThroughOnParcelShipmentRegular() {
         final Map<String, Object> processVariables = new HashMap<>();
         String orderNumber = util.getRandomOrderNumber();
         processVariables.put(ORDER_NUMBER.getName(), orderNumber);
@@ -75,7 +71,7 @@ public class CheckRowCancellationPossibleIntegrationTest {
     }
 
     @Test
-    public void testPassThroughOnParcelShipmentExpress() {
+    void testPassThroughOnParcelShipmentExpress() {
         final Map<String, Object> processVariables = new HashMap<>();
         String orderNumber = util.getRandomOrderNumber();
         processVariables.put(ORDER_NUMBER.getName(), orderNumber);
@@ -104,7 +100,7 @@ public class CheckRowCancellationPossibleIntegrationTest {
     }
 
     @Test
-    public void testPassThroughOnParcelShipmentPriority() {
+    void testPassThroughOnParcelShipmentPriority() {
         final Map<String, Object> processVariables = new HashMap<>();
         String orderNumber = util.getRandomOrderNumber();
         processVariables.put(ORDER_NUMBER.getName(), orderNumber);
@@ -133,7 +129,7 @@ public class CheckRowCancellationPossibleIntegrationTest {
     }
 
     @Test
-    public void testPassThroughOnParcelOwnDelivery() {
+    void testPassThroughOnParcelOwnDelivery() {
         final Map<String, Object> processVariables = new HashMap<>();
         String orderNumber = util.getRandomOrderNumber();
         processVariables.put(ORDER_NUMBER.getName(), orderNumber);
@@ -160,7 +156,7 @@ public class CheckRowCancellationPossibleIntegrationTest {
     }
 
     @Test
-    public void testPassThroughOnParcelClickCollect() {
+    void testPassThroughOnParcelClickCollect() {
         final Map<String, Object> processVariables = new HashMap<>();
         String orderNumber = util.getRandomOrderNumber();
         processVariables.put(ORDER_NUMBER.getName(), orderNumber);

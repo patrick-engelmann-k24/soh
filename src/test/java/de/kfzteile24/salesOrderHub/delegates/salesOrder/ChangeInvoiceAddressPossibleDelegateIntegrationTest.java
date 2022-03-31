@@ -1,8 +1,18 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder;
 
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.MSG_ORDER_PAYMENT_SECURED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.INVOICE_ADDRESS_CHANGED;
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
+import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
+import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.kfzteile24.salesOrderHub.SalesOrderHubProcessApplication;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Gateways;
@@ -18,6 +28,9 @@ import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import de.kfzteile24.soh.order.dto.BillingAddress;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
@@ -27,26 +40,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.MSG_ORDER_PAYMENT_SECURED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
-import static de.kfzteile24.salesOrderHub.domain.audit.Action.INVOICE_ADDRESS_CHANGED;
-import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
-import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
-import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@SpringBootTest(
-        classes = SalesOrderHubProcessApplication.class
-)
-public class ChangeInvoiceAddressPossibleDelegateIntegrationTest {
+@SpringBootTest
+class ChangeInvoiceAddressPossibleDelegateIntegrationTest {
 
     @Autowired
     private ProcessEngine processEngine;
@@ -81,7 +77,7 @@ public class ChangeInvoiceAddressPossibleDelegateIntegrationTest {
     }
 
     @Test
-    public void testChangeInvoiceAddressPossible() throws JsonProcessingException {
+    void testChangeInvoiceAddressPossible() throws JsonProcessingException {
         final SalesOrder testOrder = salesOrderUtil.createNewSalesOrder();
         final ProcessInstance orderProcess = createOrderProcess(testOrder);
         final String orderNumber = testOrder.getOrderNumber();
@@ -130,7 +126,7 @@ public class ChangeInvoiceAddressPossibleDelegateIntegrationTest {
     }
 
     @Test
-    public void testChangeInvoiceAddressNotPossible() {
+    void testChangeInvoiceAddressNotPossible() {
         final SalesOrder testOrder = salesOrderUtil.createNewSalesOrder();
         final ProcessInstance orderProcess = createOrderProcess(testOrder);
         final String orderNumber = testOrder.getOrderNumber();

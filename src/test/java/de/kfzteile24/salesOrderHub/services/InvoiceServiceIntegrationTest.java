@@ -1,15 +1,5 @@
 package de.kfzteile24.salesOrderHub.services;
 
-import de.kfzteile24.salesOrderHub.SalesOrderHubProcessApplication;
-import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
-import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
-
-import java.util.List;
-
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
@@ -17,11 +7,17 @@ import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createNewSalesOr
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrderInvoice;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
+import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
+
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@SpringBootTest(
-        classes = SalesOrderHubProcessApplication.class
-)
-public class InvoiceServiceIntegrationTest {
+@SpringBootTest
+class InvoiceServiceIntegrationTest {
     @Autowired
     private SalesOrderRepository salesOrderRepository;
 
@@ -32,7 +28,7 @@ public class InvoiceServiceIntegrationTest {
     private InvoiceService invoiceService;
 
     @Test
-    public void anInvoiceIsPersistedCorrectly() {
+    void anInvoiceIsPersistedCorrectly() {
         final var testOrder = createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
         final var orderNumber = testOrder.getOrderNumber();
         final var invoice = createSalesOrderInvoice(orderNumber, false);
@@ -53,7 +49,7 @@ public class InvoiceServiceIntegrationTest {
     }
 
     @Test
-    public void addingASalesOrderToExistingInvoicesUpdatesTheInvoiceTableCorrectly() {
+    void addingASalesOrderToExistingInvoicesUpdatesTheInvoiceTableCorrectly() {
         final var testOrder = createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
         final var orderNumber = testOrder.getOrderNumber();
         final var existingInvoices = List.of(
