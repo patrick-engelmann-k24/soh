@@ -2,7 +2,6 @@ package de.kfzteile24.salesOrderHub.services;
 
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
-import de.kfzteile24.salesOrderHub.domain.audit.Action;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
@@ -150,7 +149,7 @@ class SalesOrderRowServiceTest {
         );
 
         verify(salesOrderService, times(3)).getOrderNumberListByOrderGroupId(eq(salesOrder.getOrderGroupId()), any());
-        verify(salesOrderService, times(3)).save(any(), eq(Action.ORDER_ROW_CANCELLED));
+        verify(salesOrderService, times(3)).save(any(), eq(ORDER_ROW_CANCELLED));
         verifyNoInteractions(snsPublishService);
     }
 

@@ -12,8 +12,6 @@ import de.kfzteile24.salesOrderHub.dto.sns.cancellation.CoreCancellationItem;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
-import de.kfzteile24.soh.order.dto.Order;
-import de.kfzteile24.soh.order.dto.OrderHeader;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;

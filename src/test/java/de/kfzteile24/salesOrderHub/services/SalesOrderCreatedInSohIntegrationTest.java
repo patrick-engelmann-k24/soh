@@ -1,6 +1,5 @@
 package de.kfzteile24.salesOrderHub.services;
 
-import de.kfzteile24.salesOrderHub.SalesOrderHubProcessApplication;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
