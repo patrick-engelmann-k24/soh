@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>de.kfzteile24.soh</groupId>
   <artifactId>sales-order-hub-bpmn</artifactId>
-  <version>0.0.1</version>
+  <version>1.3.0</version>
   <name>soh-order-hub-bpmn</name>
   <description>Run the core sales order hub BPMN processes</description>
 
@@ -162,6 +162,7 @@
   </dependencies>
 
    <build>
+    <finalName>soh-bpmn</finalName>
     <plugins>
       <plugin>
         <groupId>org.springframework.boot</groupId>

@@ -49,6 +49,9 @@ public class SalesOrderRowService {
     private final SalesOrderService salesOrderService;
 
     @NonNull
+    private final TimedPollingService timedPollingService;
+
+    @NonNull
     private final OrderUtil orderUtil;
 
     public void cancelOrderProcessIfFullyCancelled(SalesOrder salesOrder) {
@@ -74,8 +77,12 @@ public class SalesOrderRowService {
         salesOrder.getLatestJson().getOrderHeader().setOrderNumberExternal(message.getPurchaseOrderNumber());
         salesOrder = salesOrderService.save(salesOrder, DROPSHIPMENT_PURCHASE_ORDER_BOOKED);
         if (!message.getBooked()) {
-            for (OrderRows orderRows : ((Order) salesOrder.getOriginalOrder()).getOrderRows())
+            for (OrderRows orderRows : ((Order) salesOrder.getOriginalOrder()).getOrderRows()) {
                 cancelOrderRow(orderNumber, orderRows.getSku());
+            }
+            if (timedPollingService.pollWithDefaultTiming(() -> helper.checkIfActiveProcessExists(orderNumber))) {
+                cancelOrderProcessIfFullyCancelled(salesOrder);
+            }
         }
     }
 

@@ -35,9 +35,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
@@ -276,7 +273,6 @@ class SalesOrderRowServiceIntegrationTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     public void testDropshipmentPurchaseOrderBookedFalse() {
         final var salesOrder =
                 salesOrderUtil.createPersistedSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
@@ -310,14 +306,12 @@ class SalesOrderRowServiceIntegrationTest {
             assertTrue(orderRows.getIsCancelled());
         }
 
-        HistoricProcessInstance historicProcessInstance = historyService.createHistoricProcessInstanceQuery()
-                .processDefinitionKey(SALES_ORDER_PROCESS.getName())
-                .variableValueEquals(Variables.ORDER_NUMBER.getName(), orderNumber)
-                .singleResult();
-
-        var updatedSkus = (List<String>) runtimeService.getVariable(historicProcessInstance.getId(),
-                Variables.ORDER_ROWS.getName());
-        assertEquals(0, updatedSkus.size());
+        assertFalse(timerService.pollWithDefaultTiming(() ->
+                camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), orderRowSkus.get(0)) &&
+                        camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), orderRowSkus.get(1)) &&
+                        camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), orderRowSkus.get(2)) &&
+                        camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())
+        ));
 
         auditLogUtil.assertAuditLogExists(salesOrder.getId(), ORDER_ROW_CANCELLED, 3);
         assertFalse(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
@@ -368,7 +362,7 @@ class SalesOrderRowServiceIntegrationTest {
                 .map(OrderRows::getSku)
                 .collect(toList());
         final var skuToCancel = orderRowSkus.get(1);
-        final var aliveSkus = orderRowSkus.stream().filter(sku -> !sku.equals(skuToCancel)).collect(Collectors.toList());
+        final var aliveSkus = orderRowSkus.stream().filter(sku -> !sku.equals(skuToCancel)).collect(toList());
 
         // create second sales order with same values except order number
         final var salesOrder2 = salesOrderUtil.createPersistedSalesOrderV3WithDiffGroupId(false, REGULAR, CREDIT_CARD, NEW, salesOrder1.getOrderGroupId());
@@ -395,10 +389,9 @@ class SalesOrderRowServiceIntegrationTest {
         assert salesOrder.getId() != null;
         var foundSalesOrder = salesOrderRepository.findById(salesOrder.getId());
         if (foundSalesOrder.isPresent()) {
-            AtomicBoolean result = new AtomicBoolean(true);
             return foundSalesOrder.get().getLatestJson().getOrderRows().stream()
                     .map(OrderRows::getSku)
-                    .collect(Collectors.toList())
+                    .collect(toList())
                     .containsAll(skuList);
 
         } else {
