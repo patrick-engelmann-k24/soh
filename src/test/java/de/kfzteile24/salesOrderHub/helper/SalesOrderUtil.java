@@ -312,10 +312,6 @@ public class SalesOrderUtil {
                 .build();
     }
 
-    public static SalesOrderCompletedEvent getSalesOrderCompletedEvent(String rawMessage) {
-        return getOrderCompleted(rawMessage);
-    }
-
     @SneakyThrows(JsonProcessingException.class)
     public static Order getOrder(String rawMessage) {
         ObjectMapper mapper = new ObjectMapperConfig().objectMapper();
