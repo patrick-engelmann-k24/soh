@@ -426,8 +426,8 @@ public class SqsReceiveService {
         DropshipmentPurchaseOrderBookedMessage message =
                 objectMapper.readValue(body, DropshipmentPurchaseOrderBookedMessage.class);
 
-        log.info("Received dropshipment order purchased booked message with purchase order number : {}",
-                message.getPurchaseOrderNumber());
+        log.info("Received drop shipment order purchased booked message with Sales Order Number: {}, External Order NUmber: {}",
+                message.getSalesOrderNumber(), message.getExternalOrderNumber());
 
         salesOrderRowService.handleDropshipmentPurchaseOrderBooked(message);
     }

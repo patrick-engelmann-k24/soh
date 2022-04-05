@@ -74,7 +74,7 @@ public class SalesOrderRowService {
         String orderNumber = message.getSalesOrderNumber();
         var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException("Could not find order: " + orderNumber));
-        salesOrder.getLatestJson().getOrderHeader().setOrderNumberExternal(message.getPurchaseOrderNumber());
+        salesOrder.getLatestJson().getOrderHeader().setOrderNumberExternal(message.getExternalOrderNumber());
         salesOrder = salesOrderService.save(salesOrder, DROPSHIPMENT_PURCHASE_ORDER_BOOKED);
         if (!message.getBooked()) {
             for (OrderRows orderRows : ((Order) salesOrder.getOriginalOrder()).getOrderRows()) {
