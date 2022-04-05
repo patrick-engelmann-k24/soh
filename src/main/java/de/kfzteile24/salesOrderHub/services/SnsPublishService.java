@@ -68,7 +68,8 @@ public class SnsPublishService {
     }
 
     public void publishOrderCompleted(String orderNumber) {
-        sendSalesOrderCompletedJson(config.getSnsOrderCompletedTopic(), "Sales order completed", orderNumber);
+        final var salesOrderCompleted = SalesOrderCompletedEvent.builder().orderNumber(orderNumber).build();
+        publishEvent(config.getSnsOrderCompletedTopic(), "Sales order completed", salesOrderCompleted, orderNumber);
     }
 
     public void publishOrderInvoiceCreated(String orderNumber, String invoiceUrl) {
@@ -106,12 +107,6 @@ public class SnsPublishService {
                 .build();
 
         publishEvent(topic, subject, salesOrderInfo, orderNumber);
-    }
-
-    protected void sendSalesOrderCompletedJson(String topic, String subject, String orderNumber) {
-        final var salesOrderCompleted = SalesOrderCompletedEvent.builder().orderNumber(orderNumber);
-
-        publishEvent(topic, subject, salesOrderCompleted, orderNumber);
     }
 
     @SneakyThrows({JsonProcessingException.class})
