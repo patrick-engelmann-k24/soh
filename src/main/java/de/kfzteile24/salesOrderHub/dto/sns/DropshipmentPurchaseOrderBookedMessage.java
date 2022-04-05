@@ -22,6 +22,9 @@ public class DropshipmentPurchaseOrderBookedMessage {
     @JsonProperty("SalesOrderNumber")
     private String salesOrderNumber;
 
+    @JsonProperty("ExternalOrderNumber")
+    private String externalOrderNumber;
+
     @JsonProperty("SupplierNumber")
     private Integer supplierNumber;
 
