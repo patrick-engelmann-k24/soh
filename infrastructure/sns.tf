@@ -18,8 +18,8 @@ data "aws_sns_topic" "sns_soh_packing_started_topic" {
   name = "soh-packing-started"
 }
 
-data "aws_sns_topic" "sns_soh_order_completed_topic" {
-  name = "soh-order-completed"
+data "aws_sns_topic" "sns_soh_sales_order_completed_topic_v1" {
+  name = "soh-sales-order-completed-v1"
 }
 
 data "aws_sns_topic" "sns_soh_order_item_cancelled_topic" {

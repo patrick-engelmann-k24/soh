@@ -33,7 +33,7 @@ module "application_module" {
     soh_db_database                            = "sales_order_hub"
 
     soh_order_created_v2                       = data.aws_sns_topic.sns_soh_order_created_v2_topic.arn
-    soh_order_completed                        = data.aws_sns_topic.sns_soh_order_completed_topic.arn
+    soh_order_completed                        = data.aws_sns_topic.sns_soh_sales_order_completed_topic_v1.arn
     soh_order_item_cancelled                   = data.aws_sns_topic.sns_soh_order_item_cancelled_topic.arn
     soh_order_rows_cancelled                   = data.aws_sns_topic.sns_soh_order_rows_cancelled_topic_v1.arn
     soh_order_cancelled                        = data.aws_sns_topic.sns_soh_order_cancelled_topic.arn

@@ -31,7 +31,7 @@ soh:
   sns:
     topic:
       orderCreatedV2:         arn:aws:sns:eu-central-1:000000000000:soh-order-created-v2
-      orderCompleted:         arn:aws:sns:eu-central-1:000000000000:soh-order-completed
+      orderCompleted:         arn:aws:sns:eu-central-1:000000000000:soh-sales-order-completed-v1
       orderCancelled:         arn:aws:sns:eu-central-1:000000000000:soh-order-cancelled
       orderItemCancelled:     arn:aws:sns:eu-central-1:000000000000:soh-order-item-cancelled
       orderRowsCancelled:     arn:aws:sns:eu-central-1:000000000000:soh-order-rows-cancelled-v1

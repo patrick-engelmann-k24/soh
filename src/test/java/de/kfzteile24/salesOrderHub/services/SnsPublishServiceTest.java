@@ -6,6 +6,7 @@ import de.kfzteile24.salesOrderHub.configuration.AwsSnsConfig;
 import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.events.OrderRowCancelledEvent;
+import de.kfzteile24.salesOrderHub.dto.events.SalesOrderCompletedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInfoEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInvoiceCreatedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderShipmentConfirmedEvent;
@@ -174,13 +175,28 @@ class SnsPublishServiceTest {
     @Test
     @SneakyThrows(Exception.class)
     void testPublishOrderCompleted() {
-        final var expectedTopic = "order-completed";
+        final var expectedTopic = "soh-sales-order-completed-v1";
         final var expectedSubject = "Sales order completed";
+        final var expectedEvent = SalesOrderCompletedEvent.builder()
+                .orderNumber("123456789")
+                .build();
 
         given(awsSnsConfig.getSnsOrderCompletedTopic()).willReturn(expectedTopic);
 
-        verifyPublishedEvent(expectedTopic, expectedSubject,
-                throwingConsumerWrapper(snsPublishService::publishOrderCompleted));
+        snsPublishService.publishOrderCompleted("123456789");
+
+        verify(notificationMessagingTemplate).sendNotification(
+                eq(expectedTopic),
+                argThat(json -> {
+                    try {
+                        final var publishedEvent = objectMapper.readValue(((String) json), SalesOrderCompletedEvent.class);
+                        assertEquals(expectedEvent.getOrderNumber(), publishedEvent.getOrderNumber());
+                    } catch (JsonProcessingException e) {
+                        throw new IllegalArgumentException(e);
+                    }
+                    return true;
+                }),
+                eq(expectedSubject));
     }
 
     @Test
