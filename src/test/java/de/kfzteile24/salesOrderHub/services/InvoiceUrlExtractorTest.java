@@ -50,25 +50,13 @@ class InvoiceUrlExtractorTest {
                 .hasMessageContaining("Cannot parse OrderNumber");
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {
-            "s3://production-k24-invoices/dropshipment/2021/06/04/xxxxxxxxx-xxxxxxxxx.pdf",
-            "s3://staging-k24-invoices/dropshipment//2021/06/04/xxxxxxxxx---xxxxxxxxx.pdf.pdf",
-            "s3://anyBucket/dropshipment/2021/06/04/xxxxxxxxx-xxxxxxxxx.pdf"
-    })
-    void testIsDropShipmentRelatedTrue(String invoiceUrl) {
-        assertThat(InvoiceUrlExtractor.isDropShipmentRelated(invoiceUrl)).isTrue();
+    @Test
+    void testIsDropShipmentRelatedTrue() {
+        assertThat(InvoiceUrlExtractor.isDropShipmentRelated("delticom")).isTrue();
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {
-            "s3://production-k24-invoices/dropshipment1/2021/06/04/xxxxxxxxx-xxxxxxxxx.pdf",
-            "s3://staging-k24-invoices/dropshipment2/2021/06/04/xxxxxxxxx-xxxxxxxxx.pdf",
-            "s3://anyBucket/anyFolder/2021/06/04/xxxxxxxxx-xxxxxxxxx.pdf",
-            "s3://anyBucket/dropshipment/",
-            "s3:///dropshipment/2021/06/04/xxxxxxxxx-xxxxxxxxx.pdf"
-    })
-    void testIsDropShipmentRelatedFalse(String invoiceUrl) {
-        assertThat(InvoiceUrlExtractor.isDropShipmentRelated(invoiceUrl)).isFalse();
+    @Test
+    void testIsDropShipmentRelatedFalse() {
+        assertThat(InvoiceUrlExtractor.isDropShipmentRelated("K24")).isFalse();
     }
 }

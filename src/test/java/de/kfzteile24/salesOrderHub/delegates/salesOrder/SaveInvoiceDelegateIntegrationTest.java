@@ -32,6 +32,7 @@ import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
+import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -61,6 +62,9 @@ class SaveInvoiceDelegateIntegrationTest {
 
     @Autowired
     private BpmUtil util;
+
+    @Autowired
+    private SalesOrderService salesOrderService;
 
     @Autowired
     private SalesOrderRepository salesOrderRepository;
@@ -179,6 +183,7 @@ class SaveInvoiceDelegateIntegrationTest {
     @Test
     void invoicesAreAlsoStoredWhenNoCorrespondingSalesOrderExistsYet() {
         final var testOrder = SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
+        salesOrderService.save(testOrder, ORDER_CREATED);
         final var orderNumber = testOrder.getOrderNumber();
         final var invoice = createSalesOrderInvoice(orderNumber, false);
         createSaveInvoiceProcess(orderNumber, invoice);
