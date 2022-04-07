@@ -102,7 +102,7 @@ public class SalesOrderAddressService {
                 } else {
                     return new ResponseEntity<>("The order was found but could not changed the deliver address, because the state was not good.", HttpStatus.CONFLICT);
                 }
-            } else if (helper.checkIfActiveProcessExists(orderNumber)) {
+            //} else if (helper.checkIfActiveProcessExists(orderNumber)) {
                 // todo change main delivery address (order lvl)
 
             } else {
