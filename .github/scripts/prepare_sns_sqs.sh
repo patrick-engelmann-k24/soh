@@ -12,7 +12,7 @@ export AWS_ACCESS_KEY_ID=000000000000
 TOPICS="
     soh-delivery-address-changed
     soh-order-created-v2
-    soh-order-completed
+    soh-sales-order-completed-v1
     soh-order-cancelled
     soh-order-item-cancelled
     soh-order-rows-cancelled-v1
@@ -37,6 +37,8 @@ TOPICS="
     soh-dropshipment-shipment-confirmed
     soh-shipment-confirmed-v1
     soh-dropshipment-purchase-order-booked
+    soh-core-return-delivery-note-printed
+    soh-return-receipt-calculated-v1
     "
 
 # Outdated topics

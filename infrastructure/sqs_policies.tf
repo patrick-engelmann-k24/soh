@@ -661,7 +661,49 @@ data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_dropshipment
 
 resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_dropshipment_shipment_confirmed" {
   queue_url = aws_sqs_queue.soh_dropshipment_shipment_confirmed.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_d365_order_payment_secured.json
+  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_dropshipment_shipment_confirmed.json
+}
+
+data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_core_return_delivery_note_printed" {
+  statement {
+    sid = "SNS-core-return-deliver-note-printed"
+    effect = "Allow"
+
+    actions = [
+      "sqs:SendMessage",
+    ]
+
+    principals {
+      identifiers = ["*"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_core_return_delivery_note_printed.arn
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sqs:*",
+    ]
+
+    principals {
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_core_return_delivery_note_printed.arn
+    ]
+  }
+}
+
+resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_core_return_delivery_note_printed" {
+  queue_url = aws_sqs_queue.soh_core_return_delivery_note_printed.id
+  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_core_return_delivery_note_printed.json
 }
 
 data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_dropshipment_purchase_order_booked" {

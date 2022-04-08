@@ -1,4 +1,4 @@
-package de.kfzteile24.salesOrderHub.dto.sns.paymentSecured;
+package de.kfzteile24.salesOrderHub.dto.sns.paymentsecured;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;

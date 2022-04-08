@@ -18,8 +18,8 @@ data "aws_sns_topic" "sns_soh_packing_started_topic" {
   name = "soh-packing-started"
 }
 
-data "aws_sns_topic" "sns_soh_order_completed_topic" {
-  name = "soh-order-completed"
+data "aws_sns_topic" "sns_soh_sales_order_completed_topic_v1" {
+  name = "soh-sales-order-completed-v1"
 }
 
 data "aws_sns_topic" "sns_soh_order_item_cancelled_topic" {
@@ -92,6 +92,14 @@ data "aws_sns_topic" "sns_soh_shipment_confirmed_v1" {
 
 data "aws_sns_topic" "sns_soh_dropshipment_purchase_order_booked_v1" {
   name = "dropshipment-purchase-order-booked-v1"
+}
+
+data "aws_sns_topic" "sns_core_return_delivery_note_printed_v1" {
+  name = "core-return-delivery-note-printed-v1"
+}
+
+data "aws_sns_topic" "sns_soh_return_receipt_calculated_v1" {
+  name = "soh-return-receipt-calculated-v1"
 }
 
 # subscriptions of sqs to sns
@@ -191,3 +199,9 @@ resource "aws_sns_topic_subscription" "dropshipment-purchase_order_booked" {
   topic_arn = data.aws_sns_topic.sns_soh_dropshipment_purchase_order_booked_v1.arn
 }
 
+# subscription for core return delivery note printed published by core-publisher
+resource "aws_sns_topic_subscription" "sns_subscription_core_return_delivery_note_printed" {
+  endpoint = aws_sqs_queue.soh_core_return_delivery_note_printed.arn
+  protocol = "sqs"
+  topic_arn = data.aws_sns_topic.sns_core_return_delivery_note_printed_v1.arn
+}

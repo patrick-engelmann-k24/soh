@@ -1,8 +1,12 @@
 package de.kfzteile24.salesOrderHub.helper;
 
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.dto.sns.subsequent.SubsequentDeliveryItem;
-import de.kfzteile24.soh.order.dto.*;
+import de.kfzteile24.salesOrderHub.dto.sns.deliverynote.CoreDeliveryNoteItem;
+import de.kfzteile24.soh.order.dto.Order;
+import de.kfzteile24.soh.order.dto.OrderRows;
+import de.kfzteile24.soh.order.dto.SumValues;
+import de.kfzteile24.soh.order.dto.Totals;
+import de.kfzteile24.soh.order.dto.UnitValues;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -11,7 +15,13 @@ import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.*;
+import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getMultipliedValue;
+import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getNetValue;
+import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getSumOfGoodsNetFromSumOfGoodsGross;
+import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getValueOrDefault;
+import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.isGreater;
+import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.isNotNullAndNotEqual;
+import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.round;
 import static java.math.RoundingMode.HALF_DOWN;
 import static java.math.RoundingMode.HALF_UP;
 
@@ -24,6 +34,16 @@ import static java.math.RoundingMode.HALF_UP;
 @Slf4j
 @RequiredArgsConstructor
 public class OrderUtil {
+
+    private final ObjectUtil objectUtil;
+
+    public Order copyOrderJson(Order orderJson) {
+        return objectUtil.deepCopyOf(orderJson, Order.class);
+    }
+
+    public Totals copyTotals(Totals totals) {
+        return objectUtil.deepCopyOf(totals, Totals.class);
+    }
 
     public Integer getLastRowKey(SalesOrder originalSalesOrder) {
         var originalOrder = (Order) originalSalesOrder.getOriginalOrder();
@@ -38,7 +58,7 @@ public class OrderUtil {
         return salesOrder;
     }
 
-    public OrderRows createOrderFromOriginalSalesOrder(SalesOrder salesOrder, SubsequentDeliveryItem item, Integer lastRowKey) {
+    public OrderRows createOrderFromOriginalSalesOrder(SalesOrder salesOrder, CoreDeliveryNoteItem item, Integer lastRowKey) {
         var orderRow = filterFromLatestJson(salesOrder, item);
         if (orderRow == null) {
             orderRow = filterFromOriginalOrder(salesOrder, item);
@@ -51,15 +71,20 @@ public class OrderUtil {
         return orderRow;
     }
 
-    private OrderRows filterFromLatestJson(SalesOrder salesOrder, SubsequentDeliveryItem item) {
+    public OrderRows recalculateOrderRow(OrderRows orderRow, CoreDeliveryNoteItem item) {
+        decreaseOrderRowByNewItemValues(orderRow, item);
+        return orderRow;
+    }
+
+    private OrderRows filterFromLatestJson(SalesOrder salesOrder, CoreDeliveryNoteItem item) {
         return filterFromOrder(item, salesOrder.getLatestJson());
     }
 
-    private OrderRows filterFromOriginalOrder(SalesOrder salesOrder, SubsequentDeliveryItem item) {
+    private OrderRows filterFromOriginalOrder(SalesOrder salesOrder, CoreDeliveryNoteItem item) {
         return filterFromOrder(item, (Order) salesOrder.getOriginalOrder());
     }
 
-    private OrderRows createNewOrderRow(SubsequentDeliveryItem item, String shippingType, Integer lastRowKey) {
+    private OrderRows createNewOrderRow(CoreDeliveryNoteItem item, String shippingType, Integer lastRowKey) {
         var unitPriceGross = item.getUnitPriceGross();
         var unitPriceNet = getNetValue(item.getUnitPriceGross(), item.getTaxRate());
         var sumOfGoodsPriceGross =
@@ -91,7 +116,7 @@ public class OrderUtil {
                 .build();
     }
 
-    private OrderRows filterFromOrder(SubsequentDeliveryItem item, Order latestOrder) {
+    private OrderRows filterFromOrder(CoreDeliveryNoteItem item, Order latestOrder) {
         var orderRow = OrderMapper.INSTANCE.toOrderRow(latestOrder.getOrderRows().stream()
                 .filter(row -> row.getSku().equals(item.getSku()))
                 .findFirst().orElse(null));
@@ -99,7 +124,7 @@ public class OrderUtil {
         return orderRow;
     }
 
-    protected void updateOrderRowByNewItemValues(OrderRows row, SubsequentDeliveryItem item) {
+    protected void updateOrderRowByNewItemValues(OrderRows row, CoreDeliveryNoteItem item) {
         if (row != null) {
             if (isNotNullAndNotEqual(item.getTaxRate(), row.getTaxRate())) {
                 updateOrderRowByTaxRate(row, item.getTaxRate());
@@ -116,6 +141,20 @@ public class OrderUtil {
             if (isNotNullAndNotEqual(item.getSalesPriceGross(), row.getSumValues().getGoodsValueGross())) {
                 updateOrderRowBySalesPriceGross(row, item.getSalesPriceGross());
             }
+        }
+    }
+
+    protected void decreaseOrderRowByNewItemValues(OrderRows row, CoreDeliveryNoteItem item) {
+        if (row != null) {
+            var rowQuantity = getValueOrDefault(row.getQuantity(), BigDecimal.ZERO);
+            var itemQuantity = getValueOrDefault(item.getQuantity(), BigDecimal.ZERO);
+
+            if (isGreater(itemQuantity, rowQuantity)) {
+                throw new IllegalArgumentException("Return item quantity must be less than or equal row quantity");
+            }
+
+            var updatedQuantity = rowQuantity.subtract(itemQuantity);
+            updateOrderRowByQuantity(row, updatedQuantity);
         }
     }
 

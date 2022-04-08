@@ -8,7 +8,7 @@ data "aws_iam_policy_document" "sns_sqs_access_policy" {
 
     resources = [
       data.aws_sns_topic.sns_soh_order_created_v2_topic.arn,
-      data.aws_sns_topic.sns_soh_order_completed_topic.arn,
+      data.aws_sns_topic.sns_soh_sales_order_completed_topic_v1.arn,
       data.aws_sns_topic.sns_soh_order_cancelled_topic.arn,
       data.aws_sns_topic.sns_soh_order_item_cancelled_topic.arn,
       data.aws_sns_topic.sns_soh_order_rows_cancelled_topic_v1.arn,
@@ -44,7 +44,8 @@ data "aws_iam_policy_document" "sns_sqs_access_policy" {
       aws_sqs_queue.soh_subsequent_delivery_received.arn,
       aws_sqs_queue.d365_order_payment_secured.arn,
       aws_sqs_queue.soh_dropshipment_shipment_confirmed.arn,
-      aws_sqs_queue.dropshipment_purchase_order_booked.arn
+      aws_sqs_queue.dropshipment_purchase_order_booked.arn,
+      aws_sqs_queue.soh_core_return_delivery_note_printed.arn
     ]
   }
 }

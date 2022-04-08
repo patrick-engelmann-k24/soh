@@ -1,15 +1,11 @@
 package de.kfzteile24.salesOrderHub.services;
 
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
-import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
+import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Totals;
-
-import java.util.List;
-import java.util.Optional;
-
 import org.assertj.core.util.Lists;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
@@ -21,6 +17,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROWS;
@@ -109,13 +107,14 @@ class SalesOrderRowServiceTest {
         DropshipmentPurchaseOrderBookedMessage message = DropshipmentPurchaseOrderBookedMessage.builder()
                 .salesOrderNumber(salesOrder.getOrderNumber())
                 .purchaseOrderNumber("52.3")
+                .externalOrderNumber("555")
                 .booked(true)
                 .build();
         salesOrderRowService.handleDropshipmentPurchaseOrderBooked(message);
 
-        assertEquals("52.3", salesOrder.getLatestJson().getOrderHeader().getOrderNumberExternal());
+        assertEquals("555", salesOrder.getLatestJson().getOrderHeader().getOrderNumberExternal());
         verify(salesOrderService).save(
-                argThat(order -> order.getLatestJson().getOrderHeader().getOrderNumberExternal().equals("52.3")),
+                argThat(order -> order.getLatestJson().getOrderHeader().getOrderNumberExternal().equals("555")),
                 eq(DROPSHIPMENT_PURCHASE_ORDER_BOOKED)
         );
 
@@ -138,11 +137,12 @@ class SalesOrderRowServiceTest {
         DropshipmentPurchaseOrderBookedMessage message = DropshipmentPurchaseOrderBookedMessage.builder()
                 .salesOrderNumber(salesOrder.getOrderNumber())
                 .purchaseOrderNumber("27.9")
+                .externalOrderNumber("555")
                 .booked(false)
                 .build();
         salesOrderRowService.handleDropshipmentPurchaseOrderBooked(message);
 
-        assertEquals("27.9", salesOrder.getLatestJson().getOrderHeader().getOrderNumberExternal());
+        assertEquals("555", salesOrder.getLatestJson().getOrderHeader().getOrderNumberExternal());
         verify(salesOrderService).save(
                 eq(salesOrder),
                 eq(DROPSHIPMENT_PURCHASE_ORDER_BOOKED)

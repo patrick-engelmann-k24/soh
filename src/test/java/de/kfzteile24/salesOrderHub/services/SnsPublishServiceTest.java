@@ -5,9 +5,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.AwsSnsConfig;
 import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.dto.events.OrderRowCancelledEvent;
+import de.kfzteile24.salesOrderHub.dto.events.SalesOrderCompletedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInfoEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInvoiceCreatedEvent;
+import de.kfzteile24.salesOrderHub.dto.events.SalesOrderReturnReceiptCalculatedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderShipmentConfirmedEvent;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
@@ -174,13 +177,28 @@ class SnsPublishServiceTest {
     @Test
     @SneakyThrows(Exception.class)
     void testPublishOrderCompleted() {
-        final var expectedTopic = "order-completed";
+        final var expectedTopic = "soh-sales-order-completed-v1";
         final var expectedSubject = "Sales order completed";
+        final var expectedEvent = SalesOrderCompletedEvent.builder()
+                .orderNumber("123456789")
+                .build();
 
         given(awsSnsConfig.getSnsOrderCompletedTopic()).willReturn(expectedTopic);
 
-        verifyPublishedEvent(expectedTopic, expectedSubject,
-                throwingConsumerWrapper(snsPublishService::publishOrderCompleted));
+        snsPublishService.publishOrderCompleted("123456789");
+
+        verify(notificationMessagingTemplate).sendNotification(
+                eq(expectedTopic),
+                argThat(json -> {
+                    try {
+                        final var publishedEvent = objectMapper.readValue(((String) json), SalesOrderCompletedEvent.class);
+                        assertEquals(expectedEvent.getOrderNumber(), publishedEvent.getOrderNumber());
+                    } catch (JsonProcessingException e) {
+                        throw new IllegalArgumentException(e);
+                    }
+                    return true;
+                }),
+                eq(expectedSubject));
     }
 
     @Test
@@ -256,6 +274,34 @@ class SnsPublishServiceTest {
         verify(notificationMessagingTemplate).sendNotification(
                 expectedTopic,
                 objectMapper.writeValueAsString(salesOrderShipmentConfirmedEvent),
+                expectedSubject
+        );
+    }
+
+    @Test
+    @SneakyThrows
+    void testPublishReturnReceiptCalculated() {
+        final var expectedTopic = "return-receipt-calculated";
+        final var expectedSubject = "Sales order return receipt calculated V1";
+
+        final var salesOrder = createNewSalesOrderV3(true, REGULAR, CREDIT_CARD, NEW);
+
+        final var salesOrderReturn = SalesOrderReturn.builder()
+                .returnOrderJson(salesOrder.getLatestJson())
+                .orderNumber(salesOrder.getOrderNumber())
+                .build();
+
+        when(awsSnsConfig.getSnsReturnReceiptCalculatedV1()).thenReturn(expectedTopic);
+
+        final var salesOrderReturnReceiptCalculatedEvent = SalesOrderReturnReceiptCalculatedEvent.builder()
+                .order(salesOrderReturn.getReturnOrderJson())
+                .build();
+
+        snsPublishService.publishSalesOrderReturnReceiptCalculatedEvent(salesOrderReturn);
+
+        verify(notificationMessagingTemplate).sendNotification(
+                expectedTopic,
+                objectMapper.writeValueAsString(salesOrderReturnReceiptCalculatedEvent),
                 expectedSubject
         );
     }

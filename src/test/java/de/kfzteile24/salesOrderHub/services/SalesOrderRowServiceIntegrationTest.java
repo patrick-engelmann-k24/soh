@@ -15,10 +15,6 @@ import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Totals;
-
-import java.time.Duration;
-import java.util.List;
-
 import org.assertj.core.util.Lists;
 import org.camunda.bpm.engine.HistoryService;
 import org.camunda.bpm.engine.MismatchingMessageCorrelationException;
@@ -34,6 +30,8 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Duration;
+import java.util.List;
 import java.util.UUID;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
@@ -323,10 +321,10 @@ class SalesOrderRowServiceIntegrationTest {
     }
 
     private DropshipmentPurchaseOrderBookedMessage createDropshipmentPurchaseOrderBooked(
-            String purchaseOrderNumber, String salesOrderNumber, boolean booked) {
+            String externalOrderNumber, String salesOrderNumber, boolean booked) {
 
         return DropshipmentPurchaseOrderBookedMessage.builder()
-                .purchaseOrderNumber(purchaseOrderNumber)
+                .externalOrderNumber(externalOrderNumber)
                 .salesOrderNumber(salesOrderNumber)
                 .booked(booked)
                 .build();

@@ -20,6 +20,14 @@ public class CalculationUtil {
 
     private CalculationUtil() {}
 
+    public static BigDecimal getValueOrDefault(BigDecimal value, BigDecimal defaultValue) {
+        return Objects.nonNull(value) ? value : defaultValue;
+    }
+
+    public static boolean isGreater(BigDecimal value, BigDecimal otherValue) {
+        return value.compareTo(otherValue) > 0;
+    }
+
     public static boolean isNotNullAndNotEqual(BigDecimal targetValue, BigDecimal comparedValue) {
         return targetValue != null &&
                 targetValue.compareTo(Optional.ofNullable(comparedValue).orElse(BigDecimal.ZERO)) != 0;
@@ -64,7 +72,7 @@ public class CalculationUtil {
     }
 
     public static BigDecimal getSumOfGoodsNetFromSumOfGoodsGross(BigDecimal salesPriceGross, BigDecimal quantity, BigDecimal taxRate) {
-        if (salesPriceGross == null || quantity == null || taxRate == null) {
+        if (salesPriceGross == null || quantity == null || BigDecimal.ZERO.equals(quantity) || taxRate == null) {
             return salesPriceGross;
         }
         var goodsValueGross = salesPriceGross.divide(quantity, MATH_CONTEXT);

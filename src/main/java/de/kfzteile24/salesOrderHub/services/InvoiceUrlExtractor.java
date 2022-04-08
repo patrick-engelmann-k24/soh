@@ -1,8 +1,9 @@
 package de.kfzteile24.salesOrderHub.services;
 
 import lombok.experimental.UtilityClass;
+import org.apache.commons.lang3.StringUtils;
 
-import java.util.regex.Pattern;
+import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.K24;
 
 @UtilityClass
 public class InvoiceUrlExtractor {
@@ -39,7 +40,7 @@ public class InvoiceUrlExtractor {
         throw new IllegalArgumentException("Cannot parse OrderNumber from invoice url: " + invoiceUrl);
     }
 
-    public boolean isDropShipmentRelated(final String invoiceUrl) {
-        return Pattern.compile("s3://.+/dropshipment/.+").matcher(invoiceUrl).matches();
+    public boolean isDropShipmentRelated(final String orderFulfillment) {
+        return !StringUtils.equalsIgnoreCase(orderFulfillment, K24.getName());
     }
 }
