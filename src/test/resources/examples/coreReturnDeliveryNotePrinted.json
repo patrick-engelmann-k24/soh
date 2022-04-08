@@ -1,0 +1,3 @@
+{
+  "Message": "{\n  \"OrderNumber\": \"580309129\",\n  \"ReturnDeliveryNoteNumber\": \"ReturnDeliveryNoteNumber365214\",\n  \"Items\": [\n    {\n      \"Sku\": \"sku-1\",\n      \"Quantity\": 1,\n      \"UnitPriceGross\": 1.19,\n      \"SalesPriceGross\": 1.19,\n      \"TaxRate\": 19.00\n    }\n  ]\n}"
+}

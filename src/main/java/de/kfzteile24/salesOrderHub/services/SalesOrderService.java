@@ -2,6 +2,7 @@ package de.kfzteile24.salesOrderHub.services;
 
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
+import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
 import de.kfzteile24.salesOrderHub.domain.audit.AuditLog;
 import de.kfzteile24.salesOrderHub.dto.sns.SubsequentDeliveryMessage;
@@ -21,6 +22,7 @@ import de.kfzteile24.soh.order.dto.Totals;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -63,8 +65,8 @@ public class SalesOrderService {
         return orderRepository.getOrderByOrderNumber(orderNumber);
     }
 
-    public Optional<List<SalesOrder>> getOrderByOrderGroupId(String orderGroupId) {
-        return orderRepository.findAllByOrderGroupId(orderGroupId);
+    public List<SalesOrder> getOrderByOrderGroupId(String orderGroupId) {
+        return orderRepository.findAllByOrderGroupIdOrderByUpdatedAtDesc(orderGroupId);
     }
 
     @Transactional
@@ -131,6 +133,20 @@ public class SalesOrderService {
         return save(salesOrder, INVOICE_RECEIVED);
     }
 
+    public SalesOrder addSalesOrderReturn(SalesOrder salesOrder, SalesOrderReturn salesOrderReturn) {
+        salesOrderReturn.setSalesOrder(salesOrder);
+        salesOrder.getSalesOrderReturnList().add(salesOrderReturn);
+        return save(salesOrder, Action.RETURN_DELIVERY_NOTE_PRINTED);
+    }
+
+    public SalesOrder findLastOrderByOrderGroupId(String orderGroupId) {
+        return getOrderByOrderGroupId(orderGroupId)
+                .stream()
+                .findFirst() // the most recent one
+                .orElseThrow(() -> new SalesOrderNotFoundCustomException(
+                        format("for the given order group id {0}", orderGroupId)));
+    }
+
     protected Order createOrderFromSubsequentDelivery(SubsequentDeliveryMessage subsequent) {
         var originalSalesOrder = getOrderByOrderNumber(subsequent.getOrderNumber())
                 .orElseThrow(() -> new SalesOrderNotFoundException(subsequent.getOrderNumber()));
@@ -151,19 +167,25 @@ public class SalesOrderService {
     }
 
     public List<String> getOrderNumberListByOrderGroupId(String orderGroupId, String orderItemSku) {
-        var fetchedSalesOrders = getOrderByOrderGroupId(orderGroupId)
-                .orElseThrow(() -> new SalesOrderNotFoundCustomException(
-                        format("for the given order group id {0}", orderGroupId)));
+        var fetchedSalesOrders = getOrderByOrderGroupId(orderGroupId);
 
-        return filterBySku(orderGroupId, orderItemSku, fetchedSalesOrders);
+        if (CollectionUtils.isNotEmpty(fetchedSalesOrders)) {
+            return filterBySku(orderGroupId, orderItemSku, fetchedSalesOrders);
+        }
+
+        throw new SalesOrderNotFoundCustomException(
+                format("for the given order group id {0}", orderGroupId));
     }
 
     public List<String> getOrderNumberListByOrderGroupIdAndFilterNotCancelled(String orderGroupId, String orderItemSku) {
-        var fetchedSalesOrders = getOrderByOrderGroupId(orderGroupId)
-                .orElseThrow(() -> new SalesOrderNotFoundCustomException(
-                        format("for the given order group id {0}", orderGroupId)));
+        var fetchedSalesOrders = getOrderByOrderGroupId(orderGroupId);
 
-        return filterBySkuAndIsCancelled(orderGroupId, orderItemSku, fetchedSalesOrders);
+        if (CollectionUtils.isNotEmpty(fetchedSalesOrders)) {
+            return filterBySkuAndIsCancelled(orderGroupId, orderItemSku, fetchedSalesOrders);
+        }
+
+        throw new SalesOrderNotFoundCustomException(
+                format("for the given order group id {0}", orderGroupId));
     }
 
     protected List<String> filterBySku(String orderGroupId, String orderItemSku, List<SalesOrder> fetchedSalesOrders) {

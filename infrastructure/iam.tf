@@ -44,7 +44,8 @@ data "aws_iam_policy_document" "sns_sqs_access_policy" {
       aws_sqs_queue.soh_subsequent_delivery_received.arn,
       aws_sqs_queue.d365_order_payment_secured.arn,
       aws_sqs_queue.soh_dropshipment_shipment_confirmed.arn,
-      aws_sqs_queue.dropshipment_purchase_order_booked.arn
+      aws_sqs_queue.dropshipment_purchase_order_booked.arn,
+      aws_sqs_queue.soh_core_return_delivery_note_printed.arn
     ]
   }
 }

@@ -1,7 +1,7 @@
 package de.kfzteile24.salesOrderHub.dto.sns;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import de.kfzteile24.salesOrderHub.dto.sns.subsequent.SubsequentDeliveryItem;
+import de.kfzteile24.salesOrderHub.dto.sns.deliverynote.CoreDeliveryNoteItem;
 import lombok.Data;
 
 import java.util.List;
@@ -16,5 +16,5 @@ public class SubsequentDeliveryMessage {
     @JsonProperty("CancellationDeliveryNoteNumber")
     private String cancellationDeliveryNoteNumber;
     @JsonProperty("Items")
-    private List<SubsequentDeliveryItem> items;
+    private List<CoreDeliveryNoteItem> items;
 }

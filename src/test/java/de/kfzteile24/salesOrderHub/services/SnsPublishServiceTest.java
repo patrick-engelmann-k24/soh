@@ -5,10 +5,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.AwsSnsConfig;
 import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.dto.events.OrderRowCancelledEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderCompletedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInfoEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInvoiceCreatedEvent;
+import de.kfzteile24.salesOrderHub.dto.events.SalesOrderReturnReceiptCalculatedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderShipmentConfirmedEvent;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
@@ -272,6 +274,34 @@ class SnsPublishServiceTest {
         verify(notificationMessagingTemplate).sendNotification(
                 expectedTopic,
                 objectMapper.writeValueAsString(salesOrderShipmentConfirmedEvent),
+                expectedSubject
+        );
+    }
+
+    @Test
+    @SneakyThrows
+    void testPublishReturnReceiptCalculated() {
+        final var expectedTopic = "return-receipt-calculated";
+        final var expectedSubject = "Sales order return receipt calculated V1";
+
+        final var salesOrder = createNewSalesOrderV3(true, REGULAR, CREDIT_CARD, NEW);
+
+        final var salesOrderReturn = SalesOrderReturn.builder()
+                .returnOrderJson(salesOrder.getLatestJson())
+                .orderNumber(salesOrder.getOrderNumber())
+                .build();
+
+        when(awsSnsConfig.getSnsReturnReceiptCalculatedV1()).thenReturn(expectedTopic);
+
+        final var salesOrderReturnReceiptCalculatedEvent = SalesOrderReturnReceiptCalculatedEvent.builder()
+                .order(salesOrderReturn.getReturnOrderJson())
+                .build();
+
+        snsPublishService.publishSalesOrderReturnReceiptCalculatedEvent(salesOrderReturn);
+
+        verify(notificationMessagingTemplate).sendNotification(
+                expectedTopic,
+                objectMapper.writeValueAsString(salesOrderReturnReceiptCalculatedEvent),
                 expectedSubject
         );
     }

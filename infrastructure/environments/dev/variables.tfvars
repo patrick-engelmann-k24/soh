@@ -1,5 +1,5 @@
 terraform_role_arn             = "arn:aws:iam::967623133951:role/K24.Terraform"
-source_repo_branch             = "feature/DEV-33551-identification_of_invoices_for_dropshipment"
+source_repo_branch             = "develop"
 db_instance_class              = "db.t3.medium"
 domain_name                    = "dev.kfzteile24.io"
 environment                    = "dev"

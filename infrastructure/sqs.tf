@@ -30,7 +30,9 @@ locals {
     dropshipment_shipment_confirmed = "${var.environment}-${local.service_prefix}-dropshipment-shipment-confirmed-${local.version}",
     dropshipment_shipment_confirmed_dlq = "${var.environment}-${local.service_prefix}-dropshipment-shipment-confirmed-${local.version}-dlq",
     dropshipment_purchase_order_booked = "${var.environment}-${local.service_prefix}-dropshipment-purchase-order-booked-${local.version}",
-    dropshipment_purchase_order_booked_dlq = "${var.environment}-${local.service_prefix}-dropshipment-purchase-order-booked-${local.version}-dlq"
+    dropshipment_purchase_order_booked_dlq = "${var.environment}-${local.service_prefix}-dropshipment-purchase-order-booked-${local.version}-dlq",
+    core_return_delivery_note_printed = "${var.environment}-${local.service_prefix}-core-return-delivery-note-printed-${local.version}",
+    core_return_delivery_note_printed_dlq = "${var.environment}-${local.service_prefix}-core-return-delivery-note-printed-${local.version}-dlq"
   }
 }
 
@@ -169,4 +171,13 @@ resource "aws_sqs_queue" "dropshipment_purchase_order_booked_dlq" {
 resource "aws_sqs_queue" "dropshipment_purchase_order_booked" {
   name = local.sqs_queues.dropshipment_purchase_order_booked
   redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.dropshipment_purchase_order_booked_dlq.arn}\",\"maxReceiveCount\":4}"
+}
+
+resource "aws_sqs_queue" "soh_core_return_delivery_note_printed_dlq" {
+  name = local.sqs_queues.core_return_delivery_note_printed_dlq
+}
+
+resource "aws_sqs_queue" "soh_core_return_delivery_note_printed" {
+  name = local.sqs_queues.core_return_delivery_note_printed
+  redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.soh_dropshipment_shipment_confirmed_dlq.arn}\",\"maxReceiveCount\":4}"
 }

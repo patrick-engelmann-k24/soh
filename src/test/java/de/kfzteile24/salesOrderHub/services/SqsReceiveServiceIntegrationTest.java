@@ -1,6 +1,5 @@
 package de.kfzteile24.salesOrderHub.services;
 
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
@@ -8,12 +7,17 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
+import de.kfzteile24.salesOrderHub.dto.sns.deliverynote.CoreDeliveryNoteItem;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
+import de.kfzteile24.soh.order.dto.GrandTotalTaxes;
 import de.kfzteile24.soh.order.dto.Order;
+import de.kfzteile24.soh.order.dto.OrderRows;
+import de.kfzteile24.soh.order.dto.SumValues;
 import de.kfzteile24.soh.order.dto.Totals;
+import de.kfzteile24.soh.order.dto.UnitValues;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -39,6 +43,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -83,7 +88,7 @@ class SqsReceiveServiceIntegrationTest {
     private SqsReceiveService sqsReceiveService;
     @Autowired
     private TimedPollingService timerService;
-    @Autowired
+    @SpyBean
     private SalesOrderService salesOrderService;
     @Autowired
     private SalesOrderRepository salesOrderRepository;
@@ -99,6 +104,8 @@ class SqsReceiveServiceIntegrationTest {
     private SalesOrderUtil salesOrderUtil;
     @SpyBean
     private SnsPublishService snsPublishService;
+    @SpyBean
+    private SalesOrderRowService salesOrderRowService;
 
     @BeforeEach
     public void setup() {
@@ -184,7 +191,7 @@ class SqsReceiveServiceIntegrationTest {
         var salesOrder = salesOrderUtil.createNewSalesOrder();
         var orderRowId = salesOrder.getLatestJson().getOrderRows().get(0).getSku();
 
-            createOrderRowProcessWaitingOnTransmittedToLogistics(salesOrder);
+        createOrderRowProcessWaitingOnTransmittedToLogistics(salesOrder);
 
         String fulfillmentMessage = getFulfillmentMsg(salesOrder, orderRowId);
         sqsReceiveService.queueListenerOrderItemTransmittedToLogistic(fulfillmentMessage, senderId, 1);
@@ -217,29 +224,29 @@ class SqsReceiveServiceIntegrationTest {
                 orderRowId,
                 bpmUtil.getRandomOrderNumber());
 
-            createOrderRowProcessWaitingOnTransmittedToLogistics(salesOrder1);
-            createOrderRowProcessWaitingOnTransmittedToLogistics(salesOrder2);
+        createOrderRowProcessWaitingOnTransmittedToLogistics(salesOrder1);
+        createOrderRowProcessWaitingOnTransmittedToLogistics(salesOrder2);
 
-            String fulfillmentMessage = getFulfillmentMsg(salesOrder1, orderRowId);
-            sqsReceiveService.queueListenerOrderItemTransmittedToLogistic(fulfillmentMessage, senderId, 1);
+        String fulfillmentMessage = getFulfillmentMsg(salesOrder1, orderRowId);
+        sqsReceiveService.queueListenerOrderItemTransmittedToLogistic(fulfillmentMessage, senderId, 1);
 
-            var processInstanceList1 = runtimeService.createProcessInstanceQuery()
-                    .processDefinitionKey(SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName())
-                    .variableValueEquals(ORDER_NUMBER.getName(), salesOrder1.getOrderNumber())
-                    .variableValueEquals(ORDER_GROUP_ID.getName(), salesOrder1.getOrderGroupId())
-                    .variableValueEquals(ORDER_ROW_ID.getName(), orderRowId)
-                    .list();
+        var processInstanceList1 = runtimeService.createProcessInstanceQuery()
+                .processDefinitionKey(SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName())
+                .variableValueEquals(ORDER_NUMBER.getName(), salesOrder1.getOrderNumber())
+                .variableValueEquals(ORDER_GROUP_ID.getName(), salesOrder1.getOrderGroupId())
+                .variableValueEquals(ORDER_ROW_ID.getName(), orderRowId)
+                .list();
 
-            assertThat(processInstanceList1).hasSize(1);
+        assertThat(processInstanceList1).hasSize(1);
 
-            var processInstanceList2 = runtimeService.createProcessInstanceQuery()
-                    .processDefinitionKey(SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName())
-                    .variableValueEquals(ORDER_NUMBER.getName(), salesOrder2.getOrderNumber())
-                    .variableValueEquals(ORDER_GROUP_ID.getName(), salesOrder1.getOrderGroupId())
-                    .variableValueEquals(ORDER_ROW_ID.getName(), orderRowId)
-                    .list();
+        var processInstanceList2 = runtimeService.createProcessInstanceQuery()
+                .processDefinitionKey(SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName())
+                .variableValueEquals(ORDER_NUMBER.getName(), salesOrder2.getOrderNumber())
+                .variableValueEquals(ORDER_GROUP_ID.getName(), salesOrder1.getOrderGroupId())
+                .variableValueEquals(ORDER_ROW_ID.getName(), orderRowId)
+                .list();
 
-            assertThat(processInstanceList2).hasSize(1);
+        assertThat(processInstanceList2).hasSize(1);
     }
 
     private void createOrderRowProcessWaitingOnTransmittedToLogistics(SalesOrder salesOrder) {
@@ -282,7 +289,7 @@ class SqsReceiveServiceIntegrationTest {
                 bpmUtil.isProcessWaitingAtExpectedToken(orderProcessInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName());
         assertTrue(isWaitingForPaymentSecured);
 
-        String coreDataReaderEvent =  readResource("examples/coreDataReaderEvent.json");
+        String coreDataReaderEvent = readResource("examples/coreDataReaderEvent.json");
         sqsReceiveService.queueListenerOrderPaymentSecured(coreDataReaderEvent, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
         isWaitingForPaymentSecured =
@@ -310,7 +317,7 @@ class SqsReceiveServiceIntegrationTest {
                 bpmUtil.isProcessWaitingAtExpectedToken(orderProcessInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName());
         assertTrue(isWaitingForPaymentSecured);
 
-        String coreDataReaderEvent =  readResource("examples/coreDataReaderEvent.json");
+        String coreDataReaderEvent = readResource("examples/coreDataReaderEvent.json");
         sqsReceiveService.queueListenerOrderPaymentSecured(coreDataReaderEvent, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
         isWaitingForPaymentSecured =
@@ -337,7 +344,7 @@ class SqsReceiveServiceIntegrationTest {
                 bpmUtil.isProcessWaitingAtExpectedToken(orderProcessInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName());
         assertTrue(isWaitingForPaymentSecured);
 
-        String orderPaymentSecuredMessage =  readResource("examples/d365OrderPaymentSecuredMessageWithOneOrderNumber.json");
+        String orderPaymentSecuredMessage = readResource("examples/d365OrderPaymentSecuredMessageWithOneOrderNumber.json");
         sqsReceiveService.queueListenerD365OrderPaymentSecured(orderPaymentSecuredMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
         isWaitingForPaymentSecured =
@@ -359,7 +366,7 @@ class SqsReceiveServiceIntegrationTest {
 
         salesOrderService.save(salesOrder, Action.ORDER_CREATED);
 
-        var dropshipmentShipmentConfirmed =  readResource("examples/dropshipmentShipmentConfirmed.json");
+        var dropshipmentShipmentConfirmed = readResource("examples/dropshipmentShipmentConfirmed.json");
         sqsReceiveService.queueListenerDropshipmentShipmentConfirmed(dropshipmentShipmentConfirmed, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
         var optUpdatedSalesOrder = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber());
@@ -433,18 +440,103 @@ class SqsReceiveServiceIntegrationTest {
         );
 
         String message = readResource("examples/dropshipmentOrderPurchasedBookedFalse.json");
-        message = message.replace("123", salesOrder.getOrderNumber());
-        sqsReceiveService.queueListenerDropshipmentPurchaseOrderBooked(message, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+        message =message.replace("123",salesOrder.getOrderNumber());
+            sqsReceiveService.queueListenerDropshipmentPurchaseOrderBooked(message,ANY_SENDER_ID,ANY_RECEIVE_COUNT);
 
-        assertFalse(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
-                camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), "2270-13012") &&
-                        camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), "2270-13013") &&
-                        camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())
-        ));
+        assertFalse(timerService.poll(Duration.ofSeconds(7),Duration.
+
+        ofSeconds(2), ()->
+                camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(),"2270-13012")&&
+                camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(),"2270-13013")&&
+                camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())
+                ));
 
         SalesOrder updated = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber()).orElse(null);
+
         assertNotNull(updated);
-        assertEquals("13.2", updated.getLatestJson().getOrderHeader().getOrderNumberExternal());
+
+        assertEquals("13.2",updated.getLatestJson().getOrderHeader().getOrderNumberExternal());
+    }
+
+    @Test
+    @DisplayName("IT core return delivery note printed event handling")
+    void testQueueListenerCoreReturnDeliveryNotePrinted(TestInfo testInfo) {
+
+        log.info(testInfo.getDisplayName());
+
+        var salesOrder = SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
+        salesOrder.setOrderGroupId("580309129");
+
+        var orderRows = List.of(
+                OrderRows.builder()
+                        .sumValues(SumValues.builder()
+                                .goodsValueGross(BigDecimal.valueOf(3.38))
+                                .goodsValueNet(BigDecimal.valueOf(2))
+                                .build())
+                        .unitValues(UnitValues.builder()
+                                .goodsValueGross(BigDecimal.valueOf(3.38))
+                                .goodsValueNet(BigDecimal.valueOf(2))
+                                .build())
+                        .taxRate(BigDecimal.valueOf(19))
+                        .quantity(BigDecimal.valueOf(2))
+                        .sku("sku-1")
+                        .build()
+        );
+
+        var totals = Totals.builder()
+                .goodsTotalGross(BigDecimal.valueOf(2.38))
+                .goodsTotalNet(BigDecimal.valueOf(2))
+                .grandTotalGross(BigDecimal.valueOf(2.38))
+                .grandTotalNet(BigDecimal.valueOf(2))
+                .paymentTotal(BigDecimal.valueOf(2.38))
+                .grandTotalTaxes(List.of(GrandTotalTaxes.builder()
+                        .rate(BigDecimal.valueOf(19))
+                        .value(BigDecimal.valueOf(0.38))
+                        .build()))
+                .build();
+
+        salesOrder.getLatestJson().getOrderHeader().setTotals(totals);
+        salesOrder.getLatestJson().setOrderRows(orderRows);
+
+        salesOrderService.save(salesOrder, Action.ORDER_CREATED);
+
+        var coreReturnDeliveryNotePrinted =  readResource("examples/coreReturnDeliveryNotePrinted.json");
+        sqsReceiveService.queueListenerCoreReturnDeliveryNotePrinted(coreReturnDeliveryNotePrinted, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+
+        verify(salesOrderService).findLastOrderByOrderGroupId("580309129");
+
+        verify(salesOrderRowService).recalculateOrderByReturns(eq(salesOrder), argThat(
+                items -> {
+                    assertThat(items).hasSize(1);
+                    assertThat(items).element(0)
+                            .extracting(CoreDeliveryNoteItem::getQuantity)
+                            .extracting(BigDecimal::doubleValue)
+                            .isEqualTo(1.0);
+                    assertThat(items).element(0)
+                            .extracting(CoreDeliveryNoteItem::getSku).isEqualTo("sku-1");
+                    assertThat(items).element(0)
+                            .extracting(CoreDeliveryNoteItem::getSalesPriceGross)
+                            .extracting(BigDecimal::doubleValue)
+                            .isEqualTo(1.19);
+                    assertThat(items).element(0)
+                            .extracting(CoreDeliveryNoteItem::getUnitPriceGross)
+                            .extracting(BigDecimal::doubleValue)
+                            .isEqualTo(1.19);
+                    assertThat(items).element(0)
+                            .extracting(CoreDeliveryNoteItem::getTaxRate)
+                            .extracting(BigDecimal::doubleValue)
+                            .isEqualTo(19.00);
+                    return true;
+                }
+        ));
+
+        verify(snsPublishService).publishSalesOrderReturnReceiptCalculatedEvent(argThat(
+                salesOrderReturn -> {
+                    assertThat(salesOrderReturn.getOrderNumber()).isEqualTo("580309129");
+                    assertThat(salesOrderReturn.getOrderGroupId()).isEqualTo("580309129");
+                    return true;
+                }
+        ));
     }
 
     @SneakyThrows({URISyntaxException.class, IOException.class})
@@ -460,5 +552,4 @@ class SqsReceiveServiceIntegrationTest {
         auditLogRepository.deleteAll();
         bpmUtil.cleanUp();
     }
-
 }

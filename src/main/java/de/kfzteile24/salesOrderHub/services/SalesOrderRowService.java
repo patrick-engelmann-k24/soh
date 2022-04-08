@@ -6,9 +6,13 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.deliverynote.CoreDeliveryNoteItem;
+import de.kfzteile24.salesOrderHub.exception.GrandTotalTaxNotFoundException;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
+import de.kfzteile24.salesOrderHub.exception.OrderRowNotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.soh.order.dto.Order;
@@ -22,10 +26,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import javax.transaction.Transactional;
 import java.math.BigDecimal;
 import java.text.MessageFormat;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -33,12 +39,17 @@ import java.util.stream.Stream;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_BOOKED;
+import static java.text.MessageFormat.format;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class SalesOrderRowService {
 
+    public static final String ERROR_MSG_ROW_NOT_FOUND_BY_SKU =
+            "Could not find order row with SKU {0} for order number {1} and order group id {2}";
+    public static final String ERROR_MSG_GRAND_TOTAL_TAX_NOT_FOUND_BY_TAX_RATE =
+            "Could not find order row with SKU {0} and tax rate {1} for order number {2} and order group id {3}";
     @NonNull
     private final CamundaHelper helper;
 
@@ -98,6 +109,80 @@ public class SalesOrderRowService {
                 log.error("Sku: {} is not in original order with order number: {}", sku, orderNumber);
             }
         }
+    }
+
+    public SalesOrderReturn handleSalesOrderReturn(String orderNumber, Collection<CoreDeliveryNoteItem> items) {
+        var salesOrder = salesOrderService.findLastOrderByOrderGroupId(orderNumber);
+
+        var returnOrderJson = recalculateOrderByReturns(salesOrder, items);
+
+        returnOrderJson.getOrderHeader().setOrderNumber(salesOrder.getOrderNumber());
+
+        var salesOrderReturn = SalesOrderReturn.builder()
+                .orderGroupId(orderNumber)
+                .orderNumber(orderNumber)
+                .returnOrderJson(returnOrderJson)
+                .build();
+
+        salesOrderReturn.setOrderNumber(orderNumber);
+        salesOrderService.addSalesOrderReturn(salesOrder, salesOrderReturn);
+
+        return salesOrderReturn;
+    }
+
+    public Order recalculateOrderByReturns(SalesOrder salesOrder, Collection<CoreDeliveryNoteItem> items) {
+
+        var returnLatestJson = orderUtil.copyOrderJson(salesOrder.getLatestJson());
+        var totals = returnLatestJson.getOrderHeader().getTotals();
+
+        items.forEach(item -> {
+            var orderRow = returnLatestJson.getOrderRows().stream()
+                    .filter(r -> StringUtils.pathEquals(r.getSku(), item.getSku()))
+                    .findFirst()
+                    .orElseThrow(() -> new OrderRowNotFoundException(ERROR_MSG_ROW_NOT_FOUND_BY_SKU,
+                            item.getSku(), salesOrder.getOrderNumber(), salesOrder.getOrderGroupId()));
+            orderUtil.recalculateOrderRow(orderRow, item);
+
+            var sumValues = orderRow.getSumValues();
+            var returnOrderRowTaxValue = sumValues.getTotalDiscountedGross().subtract(sumValues.getTotalDiscountedNet());
+            totals.getGrandTotalTaxes().stream()
+                    .filter(tax -> tax.getRate().compareTo(item.getTaxRate()) == 0)
+                    .findFirst()
+                    .ifPresentOrElse(tax -> {
+                                var taxValue = returnOrderRowTaxValue.compareTo(BigDecimal.ZERO) == 0 ? returnOrderRowTaxValue :
+                                        tax.getValue().subtract(returnOrderRowTaxValue);
+                                tax.setValue(taxValue);
+                            },
+                            () -> {
+                                throw new GrandTotalTaxNotFoundException(
+                                        format(ERROR_MSG_GRAND_TOTAL_TAX_NOT_FOUND_BY_TAX_RATE,
+                                                item.getSku(), item.getTaxRate(), salesOrder.getOrderNumber(), salesOrder.getOrderGroupId()));
+                            });
+        });
+
+        totals.setGoodsTotalGross(BigDecimal.ZERO);
+        totals.setGoodsTotalNet(BigDecimal.ZERO);
+        totals.setTotalDiscountGross(BigDecimal.ZERO);
+        totals.setTotalDiscountNet(BigDecimal.ZERO);
+        totals.setGrandTotalGross(BigDecimal.ZERO);
+        totals.setGrandTotalNet(BigDecimal.ZERO);
+        totals.setPaymentTotal(BigDecimal.ZERO);
+
+        returnLatestJson.getOrderRows().stream()
+                .map(OrderRows::getSumValues)
+                .forEach(sumValues -> {
+                    totals.setGoodsTotalGross(totals.getGoodsTotalGross().add(sumValues.getGoodsValueGross()));
+                    totals.setGoodsTotalNet(totals.getGrandTotalNet().add(sumValues.getGoodsValueNet()));
+                    totals.setTotalDiscountGross(totals.getTotalDiscountGross().add(sumValues.getDiscountGross()));
+                    totals.setTotalDiscountNet(totals.getTotalDiscountNet().add(sumValues.getDiscountNet()));
+                });
+
+        totals.setGrandTotalGross(totals.getGoodsTotalGross().subtract(totals.getTotalDiscountGross()));
+        totals.setGrandTotalNet(totals.getGoodsTotalNet().subtract(totals.getTotalDiscountNet()));
+        totals.setPaymentTotal(totals.getGrandTotalGross());
+
+        returnLatestJson.getOrderHeader().setTotals(totals);
+        return returnLatestJson;
     }
 
     private void cancelOrderRow(String orderGroupId, String orderRowId) {

@@ -3,7 +3,7 @@ package de.kfzteile24.salesOrderHub.services;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.dto.sns.SubsequentDeliveryMessage;
-import de.kfzteile24.salesOrderHub.dto.sns.subsequent.SubsequentDeliveryItem;
+import de.kfzteile24.salesOrderHub.dto.sns.deliverynote.CoreDeliveryNoteItem;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundCustomException;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
@@ -191,12 +191,13 @@ class SalesOrderServiceTest {
     private SubsequentDeliveryMessage createSubsequentDeliveryNote(String orderNumber, String sku) {
         BigDecimal quantity = BigDecimal.valueOf(1L);
         String subsequentDeliveryNumber = "987654321";
-        SubsequentDeliveryItem item = new SubsequentDeliveryItem();
-        item.setSku(sku);
-        item.setQuantity(quantity);
-        item.setUnitPriceGross(BigDecimal.TEN);
-        item.setSalesPriceGross(BigDecimal.TEN.multiply(quantity));
-        item.setTaxRate(BigDecimal.TEN);
+        CoreDeliveryNoteItem item = CoreDeliveryNoteItem.builder()
+                .sku(sku)
+                .quantity(quantity)
+                .unitPriceGross(BigDecimal.TEN)
+                .salesPriceGross(BigDecimal.TEN.multiply(quantity))
+                .taxRate(BigDecimal.TEN)
+                .build();
         SubsequentDeliveryMessage subsequent = new SubsequentDeliveryMessage();
         subsequent.setOrderNumber(orderNumber);
         subsequent.setItems(List.of(item));
@@ -241,7 +242,7 @@ class SalesOrderServiceTest {
         salesOrderToBeRejected2.getLatestJson().getOrderRows().get(0).setSku("98765432");
         salesOrderList.add(salesOrderToBeRejected2); // 4 orders
 
-        when(salesOrderRepository.findAllByOrderGroupId(any())).thenReturn(Optional.of(salesOrderList));
+        when(salesOrderRepository.findAllByOrderGroupIdOrderByUpdatedAtDesc(any())).thenReturn(salesOrderList);
 
         var orderNumberList = salesOrderService.getOrderNumberListByOrderGroupIdAndFilterNotCancelled(
                 "123",
@@ -265,7 +266,7 @@ class SalesOrderServiceTest {
         salesOrder.getLatestJson().getOrderRows().get(0).setSku("98765432");
         salesOrderList.add(salesOrder); // 4 orders
 
-        when(salesOrderRepository.findAllByOrderGroupId(any())).thenReturn(Optional.of(salesOrderList));
+        when(salesOrderRepository.findAllByOrderGroupIdOrderByUpdatedAtDesc(any())).thenReturn(salesOrderList);
 
         assertThatThrownBy(() -> salesOrderService.getOrderNumberListByOrderGroupIdAndFilterNotCancelled(
                 "123",
@@ -286,7 +287,7 @@ class SalesOrderServiceTest {
         salesOrder.getLatestJson().getOrderRows().get(0).setSku("98765432");
         salesOrderList.add(salesOrder); // 4 orders
 
-        when(salesOrderRepository.findAllByOrderGroupId(any())).thenReturn(Optional.of(salesOrderList));
+        when(salesOrderRepository.findAllByOrderGroupIdOrderByUpdatedAtDesc(any())).thenReturn(salesOrderList);
 
         assertThatThrownBy(() -> salesOrderService.getOrderNumberListByOrderGroupIdAndFilterNotCancelled(
                 "123",
