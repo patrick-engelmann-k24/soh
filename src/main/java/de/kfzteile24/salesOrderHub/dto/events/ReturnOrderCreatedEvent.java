@@ -8,7 +8,7 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Value
 @Jacksonized
-public class SalesOrderReturnReceiptCalculatedEvent {
+public class ReturnOrderCreatedEvent {
 
     Order order;
 }

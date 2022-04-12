@@ -530,7 +530,7 @@ class SqsReceiveServiceIntegrationTest {
                 }
         ));
 
-        verify(snsPublishService).publishSalesOrderReturnReceiptCalculatedEvent(argThat(
+        verify(snsPublishService).publishReturnOrderCreatedEvent(argThat(
                 salesOrderReturn -> {
                     assertThat(salesOrderReturn.getOrderNumber()).isEqualTo("580309129");
                     assertThat(salesOrderReturn.getOrderGroupId()).isEqualTo("580309129");

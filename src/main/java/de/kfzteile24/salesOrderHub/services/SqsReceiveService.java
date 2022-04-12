@@ -460,6 +460,6 @@ public class SqsReceiveService {
 
         var salesOrderReturn = salesOrderRowService.handleSalesOrderReturn(orderNumber, returnedItem);
 
-        snsPublishService.publishSalesOrderReturnReceiptCalculatedEvent(salesOrderReturn);
+        snsPublishService.publishReturnOrderCreatedEvent(salesOrderReturn);
     }
 }

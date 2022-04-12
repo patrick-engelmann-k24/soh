@@ -43,7 +43,7 @@ module "application_module" {
     soh_sales_order_cancellation               = data.aws_sns_topic.sns_soh_sales_order_cancellation_v1.arn
     soh_order_invoice_created_v1               = data.aws_sns_topic.sns_soh_order_invoice_created_v1.arn
     sns_soh_shipment_confirmed_v1              = data.aws_sns_topic.sns_soh_shipment_confirmed_v1.arn
-    sns_soh_return_receipt_calculated_v1       = data.aws_sns_topic.sns_soh_return_receipt_calculated_v1.arn
+    sns_soh_return_order_created_v1            = data.aws_sns_topic.sns_soh_return_order_created_v1.arn
 
     soh_sqs_ecp_shop_orders                    = aws_sqs_queue.ecp_shop_orders.id
     soh_sqs_bc_shop_orders                     = aws_sqs_queue.bc_shop_orders.id

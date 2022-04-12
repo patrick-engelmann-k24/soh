@@ -10,7 +10,7 @@ import de.kfzteile24.salesOrderHub.dto.events.OrderRowCancelledEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderCompletedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInfoEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInvoiceCreatedEvent;
-import de.kfzteile24.salesOrderHub.dto.events.SalesOrderReturnReceiptCalculatedEvent;
+import de.kfzteile24.salesOrderHub.dto.events.ReturnOrderCreatedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderShipmentConfirmedEvent;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
@@ -280,9 +280,9 @@ class SnsPublishServiceTest {
 
     @Test
     @SneakyThrows
-    void testPublishReturnReceiptCalculated() {
-        final var expectedTopic = "return-receipt-calculated";
-        final var expectedSubject = "Sales order return receipt calculated V1";
+    void testPublishReturnOrderCreated() {
+        final var expectedTopic = "return-order-created";
+        final var expectedSubject = "Return Order Created V1";
 
         final var salesOrder = createNewSalesOrderV3(true, REGULAR, CREDIT_CARD, NEW);
 
@@ -291,17 +291,17 @@ class SnsPublishServiceTest {
                 .orderNumber(salesOrder.getOrderNumber())
                 .build();
 
-        when(awsSnsConfig.getSnsReturnReceiptCalculatedV1()).thenReturn(expectedTopic);
+        when(awsSnsConfig.getSnsReturnOrderCreatedV1()).thenReturn(expectedTopic);
 
-        final var salesOrderReturnReceiptCalculatedEvent = SalesOrderReturnReceiptCalculatedEvent.builder()
+        final var returnOrderCreatedEvent = ReturnOrderCreatedEvent.builder()
                 .order(salesOrderReturn.getReturnOrderJson())
                 .build();
 
-        snsPublishService.publishSalesOrderReturnReceiptCalculatedEvent(salesOrderReturn);
+        snsPublishService.publishReturnOrderCreatedEvent(salesOrderReturn);
 
         verify(notificationMessagingTemplate).sendNotification(
                 expectedTopic,
-                objectMapper.writeValueAsString(salesOrderReturnReceiptCalculatedEvent),
+                objectMapper.writeValueAsString(returnOrderCreatedEvent),
                 expectedSubject
         );
     }

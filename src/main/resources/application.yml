@@ -57,7 +57,7 @@ soh:
       salesOrderCancelled: ${soh_sales_order_cancellation}
       orderInvoiceCreatedV1: ${soh_order_invoice_created_v1}
       shipmentConfirmedV1: ${sns_soh_shipment_confirmed_v1}
-      returnReceiptCalculatedV1: ${sns_soh_return_receipt_calculated_v1}
+      returnOrderCreatedV1: ${sns_soh_return_order_creted_v1}
   sqs:
     queue:
       ecpShopOrders: ${soh_sqs_ecp_shop_orders}

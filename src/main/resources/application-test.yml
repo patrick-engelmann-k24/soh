@@ -35,7 +35,7 @@ soh:
       salesOrderCancelled:    arn:aws:sns:eu-central-1:000000000000:soh-sales-order-cancelled
       orderInvoiceCreatedV1:  arn:aws:sns:eu-central-1:000000000000:soh-order-invoice-created-v1
       shipmentConfirmedV1: arn:aws:sns:eu-central-1:000000000000:soh-shipment-confirmed-v1
-      returnReceiptCalculatedV1: arn:aws:sns:eu-central-1:000000000000:soh-return-receipt-calculated-v1
+      returnOrderCreatedV1: arn:aws:sns:eu-central-1:000000000000:soh-return-order-created-v1
   sqs:
     queue:
       ecpShopOrders:                  http://localhost:4566/000000000000/soh-ecp-shop-orders-queue
@@ -84,3 +84,6 @@ camunda:
       create: All tasks
     history-level: FULL
     history-level-default: FULL
+
+pdh_api_clientId: 66m7pl596j7kem2mr39onhchp0
+pdh_api_clientSecret: 133fkctl3sgg0tvts20nik857dk5he8mrmtbuu5amf21iehssin2
