@@ -1,6 +1,7 @@
 package de.kfzteile24.salesOrderHub.helper;
 
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.dto.sns.creditnote.CreditNoteLine;
 import de.kfzteile24.salesOrderHub.dto.sns.deliverynote.CoreDeliveryNoteItem;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
@@ -71,7 +72,7 @@ public class OrderUtil {
         return orderRow;
     }
 
-    public OrderRows recalculateOrderRow(OrderRows orderRow, CoreDeliveryNoteItem item) {
+    public OrderRows recalculateOrderRow(OrderRows orderRow, CreditNoteLine item) {
         decreaseOrderRowByNewItemValues(orderRow, item);
         return orderRow;
     }
@@ -144,7 +145,7 @@ public class OrderUtil {
         }
     }
 
-    protected void decreaseOrderRowByNewItemValues(OrderRows row, CoreDeliveryNoteItem item) {
+    protected void decreaseOrderRowByNewItemValues(OrderRows row, CreditNoteLine item) {
         if (row != null) {
             var rowQuantity = getValueOrDefault(row.getQuantity(), BigDecimal.ZERO);
             var itemQuantity = getValueOrDefault(item.getQuantity(), BigDecimal.ZERO);

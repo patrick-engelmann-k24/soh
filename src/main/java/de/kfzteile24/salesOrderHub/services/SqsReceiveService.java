@@ -12,7 +12,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.FulfillmentMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.OrderPaymentSecuredMessage;
-import de.kfzteile24.salesOrderHub.dto.sns.ReturnDeliveryNotePrintedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SubsequentDeliveryMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.cancellation.CoreCancellationItem;
@@ -409,25 +409,26 @@ public class SqsReceiveService {
     }
 
     /**
-     * Consume messages from sqs for core return delivery note printed published by core-publisher
+     * Consume messages from sqs for core sales credit note created published by core-publisher
      */
-    @SqsListener(value = "${soh.sqs.queue.coreReturnDeliveryNotePrinted}", deletionPolicy = ON_SUCCESS)
+    @SqsListener(value = "${soh.sqs.queue.coreSalesCreditNoteCreated}", deletionPolicy = ON_SUCCESS)
     @SneakyThrows(JsonProcessingException.class)
-    @Trace(metricName = "Handling core return delivery note printed message", dispatcher = true)
+    @Trace(metricName = "Handling core sales credit note created message", dispatcher = true)
     @Transactional
-    public void queueListenerCoreReturnDeliveryNotePrinted(
+    public void queueListenerCoreSalesCreditNoteCreated(
             String rawMessage,
             @Header("SenderId") String senderId,
             @Header("ApproximateReceiveCount") Integer receiveCount) {
 
         String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-        ReturnDeliveryNotePrintedMessage returnDeliveryNotePrintedMessage =
-                objectMapper.readValue(body, ReturnDeliveryNotePrintedMessage.class);
-        var orderNumber = returnDeliveryNotePrintedMessage.getOrderNumber();
-        var returnedItem = returnDeliveryNotePrintedMessage.getItems();
-        log.info("Received core return delivery note printed message with order number: {}", orderNumber);
+        SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage =
+                objectMapper.readValue(body, SalesCreditNoteCreatedMessage.class);
+        var salesCreditNoteHeader = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader();
+        var orderNumber = salesCreditNoteHeader.getOrderNumber();
+        var creditNoteLines = salesCreditNoteHeader.getCreditNoteLines();
+        log.info("Received core sales credit note created message with order number: {}", orderNumber);
 
-        var salesOrderReturn = salesOrderRowService.handleSalesOrderReturn(orderNumber, returnedItem);
+        var salesOrderReturn = salesOrderRowService.handleSalesOrderReturn(orderNumber, creditNoteLines);
 
         snsPublishService.publishReturnOrderCreatedEvent(salesOrderReturn);
     }

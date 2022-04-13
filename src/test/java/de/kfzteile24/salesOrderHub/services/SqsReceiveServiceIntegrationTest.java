@@ -7,8 +7,9 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
-import de.kfzteile24.salesOrderHub.dto.sns.deliverynote.CoreDeliveryNoteItem;
+import de.kfzteile24.salesOrderHub.dto.sns.creditnote.CreditNoteLine;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
+import de.kfzteile24.salesOrderHub.helper.ObjectUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
@@ -39,6 +40,7 @@ import org.springframework.test.annotation.DirtiesContext;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -102,6 +104,8 @@ class SqsReceiveServiceIntegrationTest {
     private ProcessEngine processEngine;
     @Autowired
     private SalesOrderUtil salesOrderUtil;
+    @Autowired
+    private ObjectUtil objectUtil;
     @SpyBean
     private SnsPublishService snsPublishService;
     @SpyBean
@@ -462,8 +466,8 @@ class SqsReceiveServiceIntegrationTest {
     }
 
     @Test
-    @DisplayName("IT core return delivery note printed event handling")
-    void testQueueListenerCoreReturnDeliveryNotePrinted(TestInfo testInfo) {
+    @DisplayName("IT core sales credit note created event handling")
+    void testQueueListenerCoreSalesCreditNoteCreated(TestInfo testInfo) {
 
         log.info(testInfo.getDisplayName());
 
@@ -503,32 +507,45 @@ class SqsReceiveServiceIntegrationTest {
 
         salesOrderService.save(salesOrder, Action.ORDER_CREATED);
 
-        var coreReturnDeliveryNotePrinted =  readResource("examples/coreReturnDeliveryNotePrinted.json");
-        sqsReceiveService.queueListenerCoreReturnDeliveryNotePrinted(coreReturnDeliveryNotePrinted, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+        var coreReturnDeliveryNotePrinted =  readResource("examples/coreSalesCreditNoteCreated.json");
+        sqsReceiveService.queueListenerCoreSalesCreditNoteCreated(coreReturnDeliveryNotePrinted, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+
+        //set expected values
+        var expectedSalesOrder = createSalesOrderFromOrder(salesOrder);
+        expectedSalesOrder.setVersion(1L);
+        var order = expectedSalesOrder.getLatestJson();
+        var latestOrderJson = objectUtil.deepCopyOf(order, Order.class);
+        latestOrderJson.getOrderHeader().getTotals().setShippingCostGross(BigDecimal.valueOf(11.90).setScale(2, RoundingMode.HALF_UP));
+        latestOrderJson.getOrderHeader().getTotals().setShippingCostNet(BigDecimal.valueOf(10.00).setScale(2, RoundingMode.HALF_UP));
+        expectedSalesOrder.setLatestJson(latestOrderJson);
 
         verify(salesOrderService).findLastOrderByOrderGroupId("580309129");
 
-        verify(salesOrderRowService).recalculateOrderByReturns(eq(salesOrder), argThat(
+        verify(salesOrderRowService).handleSalesOrderReturn(eq("580309129"), argThat(
                 items -> {
-                    assertThat(items).hasSize(1);
+                    assertThat(items).hasSize(2);
                     assertThat(items).element(0)
-                            .extracting(CoreDeliveryNoteItem::getQuantity)
+                            .extracting(CreditNoteLine::getItemNumber).isEqualTo("sku-1");
+                    assertThat(items).element(0)
+                            .extracting(CreditNoteLine::getQuantity)
                             .extracting(BigDecimal::doubleValue)
                             .isEqualTo(1.0);
                     assertThat(items).element(0)
-                            .extracting(CoreDeliveryNoteItem::getSku).isEqualTo("sku-1");
-                    assertThat(items).element(0)
-                            .extracting(CoreDeliveryNoteItem::getSalesPriceGross)
+                            .extracting(CreditNoteLine::getLineNetAmount)
                             .extracting(BigDecimal::doubleValue)
-                            .isEqualTo(1.19);
+                            .isEqualTo(-1.0);
                     assertThat(items).element(0)
-                            .extracting(CoreDeliveryNoteItem::getUnitPriceGross)
-                            .extracting(BigDecimal::doubleValue)
-                            .isEqualTo(1.19);
-                    assertThat(items).element(0)
-                            .extracting(CoreDeliveryNoteItem::getTaxRate)
+                            .extracting(CreditNoteLine::getLineTaxAmount)
                             .extracting(BigDecimal::doubleValue)
                             .isEqualTo(19.00);
+                    assertThat(items).element(0)
+                            .extracting(CreditNoteLine::getIsShippingCost).isEqualTo(false);
+                    assertThat(items).element(1)
+                            .extracting(CreditNoteLine::getIsShippingCost).isEqualTo(true);
+                    assertThat(items).element(1)
+                            .extracting(CreditNoteLine::getLineNetAmount)
+                            .extracting(BigDecimal::doubleValue)
+                            .isEqualTo(-10.00);
                     return true;
                 }
         ));

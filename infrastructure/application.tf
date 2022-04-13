@@ -60,7 +60,7 @@ module "application_module" {
     soh_sqs_d365_order_payment_secured         = aws_sqs_queue.d365_order_payment_secured.id
     soh_sqs_dropshipment_shipment_confirmed    = aws_sqs_queue.soh_dropshipment_shipment_confirmed.id
     soh_sqs_dropshipment_purchase_order_booked = aws_sqs_queue.dropshipment_purchase_order_booked.id
-    soh_sqs_core_return_delivery_note_printed  = aws_sqs_queue.soh_core_return_delivery_note_printed.id
+    soh_sqs_core_sales_credit_note_created     = aws_sqs_queue.soh_core_sales_credit_note_created.id
   }
 
   ssm_secrets_count = 7

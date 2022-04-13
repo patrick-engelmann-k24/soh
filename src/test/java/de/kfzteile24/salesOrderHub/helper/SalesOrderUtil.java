@@ -259,6 +259,17 @@ public class SalesOrderUtil {
                 .build();
     }
 
+    public static SalesOrder createSalesOrderFromOrder(SalesOrder salesOrder) {
+        return SalesOrder.builder()
+                .orderNumber(salesOrder.getOrderNumber())
+                .orderGroupId(salesOrder.getOrderGroupId())
+                .salesChannel(salesOrder.getSalesChannel())
+                .customerEmail(salesOrder.getCustomerEmail())
+                .originalOrder(salesOrder.getOriginalOrder())
+                .latestJson(salesOrder.getLatestJson())
+                .build();
+    }
+
     public static void updatePlatform(SalesOrder salesOrder, Platform platform) {
         salesOrder.getLatestJson().getOrderHeader().setPlatform(platform);
         salesOrder.setOriginalOrder(salesOrder.getLatestJson());

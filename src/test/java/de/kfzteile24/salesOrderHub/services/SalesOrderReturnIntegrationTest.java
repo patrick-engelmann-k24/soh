@@ -1,6 +1,6 @@
 package de.kfzteile24.salesOrderHub.services;
 
-import de.kfzteile24.salesOrderHub.dto.sns.deliverynote.CoreDeliveryNoteItem;
+import de.kfzteile24.salesOrderHub.dto.sns.creditnote.CreditNoteLine;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.services.aggregator.Aggregators;
 import de.kfzteile24.soh.order.dto.Order;
@@ -32,14 +32,14 @@ class SalesOrderReturnIntegrationTest {
     // may be later it's better using csv file source, much more readable and editable (with column names as well)
     @ParameterizedTest
     @CsvSource(value = {
-              "2.20,   2,    0,    0, 2.20,   2,    1.10, 1,    0,   0, 1.10,   1,     0.00,  0, 0,       0, 0.00,    0,     1.10, 2.20, 2,    2.20, 2,    0, 2.20, 0.20, 1.10,    1, 1.10,    0.00, 0, 0.00,    0,    0, 0,   0.00, 0.00,  0",
-              "2.20,   2,    0,    0, 2.20,   2,    1.10, 1,    0,   0, 1.10,   1,     1.10,  1, 0,       0, 1.10,    1,     1.10, 1.10, 1,    2.20, 2,    0, 2.20, 0.20, 1.10,    1, 0.2,    1.10, 1, 1.10,    1,    0, 0,   1.10, 0.10,  1",
-              "2.20,   2,  0.2, 0.22, 1.98, 1.8,    1.10, 1, 0.11, 0.1, 0.99, 0.9,     1.10,  1, 0.1,  0.11, 0.99,  0.9,     1.10, 1.10, 1,    2.20, 2, 1.98,  1.8, 0.22,  0.2, 1.98,  0.18,    1.10, 1, 0.99,  0.9, 0.11, 0.1, 0.99, 0.09,  1"
+              "2.20,   2,    0,    0, 2.20,   2,    1.10, 1,    0,   0, 1.10,   1,     0.00,  0, 0,       0, 0.00,    0,     -1.00, 2, 10.00,    2.20, 2,    0, 2.20, 0.20, 1.10,    1, 1.10,    0.00, 0, 0.00,    0,    0, 0,   0.00, 0.00,  0",
+              "2.20,   2,    0,    0, 2.20,   2,    1.10, 1,    0,   0, 1.10,   1,     1.10,  1, 0,       0, 1.10,    1,     -1.00, 1, 10.00,    2.20, 2,    0, 2.20, 0.20, 1.10,    1,  0.2,    1.10, 1, 1.10,    1,    0, 0,   1.10, 0.10,  1",
+              "2.20,   2,  0.2, 0.22, 1.98, 1.8,    1.10, 1, 0.11, 0.1, 0.99, 0.9,     1.10,  1, 0.1,  0.11, 0.99,  0.9,     -1.00, 1, 10.00,    2.20, 2, 1.98,  1.8, 0.22,  0.2, 1.98,  0.18,   1.10, 1, 0.99,  0.9, 0.11, 0.1, 0.99, 0.09,  1"
     })
     void testRecalculateOrderByReturnsOneRowAndOneReturnedItem(@AggregateWith(Aggregators.SumValuesAggregator.class) SumValues sumValues,
                                                                @AggregateWith(Aggregators.UnitValuesAggregator.class) UnitValues unitValues,
                                                                @AggregateWith(Aggregators.UpdatedSumValuesAggregator.class) SumValues updatedSumValues,
-                                                               @AggregateWith(Aggregators.CoreDeliveryNoteItemAggregator.class) CoreDeliveryNoteItem item,
+                                                               @AggregateWith(Aggregators.CreditNoteLineAggregator.class) CreditNoteLine item,
                                                                @AggregateWith(Aggregators.TotalsAggregator.class) Totals totals,
                                                                @AggregateWith(Aggregators.UpdatedTotalsAggregator.class) Totals updatedTotals,
                                                                ArgumentsAccessor arguments) {
@@ -61,14 +61,14 @@ class SalesOrderReturnIntegrationTest {
 
     @ParameterizedTest
     @CsvSource(value = {
-            "2.20, 2, 0, 0, 2.20, 2,    1.10, 1, 0, 0, 1.10, 1,    0.00, 0, 0, 0, 0.00, 0,   1.10, 2.20, 2,   4.40, 4, 0, 2.40, 0.40, 2.20, 2, 2.20,   0.00, 0, 0.00, 0, 0, 0, 0.00, 0.00,  0",
-            "2.20, 2, 0, 0, 2.20, 2,    1.10, 1, 0, 0, 1.10, 1,    1.10, 1, 0, 0, 1.10, 1,   1.10, 1.10, 1,   4.40, 4, 0, 2.40, 0.40, 2.20, 3, 0.4,   2.20, 1, 2.20, 1, 0, 0, 2.20, 0.20,  1"
+            "2.20, 2, 0, 0, 2.20, 2,    1.10, 1, 0, 0, 1.10, 1,    0.00, 0, 0, 0, 0.00, 0,   -1.00, 2, 10.00,   4.40, 4, 0, 2.40, 0.40, 2.20, 2, 2.20,   0.00, 0, 0.00, 0, 0, 0, 0.00, 0.00,  0",
+            "2.20, 2, 0, 0, 2.20, 2,    1.10, 1, 0, 0, 1.10, 1,    1.10, 1, 0, 0, 1.10, 1,   -1.00, 1, 10.00,   4.40, 4, 0, 2.40, 0.40, 2.20, 3,  0.4,   2.20, 1, 2.20, 1, 0, 0, 2.20, 0.20,  1"
     })
     void testRecalculateOrderByReturnsTwoRowsAndTwoReturnedItems(@AggregateWith(Aggregators.SumValuesAggregator.class) SumValues sumValues,
                                                                  @AggregateWith(Aggregators.UnitValuesAggregator.class) UnitValues unitValues,
                                                                  @AggregateWith(Aggregators.UpdatedSumValuesAggregator.class) SumValues updatedSumValues,
-                                                                 @AggregateWith(Aggregators.CoreDeliveryNoteItemAggregator.class) CoreDeliveryNoteItem item,
-                                                                 @AggregateWith(Aggregators.AnotherCoreDeliveryNoteItemAggregator.class) CoreDeliveryNoteItem anotherItem,
+                                                                 @AggregateWith(Aggregators.CreditNoteLineAggregator.class) CreditNoteLine item,
+                                                                 @AggregateWith(Aggregators.AnotherCreditNoteLineAggregator.class) CreditNoteLine anotherItem,
                                                                  @AggregateWith(Aggregators.TotalsAggregator.class) Totals totals,
                                                                  @AggregateWith(Aggregators.UpdatedTotalsAggregator.class) Totals updatedTotals,
                                                                  ArgumentsAccessor arguments) {

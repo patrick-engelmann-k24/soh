@@ -75,7 +75,7 @@ soh:
       d365OrderPaymentSecured: ${soh_sqs_d365_order_payment_secured}
       dropshipmentShipmentConfirmed: ${soh_sqs_dropshipment_shipment_confirmed}
       dropshipmentPurchaseOrderBooked: ${soh_sqs_dropshipment_purchase_order_booked}
-      coreReturnDeliveryNotePrinted: ${soh_sqs_core_return_delivery_note_printed}
+      coreSalesCreditNoteCreated: ${soh_sqs_core_sales_credit_note_created}
   aws:
     config:
       maxNumberOfMessages: 10

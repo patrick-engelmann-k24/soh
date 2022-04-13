@@ -53,7 +53,7 @@ soh:
       d365OrderPaymentSecured:        http://localhost:4566/000000000000/soh-d365-order-payment-secured-queue
       dropshipmentShipmentConfirmed:  http://localhost:4566/000000000000/soh-dropshipment-shipment-confirmed-queue
       dropshipmentPurchaseOrderBooked: http://localhost:4566/000000000000/soh-dropshipment-purchase-order-booked-queue
-      coreReturnDeliveryNotePrinted:  http://localhost:4566/000000000000/soh-core-return-delivery-note-printed-queue
+      coreSalesCreditNoteCreated:     http://localhost:4566/000000000000/soh-core-sales-credit-note-created-queue
   aws:
     config:
       maxNumberOfMessages: 10
