@@ -8,6 +8,7 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
+import de.kfzteile24.salesOrderHub.domain.converter.InvoiceSource;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderCompletedEvent;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
@@ -334,6 +335,7 @@ public class SalesOrderUtil {
                 .invoiceNumber(invoiceNumber)
                 .orderNumber(orderNumber)
                 .url(invoiceUrl)
+                .source(InvoiceSource.SOH)
                 .build();
     }
 }

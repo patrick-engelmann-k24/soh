@@ -9,7 +9,9 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.deliverynote.CoreDeliveryNoteItem;
+import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
 import de.kfzteile24.salesOrderHub.exception.GrandTotalTaxNotFoundException;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.OrderRowNotFoundException;
@@ -39,7 +41,9 @@ import java.util.stream.Stream;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_BOOKED;
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ITEM_SHIPPED;
 import static java.text.MessageFormat.format;
+import static java.util.stream.Collectors.toUnmodifiableSet;
 
 @Service
 @Slf4j
@@ -64,6 +68,12 @@ public class SalesOrderRowService {
 
     @NonNull
     private final OrderUtil orderUtil;
+
+    @NonNull
+    private final SnsPublishService snsPublishService;
+
+    @NonNull
+    private final InvoiceService invoiceService;
 
     public void cancelOrderProcessIfFullyCancelled(SalesOrder salesOrder) {
 
@@ -95,6 +105,54 @@ public class SalesOrderRowService {
                 cancelOrderProcessIfFullyCancelled(salesOrder);
             }
         }
+    }
+
+    public void handleDropshipmentShipmentConfirmed(DropshipmentShipmentConfirmedMessage message) {
+
+        var orderNumber = message.getSalesOrderNumber();
+        SalesOrder salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
+                .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
+
+        var orderRows = salesOrder.getLatestJson().getOrderRows();
+        var shippedItems = message.getItems();
+
+        shippedItems.forEach(item ->
+                orderRows.stream()
+                        .filter(row -> StringUtils.pathEquals(row.getSku(), item.getProductNumber()))
+                        .findFirst()
+                        .ifPresentOrElse(row -> {
+                            addParcelNumber(item, row);
+                            addServiceProviderName(item, row);
+                        }, () -> {
+                            throw new NotFoundException(
+                                    format("Could not find order row with SKU {0} for order {1}",
+                                            item.getProductNumber(), orderNumber));
+                        })
+        );
+
+        setDocumentRefNumber(salesOrder);
+        var persistedSalesOrder = salesOrderService.save(salesOrder, ORDER_ITEM_SHIPPED);
+
+        var trackingLinks = shippedItems.stream()
+                .map(ShipmentItem::getTrackingLink)
+                .collect(toUnmodifiableSet());
+
+        snsPublishService.publishSalesOrderShipmentConfirmedEvent(persistedSalesOrder, trackingLinks);
+    }
+
+    private void addParcelNumber(ShipmentItem item, OrderRows row) {
+        var parcelNumber = item.getParcelNumber();
+        Optional.ofNullable(row.getTrackingNumbers())
+                .ifPresentOrElse(trackingNumbers -> trackingNumbers.add(parcelNumber),
+                        () -> row.setTrackingNumbers(List.of(parcelNumber)));
+    }
+
+    private void addServiceProviderName(ShipmentItem item, OrderRows row) {
+        row.setShippingProvider(item.getServiceProviderName());
+    }
+
+    private void setDocumentRefNumber(SalesOrder salesOrder) {
+        salesOrder.getLatestJson().getOrderHeader().setDocumentRefNumber(invoiceService.createInvoiceNumber());
     }
 
     @SneakyThrows

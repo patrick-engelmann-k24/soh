@@ -11,7 +11,7 @@ import java.util.Collection;
 @Builder
 @Value
 @Jacksonized
-public class ShipmentConfirmedMessage {
+public class DropshipmentShipmentConfirmedMessage {
 
     @JsonProperty("SupplierInternalId")
     Integer supplierInternalId;
@@ -21,9 +21,6 @@ public class ShipmentConfirmedMessage {
 
     @JsonProperty("SalesOrderNumber")
     String salesOrderNumber;
-
-    @JsonProperty("ServiceProviderName")
-    String serviceProviderName;
 
     @JsonProperty("ShipmentDate")
     String shipmentDate;

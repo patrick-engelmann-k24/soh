@@ -1,5 +1,7 @@
 package de.kfzteile24.salesOrderHub.domain;
 
+import de.kfzteile24.salesOrderHub.domain.converter.InvoiceSource;
+import de.kfzteile24.salesOrderHub.domain.converter.SalesOrderInvoiceSourceConverter;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,6 +17,7 @@ import javax.persistence.EntityListeners;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+import javax.persistence.Convert;
 
 @Entity
 @Table(name = "sales_order_invoice", schema = "public", catalog = "soh")
@@ -25,7 +28,7 @@ import javax.persistence.Table;
 @NoArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
 public class SalesOrderInvoice extends AbstractBaseEntity {
-    // important!
+
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     @ManyToOne
@@ -47,4 +50,7 @@ public class SalesOrderInvoice extends AbstractBaseEntity {
     @Column(name = "customer_access_token")
     private String customerAccessToken;
 
+    @Column(name = "source")
+    @Convert(converter = SalesOrderInvoiceSourceConverter.class)
+    private InvoiceSource source;
 }

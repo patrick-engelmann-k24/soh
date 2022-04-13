@@ -21,4 +21,7 @@ public class ShipmentItem {
 
     @JsonProperty("Quantity")
     Integer quantity;
+
+    @JsonProperty("ServiceProviderName")
+    String serviceProviderName;
 }

@@ -2,6 +2,7 @@ package de.kfzteile24.salesOrderHub.delegates.salesOrder;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
+import de.kfzteile24.salesOrderHub.domain.converter.InvoiceSource;
 import de.kfzteile24.salesOrderHub.services.InvoiceService;
 import de.kfzteile24.salesOrderHub.services.InvoiceUrlExtractor;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
@@ -41,6 +42,7 @@ class SaveInvoiceDelegate implements JavaDelegate {
                 .orderNumber(orderNumber)
                 .invoiceNumber(invoiceNumber)
                 .url(invoiceUrl)
+                .source(InvoiceSource.SOH)
                 .build();
 
         return invoiceService.saveInvoice(salesOrderInvoice);

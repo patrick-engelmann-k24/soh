@@ -381,6 +381,7 @@ class SqsReceiveServiceIntegrationTest {
 
         try (AutoCloseableSoftAssertions softly = new AutoCloseableSoftAssertions()) {
             softly.assertThat(sku1Row.getSku()).as("sku-1").isEqualTo("sku-1");
+            softly.assertThat(sku1Row.getShippingProvider()).as("Service provider name").isEqualTo("abc1");
             softly.assertThat(sku1Row.getTrackingNumbers()).as("Size of tracking numbers sku-1").hasSize(1);
             softly.assertThat(sku1Row.getTrackingNumbers().get(0)).as("sku-1 tracking number").isEqualTo("00F8F0LT");
 
@@ -388,9 +389,11 @@ class SqsReceiveServiceIntegrationTest {
             softly.assertThat(sku2Row.getTrackingNumbers()).as("Size of tracking numbers sku-2").isNull();
 
             softly.assertThat(sku3Row.getSku()).as("sku-3").isEqualTo("sku-3");
+            softly.assertThat(sku3Row.getShippingProvider()).as("Service provider name").isEqualTo("abc2");
             softly.assertThat(sku3Row.getTrackingNumbers()).as("Size of tracking numbers sku-3").hasSize(1);
             softly.assertThat(sku3Row.getTrackingNumbers().get(0)).as("sku-3 tracking number").isEqualTo("00F8F0LT2");
         }
+        assertThat(updatedSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber()).hasSize(18);
 
         verify(snsPublishService).publishSalesOrderShipmentConfirmedEvent(eq(updatedSalesOrder), argThat(
                 trackingNumbers -> {
