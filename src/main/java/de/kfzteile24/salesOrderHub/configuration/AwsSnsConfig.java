@@ -41,6 +41,6 @@ public class AwsSnsConfig {
     @Value("${soh.sns.topic.shipmentConfirmedV1}")
     private String snsShipmentConfirmedV1;
 
-    @Value("${soh.sns.topic.returnReceiptCalculatedV1}")
-    private String snsReturnReceiptCalculatedV1;
+    @Value("${soh.sns.topic.returnOrderCreatedV1}")
+    private String snsReturnOrderCreatedV1;
 }

@@ -38,7 +38,7 @@ TOPICS="
     soh-shipment-confirmed-v1
     soh-dropshipment-purchase-order-booked
     soh-core-return-delivery-note-printed
-    soh-return-receipt-calculated-v1
+    soh-return-order-created-v1
     "
 
 # Outdated topics

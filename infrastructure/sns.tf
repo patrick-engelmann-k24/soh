@@ -98,8 +98,8 @@ data "aws_sns_topic" "sns_core_return_delivery_note_printed_v1" {
   name = "core-return-delivery-note-printed-v1"
 }
 
-data "aws_sns_topic" "sns_soh_return_receipt_calculated_v1" {
-  name = "soh-return-receipt-calculated-v1"
+data "aws_sns_topic" "sns_soh_return_order_created_v1" {
+  name = "soh-return-order-created-v1"
 }
 
 # subscriptions of sqs to sns
