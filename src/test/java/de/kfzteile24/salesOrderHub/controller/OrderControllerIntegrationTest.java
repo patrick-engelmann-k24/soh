@@ -23,6 +23,7 @@ import static org.springframework.http.HttpStatus.OK;
 
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
+import de.kfzteile24.salesOrderHub.domain.converter.InvoiceSource;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.services.InvoiceService;
@@ -148,6 +149,7 @@ class OrderControllerIntegrationTest {
         invoiceService.addSalesOrderToInvoice(testOrder, SalesOrderInvoice.builder()
                 .orderNumber(orderNumber)
                 .invoiceNumber("444")
+                .source(InvoiceSource.SOH)
                 .build());
 
         final var result = controller.updateBillingAddress(orderNumber, address);

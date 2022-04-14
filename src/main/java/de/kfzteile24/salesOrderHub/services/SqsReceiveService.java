@@ -12,13 +12,11 @@ import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.FulfillmentMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.OrderPaymentSecuredMessage;
-import de.kfzteile24.salesOrderHub.dto.sns.ReturnDeliveryNotePrintedMessage;
-import de.kfzteile24.salesOrderHub.dto.sns.ShipmentConfirmedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SubsequentDeliveryMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.cancellation.CoreCancellationItem;
-import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
-import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.Platform;
@@ -42,10 +40,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.O
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_ECP;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.INVOICE_URL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
-import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ITEM_SHIPPED;
-import static java.text.MessageFormat.format;
 import static java.util.function.Predicate.not;
-import static java.util.stream.Collectors.toUnmodifiableSet;
 import static org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy.ON_SUCCESS;
 
 @Service
@@ -383,39 +378,13 @@ public class SqsReceiveService {
             @Header("ApproximateReceiveCount") Integer receiveCount) {
 
         String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-        ShipmentConfirmedMessage shipmentConfirmedMessage = objectMapper.readValue(body, ShipmentConfirmedMessage.class);
-        var orderNumber = shipmentConfirmedMessage.getSalesOrderNumber();
-        log.info("Received dropshipment shipment confirmed message with order number: {}", orderNumber);
+        DropshipmentShipmentConfirmedMessage shipmentConfirmedMessage =
+                objectMapper.readValue(body, DropshipmentShipmentConfirmedMessage.class);
 
-        SalesOrder salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
-                .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
+        log.info("Received dropshipment shipment confirmed message with order number: {}",
+                shipmentConfirmedMessage.getSalesOrderNumber());
 
-        var orderRows = salesOrder.getLatestJson().getOrderRows();
-        var shippedItems = shipmentConfirmedMessage.getItems();
-
-        shippedItems.forEach(item ->
-                    orderRows.stream()
-                            .filter(row -> StringUtils.pathEquals(row.getSku(), item.getProductNumber()))
-                            .findFirst()
-                            .ifPresentOrElse(row -> {
-                                var parcelNumber = item.getParcelNumber();
-                                Optional.ofNullable(row.getTrackingNumbers())
-                                        .ifPresentOrElse(trackingNumbers -> trackingNumbers.add(parcelNumber),
-                                                () -> row.setTrackingNumbers(List.of(parcelNumber)));
-                            }, () -> {
-                                throw new NotFoundException(
-                                    format("Could not find order row with SKU {0} for order {1}",
-                                        item.getProductNumber(), orderNumber));
-                            })
-        );
-
-        var persistedSalesOrder = salesOrderService.save(salesOrder, ORDER_ITEM_SHIPPED);
-
-        var trackingLinks = shippedItems.stream()
-                .map(ShipmentItem::getTrackingLink)
-                .collect(toUnmodifiableSet());
-
-        snsPublishService.publishSalesOrderShipmentConfirmedEvent(persistedSalesOrder, trackingLinks);
+        salesOrderRowService.handleDropshipmentShipmentConfirmed(shipmentConfirmedMessage);
     }
 
     /**
@@ -440,26 +409,27 @@ public class SqsReceiveService {
     }
 
     /**
-     * Consume messages from sqs for core return delivery note printed published by core-publisher
+     * Consume messages from sqs for core sales credit note created published by core-publisher
      */
-    @SqsListener(value = "${soh.sqs.queue.coreReturnDeliveryNotePrinted}", deletionPolicy = ON_SUCCESS)
+    @SqsListener(value = "${soh.sqs.queue.coreSalesCreditNoteCreated}", deletionPolicy = ON_SUCCESS)
     @SneakyThrows(JsonProcessingException.class)
-    @Trace(metricName = "Handling core return delivery note printed message", dispatcher = true)
+    @Trace(metricName = "Handling core sales credit note created message", dispatcher = true)
     @Transactional
-    public void queueListenerCoreReturnDeliveryNotePrinted(
+    public void queueListenerCoreSalesCreditNoteCreated(
             String rawMessage,
             @Header("SenderId") String senderId,
             @Header("ApproximateReceiveCount") Integer receiveCount) {
 
         String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-        ReturnDeliveryNotePrintedMessage returnDeliveryNotePrintedMessage =
-                objectMapper.readValue(body, ReturnDeliveryNotePrintedMessage.class);
-        var orderNumber = returnDeliveryNotePrintedMessage.getOrderNumber();
-        var returnedItem = returnDeliveryNotePrintedMessage.getItems();
-        log.info("Received core return delivery note printed message with order number: {}", orderNumber);
+        SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage =
+                objectMapper.readValue(body, SalesCreditNoteCreatedMessage.class);
+        var salesCreditNoteHeader = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader();
+        var orderNumber = salesCreditNoteHeader.getOrderNumber();
+        var creditNoteLines = salesCreditNoteHeader.getCreditNoteLines();
+        log.info("Received core sales credit note created message with order number: {}", orderNumber);
 
-        var salesOrderReturn = salesOrderRowService.handleSalesOrderReturn(orderNumber, returnedItem);
+        var salesOrderReturn = salesOrderRowService.handleSalesOrderReturn(orderNumber, creditNoteLines);
 
-        snsPublishService.publishSalesOrderReturnReceiptCalculatedEvent(salesOrderReturn);
+        snsPublishService.publishReturnOrderCreatedEvent(salesOrderReturn);
     }
 }

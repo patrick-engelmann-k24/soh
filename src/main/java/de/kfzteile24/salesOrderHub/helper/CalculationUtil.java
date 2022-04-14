@@ -1,6 +1,7 @@
 package de.kfzteile24.salesOrderHub.helper;
 
 import de.kfzteile24.soh.order.dto.SumValues;
+import org.apache.commons.lang3.RandomStringUtils;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
@@ -78,5 +79,9 @@ public class CalculationUtil {
         var goodsValueGross = salesPriceGross.divide(quantity, MATH_CONTEXT);
         var goodsValueNet = getNetValue(goodsValueGross, taxRate);
         return quantity.multiply(goodsValueNet);
+    }
+
+    public static String randomNumbers(int digitCount) {
+        return RandomStringUtils.random(digitCount, false, true);
     }
 }

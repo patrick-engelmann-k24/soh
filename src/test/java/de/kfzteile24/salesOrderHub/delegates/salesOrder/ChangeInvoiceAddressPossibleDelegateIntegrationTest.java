@@ -21,6 +21,7 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
+import de.kfzteile24.salesOrderHub.domain.converter.InvoiceSource;
 import de.kfzteile24.salesOrderHub.helper.AuditLogUtil;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
@@ -135,6 +136,7 @@ class ChangeInvoiceAddressPossibleDelegateIntegrationTest {
                 .salesOrder(testOrder)
                 .invoiceNumber(util.getRandomOrderNumber())
                 .orderNumber(orderNumber)
+                .source(InvoiceSource.SOH)
                 .build();
         invoiceRepository.save(orderInvoice);
 

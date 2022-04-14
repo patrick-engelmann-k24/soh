@@ -136,7 +136,7 @@ public class SalesOrderService {
     public SalesOrder addSalesOrderReturn(SalesOrder salesOrder, SalesOrderReturn salesOrderReturn) {
         salesOrderReturn.setSalesOrder(salesOrder);
         salesOrder.getSalesOrderReturnList().add(salesOrderReturn);
-        return save(salesOrder, Action.RETURN_DELIVERY_NOTE_PRINTED);
+        return save(salesOrder, Action.RETURN_ORDER_CREATED);
     }
 
     public SalesOrder findLastOrderByOrderGroupId(String orderGroupId) {

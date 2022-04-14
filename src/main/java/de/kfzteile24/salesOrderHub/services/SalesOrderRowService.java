@@ -9,11 +9,14 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
-import de.kfzteile24.salesOrderHub.dto.sns.deliverynote.CoreDeliveryNoteItem;
+import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.creditnote.CreditNoteLine;
+import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
 import de.kfzteile24.salesOrderHub.exception.GrandTotalTaxNotFoundException;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.OrderRowNotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
+import de.kfzteile24.salesOrderHub.helper.CalculationUtil;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
@@ -39,7 +42,10 @@ import java.util.stream.Stream;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_BOOKED;
+import static java.math.RoundingMode.HALF_UP;
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ITEM_SHIPPED;
 import static java.text.MessageFormat.format;
+import static java.util.stream.Collectors.toUnmodifiableSet;
 
 @Service
 @Slf4j
@@ -64,6 +70,12 @@ public class SalesOrderRowService {
 
     @NonNull
     private final OrderUtil orderUtil;
+
+    @NonNull
+    private final SnsPublishService snsPublishService;
+
+    @NonNull
+    private final InvoiceService invoiceService;
 
     public void cancelOrderProcessIfFullyCancelled(SalesOrder salesOrder) {
 
@@ -97,6 +109,54 @@ public class SalesOrderRowService {
         }
     }
 
+    public void handleDropshipmentShipmentConfirmed(DropshipmentShipmentConfirmedMessage message) {
+
+        var orderNumber = message.getSalesOrderNumber();
+        SalesOrder salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
+                .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
+
+        var orderRows = salesOrder.getLatestJson().getOrderRows();
+        var shippedItems = message.getItems();
+
+        shippedItems.forEach(item ->
+                orderRows.stream()
+                        .filter(row -> StringUtils.pathEquals(row.getSku(), item.getProductNumber()))
+                        .findFirst()
+                        .ifPresentOrElse(row -> {
+                            addParcelNumber(item, row);
+                            addServiceProviderName(item, row);
+                        }, () -> {
+                            throw new NotFoundException(
+                                    format("Could not find order row with SKU {0} for order {1}",
+                                            item.getProductNumber(), orderNumber));
+                        })
+        );
+
+        setDocumentRefNumber(salesOrder);
+        var persistedSalesOrder = salesOrderService.save(salesOrder, ORDER_ITEM_SHIPPED);
+
+        var trackingLinks = shippedItems.stream()
+                .map(ShipmentItem::getTrackingLink)
+                .collect(toUnmodifiableSet());
+
+        snsPublishService.publishSalesOrderShipmentConfirmedEvent(persistedSalesOrder, trackingLinks);
+    }
+
+    private void addParcelNumber(ShipmentItem item, OrderRows row) {
+        var parcelNumber = item.getParcelNumber();
+        Optional.ofNullable(row.getTrackingNumbers())
+                .ifPresentOrElse(trackingNumbers -> trackingNumbers.add(parcelNumber),
+                        () -> row.setTrackingNumbers(List.of(parcelNumber)));
+    }
+
+    private void addServiceProviderName(ShipmentItem item, OrderRows row) {
+        row.setShippingProvider(item.getServiceProviderName());
+    }
+
+    private void setDocumentRefNumber(SalesOrder salesOrder) {
+        salesOrder.getLatestJson().getOrderHeader().setDocumentRefNumber(invoiceService.createInvoiceNumber());
+    }
+
     @SneakyThrows
     @Transactional
     public void cancelOrderRows(String orderNumber, List<String> skuList) {
@@ -111,9 +171,12 @@ public class SalesOrderRowService {
         }
     }
 
-    public SalesOrderReturn handleSalesOrderReturn(String orderNumber, Collection<CoreDeliveryNoteItem> items) {
+    public SalesOrderReturn handleSalesOrderReturn(String orderNumber, Collection<CreditNoteLine> creditNoteLines) {
         var salesOrder = salesOrderService.findLastOrderByOrderGroupId(orderNumber);
-
+        var negativedCreditNoteLine = negateCreditNoteLines(creditNoteLines);
+        var items = negativedCreditNoteLine.stream()
+                .filter(creditNoteLine -> !creditNoteLine.getIsShippingCost())
+                .collect(Collectors.toList());
         var returnOrderJson = recalculateOrderByReturns(salesOrder, items);
 
         returnOrderJson.getOrderHeader().setOrderNumber(salesOrder.getOrderNumber());
@@ -125,28 +188,29 @@ public class SalesOrderRowService {
                 .build();
 
         salesOrderReturn.setOrderNumber(orderNumber);
+        updateShippingCosts(salesOrderReturn, negativedCreditNoteLine);
         salesOrderService.addSalesOrderReturn(salesOrder, salesOrderReturn);
 
         return salesOrderReturn;
     }
 
-    public Order recalculateOrderByReturns(SalesOrder salesOrder, Collection<CoreDeliveryNoteItem> items) {
+    public Order recalculateOrderByReturns(SalesOrder salesOrder, Collection<CreditNoteLine> items) {
 
         var returnLatestJson = orderUtil.copyOrderJson(salesOrder.getLatestJson());
         var totals = returnLatestJson.getOrderHeader().getTotals();
 
         items.forEach(item -> {
             var orderRow = returnLatestJson.getOrderRows().stream()
-                    .filter(r -> StringUtils.pathEquals(r.getSku(), item.getSku()))
+                    .filter(r -> StringUtils.pathEquals(r.getSku(), item.getItemNumber()))
                     .findFirst()
                     .orElseThrow(() -> new OrderRowNotFoundException(ERROR_MSG_ROW_NOT_FOUND_BY_SKU,
-                            item.getSku(), salesOrder.getOrderNumber(), salesOrder.getOrderGroupId()));
+                            item.getItemNumber(), salesOrder.getOrderNumber(), salesOrder.getOrderGroupId()));
             orderUtil.recalculateOrderRow(orderRow, item);
 
             var sumValues = orderRow.getSumValues();
             var returnOrderRowTaxValue = sumValues.getTotalDiscountedGross().subtract(sumValues.getTotalDiscountedNet());
             totals.getGrandTotalTaxes().stream()
-                    .filter(tax -> tax.getRate().compareTo(item.getTaxRate()) == 0)
+                    .filter(tax -> tax.getRate().compareTo(item.getLineTaxAmount()) == 0)
                     .findFirst()
                     .ifPresentOrElse(tax -> {
                                 var taxValue = returnOrderRowTaxValue.compareTo(BigDecimal.ZERO) == 0 ? returnOrderRowTaxValue :
@@ -156,7 +220,7 @@ public class SalesOrderRowService {
                             () -> {
                                 throw new GrandTotalTaxNotFoundException(
                                         format(ERROR_MSG_GRAND_TOTAL_TAX_NOT_FOUND_BY_TAX_RATE,
-                                                item.getSku(), item.getTaxRate(), salesOrder.getOrderNumber(), salesOrder.getOrderGroupId()));
+                                                item.getItemNumber(), item.getLineTaxAmount(), salesOrder.getOrderNumber(), salesOrder.getOrderGroupId()));
                             });
         });
 
@@ -183,6 +247,35 @@ public class SalesOrderRowService {
 
         returnLatestJson.getOrderHeader().setTotals(totals);
         return returnLatestJson;
+    }
+
+    private Collection<CreditNoteLine> negateCreditNoteLines(Collection<CreditNoteLine> creditNoteLines) {
+        return creditNoteLines.stream().map(creditNoteLine ->
+                CreditNoteLine.builder()
+                        .isShippingCost(creditNoteLine.getIsShippingCost())
+                        .itemNumber(creditNoteLine.getItemNumber())
+                        .quantity(creditNoteLine.getQuantity().negate())
+                        .lineTaxAmount(creditNoteLine.getLineTaxAmount())
+                        .lineNetAmount(creditNoteLine.getLineNetAmount().negate())
+                        .build()
+        ).collect(Collectors.toList());
+    }
+
+    private void updateShippingCosts(SalesOrderReturn salesOrderReturn, Collection<CreditNoteLine> creditNoteLines) {
+        var totals = salesOrderReturn.getReturnOrderJson().getOrderHeader().getTotals();
+        creditNoteLines.stream()
+                .filter(CreditNoteLine::getIsShippingCost)
+                .findFirst()
+                .ifPresent(creditNoteLine -> {
+                    totals.setShippingCostNet(creditNoteLine.getLineNetAmount());
+                    totals.setShippingCostGross(getGrossValue(creditNoteLine));
+                });
+    }
+
+    private BigDecimal getGrossValue(CreditNoteLine creditNoteLine) {
+        var taxRate = creditNoteLine.getLineTaxAmount().abs();
+        var netValue = creditNoteLine.getLineNetAmount();
+        return CalculationUtil.round(CalculationUtil.getGrossValue(netValue, taxRate), HALF_UP);
     }
 
     private void cancelOrderRow(String orderGroupId, String orderRowId) {

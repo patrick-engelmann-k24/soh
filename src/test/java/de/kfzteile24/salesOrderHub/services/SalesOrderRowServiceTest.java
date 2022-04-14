@@ -61,6 +61,9 @@ class SalesOrderRowServiceTest {
     @Mock
     private SnsPublishService snsPublishService;
 
+    @Mock
+    private InvoiceService invoiceService;
+
     @InjectMocks
     private SalesOrderRowService salesOrderRowService;
 

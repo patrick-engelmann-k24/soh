@@ -1,6 +1,6 @@
 package de.kfzteile24.salesOrderHub.services.aggregator;
 
-import de.kfzteile24.salesOrderHub.dto.sns.deliverynote.CoreDeliveryNoteItem;
+import de.kfzteile24.salesOrderHub.dto.sns.creditnote.CreditNoteLine;
 import de.kfzteile24.soh.order.dto.GrandTotalTaxes;
 import de.kfzteile24.soh.order.dto.SumValues;
 import de.kfzteile24.soh.order.dto.Totals;
@@ -56,28 +56,27 @@ final public class Aggregators {
         }
     }
 
-    public static class CoreDeliveryNoteItemAggregator implements ArgumentsAggregator {
+    public static class CreditNoteLineAggregator implements ArgumentsAggregator {
         @Override
-        public CoreDeliveryNoteItem aggregateArguments(ArgumentsAccessor arguments, ParameterContext context) {
-            return CoreDeliveryNoteItem.builder()
-                    .sku("sku-1")
-                    .unitPriceGross(arguments.get(18, BigDecimal.class))
-                    .salesPriceGross(arguments.get(19, BigDecimal.class))
-                    .quantity(arguments.get(20, BigDecimal.class))
-                    .taxRate(BigDecimal.valueOf(10))
+        public CreditNoteLine aggregateArguments(ArgumentsAccessor arguments, ParameterContext context) {
+            return CreditNoteLine.builder()
+                    .itemNumber("sku-1")
+                    .lineNetAmount(arguments.get(18, BigDecimal.class))
+                    .quantity(arguments.get(19, BigDecimal.class))
+                    .lineTaxAmount(arguments.get(20, BigDecimal.class))
+                    .isShippingCost(false)
                     .build();
         }
     }
 
-    public static class AnotherCoreDeliveryNoteItemAggregator implements ArgumentsAggregator {
+    public static class AnotherCreditNoteLineAggregator implements ArgumentsAggregator {
         @Override
-        public CoreDeliveryNoteItem aggregateArguments(ArgumentsAccessor arguments, ParameterContext context) {
-            return CoreDeliveryNoteItem.builder()
-                    .sku("sku-3")
-                    .unitPriceGross(arguments.get(18, BigDecimal.class))
-                    .salesPriceGross(arguments.get(19, BigDecimal.class))
-                    .quantity(arguments.get(20, BigDecimal.class))
-                    .taxRate(BigDecimal.valueOf(10))
+        public CreditNoteLine aggregateArguments(ArgumentsAccessor arguments, ParameterContext context) {
+            return CreditNoteLine.builder()
+                    .itemNumber("sku-3")
+                    .lineNetAmount(arguments.get(18, BigDecimal.class))
+                    .quantity(arguments.get(19, BigDecimal.class))
+                    .lineTaxAmount(arguments.get(20, BigDecimal.class))
                     .build();
         }
     }

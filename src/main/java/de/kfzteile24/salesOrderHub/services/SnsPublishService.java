@@ -10,7 +10,7 @@ import de.kfzteile24.salesOrderHub.dto.events.OrderRowCancelledEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderCompletedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInfoEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInvoiceCreatedEvent;
-import de.kfzteile24.salesOrderHub.dto.events.SalesOrderReturnReceiptCalculatedEvent;
+import de.kfzteile24.salesOrderHub.dto.events.ReturnOrderCreatedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderShipmentConfirmedEvent;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.soh.order.dto.Order;
@@ -99,13 +99,13 @@ public class SnsPublishService {
 
     }
 
-    public void publishSalesOrderReturnReceiptCalculatedEvent(SalesOrderReturn salesOrderReturn) {
-        var salesOrderReturnReceiptCalculatedEvent = SalesOrderReturnReceiptCalculatedEvent.builder()
+    public void publishReturnOrderCreatedEvent(SalesOrderReturn salesOrderReturn) {
+        var returnOrderCreatedEvent = ReturnOrderCreatedEvent.builder()
                 .order(salesOrderReturn.getReturnOrderJson())
                 .build();
 
-        publishEvent(config.getSnsReturnReceiptCalculatedV1(), "Sales order return receipt calculated V1",
-                salesOrderReturnReceiptCalculatedEvent, salesOrderReturn.getOrderNumber());
+        publishEvent(config.getSnsReturnOrderCreatedV1(), "Return Order Created V1",
+                returnOrderCreatedEvent, salesOrderReturn.getOrderNumber());
     }
 
     protected void sendLatestOrderJson(String topic, String subject, String orderNumber) {

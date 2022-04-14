@@ -2,6 +2,7 @@ package de.kfzteile24.salesOrderHub.services;
 
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
+import de.kfzteile24.salesOrderHub.domain.converter.InvoiceSource;
 import de.kfzteile24.salesOrderHub.dto.sns.SubsequentDeliveryMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.deliverynote.CoreDeliveryNoteItem;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundCustomException;
@@ -80,10 +81,12 @@ class SalesOrderServiceTest {
                 SalesOrderInvoice.builder()
                         .orderNumber(salesOrder.getOrderNumber())
                         .invoiceNumber("1")
+                        .source(InvoiceSource.SOH)
                         .build(),
                 SalesOrderInvoice.builder()
                         .orderNumber(salesOrder.getOrderNumber())
                         .invoiceNumber("2")
+                        .source(InvoiceSource.SOH)
                         .build()
         );
         when(salesOrderRepository.countByCustomerEmail(any())).thenReturn(1L);// 1 > 0

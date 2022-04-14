@@ -43,7 +43,7 @@ module "application_module" {
     soh_sales_order_cancellation               = data.aws_sns_topic.sns_soh_sales_order_cancellation_v1.arn
     soh_order_invoice_created_v1               = data.aws_sns_topic.sns_soh_order_invoice_created_v1.arn
     sns_soh_shipment_confirmed_v1              = data.aws_sns_topic.sns_soh_shipment_confirmed_v1.arn
-    sns_soh_return_receipt_calculated_v1       = data.aws_sns_topic.sns_soh_return_receipt_calculated_v1.arn
+    sns_soh_return_order_created_v1            = data.aws_sns_topic.sns_soh_return_order_created_v1.arn
 
     soh_sqs_ecp_shop_orders                    = aws_sqs_queue.ecp_shop_orders.id
     soh_sqs_bc_shop_orders                     = aws_sqs_queue.bc_shop_orders.id
@@ -60,7 +60,7 @@ module "application_module" {
     soh_sqs_d365_order_payment_secured         = aws_sqs_queue.d365_order_payment_secured.id
     soh_sqs_dropshipment_shipment_confirmed    = aws_sqs_queue.soh_dropshipment_shipment_confirmed.id
     soh_sqs_dropshipment_purchase_order_booked = aws_sqs_queue.dropshipment_purchase_order_booked.id
-    soh_sqs_core_return_delivery_note_printed  = aws_sqs_queue.soh_core_return_delivery_note_printed.id
+    soh_sqs_core_sales_credit_note_created     = aws_sqs_queue.soh_core_sales_credit_note_created.id
   }
 
   ssm_secrets_count = 7

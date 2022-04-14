@@ -664,9 +664,9 @@ resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_dropshipment_shipmen
   policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_dropshipment_shipment_confirmed.json
 }
 
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_core_return_delivery_note_printed" {
+data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_core_sales_credit_note_created" {
   statement {
-    sid = "SNS-core-return-deliver-note-printed"
+    sid = "SNS-core-sales-credit-note-created"
     effect = "Allow"
 
     actions = [
@@ -679,7 +679,7 @@ data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_core_return_
     }
 
     resources = [
-      aws_sqs_queue.soh_core_return_delivery_note_printed.arn
+      aws_sqs_queue.soh_core_sales_credit_note_created.arn
     ]
   }
 
@@ -696,14 +696,14 @@ data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_core_return_
     }
 
     resources = [
-      aws_sqs_queue.soh_core_return_delivery_note_printed.arn
+      aws_sqs_queue.soh_core_sales_credit_note_created.arn
     ]
   }
 }
 
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_core_return_delivery_note_printed" {
-  queue_url = aws_sqs_queue.soh_core_return_delivery_note_printed.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_core_return_delivery_note_printed.json
+resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_core_sales_credit_note_created" {
+  queue_url = aws_sqs_queue.soh_core_sales_credit_note_created.id
+  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_core_sales_credit_note_created.json
 }
 
 data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_dropshipment_purchase_order_booked" {
