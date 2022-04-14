@@ -188,7 +188,7 @@ public class SalesOrderRowService {
                 .build();
 
         salesOrderReturn.setOrderNumber(orderNumber);
-        updateShippingCosts(salesOrder, negativedCreditNoteLine);
+        updateShippingCosts(salesOrderReturn, negativedCreditNoteLine);
         salesOrderService.addSalesOrderReturn(salesOrder, salesOrderReturn);
 
         return salesOrderReturn;
@@ -261,8 +261,8 @@ public class SalesOrderRowService {
         ).collect(Collectors.toList());
     }
 
-    private void updateShippingCosts(SalesOrder salesOrder, Collection<CreditNoteLine> creditNoteLines) {
-        var totals = salesOrder.getLatestJson().getOrderHeader().getTotals();
+    private void updateShippingCosts(SalesOrderReturn salesOrderReturn, Collection<CreditNoteLine> creditNoteLines) {
+        var totals = salesOrderReturn.getReturnOrderJson().getOrderHeader().getTotals();
         creditNoteLines.stream()
                 .filter(CreditNoteLine::getIsShippingCost)
                 .findFirst()
