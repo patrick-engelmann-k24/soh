@@ -54,6 +54,7 @@ soh:
       dropshipmentShipmentConfirmed:  http://localhost:4566/000000000000/soh-dropshipment-shipment-confirmed-queue
       dropshipmentPurchaseOrderBooked: http://localhost:4566/000000000000/soh-dropshipment-purchase-order-booked-queue
       coreSalesCreditNoteCreated:     http://localhost:4566/000000000000/soh-core-sales-credit-note-created-queue
+      coreSalesInvoiceCreated:        http://localhost:4566/000000000000/soh-core-sales-invoice-created-queue
   aws:
     config:
       maxNumberOfMessages: 10
@@ -84,6 +85,3 @@ camunda:
       create: All tasks
     history-level: FULL
     history-level-default: FULL
-
-pdh_api_clientId: 66m7pl596j7kem2mr39onhchp0
-pdh_api_clientSecret: 133fkctl3sgg0tvts20nik857dk5he8mrmtbuu5amf21iehssin2

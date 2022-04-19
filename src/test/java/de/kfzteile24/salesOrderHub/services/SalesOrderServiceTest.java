@@ -3,8 +3,10 @@ package de.kfzteile24.salesOrderHub.services;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.domain.converter.InvoiceSource;
-import de.kfzteile24.salesOrderHub.dto.sns.SubsequentDeliveryMessage;
-import de.kfzteile24.salesOrderHub.dto.sns.deliverynote.CoreDeliveryNoteItem;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesFinancialDocumentLine;
+import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoice;
+import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundCustomException;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
@@ -19,7 +21,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 
@@ -144,7 +145,7 @@ class SalesOrderServiceTest {
         OrderRows orderRow = salesOrder.getLatestJson().getOrderRows().get(0);
 
         // Prepare sub-sequent delivery note obj
-        var subsequentDeliveryMessage = createSubsequentDeliveryNote(
+        var subsequentDeliveryMessage = createCoreSalesInvoiceCreatedMessage(
                 salesOrder.getOrderNumber(),
                 orderRow.getSku());
 
@@ -152,12 +153,7 @@ class SalesOrderServiceTest {
         when(salesOrderRepository.getOrderByOrderNumber(any())).thenReturn(Optional.of(salesOrder));
         when(invoiceService.getInvoicesByOrderNumber(any())).thenReturn(Set.of());
         when(orderUtil.createOrderFromOriginalSalesOrder(any(), any(), any())).thenReturn(orderRow);
-        when(salesOrderRepository.save(any())).thenAnswer(new Answer<SalesOrder>() {
-            @Override
-            public SalesOrder answer(InvocationOnMock invocation) throws Throwable {
-                return invocation.getArgument(0);
-            }
-        });
+        when(salesOrderRepository.save(any())).thenAnswer((Answer<SalesOrder>) invocation -> invocation.getArgument(0));
 
         // Establish some updates before the test in order to see the change
         salesOrder.setOrderGroupId("33333"); //set order group id to a different value to observe the change
@@ -172,7 +168,7 @@ class SalesOrderServiceTest {
                 newOrderNumber);
 
         assertThat(createdSalesOrder.getOrderNumber()).isEqualTo(newOrderNumber);
-        assertThat(createdSalesOrder.getOrderGroupId()).isEqualTo(subsequentDeliveryMessage.getOrderNumber());
+        assertThat(createdSalesOrder.getOrderGroupId()).isEqualTo(subsequentDeliveryMessage.getSalesInvoice().getSalesInvoiceHeader().getOrderNumber());
         assertThat(createdSalesOrder.getOriginalOrder()).isNotNull();
         assertThat(createdSalesOrder.getLatestJson()).isNotNull();
         assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getPlatform()).isNotNull();
@@ -191,21 +187,27 @@ class SalesOrderServiceTest {
         );
     }
 
-    private SubsequentDeliveryMessage createSubsequentDeliveryNote(String orderNumber, String sku) {
+    private CoreSalesInvoiceCreatedMessage createCoreSalesInvoiceCreatedMessage(String orderNumber, String sku) {
         BigDecimal quantity = BigDecimal.valueOf(1L);
-        String subsequentDeliveryNumber = "987654321";
-        CoreDeliveryNoteItem item = CoreDeliveryNoteItem.builder()
-                .sku(sku)
+//        String subsequentDeliveryNumber = "987654321";
+        CoreSalesFinancialDocumentLine item = CoreSalesFinancialDocumentLine.builder()
+                .itemNumber(sku)
                 .quantity(quantity)
-                .unitPriceGross(BigDecimal.TEN)
-                .salesPriceGross(BigDecimal.TEN.multiply(quantity))
+                .unitNetAmount(BigDecimal.valueOf(9))
+                .lineNetAmount(BigDecimal.valueOf(9).multiply(quantity))
                 .taxRate(BigDecimal.TEN)
                 .build();
-        SubsequentDeliveryMessage subsequent = new SubsequentDeliveryMessage();
-        subsequent.setOrderNumber(orderNumber);
-        subsequent.setItems(List.of(item));
-        subsequent.setSubsequentDeliveryNoteNumber(subsequentDeliveryNumber);
-        return subsequent;
+
+        CoreSalesInvoiceHeader coreSalesInvoiceHeader = new CoreSalesInvoiceHeader();
+        coreSalesInvoiceHeader.setOrderNumber(orderNumber);
+        coreSalesInvoiceHeader.setInvoiceLines(List.of(item));
+
+        CoreSalesInvoice coreSalesInvoice = new CoreSalesInvoice();
+        coreSalesInvoice.setSalesInvoiceHeader(coreSalesInvoiceHeader);
+
+        CoreSalesInvoiceCreatedMessage salesInvoiceCreatedMessage = new CoreSalesInvoiceCreatedMessage();
+        salesInvoiceCreatedMessage.setSalesInvoice(coreSalesInvoice);
+        return salesInvoiceCreatedMessage;
     }
 
     private void updateRowIsCancelledFieldAsTrue(SalesOrder salesOrder) {

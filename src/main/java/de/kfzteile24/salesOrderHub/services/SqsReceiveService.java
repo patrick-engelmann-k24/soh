@@ -9,12 +9,12 @@ import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreCancellationMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.FulfillmentMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.OrderPaymentSecuredMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
-import de.kfzteile24.salesOrderHub.dto.sns.SubsequentDeliveryMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.cancellation.CoreCancellationItem;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
@@ -151,7 +151,7 @@ public class SqsReceiveService {
         log.info("Received order payment secured message with order number: {} ", orderNumber);
 
         Optional.of(salesOrderService.getOrderByOrderNumber(orderNumber)
-                .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber)))
+                        .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber)))
                 .filter(not(salesOrderPaymentSecuredService::hasOrderPaypalPaymentType))
                 .ifPresentOrElse(p -> salesOrderPaymentSecuredService.correlateOrderReceivedPaymentSecured(orderNumber),
                         () -> log.info("Order with order number: {} has paypal payment type. Prevent processing order payment secured message", orderNumber));
@@ -313,8 +313,8 @@ public class SqsReceiveService {
     /**
      * Consume messages from sqs for subsequent delivery received
      */
-    @SqsListener(value = "${soh.sqs.queue.subsequentDeliveryReceived}")
-    @SneakyThrows(JsonProcessingException.class)
+    @Deprecated(since = "We are switching to core sales invoice: queueListenerCoreSalesInvoiceCreated")
+//    @SqsListener(value = "${soh.sqs.queue.subsequentDeliveryReceived}")
     @Transactional
     @Trace(metricName = "Handling subsequent delivery note printed message", dispatcher = true)
     public void queueListenerSubsequentDeliveryReceived(
@@ -322,27 +322,28 @@ public class SqsReceiveService {
             @Header("SenderId") String senderId,
             @Header("ApproximateReceiveCount") Integer receiveCount
     ) {
-        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-        SubsequentDeliveryMessage subsequent = objectMapper.readValue(body, SubsequentDeliveryMessage.class);
-        String newOrderNumber = subsequent.getOrderNumber() + "-" + subsequent.getSubsequentDeliveryNoteNumber();
-        log.info("Received subsequent delivery note message with order number: {} ", subsequent.getOrderNumber());
-
-        try {
-            SalesOrder salesOrder = salesOrderService.createSalesOrderForSubsequentDelivery(subsequent, newOrderNumber);
-            ProcessInstance result = camundaHelper.createOrderProcess(salesOrder, ORDER_CREATED_IN_SOH);
-
-            if (result != null) {
-                log.info("New soh order process started for subsequent delivery note with " +
-                                "order number: {}. Process-Instance-ID: {} ",
-                        newOrderNumber,
-                        result.getProcessInstanceId());
-            }
-        } catch (Exception e) {
-            log.error("Subsequent delivery received message error:\r\nOrderNumber: {}\r\nError-Message: {}",
-                    newOrderNumber,
-                    e.getMessage());
-            throw e;
-        }
+        log.info("Received message on deprecated queue subsequentDeliveryReceived. \nMessage is ignored.");
+//        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+//        SubsequentDeliveryMessage subsequent = objectMapper.readValue(body, SubsequentDeliveryMessage.class);
+//        String newOrderNumber = subsequent.getOrderNumber() + "-" + subsequent.getSubsequentDeliveryNoteNumber();
+//        log.info("Received subsequent delivery note message with order number: {} ", subsequent.getOrderNumber());
+//
+//        try {
+//            SalesOrder salesOrder = salesOrderService.createSalesOrderForSubsequentDelivery(subsequent, newOrderNumber);
+//            ProcessInstance result = camundaHelper.createOrderProcess(salesOrder, ORDER_CREATED_IN_SOH);
+//
+//            if (result != null) {
+//                log.info("New soh order process started for subsequent delivery note with " +
+//                                "order number: {}. Process-Instance-ID: {} ",
+//                        newOrderNumber,
+//                        result.getProcessInstanceId());
+//            }
+//        } catch (Exception e) {
+//            log.error("Subsequent delivery received message error:\r\nOrderNumber: {}\r\nError-Message: {}",
+//                    newOrderNumber,
+//                    e.getMessage());
+//            throw e;
+//        }
     }
 
     /**
@@ -431,5 +432,45 @@ public class SqsReceiveService {
         var salesOrderReturn = salesOrderRowService.handleSalesOrderReturn(orderNumber, creditNoteLines);
 
         snsPublishService.publishReturnOrderCreatedEvent(salesOrderReturn);
+    }
+
+    /**
+     * Consume messages from sqs for core sales invoice created
+     */
+    @SqsListener(value = "${soh.sqs.queue.coreSalesInvoiceCreated}")
+    @SneakyThrows(JsonProcessingException.class)
+    @Transactional
+    @Trace(metricName = "Handling core sales invoice created message", dispatcher = true)
+    public void queueListenerCoreSalesInvoiceCreated(
+            String rawMessage,
+            @Header("SenderId") String senderId,
+            @Header("ApproximateReceiveCount") Integer receiveCount
+    ) {
+        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+        CoreSalesInvoiceCreatedMessage salesInvoiceCreatedMessage = objectMapper.readValue(body, CoreSalesInvoiceCreatedMessage.class);
+        String orderNumber = salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader().getOrderNumber();
+        String invoiceNumber = salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber();
+        String newOrderNumber = orderNumber + "-" + invoiceNumber;
+        log.info("Received core sales invoice created message with order number: {} and invoice number: {}",
+                orderNumber, invoiceNumber);
+
+        try {
+            SalesOrder salesOrder = salesOrderService.createSalesOrderForSubsequentDelivery(salesInvoiceCreatedMessage, newOrderNumber);
+            ProcessInstance result = camundaHelper.createOrderProcess(salesOrder, ORDER_CREATED_IN_SOH);
+
+            if (result != null) {
+                log.info("New soh order process started for subsequent delivery note with " +
+                                "order number: {} and invoice number: {}. Process-Instance-ID: {} ",
+                        orderNumber,
+                        invoiceNumber,
+                        result.getProcessInstanceId());
+            }
+        } catch (Exception e) {
+            log.error("Core sales invoice created received message error:\r\nOrderNumber: {}\r\nInvoiceNumber: {}\r\nError-Message: {}",
+                    orderNumber,
+                    invoiceNumber,
+                    e.getMessage());
+            throw e;
+        }
     }
 }

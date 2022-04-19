@@ -5,7 +5,7 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
 import de.kfzteile24.salesOrderHub.domain.audit.AuditLog;
-import de.kfzteile24.salesOrderHub.dto.sns.SubsequentDeliveryMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundCustomException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.OrderMapper;
@@ -105,15 +105,14 @@ public class SalesOrderService {
         return orderRepository.countByCustomerEmail(salesOrder.getCustomerEmail()) > 0;
     }
 
-    @Transactional
-    public SalesOrder createSalesOrderForSubsequentDelivery(SubsequentDeliveryMessage subsequent, String newOrderNumber) {
-        Order order = createOrderFromSubsequentDelivery(subsequent);
+    public SalesOrder createSalesOrderForSubsequentDelivery(CoreSalesInvoiceCreatedMessage salesInvoiceCreatedMessage, String newOrderNumber) {
+        Order order = createOrderFromSubsequentDelivery(salesInvoiceCreatedMessage);
         order.getOrderHeader().setPlatform(Platform.SOH);
         recalculateOrder(order);
 
         var salesOrder = SalesOrder.builder()
                 .orderNumber(newOrderNumber)
-                .orderGroupId(subsequent.getOrderNumber())
+                .orderGroupId(salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader().getOrderNumber())
                 .salesChannel(order.getOrderHeader().getSalesChannel())
                 .customerEmail(order.getOrderHeader().getCustomer().getCustomerEmail())
                 .originalOrder(order)
@@ -147,11 +146,12 @@ public class SalesOrderService {
                         format("for the given order group id {0}", orderGroupId)));
     }
 
-    protected Order createOrderFromSubsequentDelivery(SubsequentDeliveryMessage subsequent) {
-        var originalSalesOrder = getOrderByOrderNumber(subsequent.getOrderNumber())
-                .orElseThrow(() -> new SalesOrderNotFoundException(subsequent.getOrderNumber()));
+    protected Order createOrderFromSubsequentDelivery(CoreSalesInvoiceCreatedMessage coreSalesInvoiceCreatedMessage) {
+        String orderNumber = coreSalesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader().getOrderNumber();
+        var originalSalesOrder = getOrderByOrderNumber(orderNumber)
+                .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
 
-        var orderRows = subsequent.getItems().stream()
+        var orderRows = coreSalesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader().getInvoiceLines().stream()
                 .map(item -> orderUtil.createOrderFromOriginalSalesOrder(
                         originalSalesOrder,
                         item,

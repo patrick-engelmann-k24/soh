@@ -63,23 +63,23 @@ class SalesOrderCreatedInSohIntegrationTest {
     }
 
     @Test
-    public void testQueueListenerSubsequentDeliveryNote() {
+    public void testQueueListenerCoreSalesInvoiceCreated() {
 
         var senderId = "Delivery";
         var receiveCount = 1;
         var salesOrder = salesOrderUtil.createNewSalesOrder();
 
         String originalOrderNumber = salesOrder.getOrderNumber();
-        String subDeliveryOrderNumber = "111001110";
+        String invoiceNumber = "10";
         String rowSku = "2010-10183";
-        String subsequentDeliveryMsg = readResource("examples/subsequentDeliveryNoteWithOneItem.json");
+        String subsequentDeliveryMsg = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
 
         //Replace order number with randomly created order number as expected
         subsequentDeliveryMsg = subsequentDeliveryMsg.replace("524001248", originalOrderNumber);
 
-        sqsReceiveService.queueListenerSubsequentDeliveryReceived(subsequentDeliveryMsg, senderId, receiveCount);
+        sqsReceiveService.queueListenerCoreSalesInvoiceCreated(subsequentDeliveryMsg, senderId, receiveCount);
 
-        String newOrderNumberCreatedInSoh = originalOrderNumber + "-" + subDeliveryOrderNumber;
+        String newOrderNumberCreatedInSoh = originalOrderNumber + "-" + invoiceNumber;
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku)));
         checkTotalsValues(newOrderNumberCreatedInSoh,
@@ -93,25 +93,25 @@ class SalesOrderCreatedInSohIntegrationTest {
     }
 
     @Test
-    public void testQueueListenerSubsequentDeliveryNoteWithMultipleItems() {
+    public void testQueueListenerCoreSalesInvoiceCreatedWithMultipleItems() {
 
         var senderId = "Delivery";
         var receiveCount = 1;
         var salesOrder = salesOrderUtil.createNewSalesOrderHavingCancelledRow();
 
         String originalOrderNumber = salesOrder.getOrderNumber();
-        String subDeliveryOrderNumber = "111001110";
+        String invoiceNumber = "10";
         String rowSku1 = "1440-47378";
         String rowSku2 = "2010-10183";
         String rowSku3 = "2022-KBA";
-        String subsequentDeliveryMsg = readResource("examples/subsequentDeliveryNoteWithMultipleItems.json");
+        String subsequentDeliveryMsg = readResource("examples/coreSalesInvoiceCreatedMultipleItems.json");
 
         //Replace order number with randomly created order number as expected
         subsequentDeliveryMsg = subsequentDeliveryMsg.replace("524001248", originalOrderNumber);
 
-        sqsReceiveService.queueListenerSubsequentDeliveryReceived(subsequentDeliveryMsg, senderId, receiveCount);
+        sqsReceiveService.queueListenerCoreSalesInvoiceCreated(subsequentDeliveryMsg, senderId, receiveCount);
 
-        String newOrderNumberCreatedInSoh = originalOrderNumber + "-" + subDeliveryOrderNumber;
+        String newOrderNumberCreatedInSoh = originalOrderNumber + "-" + invoiceNumber;
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku1)));
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku2)));
@@ -192,19 +192,19 @@ class SalesOrderCreatedInSohIntegrationTest {
                 "2",
                 "19",
                 UnitValues.builder()
-                        .goodsValueGross(new BigDecimal("10"))
+                        .goodsValueGross(new BigDecimal("10.00"))
                         .goodsValueNet(new BigDecimal("8.40"))
                         .discountGross(new BigDecimal("0"))
                         .discountNet(new BigDecimal("0"))
-                        .discountedGross(new BigDecimal("10"))
+                        .discountedGross(new BigDecimal("10.00"))
                         .discountedNet(new BigDecimal("8.40"))
                         .build(),
                 SumValues.builder()
-                        .goodsValueGross(new BigDecimal("20"))
+                        .goodsValueGross(new BigDecimal("20.00"))
                         .goodsValueNet(new BigDecimal("16.80"))
                         .discountGross(new BigDecimal("0"))
                         .discountNet(new BigDecimal("0"))
-                        .totalDiscountedGross(new BigDecimal("20"))
+                        .totalDiscountedGross(new BigDecimal("20.00"))
                         .totalDiscountedNet(new BigDecimal("16.80"))
                         .build());
         checkOrderRowValues(

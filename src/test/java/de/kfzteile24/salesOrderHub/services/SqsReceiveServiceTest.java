@@ -7,6 +7,7 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreCancellationMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.cancellation.CoreCancellationItem;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
@@ -117,15 +118,16 @@ class SqsReceiveServiceTest {
 
     @Test
     void testQueueListenerSubsequentDeliveryReceived() {
-        String rawMessage =  readResource("examples/ecpOrderMessage.json");
+        String rawMessage = readResource("examples/ecpOrderMessage.json");
         SalesOrder salesOrder = getSalesOrder(rawMessage);
 
         when(salesOrderService.createSalesOrderForSubsequentDelivery(any(), any())).thenReturn(salesOrder);
 
-        String subsequentDeliveryNoteMessage = readResource("examples/subsequentDeliveryNoteWithOneItem.json");
-        sqsReceiveService.queueListenerSubsequentDeliveryReceived(subsequentDeliveryNoteMessage, ANY_SENDER_ID,
+        String coreSalesInvoiceCreatedMessage = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
+        sqsReceiveService.queueListenerCoreSalesInvoiceCreated(coreSalesInvoiceCreatedMessage, ANY_SENDER_ID,
                 ANY_RECEIVE_COUNT);
 
+        verify(salesOrderService).createSalesOrderForSubsequentDelivery(any(CoreSalesInvoiceCreatedMessage.class), any(String.class));
         verify(camundaHelper).createOrderProcess(any(SalesOrder.class), any(Messages.class));
     }
 

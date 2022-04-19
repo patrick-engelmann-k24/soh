@@ -76,6 +76,7 @@ soh:
       dropshipmentShipmentConfirmed: ${soh_sqs_dropshipment_shipment_confirmed}
       dropshipmentPurchaseOrderBooked: ${soh_sqs_dropshipment_purchase_order_booked}
       coreSalesCreditNoteCreated: ${soh_sqs_core_sales_credit_note_created}
+      coreSalesInvoiceCreated: ${soh_sqs_core_sales_invoice_created}
   aws:
     config:
       maxNumberOfMessages: 10
