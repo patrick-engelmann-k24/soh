@@ -7,7 +7,6 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.dto.sns.CoreCancellationMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
@@ -15,7 +14,6 @@ import de.kfzteile24.salesOrderHub.dto.sns.FulfillmentMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.OrderPaymentSecuredMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
-import de.kfzteile24.salesOrderHub.dto.sns.cancellation.CoreCancellationItem;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.soh.order.dto.Order;
@@ -31,10 +29,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_CREATED_IN_SOH;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_ECP;
@@ -279,43 +275,20 @@ public class SqsReceiveService {
     /**
      * Consume messages from sqs for event core cancellation
      */
+    @Deprecated(since = "We are switching to core sales invoice: queueListenerCoreSalesInvoiceCreated")
     @SqsListener(value = "${soh.sqs.queue.coreCancellation}", deletionPolicy = ON_SUCCESS)
-    @SneakyThrows(JsonProcessingException.class)
     @Trace(metricName = "Handling CoreCancellation message", dispatcher = true)
     public void queueListenerCoreCancellation(String rawMessage,
                                               @Header("SenderId") String senderId,
                                               @Header("ApproximateReceiveCount") Integer receiveCount) {
-        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-
-        CoreCancellationMessage coreCancellationMessage = objectMapper.readValue(body, CoreCancellationMessage.class);
-
-        try {
-            final var orderNumber = coreCancellationMessage.getOrderNumber();
-            log.info("Received core cancellation with order number: {}, original delivery note: {} and cancellation delivery note: {}",
-                    orderNumber,
-                    coreCancellationMessage.getOriginalDeliveryNoteNumber(),
-                    coreCancellationMessage.getCancellationDeliveryNoteNumber());
-
-            List<String> skuList = coreCancellationMessage.getItems().stream()
-                    .map(CoreCancellationItem::getSku).collect(Collectors.toList());
-            salesOrderRowService.cancelOrderRows(coreCancellationMessage.getOrderNumber(), skuList);
-
-            log.info("Core cancellation for order number {}, original delivery note: {} and cancellation delivery note: {}",
-                    orderNumber,
-                    coreCancellationMessage.getOriginalDeliveryNoteNumber(),
-                    coreCancellationMessage.getCancellationDeliveryNoteNumber());
-        } catch (Exception e) {
-            log.error("Core cancellation for order number: {} message error: ", coreCancellationMessage.getOrderNumber(), e);
-            throw e;
-        }
+        log.info("Received message on deprecated queue coreCancellation. \nMessage is ignored.");
     }
 
     /**
      * Consume messages from sqs for subsequent delivery received
      */
     @Deprecated(since = "We are switching to core sales invoice: queueListenerCoreSalesInvoiceCreated")
-//    @SqsListener(value = "${soh.sqs.queue.subsequentDeliveryReceived}")
-    @Transactional
+    @SqsListener(value = "${soh.sqs.queue.subsequentDeliveryReceived}")
     @Trace(metricName = "Handling subsequent delivery note printed message", dispatcher = true)
     public void queueListenerSubsequentDeliveryReceived(
             String rawMessage,
@@ -323,27 +296,6 @@ public class SqsReceiveService {
             @Header("ApproximateReceiveCount") Integer receiveCount
     ) {
         log.info("Received message on deprecated queue subsequentDeliveryReceived. \nMessage is ignored.");
-//        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-//        SubsequentDeliveryMessage subsequent = objectMapper.readValue(body, SubsequentDeliveryMessage.class);
-//        String newOrderNumber = subsequent.getOrderNumber() + "-" + subsequent.getSubsequentDeliveryNoteNumber();
-//        log.info("Received subsequent delivery note message with order number: {} ", subsequent.getOrderNumber());
-//
-//        try {
-//            SalesOrder salesOrder = salesOrderService.createSalesOrderForSubsequentDelivery(subsequent, newOrderNumber);
-//            ProcessInstance result = camundaHelper.createOrderProcess(salesOrder, ORDER_CREATED_IN_SOH);
-//
-//            if (result != null) {
-//                log.info("New soh order process started for subsequent delivery note with " +
-//                                "order number: {}. Process-Instance-ID: {} ",
-//                        newOrderNumber,
-//                        result.getProcessInstanceId());
-//            }
-//        } catch (Exception e) {
-//            log.error("Subsequent delivery received message error:\r\nOrderNumber: {}\r\nError-Message: {}",
-//                    newOrderNumber,
-//                    e.getMessage());
-//            throw e;
-//        }
     }
 
     /**

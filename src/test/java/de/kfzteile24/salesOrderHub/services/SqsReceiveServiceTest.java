@@ -104,19 +104,6 @@ class SqsReceiveServiceTest {
     }
 
     @Test
-    void testQueueListenerCoreCancellation() throws JsonProcessingException {
-
-        String cancellationRawMessage = readResource("examples/coreCancellationOneRowMessage.json");
-
-        sqsReceiveService.queueListenerCoreCancellation(cancellationRawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
-
-        String body = objectMapper.readValue(cancellationRawMessage, SqsMessage.class).getBody();
-        CoreCancellationMessage message = objectMapper.readValue(body, CoreCancellationMessage.class);
-        List<String> skus = message.getItems().stream().map(CoreCancellationItem::getSku).collect(Collectors.toList());
-        verify(salesOrderRowService).cancelOrderRows(message.getOrderNumber(), skus);
-    }
-
-    @Test
     void testQueueListenerSubsequentDeliveryReceived() {
         String rawMessage = readResource("examples/ecpOrderMessage.json");
         SalesOrder salesOrder = getSalesOrder(rawMessage);
