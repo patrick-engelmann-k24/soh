@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
  * @author samet
@@ -113,18 +114,18 @@ class SalesOrderCreatedInSohIntegrationTest {
 
         String newOrderNumberCreatedInSoh = originalOrderNumber + "-" + invoiceNumber;
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku1)));
+        assertFalse(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku1)));
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku2)));
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku3)));
         checkTotalsValues(newOrderNumberCreatedInSoh,
-                "432.52",
-                "360.64",
-                "60.30",
-                "50.26",
-                "372.22",
-                "310.38",
-                "372.22");
-        checkOrderRows(newOrderNumberCreatedInSoh, rowSku1, rowSku2, rowSku3);
+                "30.52",
+                "25.64",
+                "0",
+                "0",
+                "30.52",
+                "25.64",
+                "30.52");
+        checkOrderRows(newOrderNumberCreatedInSoh, rowSku2, rowSku3);
     }
 
     private void checkTotalsValues(String orderNumber,
@@ -159,35 +160,13 @@ class SalesOrderCreatedInSohIntegrationTest {
         assertNull(totals.getSurcharges().getPaymentNet());
     }
 
-    private void checkOrderRows(String orderNumber, String sku1, String sku2, String sku3) {
+    private void checkOrderRows(String orderNumber, String sku1, String sku2) {
         SalesOrder updatedOrder = salesOrderService.getOrderByOrderNumber(orderNumber).orElse(null);
         assertNotNull(updatedOrder);
         List<OrderRows> orderRows = updatedOrder.getLatestJson().getOrderRows();
         checkOrderRowValues(
                 orderRows.get(0),
                 sku1,
-                1,
-                "2",
-                "20.0",
-                UnitValues.builder()
-                        .goodsValueGross(new BigDecimal("201.00"))
-                        .goodsValueNet(new BigDecimal("167.50"))
-                        .discountGross(new BigDecimal("30.15"))
-                        .discountNet(new BigDecimal("25.13"))
-                        .discountedGross(new BigDecimal("170.85"))
-                        .discountedNet(new BigDecimal("142.37"))
-                        .build(),
-                SumValues.builder()
-                        .goodsValueGross(new BigDecimal("402.00"))
-                        .goodsValueNet(new BigDecimal("335.00"))
-                        .discountGross(new BigDecimal("60.30"))
-                        .discountNet(new BigDecimal("50.26"))
-                        .totalDiscountedGross(new BigDecimal("341.70"))
-                        .totalDiscountedNet(new BigDecimal("284.74"))
-                        .build());
-        checkOrderRowValues(
-                orderRows.get(1),
-                sku2,
                 2,
                 "2",
                 "19",
@@ -208,8 +187,8 @@ class SalesOrderCreatedInSohIntegrationTest {
                         .totalDiscountedNet(new BigDecimal("16.80"))
                         .build());
         checkOrderRowValues(
-                orderRows.get(2),
-                sku3,
+                orderRows.get(1),
+                sku2,
                 3,
                 "1",
                 "19",

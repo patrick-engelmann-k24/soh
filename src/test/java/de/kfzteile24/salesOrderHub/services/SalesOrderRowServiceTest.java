@@ -2,7 +2,6 @@ package de.kfzteile24.salesOrderHub.services;
 
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
-import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Totals;
@@ -53,9 +52,6 @@ class SalesOrderRowServiceTest {
     private SalesOrderService salesOrderService;
 
     @Mock
-    private OrderUtil orderUtil;
-
-    @Mock
     private TimedPollingService timedPollingService;
 
     @Mock
@@ -83,7 +79,6 @@ class SalesOrderRowServiceTest {
         when(salesOrderService.getOrderByOrderNumber(orderNumber)).thenReturn(Optional.of(salesOrder));
         when(runtimeService.getVariable(any(), any())).thenReturn(orderRowIds);
         when(camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())).thenReturn(true);
-        when(orderUtil.removeCancelledOrderRowsFromLatestJson(any())).thenReturn(salesOrder);
 
         salesOrderRowService.cancelOrderRows(salesOrder.getOrderNumber(), Lists.newArrayList(orderRowsToCancel.getSku()));
 

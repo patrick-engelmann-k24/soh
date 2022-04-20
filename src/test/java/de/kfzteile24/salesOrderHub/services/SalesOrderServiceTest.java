@@ -27,7 +27,6 @@ import org.mockito.stubbing.Answer;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -46,6 +45,9 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings({"PMD.UnusedPrivateField", "PMD.UnusedPrivateMethod"})
 class SalesOrderServiceTest {
+
+    @Mock
+    private SalesOrderRowService salesOrderRowService;
 
     @Mock
     private SalesOrderRepository salesOrderRepository;
@@ -136,7 +138,7 @@ class SalesOrderServiceTest {
     }
 
     @Test
-    void createSalesOrderForSubsequentDelivery() {
+    void testCreateSubsequentSalesOrder() {
         // Prepare sales order
         String rawMessage =  readResource("examples/testmessage.json");
         var salesOrder = getSalesOrder(rawMessage);
@@ -146,12 +148,11 @@ class SalesOrderServiceTest {
         OrderRows orderRow = salesOrder.getLatestJson().getOrderRows().get(0);
 
         // Prepare sub-sequent delivery note obj
-        var subsequentDeliveryMessage = createCoreSalesInvoiceCreatedMessage(
+        var invoiceCreatedMessage = createCoreSalesInvoiceCreatedMessage(
                 salesOrder.getOrderNumber(),
                 orderRow.getSku());
 
         // Mock services
-        when(salesOrderRepository.getOrderByOrderNumber(any())).thenReturn(Optional.of(salesOrder));
         when(invoiceService.getInvoicesByOrderNumber(any())).thenReturn(Set.of());
         when(orderUtil.createOrderRowFromOriginalSalesOrder(any(), any(), any())).thenReturn(orderRow);
         when(salesOrderRepository.save(any())).thenAnswer((Answer<SalesOrder>) invocation -> invocation.getArgument(0));
@@ -165,8 +166,9 @@ class SalesOrderServiceTest {
         salesOrder.getLatestJson().getOrderHeader().getTotals().setGrandTotalTaxes(List.of(actualGrandTotalTax));
 
         var createdSalesOrder = salesOrderService.createSalesOrderForInvoice(
-                subsequentDeliveryMessage,
-                salesOrder, newOrderNumber);
+                invoiceCreatedMessage,
+                salesOrder,
+                newOrderNumber);
 
         assertThat(createdSalesOrder.getOrderNumber()).isEqualTo(newOrderNumber);
         assertThat(createdSalesOrder.getOrderGroupId()).isEqualTo(originalOrderGroupId);
@@ -174,6 +176,7 @@ class SalesOrderServiceTest {
         assertThat(createdSalesOrder.getLatestJson()).isNotNull();
         assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getPlatform()).isNotNull();
         assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getPlatform()).isEqualTo(Platform.SOH);
+        assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber()).isEqualTo(invoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber());
         assertThat(createdSalesOrder.getId()).isNull();
         assertThat(createdSalesOrder.getLatestJson().getOrderRows()).hasSize(1);
         assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getTotals().getGoodsTotalGross()).isEqualTo(orderRow.getSumValues().getGoodsValueGross());
@@ -200,6 +203,7 @@ class SalesOrderServiceTest {
 
         CoreSalesInvoiceHeader coreSalesInvoiceHeader = new CoreSalesInvoiceHeader();
         coreSalesInvoiceHeader.setOrderNumber(orderNumber);
+        coreSalesInvoiceHeader.setInvoiceNumber("50");
         coreSalesInvoiceHeader.setInvoiceLines(List.of(item));
 
         CoreSalesInvoice coreSalesInvoice = new CoreSalesInvoice();

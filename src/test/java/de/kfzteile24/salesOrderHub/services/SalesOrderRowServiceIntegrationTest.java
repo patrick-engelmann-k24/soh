@@ -33,6 +33,8 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.IntStream;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
@@ -112,8 +114,14 @@ class SalesOrderRowServiceIntegrationTest {
         assertTrue(updatedSalesOrder.isPresent());
 
         Order latestJson = updatedSalesOrder.get().getLatestJson();
-        assertThat(latestJson.getOrderRows().stream().filter(OrderRows::getIsCancelled).count()).isZero();
-        checkTotalsValues(latestJson.getOrderHeader().getTotals());
+        for (OrderRows orderRows : latestJson.getOrderRows()) {
+            if (orderRows.getSku().equals(skuToCancel)) {
+                assertTrue(orderRows.getIsCancelled());
+                checkTotalsValues(latestJson.getOrderHeader().getTotals());
+            } else {
+                assertFalse(orderRows.getIsCancelled());
+            }
+        }
 
         HistoricProcessInstance historicProcessInstance = historyService.createHistoricProcessInstanceQuery()
                 .processDefinitionKey(SALES_ORDER_PROCESS.getName())
@@ -151,8 +159,14 @@ class SalesOrderRowServiceIntegrationTest {
         assertTrue(updatedSalesOrder.isPresent());
 
         Order latestJson = updatedSalesOrder.get().getLatestJson();
-        assertThat(latestJson.getOrderRows().stream().filter(OrderRows::getIsCancelled).count()).isZero();
-        checkTotalsValues(latestJson.getOrderHeader().getTotals());
+        for (OrderRows orderRows : latestJson.getOrderRows()) {
+            if (orderRows.getSku().equals(skuToCancel)) {
+                assertTrue(orderRows.getIsCancelled());
+                checkTotalsValues(latestJson.getOrderHeader().getTotals());
+            } else {
+                assertFalse(orderRows.getIsCancelled());
+            }
+        }
 
         HistoricProcessInstance historicProcessInstance = historyService.createHistoricProcessInstanceQuery()
                 .processDefinitionKey(SALES_ORDER_PROCESS.getName())
@@ -367,13 +381,13 @@ class SalesOrderRowServiceIntegrationTest {
 
         try {
             camundaHelper.createOrderProcess(salesOrder1, Messages.ORDER_RECEIVED_ECP);
-            assertThat(compareIsCancelledFields(salesOrder1, orderRowSkus)).isTrue();
-            assertThat(compareIsCancelledFields(salesOrder2, orderRowSkus)).isTrue();
+            assertThat(compareIsCancelledFields(salesOrder1, List.of(false, false, false))).isTrue();
+            assertThat(compareIsCancelledFields(salesOrder2, List.of(false, false, false))).isTrue();
             salesOrderRowService.cancelOrderRows(salesOrder1.getOrderNumber(), Lists.newArrayList(skuToCancel));
 
 
-            assertThat(compareIsCancelledFields(salesOrder1, aliveSkus)).isTrue();
-            assertThat(compareIsCancelledFields(salesOrder2, aliveSkus)).isTrue();
+            assertThat(compareIsCancelledFields(salesOrder1, List.of(false, true, false))).isTrue();
+            assertThat(compareIsCancelledFields(salesOrder2, List.of(false, true, false))).isTrue();
         } finally {
             assert salesOrder1.getId() != null;
             assert salesOrder2.getId() != null;
@@ -381,16 +395,19 @@ class SalesOrderRowServiceIntegrationTest {
         }
     }
 
-    private boolean compareIsCancelledFields(SalesOrder salesOrder, List<String> skuList) {
+    private boolean compareIsCancelledFields(SalesOrder salesOrder, List<Boolean> isCancelledList) {
 
 
         assert salesOrder.getId() != null;
         var foundSalesOrder = salesOrderRepository.findById(salesOrder.getId());
         if (foundSalesOrder.isPresent()) {
-            return foundSalesOrder.get().getLatestJson().getOrderRows().stream()
-                    .map(OrderRows::getSku)
-                    .collect(toList())
-                    .containsAll(skuList);
+            AtomicBoolean result = new AtomicBoolean(true);
+            List<OrderRows> orderRows = foundSalesOrder.get().getLatestJson().getOrderRows();
+            IntStream.range(0, orderRows.size())
+                    .forEach(idx ->
+                            result.set(result.get() && isCancelledList.get(idx).equals(orderRows.get(idx).getIsCancelled()))
+                    );
+            return result.get();
 
         } else {
             throw new SalesOrderNotFoundException(salesOrder.getOrderNumber());

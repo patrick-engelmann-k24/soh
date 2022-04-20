@@ -99,10 +99,11 @@ class SqsReceiveServiceTest {
     }
 
     @Test
-    void testQueueListenerSubsequentDeliveryReceived() {
+    void testQueueListenerInvoiceCreatedMsgReceived() {
         String rawMessage = readResource("examples/ecpOrderMessage.json");
         SalesOrder salesOrder = getSalesOrder(rawMessage);
 
+        when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.of(salesOrder));
         when(salesOrderService.createSalesOrderForInvoice(any(), any())).thenReturn(salesOrder);
 
         String coreSalesInvoiceCreatedMessage = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
