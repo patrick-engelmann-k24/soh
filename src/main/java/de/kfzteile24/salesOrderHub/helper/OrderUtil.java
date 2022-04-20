@@ -53,13 +53,10 @@ public class OrderUtil {
         return salesOrder;
     }
 
-    public OrderRows createOrderFromOriginalSalesOrder(SalesOrder salesOrder, CoreSalesFinancialDocumentLine item, Integer lastRowKey) {
-        var orderRow = filterFromLatestJson(salesOrder, item);
+    public OrderRows createOrderRowFromOriginalSalesOrder(SalesOrder originalSalesOrder, CoreSalesFinancialDocumentLine item, Integer lastRowKey) {
+        var orderRow = createRowFromLatestJson(originalSalesOrder, item);
         if (orderRow == null) {
-            orderRow = filterFromOriginalOrder(salesOrder, item);
-        }
-        if (orderRow == null) {
-            var shippingType = ((Order) salesOrder.getOriginalOrder()).getOrderRows().get(0).getShippingType();
+            var shippingType = ((Order) originalSalesOrder.getOriginalOrder()).getOrderRows().get(0).getShippingType();
             orderRow = createNewOrderRow(item, shippingType, lastRowKey);
         }
         orderRow.setIsCancelled(false);
@@ -71,12 +68,12 @@ public class OrderUtil {
         return orderRow;
     }
 
-    private OrderRows filterFromLatestJson(SalesOrder salesOrder, CoreSalesFinancialDocumentLine item) {
-        return filterFromOrder(item, salesOrder.getLatestJson());
+    private OrderRows createRowFromLatestJson(SalesOrder salesOrder, CoreSalesFinancialDocumentLine item) {
+        return createRowFromOrder(item, salesOrder.getLatestJson());
     }
 
-    private OrderRows filterFromOriginalOrder(SalesOrder salesOrder, CoreSalesFinancialDocumentLine item) {
-        return filterFromOrder(item, (Order) salesOrder.getOriginalOrder());
+    private OrderRows createRowFromOriginalOrder(SalesOrder salesOrder, CoreSalesFinancialDocumentLine item) {
+        return createRowFromOrder(item, (Order) salesOrder.getOriginalOrder());
     }
 
     private OrderRows createNewOrderRow(CoreSalesFinancialDocumentLine item, String shippingType, Integer lastRowKey) {
@@ -106,8 +103,9 @@ public class OrderUtil {
                 .build();
     }
 
-    private OrderRows filterFromOrder(CoreSalesFinancialDocumentLine item, Order latestOrder) {
+    private OrderRows createRowFromOrder(CoreSalesFinancialDocumentLine item, Order latestOrder) {
         var orderRow = OrderMapper.INSTANCE.toOrderRow(latestOrder.getOrderRows().stream()
+                .filter(row -> !row.getIsCancelled())
                 .filter(row -> row.getSku().equals(item.getItemNumber()))
                 .findFirst().orElse(null));
         if(orderRow == null){

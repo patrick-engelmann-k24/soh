@@ -14,6 +14,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.FulfillmentMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.OrderPaymentSecuredMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.soh.order.dto.Order;
@@ -403,22 +404,35 @@ public class SqsReceiveService {
     ) {
         String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
         CoreSalesInvoiceCreatedMessage salesInvoiceCreatedMessage = objectMapper.readValue(body, CoreSalesInvoiceCreatedMessage.class);
-        String orderNumber = salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader().getOrderNumber();
-        String invoiceNumber = salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber();
-        String newOrderNumber = orderNumber + "-" + invoiceNumber;
+        CoreSalesInvoiceHeader salesInvoiceHeader = salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
+        var itemList = salesInvoiceHeader.getInvoiceLines();
+        var orderNumber = salesInvoiceHeader.getOrderNumber();
+        var invoiceNumber = salesInvoiceHeader.getInvoiceNumber();
+        var newOrderNumber = orderNumber + "-" + invoiceNumber;
         log.info("Received core sales invoice created message with order number: {} and invoice number: {}",
                 orderNumber, invoiceNumber);
 
         try {
-            SalesOrder salesOrder = salesOrderService.createSalesOrderForInvoice(salesInvoiceCreatedMessage, newOrderNumber);
-            ProcessInstance result = camundaHelper.createOrderProcess(salesOrder, ORDER_CREATED_IN_SOH);
+            // Fetch original sales order
+            var originalSalesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
+                    .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
 
-            if (result != null) {
-                log.info("New soh order process started for subsequent delivery note with " +
-                                "order number: {} and invoice number: {}. Process-Instance-ID: {} ",
-                        orderNumber,
-                        invoiceNumber,
-                        result.getProcessInstanceId());
+            if (salesOrderService.allOrderRowsAreNotCancelledAndMatchWithItems(originalSalesOrder, itemList)) {
+                updateOriginalSalesOrder(orderNumber, invoiceNumber, originalSalesOrder);
+            } else {
+                SalesOrder subsequentOrder = salesOrderService.createSalesOrderForInvoice(
+                        salesInvoiceCreatedMessage,
+                        originalSalesOrder,
+                        newOrderNumber);
+                ProcessInstance result = camundaHelper.createOrderProcess(subsequentOrder, ORDER_CREATED_IN_SOH);
+
+                if (result != null) {
+                    log.info("New soh order process started for subsequent delivery note with " +
+                                    "order number: {} and invoice number: {}. Process-Instance-ID: {} ",
+                            orderNumber,
+                            invoiceNumber,
+                            result.getProcessInstanceId());
+                }
             }
         } catch (Exception e) {
             log.error("Core sales invoice created received message error:\r\nOrderNumber: {}\r\nInvoiceNumber: {}\r\nError-Message: {}",
@@ -426,6 +440,24 @@ public class SqsReceiveService {
                     invoiceNumber,
                     e.getMessage());
             throw e;
+        }
+    }
+
+    private void updateOriginalSalesOrder(String orderNumber, String invoiceNumber, SalesOrder originalSalesOrder) {
+        originalSalesOrder.getLatestJson().getOrderHeader().setDocumentRefNumber(invoiceNumber);
+        salesOrderService.updateOrder(originalSalesOrder);
+
+        if (!camundaHelper.checkIfActiveProcessExists(orderNumber)) {
+            ProcessInstance result = camundaHelper.createOrderProcess(
+                    salesOrderService.createSalesOrder(originalSalesOrder), ORDER_RECEIVED_ECP);
+
+            if (result != null) {
+                log.info("Order process re-started by core sales invoice created message with " +
+                                "order number: {} and invoice number: {}. Process-Instance-ID: {} ",
+                        orderNumber,
+                        invoiceNumber,
+                        result.getProcessInstanceId());
+            }
         }
     }
 }

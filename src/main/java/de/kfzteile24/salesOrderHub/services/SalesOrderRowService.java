@@ -86,7 +86,7 @@ public class SalesOrderRowService {
                     orderRow.setIsCancelled(true);
                 }
             }
-            salesOrderService.save(orderUtil.removeCancelledOrderRowsFromLatestJson(salesOrder), Action.ORDER_CANCELLED);
+            salesOrderService.save(salesOrder, Action.ORDER_CANCELLED);
             correlateMessageForOrderCancellation(salesOrder.getOrderNumber());
         }
     }
@@ -101,7 +101,7 @@ public class SalesOrderRowService {
         salesOrder = salesOrderService.save(salesOrder, DROPSHIPMENT_PURCHASE_ORDER_BOOKED);
         if (!message.getBooked()) {
             for (OrderRows orderRows : ((Order) salesOrder.getOriginalOrder()).getOrderRows()) {
-                cancelOrderRow(orderNumber, orderRows.getSku());
+                cancelOrderRowsOfOrderGroup(orderNumber, orderRows.getSku());
             }
             if (timedPollingService.pollWithDefaultTiming(() -> helper.checkIfActiveProcessExists(orderNumber))) {
                 cancelOrderProcessIfFullyCancelled(salesOrder);
@@ -164,7 +164,7 @@ public class SalesOrderRowService {
         for (String sku : skuList) {
             List<String> originalOrderSkus = getOriginalOrderSkus(orderNumber);
             if (originalOrderSkus.contains(sku)) {
-                cancelOrderRow(orderNumber, sku);
+                cancelOrderRowsOfOrderGroup(orderNumber, sku);
             } else {
                 log.error("Sku: {} is not in original order with order number: {}", sku, orderNumber);
             }
@@ -284,29 +284,31 @@ public class SalesOrderRowService {
         return CalculationUtil.round(CalculationUtil.getGrossValue(netValue, taxRate), HALF_UP);
     }
 
-    private void cancelOrderRow(String orderGroupId, String orderRowId) {
+    private void cancelOrderRowsOfOrderGroup(String orderGroupId, String orderRowId) {
 
         List<String> orderNumberListByOrderGroupId = salesOrderService.getOrderNumberListByOrderGroupId(orderGroupId, orderRowId);
         for (String orderNumber : orderNumberListByOrderGroupId) {
-
-            if (helper.checkIfOrderRowProcessExists(orderNumber, orderRowId)) {
-                correlateMessageForOrderRowCancelCancellation(orderNumber, orderRowId);
-
-            } else {
-                log.debug("Sales order row process does not exist for order number {} and order row: {}",
-                        orderNumber, orderRowId);
-            }
-
-            if (helper.checkIfActiveProcessExists(orderNumber)) {
-                removeCancelledOrderRowFromProcessVariables(orderNumber, orderRowId);
-            } else {
-                log.debug("Sales order process does not exist for order number {}", orderNumber);
-            }
-
-            markOrderRowAsCancelled(orderNumber, orderRowId);
-            log.info("Order row cancelled for order number: {} and order row: {}", orderNumber, orderRowId);
-
+            cancelOrderRow(orderRowId, orderNumber);
         }
+    }
+
+    public void cancelOrderRow(String orderRowId, String orderNumber) {
+        if (helper.checkIfOrderRowProcessExists(orderNumber, orderRowId)) {
+            correlateMessageForOrderRowCancelCancellation(orderNumber, orderRowId);
+
+        } else {
+            log.debug("Sales order row process does not exist for order number {} and order row: {}",
+                    orderNumber, orderRowId);
+        }
+
+        if (helper.checkIfActiveProcessExists(orderNumber)) {
+            removeCancelledOrderRowFromProcessVariables(orderNumber, orderRowId);
+        } else {
+            log.debug("Sales order process does not exist for order number {}", orderNumber);
+        }
+
+        markOrderRowAsCancelled(orderNumber, orderRowId);
+        log.info("Order row cancelled for order number: {} and order row: {}", orderNumber, orderRowId);
     }
 
     @SuppressWarnings("unchecked")
@@ -336,7 +338,7 @@ public class SalesOrderRowService {
         cancelledOrderRow.setIsCancelled(true);
 
         recalculateOrder(latestJson, cancelledOrderRow);
-        salesOrderService.save(orderUtil.removeCancelledOrderRowsFromLatestJson(salesOrder), Action.ORDER_ROW_CANCELLED);
+        salesOrderService.save(salesOrder, Action.ORDER_ROW_CANCELLED);
     }
 
     private void recalculateOrder(Order latestJson, OrderRows cancelledOrderRow) {

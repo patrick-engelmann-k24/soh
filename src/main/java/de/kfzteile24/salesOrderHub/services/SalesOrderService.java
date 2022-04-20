@@ -6,8 +6,9 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
 import de.kfzteile24.salesOrderHub.domain.audit.AuditLog;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesFinancialDocumentLine;
+import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundCustomException;
-import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.OrderMapper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
@@ -42,6 +43,9 @@ import static java.text.MessageFormat.format;
 @Slf4j
 @RequiredArgsConstructor
 public class SalesOrderService {
+
+    @NonNull
+    private final SalesOrderRowService salesOrderRowService;
 
     @NonNull
     private final SalesOrderRepository orderRepository;
@@ -93,7 +97,6 @@ public class SalesOrderService {
                 .build();
 
         auditLogRepository.save(auditLog);
-
         return storedOrder;
     }
 
@@ -105,10 +108,14 @@ public class SalesOrderService {
         return orderRepository.countByCustomerEmail(salesOrder.getCustomerEmail()) > 0;
     }
 
-    public SalesOrder createSalesOrderForInvoice(CoreSalesInvoiceCreatedMessage salesInvoiceCreatedMessage, String newOrderNumber) {
-        Order order = createOrderFromSubsequentDelivery(salesInvoiceCreatedMessage);
+    @Transactional
+    public SalesOrder createSubsequentSalesOrder(CoreSalesInvoiceCreatedMessage salesInvoiceCreatedMessage,
+                                                 SalesOrder originalSalesOrder,
+                                                 String newOrderNumber) {
+        Order order = createOrderForSubsequentSalesOrder(salesInvoiceCreatedMessage, originalSalesOrder);
         order.getOrderHeader().setPlatform(Platform.SOH);
-        recalculateOrder(order);
+        order.getOrderHeader().setDocumentRefNumber(salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber());
+        recalculateTotals(order);
 
         var salesOrder = SalesOrder.builder()
                 .orderNumber(newOrderNumber)
@@ -132,6 +139,7 @@ public class SalesOrderService {
         return save(salesOrder, INVOICE_RECEIVED);
     }
 
+    @Transactional
     public SalesOrder addSalesOrderReturn(SalesOrder salesOrder, SalesOrderReturn salesOrderReturn) {
         salesOrderReturn.setSalesOrder(salesOrder);
         salesOrder.getSalesOrderReturnList().add(salesOrderReturn);
@@ -146,24 +154,45 @@ public class SalesOrderService {
                         format("for the given order group id {0}", orderGroupId)));
     }
 
-    protected Order createOrderFromSubsequentDelivery(CoreSalesInvoiceCreatedMessage coreSalesInvoiceCreatedMessage) {
-        String orderNumber = coreSalesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader().getOrderNumber();
-        var originalSalesOrder = getOrderByOrderNumber(orderNumber)
-                .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
-
-        var orderRows = coreSalesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader().getInvoiceLines().stream()
-                .map(item -> orderUtil.createOrderFromOriginalSalesOrder(
+    protected Order createOrderForSubsequentSalesOrder(CoreSalesInvoiceCreatedMessage coreSalesInvoiceCreatedMessage,
+                                                       SalesOrder originalSalesOrder) {
+        CoreSalesInvoiceHeader salesInvoiceHeader = coreSalesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
+        var items = salesInvoiceHeader.getInvoiceLines();
+        var orderRows = items.stream()
+                .map(item -> orderUtil.createOrderRowFromOriginalSalesOrder(
                         originalSalesOrder,
                         item,
                         orderUtil.getLastRowKey(originalSalesOrder)))
                 .collect(Collectors.toList());
+        handleCancellationForOrderRows(originalSalesOrder, orderRows);
 
-        var order = originalSalesOrder.getLatestJson();
+        var version = originalSalesOrder.getLatestJson().getVersion();
+        var orderHeader = originalSalesOrder.getLatestJson().getOrderHeader();
         return Order.builder()
-                .version(order.getVersion())
-                .orderHeader(OrderMapper.INSTANCE.toOrderHeader(order.getOrderHeader()))
+                .version(version)
+                .orderHeader(OrderMapper.INSTANCE.toOrderHeader(orderHeader))
                 .orderRows(orderRows)
                 .build();
+    }
+
+    protected void handleCancellationForOrderRows(SalesOrder salesOrder, List<OrderRows> orderRows) {
+        var originalOrderRowSkuList = salesOrder.getLatestJson().getOrderRows().stream()
+                .filter(row -> !row.getIsCancelled())
+                .map(OrderRows::getSku).collect(Collectors.toSet());
+        orderRows.stream()
+                .filter(row -> originalOrderRowSkuList.contains(row.getSku()))
+                .forEach(row -> salesOrderRowService.cancelOrderRow(row.getSku(), salesOrder.getOrderNumber()));
+    }
+
+    public boolean allOrderRowsAreNotCancelledAndMatchWithItems(SalesOrder originalSalesOrder,
+                                                                List<CoreSalesFinancialDocumentLine> items) {
+        var orderRows = originalSalesOrder.getLatestJson().getOrderRows();
+        if (orderRows.stream().anyMatch(OrderRows::getIsCancelled)) {
+            return false;
+        }
+        var skuList = items.stream()
+                .map(CoreSalesFinancialDocumentLine::getItemNumber).collect(Collectors.toSet());
+        return orderRows.stream().allMatch(row -> skuList.contains(row.getSku()));
     }
 
     public List<String> getOrderNumberListByOrderGroupId(String orderGroupId, String orderItemSku) {
@@ -222,7 +251,7 @@ public class SalesOrderService {
         return foundSalesOrders.stream().map(SalesOrder::getOrderNumber).distinct().collect(Collectors.toList());
     }
 
-    private void recalculateOrder(Order order) {
+    private void recalculateTotals(Order order) {
 
         List<OrderRows> orderRows = order.getOrderRows();
         List<SumValues> sumValues = orderRows.stream().map(OrderRows::getSumValues).collect(Collectors.toList());

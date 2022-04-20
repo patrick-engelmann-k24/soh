@@ -153,7 +153,7 @@ class SalesOrderServiceTest {
         // Mock services
         when(salesOrderRepository.getOrderByOrderNumber(any())).thenReturn(Optional.of(salesOrder));
         when(invoiceService.getInvoicesByOrderNumber(any())).thenReturn(Set.of());
-        when(orderUtil.createOrderFromOriginalSalesOrder(any(), any(), any())).thenReturn(orderRow);
+        when(orderUtil.createOrderRowFromOriginalSalesOrder(any(), any(), any())).thenReturn(orderRow);
         when(salesOrderRepository.save(any())).thenAnswer((Answer<SalesOrder>) invocation -> invocation.getArgument(0));
 
         // Establish some updates before the test in order to see the change
@@ -166,7 +166,7 @@ class SalesOrderServiceTest {
 
         var createdSalesOrder = salesOrderService.createSalesOrderForInvoice(
                 subsequentDeliveryMessage,
-                newOrderNumber);
+                salesOrder, newOrderNumber);
 
         assertThat(createdSalesOrder.getOrderNumber()).isEqualTo(newOrderNumber);
         assertThat(createdSalesOrder.getOrderGroupId()).isEqualTo(originalOrderGroupId);
