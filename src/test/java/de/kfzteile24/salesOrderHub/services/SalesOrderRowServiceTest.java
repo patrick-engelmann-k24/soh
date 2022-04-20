@@ -2,6 +2,7 @@ package de.kfzteile24.salesOrderHub.services;
 
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
+import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Totals;
@@ -59,6 +60,9 @@ class SalesOrderRowServiceTest {
 
     @Mock
     private InvoiceService invoiceService;
+
+    @Mock
+    private OrderUtil orderUtil;
 
     @InjectMocks
     private SalesOrderRowService salesOrderRowService;
