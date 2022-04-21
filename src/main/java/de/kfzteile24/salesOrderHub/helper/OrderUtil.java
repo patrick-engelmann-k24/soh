@@ -54,13 +54,14 @@ public class OrderUtil {
     }
 
     public OrderRows createOrderRowFromOriginalSalesOrder(SalesOrder originalSalesOrder, CoreSalesFinancialDocumentLine item, Integer lastRowKey) {
-        var orderRow = createRowFromLatestJson(originalSalesOrder, item);
-        if (orderRow == null) {
+        var originalSkuList = originalSalesOrder.getLatestJson().getOrderRows().stream()
+                .map(OrderRows::getSku).collect(Collectors.toSet());
+        if (originalSkuList.contains(item.getItemNumber())) {
+            return createRowFromLatestJson(originalSalesOrder, item);
+        } else {
             var shippingType = ((Order) originalSalesOrder.getOriginalOrder()).getOrderRows().get(0).getShippingType();
-            orderRow = createNewOrderRow(item, shippingType, lastRowKey);
+            return createNewOrderRow(item, shippingType, lastRowKey);
         }
-        orderRow.setIsCancelled(false);
-        return orderRow;
     }
 
     public OrderRows recalculateOrderRow(OrderRows orderRow, CreditNoteLine item) {
@@ -72,10 +73,6 @@ public class OrderUtil {
         return createRowFromOrder(item, salesOrder.getLatestJson());
     }
 
-    private OrderRows createRowFromOriginalOrder(SalesOrder salesOrder, CoreSalesFinancialDocumentLine item) {
-        return createRowFromOrder(item, (Order) salesOrder.getOriginalOrder());
-    }
-
     private OrderRows createNewOrderRow(CoreSalesFinancialDocumentLine item, String shippingType, Integer lastRowKey) {
         var unitPriceGross = getGrossValue(item.getUnitNetAmount(), item.getTaxRate());
         var unitPriceNet = item.getUnitNetAmount();
@@ -84,6 +81,7 @@ public class OrderUtil {
 
         return OrderRows.builder()
                 .rowKey(lastRowKey + 1)
+                .isCancelled(false)
                 .shippingType(shippingType)
                 .sku(item.getItemNumber())
                 .quantity(Optional.ofNullable(item.getQuantity()).orElse(BigDecimal.ONE))

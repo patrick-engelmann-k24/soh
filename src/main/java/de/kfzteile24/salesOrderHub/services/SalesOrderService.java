@@ -30,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -43,9 +44,6 @@ import static java.text.MessageFormat.format;
 @Slf4j
 @RequiredArgsConstructor
 public class SalesOrderService {
-
-    @NonNull
-    private final SalesOrderRowService salesOrderRowService;
 
     @NonNull
     private final SalesOrderRepository orderRepository;
@@ -163,8 +161,8 @@ public class SalesOrderService {
                         originalSalesOrder,
                         item,
                         orderUtil.getLastRowKey(originalSalesOrder)))
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
-        handleCancellationForOrderRows(originalSalesOrder, orderRows);
 
         var version = originalSalesOrder.getLatestJson().getVersion();
         var orderHeader = originalSalesOrder.getLatestJson().getOrderHeader();
@@ -173,15 +171,6 @@ public class SalesOrderService {
                 .orderHeader(OrderMapper.INSTANCE.toOrderHeader(orderHeader))
                 .orderRows(orderRows)
                 .build();
-    }
-
-    protected void handleCancellationForOrderRows(SalesOrder salesOrder, List<OrderRows> orderRows) {
-        var originalOrderRowSkuList = salesOrder.getLatestJson().getOrderRows().stream()
-                .filter(row -> !row.getIsCancelled())
-                .map(OrderRows::getSku).collect(Collectors.toSet());
-        orderRows.stream()
-                .filter(row -> originalOrderRowSkuList.contains(row.getSku()))
-                .forEach(row -> salesOrderRowService.cancelOrderRow(row.getSku(), salesOrder.getOrderNumber()));
     }
 
     public boolean allOrderRowsAreNotCancelledAndMatchWithItems(SalesOrder originalSalesOrder,

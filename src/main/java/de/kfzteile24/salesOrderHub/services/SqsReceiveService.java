@@ -18,6 +18,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.soh.order.dto.Order;
+import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Platform;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -30,8 +31,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_CREATED_IN_SOH;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_ECP;
@@ -424,8 +427,8 @@ public class SqsReceiveService {
                         salesInvoiceCreatedMessage,
                         originalSalesOrder,
                         newOrderNumber);
+                handleCancellationForOrderRows(originalSalesOrder, subsequentOrder.getLatestJson().getOrderRows());
                 ProcessInstance result = camundaHelper.createOrderProcess(subsequentOrder, ORDER_CREATED_IN_SOH);
-
                 if (result != null) {
                     log.info("New soh order process started for subsequent delivery note with " +
                                     "order number: {} and invoice number: {}. Process-Instance-ID: {} ",
@@ -443,7 +446,7 @@ public class SqsReceiveService {
         }
     }
 
-    private void updateOriginalSalesOrder(String orderNumber, String invoiceNumber, SalesOrder originalSalesOrder) {
+    protected void updateOriginalSalesOrder(String orderNumber, String invoiceNumber, SalesOrder originalSalesOrder) {
         originalSalesOrder.getLatestJson().getOrderHeader().setDocumentRefNumber(invoiceNumber);
         salesOrderService.updateOrder(originalSalesOrder);
 
@@ -459,5 +462,14 @@ public class SqsReceiveService {
                         result.getProcessInstanceId());
             }
         }
+    }
+
+    protected void handleCancellationForOrderRows(SalesOrder salesOrder, List<OrderRows> orderRows) {
+        var originalOrderRowSkuList = salesOrder.getLatestJson().getOrderRows().stream()
+                .filter(row -> !row.getIsCancelled())
+                .map(OrderRows::getSku).collect(Collectors.toSet());
+        orderRows.stream()
+                .filter(row -> originalOrderRowSkuList.contains(row.getSku()))
+                .forEach(row -> salesOrderRowService.cancelOrderRow(row.getSku(), salesOrder.getOrderNumber()));
     }
 }

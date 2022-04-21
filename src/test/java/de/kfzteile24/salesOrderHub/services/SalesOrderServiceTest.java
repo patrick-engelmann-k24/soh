@@ -47,9 +47,6 @@ import static org.mockito.Mockito.when;
 class SalesOrderServiceTest {
 
     @Mock
-    private SalesOrderRowService salesOrderRowService;
-
-    @Mock
     private SalesOrderRepository salesOrderRepository;
 
     @Mock
