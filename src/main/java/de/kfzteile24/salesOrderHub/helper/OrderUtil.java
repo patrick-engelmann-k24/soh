@@ -54,14 +54,13 @@ public class OrderUtil {
     }
 
     public OrderRows createOrderRowFromOriginalSalesOrder(SalesOrder originalSalesOrder, CoreSalesFinancialDocumentLine item, Integer lastRowKey) {
-        var originalSkuList = originalSalesOrder.getLatestJson().getOrderRows().stream()
-                .map(OrderRows::getSku).collect(Collectors.toSet());
-        if (originalSkuList.contains(item.getItemNumber())) {
-            return createRowFromLatestJson(originalSalesOrder, item);
-        } else {
+        var orderRow = createRowFromLatestJson(originalSalesOrder, item);
+        if (orderRow == null) {
             var shippingType = ((Order) originalSalesOrder.getOriginalOrder()).getOrderRows().get(0).getShippingType();
-            return createNewOrderRow(item, shippingType, lastRowKey);
+            orderRow = createNewOrderRow(item, shippingType, lastRowKey);
         }
+        orderRow.setIsCancelled(false);
+        return orderRow;
     }
 
     public OrderRows recalculateOrderRow(OrderRows orderRow, CreditNoteLine item) {
@@ -103,7 +102,6 @@ public class OrderUtil {
 
     private OrderRows createRowFromOrder(CoreSalesFinancialDocumentLine item, Order latestOrder) {
         var orderRow = OrderMapper.INSTANCE.toOrderRow(latestOrder.getOrderRows().stream()
-                .filter(row -> !row.getIsCancelled())
                 .filter(row -> row.getSku().equals(item.getItemNumber()))
                 .findFirst().orElse(null));
         if(orderRow == null){
