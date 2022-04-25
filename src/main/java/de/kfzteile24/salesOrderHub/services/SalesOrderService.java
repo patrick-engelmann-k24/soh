@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.INVOICE_RECEIVED;
@@ -156,11 +157,14 @@ public class SalesOrderService {
                                                        SalesOrder originalSalesOrder) {
         CoreSalesInvoiceHeader salesInvoiceHeader = coreSalesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
         var items = salesInvoiceHeader.getInvoiceLines();
-        var orderRows = items.stream()
-                .map(item -> orderUtil.createOrderRowFromOriginalSalesOrder(
-                        originalSalesOrder,
-                        item,
-                        orderUtil.getLastRowKey(originalSalesOrder)))
+        List<OrderRows> orderRows = new ArrayList<>();
+        for (CoreSalesFinancialDocumentLine item : items) {
+            orderRows.addAll(orderUtil.createOrderRowFromOriginalSalesOrder(
+                    originalSalesOrder,
+                    item,
+                    orderUtil.getLastRowKey(originalSalesOrder)));
+        }
+        orderRows = orderRows.stream()
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 

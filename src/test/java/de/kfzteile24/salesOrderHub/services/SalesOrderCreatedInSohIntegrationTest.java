@@ -2,6 +2,7 @@ package de.kfzteile24.salesOrderHub.services;
 
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.helper.OrderMapper;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
@@ -72,12 +73,12 @@ class SalesOrderCreatedInSohIntegrationTest {
         String originalOrderNumber = salesOrder.getOrderNumber();
         String invoiceNumber = "10";
         String rowSku = "2010-10183";
-        String subsequentDeliveryMsg = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
+        String invoiceEvent = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
 
         //Replace order number with randomly created order number as expected
-        subsequentDeliveryMsg = subsequentDeliveryMsg.replace("524001248", originalOrderNumber);
+        invoiceEvent = invoiceEvent.replace("524001248", originalOrderNumber);
 
-        sqsReceiveService.queueListenerCoreSalesInvoiceCreated(subsequentDeliveryMsg, senderId, receiveCount);
+        sqsReceiveService.queueListenerCoreSalesInvoiceCreated(invoiceEvent, senderId, receiveCount);
 
         String newOrderNumberCreatedInSoh = originalOrderNumber + "-" + invoiceNumber;
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
@@ -104,12 +105,12 @@ class SalesOrderCreatedInSohIntegrationTest {
         String rowSku1 = "1440-47378";
         String rowSku2 = "2010-10183";
         String rowSku3 = "2022-KBA";
-        String subsequentDeliveryMsg = readResource("examples/coreSalesInvoiceCreatedMultipleItems.json");
+        String invoiceEvent = readResource("examples/coreSalesInvoiceCreatedMultipleItems.json");
 
         //Replace order number with randomly created order number as expected
-        subsequentDeliveryMsg = subsequentDeliveryMsg.replace("524001248", originalOrderNumber);
+        invoiceEvent = invoiceEvent.replace("524001248", originalOrderNumber);
 
-        sqsReceiveService.queueListenerCoreSalesInvoiceCreated(subsequentDeliveryMsg, senderId, receiveCount);
+        sqsReceiveService.queueListenerCoreSalesInvoiceCreated(invoiceEvent, senderId, receiveCount);
 
         String newOrderNumberCreatedInSoh = originalOrderNumber + "-" + invoiceNumber;
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
@@ -125,6 +126,40 @@ class SalesOrderCreatedInSohIntegrationTest {
                 "310.38",
                 "372.22");
         checkOrderRows(newOrderNumberCreatedInSoh, rowSku1, rowSku2, rowSku3);
+    }
+
+    @Test
+    public void testQueueListenerCoreSalesInvoiceCreatedWithConsolidatedItems() {
+
+        var senderId = "Delivery";
+        var receiveCount = 1;
+        var salesOrder = salesOrderUtil.createNewSalesOrder();
+        var row = OrderMapper.INSTANCE.toOrderRow(salesOrder.getLatestJson().getOrderRows().get(1));
+        salesOrder.getLatestJson().getOrderRows().add(row);
+        salesOrderService.updateOrder(salesOrder);
+
+        String originalOrderNumber = salesOrder.getOrderNumber();
+        String invoiceNumber = "10";
+        String rowSku = "2010-10183";
+        String invoiceEvent = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
+
+        //Update necessary parts in invoice event
+        invoiceEvent = invoiceEvent.replace("524001248", originalOrderNumber);
+        invoiceEvent = invoiceEvent.replace("ItemNumber\": \"2010-10183\",\n\t\t\t\t\t\"Quantity\": 1.0", "ItemNumber\": \"2010-10183\",\n\t\t\t\t\t\"Quantity\": 3.0");
+
+        sqsReceiveService.queueListenerCoreSalesInvoiceCreated(invoiceEvent, senderId, receiveCount);
+
+        String newOrderNumberCreatedInSoh = originalOrderNumber + "-" + invoiceNumber;
+        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
+        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku)));
+        checkTotalsValues(newOrderNumberCreatedInSoh,
+                "25.90",
+                "21.58",
+                "3.88",
+                "3.24",
+                "22.02",
+                "18.34",
+                "22.02");
     }
 
     private void checkTotalsValues(String orderNumber,
