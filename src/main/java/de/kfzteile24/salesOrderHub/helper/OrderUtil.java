@@ -110,6 +110,10 @@ public class OrderUtil {
         var orderRow = OrderMapper.INSTANCE.toOrderRow(latestOrder.getOrderRows().stream()
                 .filter(row -> row.getSku().equals(item.getItemNumber()))
                 .findFirst().orElse(null));
+        if(orderRow == null){
+            log.info("Order row with sku: {} was not found for order with order number: {}",
+                    item.getItemNumber(), latestOrder.getOrderHeader().getOrderNumber());
+        }
         updateOrderRowByNewItemValues(orderRow, item);
         return orderRow;
     }

@@ -112,7 +112,7 @@ public class SalesOrderService {
 
         var salesOrder = SalesOrder.builder()
                 .orderNumber(newOrderNumber)
-                .orderGroupId(salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader().getOrderNumber())
+                .orderGroupId(order.getOrderHeader().getOrderGroupId())
                 .salesChannel(order.getOrderHeader().getSalesChannel())
                 .customerEmail(order.getOrderHeader().getCustomer().getCustomerEmail())
                 .originalOrder(order)

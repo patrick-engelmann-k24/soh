@@ -98,10 +98,10 @@ class SalesOrderServiceTest {
 
         assertThat(createdSalesOrder.isRecurringOrder()).isTrue();
         assertThat(createdSalesOrder.getLatestJson()).isNotNull();
-        assertThat(createdSalesOrder.getCustomerEmail()).isEqualTo("test@kfzteile24.de");
-        assertThat(createdSalesOrder.getSalesChannel()).isEqualTo("www-k24-at");
-        assertThat(createdSalesOrder.getOrderNumber()).isEqualTo("514000016");
-        assertThat(createdSalesOrder.getOrderGroupId()).isEqualTo("514000016");//The orderNumber should be used to fill the group Id with the same number, since it was missing in the Order JSON.
+        assertThat(createdSalesOrder.getCustomerEmail()).isEqualTo(salesOrder.getCustomerEmail());
+        assertThat(createdSalesOrder.getSalesChannel()).isEqualTo(salesOrder.getSalesChannel());
+        assertThat(createdSalesOrder.getOrderNumber()).isEqualTo(salesOrder.getOrderNumber());
+        assertThat(createdSalesOrder.getOrderGroupId()).isEqualTo(salesOrder.getOrderGroupId());//The orderNumber should be used to fill the group Id with the same number, since it was missing in the Order JSON.
 
         verify(invoiceService).getInvoicesByOrderNumber(eq(salesOrder.getOrderNumber()));
         existingInvoices
@@ -140,6 +140,7 @@ class SalesOrderServiceTest {
         // Prepare sales order
         String rawMessage =  readResource("examples/testmessage.json");
         var salesOrder = getSalesOrder(rawMessage);
+        var originalOrderGroupId = salesOrder.getOrderGroupId();
         updateRowIsCancelledFieldAsTrue(salesOrder); //In order to observe change
         String newOrderNumber = "22222";
         OrderRows orderRow = salesOrder.getLatestJson().getOrderRows().get(0);
@@ -168,7 +169,7 @@ class SalesOrderServiceTest {
                 newOrderNumber);
 
         assertThat(createdSalesOrder.getOrderNumber()).isEqualTo(newOrderNumber);
-        assertThat(createdSalesOrder.getOrderGroupId()).isEqualTo(subsequentDeliveryMessage.getSalesInvoice().getSalesInvoiceHeader().getOrderNumber());
+        assertThat(createdSalesOrder.getOrderGroupId()).isEqualTo(originalOrderGroupId);
         assertThat(createdSalesOrder.getOriginalOrder()).isNotNull();
         assertThat(createdSalesOrder.getLatestJson()).isNotNull();
         assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getPlatform()).isNotNull();
@@ -189,7 +190,6 @@ class SalesOrderServiceTest {
 
     private CoreSalesInvoiceCreatedMessage createCoreSalesInvoiceCreatedMessage(String orderNumber, String sku) {
         BigDecimal quantity = BigDecimal.valueOf(1L);
-//        String subsequentDeliveryNumber = "987654321";
         CoreSalesFinancialDocumentLine item = CoreSalesFinancialDocumentLine.builder()
                 .itemNumber(sku)
                 .quantity(quantity)

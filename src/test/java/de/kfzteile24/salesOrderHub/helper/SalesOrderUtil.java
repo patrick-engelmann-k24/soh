@@ -314,10 +314,10 @@ public class SalesOrderUtil {
     public static SalesOrder getSalesOrder(String rawMessage) {
         final var order = getOrder(rawMessage);
         return SalesOrder.builder()
-                .orderNumber("514000016")
-                .orderGroupId("514000016")
-                .salesChannel("www-k24-at")
-                .customerEmail("test@kfzteile24.de")
+                .orderNumber(order.getOrderHeader().getOrderNumber())
+                .orderGroupId(order.getOrderHeader().getOrderGroupId())
+                .salesChannel(order.getOrderHeader().getSalesChannel())
+                .customerEmail(order.getOrderHeader().getCustomer().getCustomerEmail())
                 .recurringOrder(Boolean.TRUE)
                 .originalOrder(order)
                 .latestJson(order)
