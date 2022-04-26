@@ -4,7 +4,7 @@ import java.util.Date;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import de.kfzteile24.salesOrderHub.dto.sns.creditnote.BillingAddress;
+import de.kfzteile24.salesOrderHub.dto.sns.shared.Address;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -27,7 +27,7 @@ public class CoreDeliveryNote {
     private Date date;
 
     @JsonProperty("ShippingAddress")
-    private BillingAddress shippingAddress;
+    private Address shippingAddress;
 
     @JsonProperty("InventoryLocationId")
     private String inventoryLocationId;

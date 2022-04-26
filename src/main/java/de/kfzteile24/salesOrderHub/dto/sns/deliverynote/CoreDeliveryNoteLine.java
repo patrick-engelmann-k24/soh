@@ -1,4 +1,4 @@
-package de.kfzteile24.salesOrderHub.dto.sns.creditnote;
+package de.kfzteile24.salesOrderHub.dto.sns.deliverynote;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
@@ -10,25 +10,13 @@ import java.math.BigDecimal;
 @Builder
 @Value
 @Jacksonized
-public class CreditNoteLine {
+public class CoreDeliveryNoteLine {
 
     @JsonProperty("ItemNumber")
     String itemNumber;
 
     @JsonProperty("Quantity")
     BigDecimal quantity;
-
-    @JsonProperty("UnitNetAmount")
-    BigDecimal unitNetAmount;
-
-    @JsonProperty("LineNetAmount")
-    BigDecimal lineNetAmount;
-
-    @JsonProperty("LineTaxAmount")
-    BigDecimal lineTaxAmount;
-
-    @JsonProperty("TaxRate")
-    BigDecimal taxRate;
 
     @JsonProperty("IsShippingCost")
     Boolean isShippingCost;

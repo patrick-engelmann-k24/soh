@@ -2,6 +2,7 @@ package de.kfzteile24.salesOrderHub.dto.sns.creditnote;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import de.kfzteile24.salesOrderHub.constants.CurrencyType;
+import de.kfzteile24.salesOrderHub.dto.sns.shared.Address;
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
@@ -37,7 +38,7 @@ public class SalesCreditNoteHeader {
     BigDecimal grossAmount;
 
     @JsonProperty("BillingAddress")
-    BillingAddress billingAddress;
+    Address billingAddress;
 
     @JsonProperty("CreditNoteLines")
     Collection<CreditNoteLine> creditNoteLines;

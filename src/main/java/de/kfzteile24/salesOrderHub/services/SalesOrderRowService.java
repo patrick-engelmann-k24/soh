@@ -171,23 +171,21 @@ public class SalesOrderRowService {
         }
     }
 
-    public SalesOrderReturn handleSalesOrderReturn(String orderNumber, Collection<CreditNoteLine> creditNoteLines) {
+    public SalesOrderReturn handleSalesOrderReturn(String orderNumber,
+                                                   String creditNoteNumber,
+                                                   Collection<CreditNoteLine> creditNoteLines) {
         var salesOrder = salesOrderService.findLastOrderByOrderGroupId(orderNumber);
         var negativedCreditNoteLine = negateCreditNoteLines(creditNoteLines);
-        var items = negativedCreditNoteLine.stream()
-                .filter(creditNoteLine -> !creditNoteLine.getIsShippingCost())
-                .collect(Collectors.toList());
-        var returnOrderJson = recalculateOrderByReturns(salesOrder, items);
+        var returnOrderJson = recalculateOrderByReturns(salesOrder, getOrderRowUpdateItems(negativedCreditNoteLine));
 
         returnOrderJson.getOrderHeader().setOrderNumber(salesOrder.getOrderNumber());
 
         var salesOrderReturn = SalesOrderReturn.builder()
                 .orderGroupId(orderNumber)
-                .orderNumber(orderNumber)
+                .orderNumber(creditNoteNumber)
                 .returnOrderJson(returnOrderJson)
                 .build();
 
-        salesOrderReturn.setOrderNumber(orderNumber);
         updateShippingCosts(salesOrderReturn, negativedCreditNoteLine);
         salesOrderService.addSalesOrderReturn(salesOrder, salesOrderReturn);
 
@@ -210,7 +208,7 @@ public class SalesOrderRowService {
             var sumValues = orderRow.getSumValues();
             var returnOrderRowTaxValue = sumValues.getTotalDiscountedGross().subtract(sumValues.getTotalDiscountedNet());
             totals.getGrandTotalTaxes().stream()
-                    .filter(tax -> tax.getRate().compareTo(item.getLineTaxAmount()) == 0)
+                    .filter(tax -> tax.getRate().compareTo(item.getTaxRate()) == 0)
                     .findFirst()
                     .ifPresentOrElse(tax -> {
                                 var taxValue = returnOrderRowTaxValue.compareTo(BigDecimal.ZERO) == 0 ? returnOrderRowTaxValue :
@@ -220,7 +218,7 @@ public class SalesOrderRowService {
                             () -> {
                                 throw new GrandTotalTaxNotFoundException(
                                         format(ERROR_MSG_GRAND_TOTAL_TAX_NOT_FOUND_BY_TAX_RATE,
-                                                item.getItemNumber(), item.getLineTaxAmount(), salesOrder.getOrderNumber(), salesOrder.getOrderGroupId()));
+                                                item.getItemNumber(), item.getTaxRate(), salesOrder.getOrderNumber(), salesOrder.getOrderGroupId()));
                             });
         });
 
@@ -249,14 +247,22 @@ public class SalesOrderRowService {
         return returnLatestJson;
     }
 
+    private List<CreditNoteLine> getOrderRowUpdateItems(Collection<CreditNoteLine> negativedCreditNoteLine) {
+        return negativedCreditNoteLine.stream()
+                .filter(creditNoteLine -> !creditNoteLine.getIsShippingCost())
+                .collect(Collectors.toList());
+    }
+
     private Collection<CreditNoteLine> negateCreditNoteLines(Collection<CreditNoteLine> creditNoteLines) {
         return creditNoteLines.stream().map(creditNoteLine ->
                 CreditNoteLine.builder()
                         .isShippingCost(creditNoteLine.getIsShippingCost())
                         .itemNumber(creditNoteLine.getItemNumber())
+                        .taxRate(creditNoteLine.getTaxRate())
                         .quantity(creditNoteLine.getQuantity().negate())
-                        .lineTaxAmount(creditNoteLine.getLineTaxAmount())
+                        .unitNetAmount(creditNoteLine.getUnitNetAmount().negate())
                         .lineNetAmount(creditNoteLine.getLineNetAmount().negate())
+                        .lineTaxAmount(creditNoteLine.getLineTaxAmount().negate())
                         .build()
         ).collect(Collectors.toList());
     }

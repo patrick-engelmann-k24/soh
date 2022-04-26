@@ -61,9 +61,11 @@ final public class Aggregators {
         public CreditNoteLine aggregateArguments(ArgumentsAccessor arguments, ParameterContext context) {
             return CreditNoteLine.builder()
                     .itemNumber("sku-1")
-                    .lineNetAmount(arguments.get(18, BigDecimal.class))
-                    .quantity(arguments.get(19, BigDecimal.class))
-                    .lineTaxAmount(arguments.get(20, BigDecimal.class))
+                    .quantity(arguments.get(18, BigDecimal.class))
+                    .taxRate(BigDecimal.valueOf(10))
+                    .unitNetAmount(arguments.get(19, BigDecimal.class))
+                    .lineNetAmount(arguments.get(20, BigDecimal.class))
+                    .lineTaxAmount(arguments.get(21, BigDecimal.class))
                     .isShippingCost(false)
                     .build();
         }
@@ -74,9 +76,12 @@ final public class Aggregators {
         public CreditNoteLine aggregateArguments(ArgumentsAccessor arguments, ParameterContext context) {
             return CreditNoteLine.builder()
                     .itemNumber("sku-3")
-                    .lineNetAmount(arguments.get(18, BigDecimal.class))
-                    .quantity(arguments.get(19, BigDecimal.class))
-                    .lineTaxAmount(arguments.get(20, BigDecimal.class))
+                    .quantity(arguments.get(18, BigDecimal.class))
+                    .taxRate(BigDecimal.valueOf(10))
+                    .unitNetAmount(arguments.get(19, BigDecimal.class))
+                    .lineNetAmount(arguments.get(20, BigDecimal.class))
+                    .lineTaxAmount(arguments.get(21, BigDecimal.class))
+                    .isShippingCost(false)
                     .build();
         }
     }
@@ -85,15 +90,15 @@ final public class Aggregators {
         @Override
         public Totals aggregateArguments(ArgumentsAccessor arguments, ParameterContext context) {
             return Totals.builder()
-                    .goodsTotalGross(arguments.get(21, BigDecimal.class))
-                    .goodsTotalNet(arguments.get(22, BigDecimal.class))
-                    .grandTotalGross(arguments.get(23, BigDecimal.class))
-                    .grandTotalNet(arguments.get(24, BigDecimal.class))
-                    .totalDiscountGross(arguments.get(25, BigDecimal.class))
-                    .totalDiscountNet(arguments.get(26, BigDecimal.class))
-                    .paymentTotal(arguments.get(27, BigDecimal.class))
+                    .goodsTotalGross(arguments.get(22, BigDecimal.class))
+                    .goodsTotalNet(arguments.get(23, BigDecimal.class))
+                    .grandTotalGross(arguments.get(24, BigDecimal.class))
+                    .grandTotalNet(arguments.get(25, BigDecimal.class))
+                    .totalDiscountGross(arguments.get(26, BigDecimal.class))
+                    .totalDiscountNet(arguments.get(27, BigDecimal.class))
+                    .paymentTotal(arguments.get(28, BigDecimal.class))
                     .grandTotalTaxes(List.of(GrandTotalTaxes.builder()
-                            .value(arguments.get(28, BigDecimal.class))
+                            .value(arguments.get(29, BigDecimal.class))
                             .rate(BigDecimal.valueOf(10))
                             .build()))
                     .build();
@@ -104,15 +109,15 @@ final public class Aggregators {
         @Override
         public Totals aggregateArguments(ArgumentsAccessor arguments, ParameterContext context) {
             return Totals.builder()
-                    .goodsTotalGross(arguments.get(29, BigDecimal.class))
-                    .goodsTotalNet(arguments.get(30, BigDecimal.class))
-                    .grandTotalGross(arguments.get(31, BigDecimal.class))
-                    .grandTotalNet(arguments.get(32, BigDecimal.class))
-                    .totalDiscountGross(arguments.get(33, BigDecimal.class))
-                    .totalDiscountNet(arguments.get(34, BigDecimal.class))
-                    .paymentTotal(arguments.get(35, BigDecimal.class))
+                    .goodsTotalGross(arguments.get(30, BigDecimal.class))
+                    .goodsTotalNet(arguments.get(31, BigDecimal.class))
+                    .grandTotalGross(arguments.get(32, BigDecimal.class))
+                    .grandTotalNet(arguments.get(33, BigDecimal.class))
+                    .totalDiscountGross(arguments.get(34, BigDecimal.class))
+                    .totalDiscountNet(arguments.get(35, BigDecimal.class))
+                    .paymentTotal(arguments.get(36, BigDecimal.class))
                     .grandTotalTaxes(List.of(GrandTotalTaxes.builder()
-                            .value(arguments.get(36, BigDecimal.class))
+                            .value(arguments.get(37, BigDecimal.class))
                             .rate(BigDecimal.valueOf(10))
                             .build()))
                     .build();

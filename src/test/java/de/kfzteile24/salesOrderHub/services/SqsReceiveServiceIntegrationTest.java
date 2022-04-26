@@ -451,7 +451,7 @@ class SqsReceiveServiceIntegrationTest {
 
         verify(salesOrderService).findLastOrderByOrderGroupId("580309129");
 
-        verify(salesOrderRowService).handleSalesOrderReturn(eq("580309129"), argThat(
+        verify(salesOrderRowService).handleSalesOrderReturn(eq("580309129"), eq("876130"), argThat(
                 items -> {
                     assertThat(items).hasSize(2);
                     assertThat(items).element(0)
@@ -482,7 +482,7 @@ class SqsReceiveServiceIntegrationTest {
 
         verify(snsPublishService).publishReturnOrderCreatedEvent(argThat(
                 salesOrderReturn -> {
-                    assertThat(salesOrderReturn.getOrderNumber()).isEqualTo("580309129");
+                    assertThat(salesOrderReturn.getOrderNumber()).isEqualTo("876130");
                     assertThat(salesOrderReturn.getOrderGroupId()).isEqualTo("580309129");
                     return true;
                 }

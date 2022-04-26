@@ -17,10 +17,12 @@ import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
+import javax.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
+@Table(name = "return_order", schema = "public", catalog = "soh")
 @Data
 @Builder
 @AllArgsConstructor

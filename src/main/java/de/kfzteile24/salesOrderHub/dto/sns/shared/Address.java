@@ -1,4 +1,4 @@
-package de.kfzteile24.salesOrderHub.dto.sns.creditnote;
+package de.kfzteile24.salesOrderHub.dto.sns.shared;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
@@ -8,7 +8,7 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Value
 @Jacksonized
-public class BillingAddress {
+public class Address {
 
     @JsonProperty("Salutation")
     String salutation;

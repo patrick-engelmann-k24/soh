@@ -381,7 +381,10 @@ public class SqsReceiveService {
         var creditNoteLines = salesCreditNoteHeader.getCreditNoteLines();
         log.info("Received core sales credit note created message with order number: {}", orderNumber);
 
-        var salesOrderReturn = salesOrderRowService.handleSalesOrderReturn(orderNumber, creditNoteLines);
+        var salesOrderReturn = salesOrderRowService.handleSalesOrderReturn(
+                orderNumber,
+                salesCreditNoteHeader.getCreditNoteNumber(),
+                creditNoteLines);
 
         snsPublishService.publishReturnOrderCreatedEvent(salesOrderReturn);
     }

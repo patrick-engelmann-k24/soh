@@ -136,16 +136,34 @@ public class OrderUtil {
 
     protected void decreaseOrderRowByNewItemValues(OrderRows row, CreditNoteLine item) {
         if (row != null) {
-            var rowQuantity = getValueOrDefault(row.getQuantity(), BigDecimal.ZERO);
-            var itemQuantity = getValueOrDefault(item.getQuantity(), BigDecimal.ZERO);
-
-            if (isGreater(itemQuantity, rowQuantity)) {
-                throw new IllegalArgumentException("Return item quantity must be less than or equal row quantity");
+            if (isNotNullAndNotEqual(item.getTaxRate(), row.getTaxRate())) {
+                updateOrderRowByTaxRate(row, item.getTaxRate());
             }
-
-            var updatedQuantity = rowQuantity.subtract(itemQuantity);
-            updateOrderRowByQuantity(row, updatedQuantity);
+            decreaseOrderRowByUnitNetValue(row, item);
+            decreaseOrderRowByQuantity(row, item);
         }
+    }
+
+    private void decreaseOrderRowByUnitNetValue(OrderRows row, CreditNoteLine item) {
+        var rowUnitNetValue = getValueOrDefault(row.getUnitValues().getGoodsValueNet(), BigDecimal.ZERO);
+        var itemUnitNetValue = getValueOrDefault(item.getUnitNetAmount(), BigDecimal.ZERO);
+
+        if (!itemUnitNetValue.equals(BigDecimal.ZERO)) {
+            var updatedValue = rowUnitNetValue.subtract(itemUnitNetValue);
+            updateOrderRowByUnitPriceNet(row, updatedValue);
+        }
+    }
+
+    protected void decreaseOrderRowByQuantity(OrderRows row, CreditNoteLine item) {
+        var rowQuantity = getValueOrDefault(row.getQuantity(), BigDecimal.ZERO);
+        var itemQuantity = getValueOrDefault(item.getQuantity(), BigDecimal.ZERO);
+
+        if (isGreater(itemQuantity, rowQuantity)) {
+            throw new IllegalArgumentException("Return item quantity must be less than or equal row quantity");
+        }
+
+        var updatedQuantity = rowQuantity.subtract(itemQuantity);
+        updateOrderRowByQuantity(row, updatedQuantity);
     }
 
     private void updateOrderRowByTaxRate(OrderRows row, BigDecimal taxRate) {
@@ -164,7 +182,7 @@ public class OrderUtil {
         row.setUnitValues(roundUnitValues(OrderMapper.INSTANCE.updateByGoodsValue(row.getUnitValues(), unitPriceGross, unitPriceNet)));
         row.setSumValues(roundSumValues(OrderMapper.INSTANCE.toSumValues(row.getUnitValues(), row.getQuantity())));
     }
-
+  
     private UnitValues roundUnitValues(UnitValues unitValues) {
         //Rounding Modes are given as in the calculation-service repo
         unitValues.setGoodsValueGross(round(unitValues.getGoodsValueGross(), HALF_UP));
