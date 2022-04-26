@@ -1,12 +1,14 @@
 package de.kfzteile24.salesOrderHub.services;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
-import de.kfzteile24.salesOrderHub.dto.shared.creditnote.CreditNoteLine;
+import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
+import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.ObjectUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
@@ -105,6 +107,8 @@ class SqsReceiveServiceIntegrationTest {
     private SalesOrderUtil salesOrderUtil;
     @Autowired
     private ObjectUtil objectUtil;
+    @Autowired
+    private ObjectMapper objectMapper;
     @SpyBean
     private SnsPublishService snsPublishService;
     @SpyBean
@@ -394,6 +398,7 @@ class SqsReceiveServiceIntegrationTest {
         assertEquals("13.2",updated.getLatestJson().getOrderHeader().getOrderNumberExternal());
     }
 
+    @SneakyThrows
     @Test
     @DisplayName("IT core sales credit note created event handling")
     void testQueueListenerCoreSalesCreditNoteCreated(TestInfo testInfo) {
@@ -402,6 +407,7 @@ class SqsReceiveServiceIntegrationTest {
 
         var salesOrder = SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
         salesOrder.setOrderGroupId("580309129");
+        salesOrder.setOrderNumber("580309129");
 
         var orderRows = List.of(
                 OrderRows.builder()
@@ -437,6 +443,9 @@ class SqsReceiveServiceIntegrationTest {
         salesOrderService.save(salesOrder, Action.ORDER_CREATED);
 
         var coreReturnDeliveryNotePrinted =  readResource("examples/coreSalesCreditNoteCreated.json");
+        String body = objectMapper.readValue(coreReturnDeliveryNotePrinted, SqsMessage.class).getBody();
+        SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage =
+                objectMapper.readValue(body, SalesCreditNoteCreatedMessage.class);
         sqsReceiveService.queueListenerCoreSalesCreditNoteCreated(coreReturnDeliveryNotePrinted, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
         //set expected values
@@ -450,34 +459,7 @@ class SqsReceiveServiceIntegrationTest {
 
         verify(salesOrderService).findLastOrderByOrderGroupId("580309129");
 
-        verify(salesOrderRowService).handleSalesOrderReturn(eq("580309129"), eq("876130"), argThat(
-                items -> {
-                    assertThat(items).hasSize(2);
-                    assertThat(items).element(0)
-                            .extracting(CreditNoteLine::getItemNumber).isEqualTo("sku-1");
-                    assertThat(items).element(0)
-                            .extracting(CreditNoteLine::getQuantity)
-                            .extracting(BigDecimal::doubleValue)
-                            .isEqualTo(1.0);
-                    assertThat(items).element(0)
-                            .extracting(CreditNoteLine::getLineNetAmount)
-                            .extracting(BigDecimal::doubleValue)
-                            .isEqualTo(-1.0);
-                    assertThat(items).element(0)
-                            .extracting(CreditNoteLine::getLineTaxAmount)
-                            .extracting(BigDecimal::doubleValue)
-                            .isEqualTo(19.00);
-                    assertThat(items).element(0)
-                            .extracting(CreditNoteLine::getIsShippingCost).isEqualTo(false);
-                    assertThat(items).element(1)
-                            .extracting(CreditNoteLine::getIsShippingCost).isEqualTo(true);
-                    assertThat(items).element(1)
-                            .extracting(CreditNoteLine::getLineNetAmount)
-                            .extracting(BigDecimal::doubleValue)
-                            .isEqualTo(-10.00);
-                    return true;
-                }
-        ));
+        verify(salesOrderRowService).handleSalesOrderReturn(eq("580309129"), eq(salesCreditNoteCreatedMessage));
 
         verify(snsPublishService).publishReturnOrderCreatedEvent(argThat(
                 salesOrderReturn -> {

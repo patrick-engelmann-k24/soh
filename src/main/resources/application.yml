@@ -124,7 +124,6 @@ kfzteile:
   # Delete processes that are not used?
   # KEEP OFF ON PRODUCTION
   #
-  delete-unused-processes: true
-  process-config:
-    order-return-process:
-      publish-delay: PT10S
+  deleteUnusedProcesses: true
+  orderReturnProcess:
+    publishDelay: PT10S

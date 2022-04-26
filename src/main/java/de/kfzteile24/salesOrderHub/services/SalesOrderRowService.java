@@ -11,10 +11,10 @@ import de.kfzteile24.salesOrderHub.domain.audit.Action;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.shared.creditnote.CreditNoteLine;
+import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
 import de.kfzteile24.salesOrderHub.exception.GrandTotalTaxNotFoundException;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
-import de.kfzteile24.salesOrderHub.exception.OrderRowNotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.CalculationUtil;
 import de.kfzteile24.salesOrderHub.helper.EventMapper;
@@ -29,6 +29,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
+import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -42,6 +43,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_CREDIT_NOTE_CREATED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_BOOKED;
 import static java.math.RoundingMode.HALF_UP;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ITEM_SHIPPED;
@@ -53,8 +55,6 @@ import static java.util.stream.Collectors.toUnmodifiableSet;
 @RequiredArgsConstructor
 public class SalesOrderRowService {
 
-    public static final String ERROR_MSG_ROW_NOT_FOUND_BY_SKU =
-            "Could not find order row with SKU {0} for order number {1} and order group id {2}";
     public static final String ERROR_MSG_GRAND_TOTAL_TAX_NOT_FOUND_BY_TAX_RATE =
             "Could not find order row with SKU {0} and tax rate {1} for order number {2} and order group id {3}";
     @NonNull
@@ -172,9 +172,12 @@ public class SalesOrderRowService {
         }
     }
 
-    public SalesOrderReturn handleSalesOrderReturn(String orderNumber,
-                                                   String creditNoteNumber,
-                                                   Collection<CreditNoteLine> creditNoteLines) {
+    @Transactional
+    public void handleSalesOrderReturn(
+            String orderNumber, SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage) {
+
+        var salesCreditNoteHeader = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader();
+        var creditNoteLines = salesCreditNoteHeader.getCreditNoteLines();
         var salesOrder = salesOrderService.findLastOrderByOrderGroupId(orderNumber);
         var negativedCreditNoteLine = negateCreditNoteLines(creditNoteLines);
         var returnOrderJson = recalculateOrderByReturns(salesOrder, getOrderRowUpdateItems(negativedCreditNoteLine));
@@ -183,14 +186,18 @@ public class SalesOrderRowService {
 
         var salesOrderReturn = SalesOrderReturn.builder()
                 .orderGroupId(orderNumber)
-                .orderNumber(creditNoteNumber)
+                .orderNumber(salesCreditNoteHeader.getCreditNoteNumber())
                 .returnOrderJson(returnOrderJson)
+                .salesCreditNoteCreatedMessage(salesCreditNoteCreatedMessage)
                 .build();
 
         updateShippingCosts(salesOrderReturn, negativedCreditNoteLine);
-        salesOrderService.addSalesOrderReturn(salesOrder, salesOrderReturn);
-
-        return salesOrderReturn;
+        SalesOrderReturn savedSalesOrderReturn = salesOrderService.addSalesOrderReturn(salesOrder, salesOrderReturn);
+        ProcessInstance result = helper.createReturnOrderProcess(savedSalesOrderReturn, CORE_CREDIT_NOTE_CREATED);
+        if (result != null) {
+            log.info("New return order process started for order number: {}. Process-Instance-ID: {} ",
+                    orderNumber, result.getProcessInstanceId());
+        }
     }
 
     public Order recalculateOrderByReturns(SalesOrder salesOrder, Collection<CreditNoteLine> items) {

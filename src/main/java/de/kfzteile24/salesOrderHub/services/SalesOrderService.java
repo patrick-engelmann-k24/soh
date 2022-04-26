@@ -140,10 +140,12 @@ public class SalesOrderService {
     }
 
     @Transactional
-    public SalesOrder addSalesOrderReturn(SalesOrder salesOrder, SalesOrderReturn salesOrderReturn) {
+    public SalesOrderReturn addSalesOrderReturn(SalesOrder salesOrder, SalesOrderReturn salesOrderReturn) {
         salesOrderReturn.setSalesOrder(salesOrder);
         salesOrder.getSalesOrderReturnList().add(salesOrderReturn);
-        return save(salesOrder, Action.RETURN_ORDER_CREATED);
+        SalesOrder saved = save(salesOrder, Action.RETURN_ORDER_CREATED);
+        return saved.getSalesOrderReturnList().stream()
+                .filter(r -> r.getOrderNumber().equals(salesOrderReturn.getOrderNumber())).findFirst().orElse(null);
     }
 
     public SalesOrder findLastOrderByOrderGroupId(String orderGroupId) {

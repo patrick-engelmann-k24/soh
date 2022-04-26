@@ -7,6 +7,7 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Payments;
@@ -18,6 +19,7 @@ import org.camunda.bpm.engine.history.HistoricActivityInstanceQuery;
 import org.camunda.bpm.engine.runtime.Execution;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -30,10 +32,12 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.RECURRING;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.CUSTOMER_TYPE;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_GROUP_ID;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROWS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.PAYMENT_TYPE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.PLATFORM_TYPE;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.PUBLISH_DELAY;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SALES_CHANNEL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SHIPMENT_METHOD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.VIRTUAL_ORDER_ROWS;
@@ -49,6 +53,9 @@ public class CamundaHelper {
     private final HistoryService historyService;
     private final RuntimeService runtimeService;
 
+    @Value("${kfzteile.orderReturnProcess.publishDelay}")
+    private String publishDelay;
+
     public boolean hasPassed(final String processInstance, final String activityId) {
         final List<HistoricActivityInstance> finishedInstances = historicActivityInstanceQuery(processInstance)
                 .finished()
@@ -63,10 +70,6 @@ public class CamundaHelper {
 
     public boolean hasNotPassed(final String processInstance, final String activityId) {
         return !hasPassed(processInstance, activityId);
-    }
-
-    public MessageCorrelationResult sendOrderRowMessage(BpmItem itemMessage, String orderNumber, String orderItemSku) {
-        return correlateMessageByBusinessKey(itemMessage, String.format("%s#%s", orderNumber, orderItemSku));
     }
 
     public MessageCorrelationResult correlateMessageByBusinessKey(BpmItem message, String businessKey) {
@@ -87,6 +90,18 @@ public class CamundaHelper {
                              .processInstanceBusinessKey(salesOrder.getOrderNumber())
                              .setVariables(createProcessVariables(salesOrder))
                              .correlateWithResult().getProcessInstance();
+    }
+
+    public ProcessInstance createReturnOrderProcess(SalesOrderReturn salesOrderReturn, Messages originChannel) {
+
+        Map<String, Object> variables = Map.of(
+                ORDER_NUMBER.getName(), salesOrderReturn.getOrderNumber(),
+                ORDER_GROUP_ID.getName(), salesOrderReturn.getOrderGroupId(),
+                PUBLISH_DELAY.getName(), publishDelay);
+        return runtimeService.createMessageCorrelation(originChannel.getName())
+                .processInstanceBusinessKey(salesOrderReturn.getOrderNumber())
+                .setVariables(variables)
+                .correlateWithResult().getProcessInstance();
     }
 
     protected Map<String, Object> createProcessVariables(SalesOrder salesOrder) {

@@ -24,7 +24,8 @@ public enum Variables implements BpmItem {
     SALES_CHANNEL("salesChannel"),
     IS_BRANCH_ORDER("isBranchOrder"),
     IS_SOH_ORDER("isSohOrder"),
-    POSITIVE_PAYMENT_TYPE("positivePaymentType")
+    POSITIVE_PAYMENT_TYPE("positivePaymentType"),
+    PUBLISH_DELAY("publishDelay")
     ;
 
     private final String name;
