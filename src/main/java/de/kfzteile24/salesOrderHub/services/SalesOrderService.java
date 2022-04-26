@@ -105,7 +105,7 @@ public class SalesOrderService {
         return orderRepository.countByCustomerEmail(salesOrder.getCustomerEmail()) > 0;
     }
 
-    public SalesOrder createSalesOrderForSubsequentDelivery(CoreSalesInvoiceCreatedMessage salesInvoiceCreatedMessage, String newOrderNumber) {
+    public SalesOrder createSalesOrderForInvoice(CoreSalesInvoiceCreatedMessage salesInvoiceCreatedMessage, String newOrderNumber) {
         Order order = createOrderFromSubsequentDelivery(salesInvoiceCreatedMessage);
         order.getOrderHeader().setPlatform(Platform.SOH);
         recalculateOrder(order);

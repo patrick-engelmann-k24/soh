@@ -407,7 +407,7 @@ public class SqsReceiveService {
                 orderNumber, invoiceNumber);
 
         try {
-            SalesOrder salesOrder = salesOrderService.createSalesOrderForSubsequentDelivery(salesInvoiceCreatedMessage, newOrderNumber);
+            SalesOrder salesOrder = salesOrderService.createSalesOrderForInvoice(salesInvoiceCreatedMessage, newOrderNumber);
             ProcessInstance result = camundaHelper.createOrderProcess(salesOrder, ORDER_CREATED_IN_SOH);
 
             if (result != null) {

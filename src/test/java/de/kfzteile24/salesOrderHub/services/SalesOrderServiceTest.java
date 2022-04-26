@@ -164,7 +164,7 @@ class SalesOrderServiceTest {
                 .build();
         salesOrder.getLatestJson().getOrderHeader().getTotals().setGrandTotalTaxes(List.of(actualGrandTotalTax));
 
-        var createdSalesOrder = salesOrderService.createSalesOrderForSubsequentDelivery(
+        var createdSalesOrder = salesOrderService.createSalesOrderForInvoice(
                 subsequentDeliveryMessage,
                 newOrderNumber);
 

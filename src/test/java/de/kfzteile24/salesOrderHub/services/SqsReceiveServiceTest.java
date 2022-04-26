@@ -1,15 +1,12 @@
 package de.kfzteile24.salesOrderHub.services;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.dto.sns.CoreCancellationMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
-import de.kfzteile24.salesOrderHub.dto.sns.cancellation.CoreCancellationItem;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
@@ -27,10 +24,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
@@ -108,13 +103,13 @@ class SqsReceiveServiceTest {
         String rawMessage = readResource("examples/ecpOrderMessage.json");
         SalesOrder salesOrder = getSalesOrder(rawMessage);
 
-        when(salesOrderService.createSalesOrderForSubsequentDelivery(any(), any())).thenReturn(salesOrder);
+        when(salesOrderService.createSalesOrderForInvoice(any(), any())).thenReturn(salesOrder);
 
         String coreSalesInvoiceCreatedMessage = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
         sqsReceiveService.queueListenerCoreSalesInvoiceCreated(coreSalesInvoiceCreatedMessage, ANY_SENDER_ID,
                 ANY_RECEIVE_COUNT);
 
-        verify(salesOrderService).createSalesOrderForSubsequentDelivery(any(CoreSalesInvoiceCreatedMessage.class), any(String.class));
+        verify(salesOrderService).createSalesOrderForInvoice(any(CoreSalesInvoiceCreatedMessage.class), any(String.class));
         verify(camundaHelper).createOrderProcess(any(SalesOrder.class), any(Messages.class));
     }
 
