@@ -1,6 +1,6 @@
 package de.kfzteile24.salesOrderHub.helper;
 
-import de.kfzteile24.salesOrderHub.dto.sns.creditnote.CreditNoteLine;
+import de.kfzteile24.salesOrderHub.dto.shared.creditnote.CreditNoteLine;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesFinancialDocumentLine;
 import org.mapstruct.Mapper;
 import org.mapstruct.factory.Mappers;

@@ -42,6 +42,7 @@ soh:
       orderInvoiceCreatedV1:  arn:aws:sns:eu-central-1:000000000000:soh-order-invoice-created-v1
       shipmentConfirmedV1: arn:aws:sns:eu-central-1:000000000000:soh-shipment-confirmed-v1
       returnOrderCreatedV1: arn:aws:sns:eu-central-1:000000000000:soh-return-order-created-v1
+      creditNoteReceivedV1: arn:aws:sns:eu-central-1:000000000000:soh-credit-note-received-v1
   sqs:
     queue:
       ecpShopOrders:                  http://localhost:4566/000000000000/soh-ecp-shop-orders-queue

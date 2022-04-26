@@ -7,6 +7,7 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.dto.mapper.CreditNoteEventMapper;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
@@ -55,6 +56,7 @@ public class SqsReceiveService {
     private final ObjectMapper objectMapper;
     private final SalesOrderPaymentSecuredService salesOrderPaymentSecuredService;
     private final SnsPublishService snsPublishService;
+    private final CreditNoteEventMapper creditNoteEventMapper;
 
     /**
      * Consume sqs for new orders from ecp shop
@@ -391,6 +393,10 @@ public class SqsReceiveService {
                 creditNoteLines);
 
         snsPublishService.publishReturnOrderCreatedEvent(salesOrderReturn);
+
+        var salesCreditNoteReceivedEvent =
+                creditNoteEventMapper.toSalesCreditNoteReceivedEvent(salesCreditNoteCreatedMessage);
+        snsPublishService.publishCreditNoteReceivedEvent(salesCreditNoteReceivedEvent);
     }
 
     /**
@@ -454,7 +460,7 @@ public class SqsReceiveService {
             ProcessInstance result = camundaHelper.createOrderProcess(
                     salesOrderService.createSalesOrder(originalSalesOrder), ORDER_RECEIVED_ECP);
             log.info("Original sales order is updated by core sales invoice created message with " +
-                            "order number: {} and invoice number: {}. Process-Instance-ID: {} ",
+                            "order number: {} and invoice number: {}.",
                     orderNumber,
                     invoiceNumber);
 
