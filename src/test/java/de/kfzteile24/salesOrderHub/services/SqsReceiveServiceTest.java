@@ -104,13 +104,13 @@ class SqsReceiveServiceTest {
         SalesOrder salesOrder = getSalesOrder(rawMessage);
 
         when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.of(salesOrder));
-        when(salesOrderService.createSalesOrderForInvoice(any(), any())).thenReturn(salesOrder);
+        when(salesOrderService.createSalesOrderForInvoice(any(), any(), any())).thenReturn(salesOrder);
 
         String coreSalesInvoiceCreatedMessage = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
         sqsReceiveService.queueListenerCoreSalesInvoiceCreated(coreSalesInvoiceCreatedMessage, ANY_SENDER_ID,
                 ANY_RECEIVE_COUNT);
 
-        verify(salesOrderService).createSalesOrderForInvoice(any(CoreSalesInvoiceCreatedMessage.class), any(String.class));
+        verify(salesOrderService).createSalesOrderForInvoice(any(CoreSalesInvoiceCreatedMessage.class), any(SalesOrder.class),any(String.class));
         verify(camundaHelper).createOrderProcess(any(SalesOrder.class), any(Messages.class));
     }
 

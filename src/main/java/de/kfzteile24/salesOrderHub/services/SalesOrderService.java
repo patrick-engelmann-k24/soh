@@ -109,7 +109,7 @@ public class SalesOrderService {
     }
 
     @Transactional
-    public SalesOrder createSubsequentSalesOrder(CoreSalesInvoiceCreatedMessage salesInvoiceCreatedMessage,
+    public SalesOrder createSalesOrderForInvoice(CoreSalesInvoiceCreatedMessage salesInvoiceCreatedMessage,
                                                  SalesOrder originalSalesOrder,
                                                  String newOrderNumber) {
         Order order = createOrderForSubsequentSalesOrder(salesInvoiceCreatedMessage, originalSalesOrder);
