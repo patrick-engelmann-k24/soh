@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -44,7 +45,7 @@ public class OrderUtil {
 
     public Integer getLastRowKey(SalesOrder originalSalesOrder) {
         var originalOrder = (Order) originalSalesOrder.getOriginalOrder();
-        return originalOrder.getOrderRows().stream().map(OrderRows::getRowKey).reduce(0, Integer::max);
+        return originalOrder.getOrderRows().stream().map(OrderRows::getRowKey).filter(Objects::nonNull).reduce(0, Integer::max);
     }
 
     public SalesOrder removeCancelledOrderRowsFromLatestJson(SalesOrder salesOrder) {
@@ -88,7 +89,7 @@ public class OrderUtil {
                 .collect(Collectors.toList());
     }
 
-    private OrderRows createNewOrderRow(CoreSalesFinancialDocumentLine item, String shippingType, Integer lastRowKey) {
+    public OrderRows createNewOrderRow(CoreSalesFinancialDocumentLine item, String shippingType, Integer lastRowKey) {
         var unitPriceGross = getGrossValue(item.getUnitNetAmount(), item.getTaxRate());
         var unitPriceNet = item.getUnitNetAmount();
         var sumOfGoodsPriceGross = getMultipliedValue(unitPriceGross, item.getQuantity());

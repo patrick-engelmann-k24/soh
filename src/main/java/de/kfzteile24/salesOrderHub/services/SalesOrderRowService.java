@@ -17,6 +17,7 @@ import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.OrderRowNotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.CalculationUtil;
+import de.kfzteile24.salesOrderHub.helper.EventMapper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
@@ -201,8 +202,10 @@ public class SalesOrderRowService {
             var orderRow = returnLatestJson.getOrderRows().stream()
                     .filter(r -> StringUtils.pathEquals(r.getSku(), item.getItemNumber()))
                     .findFirst()
-                    .orElseThrow(() -> new OrderRowNotFoundException(ERROR_MSG_ROW_NOT_FOUND_BY_SKU,
-                            item.getItemNumber(), salesOrder.getOrderNumber(), salesOrder.getOrderGroupId()));
+                    .orElse(orderUtil.createNewOrderRow(
+                            EventMapper.INSTANCE.toCoreSalesFinancialDocumentLine(item),
+                            ((Order) salesOrder.getOriginalOrder()).getOrderRows().get(0).getShippingType(),
+                            orderUtil.getLastRowKey(salesOrder)));
             orderUtil.recalculateOrderRow(orderRow, item);
 
             var sumValues = orderRow.getSumValues();
