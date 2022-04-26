@@ -118,7 +118,7 @@ public class SalesOrderUtil {
         Order latestJson = objectMapper.readValue(sqsMessage.getBody(), Order.class);
         latestJson.getOrderHeader().setOrderNumber(order.getOrderHeader().getOrderNumber());
         latestJson.getOrderHeader().setOrderGroupId(order.getOrderHeader().getOrderNumber());
-        latestJson.setOrderRows(List.of(latestJson.getOrderRows().get(1)));
+        latestJson.getOrderRows().get(0).setIsCancelled(true);
 
         final SalesOrder testOrder = SalesOrder.builder()
                 .orderNumber(order.getOrderHeader().getOrderNumber())

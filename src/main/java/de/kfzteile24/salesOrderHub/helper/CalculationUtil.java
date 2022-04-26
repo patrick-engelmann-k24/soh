@@ -29,6 +29,11 @@ public class CalculationUtil {
         return value.compareTo(otherValue) > 0;
     }
 
+    public static boolean isNotNullAndEqual(BigDecimal targetValue, BigDecimal comparedValue) {
+        return targetValue != null &&
+                targetValue.compareTo(Optional.ofNullable(comparedValue).orElse(BigDecimal.ZERO)) == 0;
+    }
+
     public static boolean isNotNullAndNotEqual(BigDecimal targetValue, BigDecimal comparedValue) {
         return targetValue != null &&
                 targetValue.compareTo(Optional.ofNullable(comparedValue).orElse(BigDecimal.ZERO)) != 0;

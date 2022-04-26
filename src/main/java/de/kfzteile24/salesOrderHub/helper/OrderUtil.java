@@ -12,6 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -53,17 +55,16 @@ public class OrderUtil {
         return salesOrder;
     }
 
-    public OrderRows createOrderFromOriginalSalesOrder(SalesOrder salesOrder, CoreSalesFinancialDocumentLine item, Integer lastRowKey) {
-        var orderRow = filterFromLatestJson(salesOrder, item);
-        if (orderRow == null) {
-            orderRow = filterFromOriginalOrder(salesOrder, item);
+    public List<OrderRows> createOrderRowFromOriginalSalesOrder(SalesOrder originalSalesOrder, CoreSalesFinancialDocumentLine item, Integer lastRowKey) {
+        List<OrderRows> orderRows = new ArrayList<>();
+        List<OrderRows> rowFromLatestJson = createRowFromLatestJson(originalSalesOrder, item);
+        if (rowFromLatestJson != null && !rowFromLatestJson.isEmpty()) {
+           orderRows.addAll(rowFromLatestJson);
+        } else {
+            var shippingType = ((Order) originalSalesOrder.getOriginalOrder()).getOrderRows().get(0).getShippingType();
+            orderRows.add(createNewOrderRow(item, shippingType, lastRowKey));
         }
-        if (orderRow == null) {
-            var shippingType = ((Order) salesOrder.getOriginalOrder()).getOrderRows().get(0).getShippingType();
-            orderRow = createNewOrderRow(item, shippingType, lastRowKey);
-        }
-        orderRow.setIsCancelled(false);
-        return orderRow;
+        return orderRows;
     }
 
     public OrderRows recalculateOrderRow(OrderRows orderRow, CreditNoteLine item) {
@@ -71,12 +72,20 @@ public class OrderUtil {
         return orderRow;
     }
 
-    private OrderRows filterFromLatestJson(SalesOrder salesOrder, CoreSalesFinancialDocumentLine item) {
-        return filterFromOrder(item, salesOrder.getLatestJson());
-    }
-
-    private OrderRows filterFromOriginalOrder(SalesOrder salesOrder, CoreSalesFinancialDocumentLine item) {
-        return filterFromOrder(item, (Order) salesOrder.getOriginalOrder());
+    private List<OrderRows> createRowFromLatestJson(SalesOrder salesOrder, CoreSalesFinancialDocumentLine item) {
+        return salesOrder.getLatestJson().getOrderRows().stream()
+                .filter(row -> row.getSku().equals(item.getItemNumber()))
+                .map(OrderMapper.INSTANCE::toOrderRow)
+                .map(row -> {
+                    row.setIsCancelled(false);
+                    if (row.getQuantity().compareTo(item.getQuantity()) <= 0) {
+                        return updateOrderRowByNewItemValues(row, item);
+                    } else {
+                        item.setQuantity(item.getQuantity().subtract(row.getQuantity()));
+                        return row;
+                    }
+                })
+                .collect(Collectors.toList());
     }
 
     private OrderRows createNewOrderRow(CoreSalesFinancialDocumentLine item, String shippingType, Integer lastRowKey) {
@@ -87,6 +96,7 @@ public class OrderUtil {
 
         return OrderRows.builder()
                 .rowKey(lastRowKey + 1)
+                .isCancelled(false)
                 .shippingType(shippingType)
                 .sku(item.getItemNumber())
                 .quantity(Optional.ofNullable(item.getQuantity()).orElse(BigDecimal.ONE))
@@ -106,19 +116,7 @@ public class OrderUtil {
                 .build();
     }
 
-    private OrderRows filterFromOrder(CoreSalesFinancialDocumentLine item, Order latestOrder) {
-        var orderRow = OrderMapper.INSTANCE.toOrderRow(latestOrder.getOrderRows().stream()
-                .filter(row -> row.getSku().equals(item.getItemNumber()))
-                .findFirst().orElse(null));
-        if(orderRow == null){
-            log.info("Order row with sku: {} was not found for order with order number: {}",
-                    item.getItemNumber(), latestOrder.getOrderHeader().getOrderNumber());
-        }
-        updateOrderRowByNewItemValues(orderRow, item);
-        return orderRow;
-    }
-
-    protected void updateOrderRowByNewItemValues(OrderRows row, CoreSalesFinancialDocumentLine item) {
+    protected OrderRows updateOrderRowByNewItemValues(OrderRows row, CoreSalesFinancialDocumentLine item) {
         if (row != null) {
             if (isNotNullAndNotEqual(item.getTaxRate(), row.getTaxRate())) {
                 updateOrderRowByTaxRate(row, item.getTaxRate());
@@ -132,6 +130,7 @@ public class OrderUtil {
                 updateOrderRowByQuantity(row, item.getQuantity());
             }
         }
+        return row;
     }
 
     protected void decreaseOrderRowByNewItemValues(OrderRows row, CreditNoteLine item) {

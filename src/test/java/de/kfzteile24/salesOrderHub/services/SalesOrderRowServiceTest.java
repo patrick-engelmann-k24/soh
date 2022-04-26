@@ -53,9 +53,6 @@ class SalesOrderRowServiceTest {
     private SalesOrderService salesOrderService;
 
     @Mock
-    private OrderUtil orderUtil;
-
-    @Mock
     private TimedPollingService timedPollingService;
 
     @Mock
@@ -63,6 +60,9 @@ class SalesOrderRowServiceTest {
 
     @Mock
     private InvoiceService invoiceService;
+
+    @Mock
+    private OrderUtil orderUtil;
 
     @InjectMocks
     private SalesOrderRowService salesOrderRowService;
@@ -83,7 +83,6 @@ class SalesOrderRowServiceTest {
         when(salesOrderService.getOrderByOrderNumber(orderNumber)).thenReturn(Optional.of(salesOrder));
         when(runtimeService.getVariable(any(), any())).thenReturn(orderRowIds);
         when(camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())).thenReturn(true);
-        when(orderUtil.removeCancelledOrderRowsFromLatestJson(any())).thenReturn(salesOrder);
 
         salesOrderRowService.cancelOrderRows(salesOrder.getOrderNumber(), Lists.newArrayList(orderRowsToCancel.getSku()));
 
