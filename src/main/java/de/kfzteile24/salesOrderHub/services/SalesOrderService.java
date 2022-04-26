@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.INVOICE_RECEIVED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getSumValue;
+import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.isNotNullAndEqual;
 import static java.text.MessageFormat.format;
 
 @Service
@@ -177,15 +178,34 @@ public class SalesOrderService {
                 .build();
     }
 
-    public boolean allOrderRowsAreNotCancelledAndMatchWithItems(SalesOrder originalSalesOrder,
-                                                                List<CoreSalesFinancialDocumentLine> items) {
-        var orderRows = originalSalesOrder.getLatestJson().getOrderRows();
-        if (orderRows.stream().anyMatch(OrderRows::getIsCancelled)) {
+    public boolean isFullyMatchedWithOriginalOrder(SalesOrder originalSalesOrder,
+                                                   List<CoreSalesFinancialDocumentLine> items) {
+        // Check if there is no other sales order namely subsequent order
+        var ordersByOrderGroupId = getOrderByOrderGroupId(originalSalesOrder.getOrderGroupId());
+        if (ordersByOrderGroupId.size() > 1) {
             return false;
         }
-        var skuList = items.stream()
-                .map(CoreSalesFinancialDocumentLine::getItemNumber).collect(Collectors.toSet());
-        return orderRows.stream().allMatch(row -> skuList.contains(row.getSku()));
+
+        // Check if all sku names are matching with original sales order
+        var orderRows = originalSalesOrder.getLatestJson().getOrderRows();
+        var skuList = orderRows.stream().map(OrderRows::getSku).collect(Collectors.toSet());
+        if (!items.stream().allMatch(row -> skuList.contains(row.getItemNumber()))) {
+            return false;
+        }
+
+        // Check if all order rows have same values within the invoice event
+        for (OrderRows row : orderRows) {
+            var item = items.stream().filter(each -> row.getSku().equals(each.getItemNumber())).findFirst().orElse(null);
+            if (item == null)
+                return false;
+            if (!isNotNullAndEqual(item.getQuantity(), row.getQuantity()))
+                return false;
+            if (!isNotNullAndEqual(item.getTaxRate(), row.getTaxRate()))
+                return false;
+            if (!isNotNullAndEqual(item.getUnitNetAmount(), row.getUnitValues().getGoodsValueNet()))
+                return false;
+        }
+        return true;
     }
 
     public List<String> getOrderNumberListByOrderGroupId(String orderGroupId, String orderItemSku) {

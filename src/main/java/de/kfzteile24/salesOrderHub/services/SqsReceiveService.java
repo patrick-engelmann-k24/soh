@@ -420,7 +420,7 @@ public class SqsReceiveService {
             var originalSalesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                     .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
 
-            if (salesOrderService.allOrderRowsAreNotCancelledAndMatchWithItems(originalSalesOrder, itemList)) {
+            if (salesOrderService.isFullyMatchedWithOriginalOrder(originalSalesOrder, itemList)) {
                 updateOriginalSalesOrder(orderNumber, invoiceNumber, originalSalesOrder);
             } else {
                 SalesOrder subsequentOrder = salesOrderService.createSalesOrderForInvoice(
@@ -430,7 +430,7 @@ public class SqsReceiveService {
                 handleCancellationForOrderRows(originalSalesOrder, subsequentOrder.getLatestJson().getOrderRows());
                 ProcessInstance result = camundaHelper.createOrderProcess(subsequentOrder, ORDER_CREATED_IN_SOH);
                 if (result != null) {
-                    log.info("New soh order process started for subsequent delivery note with " +
+                    log.info("New soh order process started by core sales invoice created message with " +
                                     "order number: {} and invoice number: {}. Process-Instance-ID: {} ",
                             orderNumber,
                             invoiceNumber,
@@ -453,6 +453,10 @@ public class SqsReceiveService {
         if (!camundaHelper.checkIfActiveProcessExists(orderNumber)) {
             ProcessInstance result = camundaHelper.createOrderProcess(
                     salesOrderService.createSalesOrder(originalSalesOrder), ORDER_RECEIVED_ECP);
+            log.info("Original sales order is updated by core sales invoice created message with " +
+                            "order number: {} and invoice number: {}. Process-Instance-ID: {} ",
+                    orderNumber,
+                    invoiceNumber);
 
             if (result != null) {
                 log.info("Order process re-started by core sales invoice created message with " +
