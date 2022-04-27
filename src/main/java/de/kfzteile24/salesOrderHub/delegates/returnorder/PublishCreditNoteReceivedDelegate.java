@@ -3,9 +3,7 @@ package de.kfzteile24.salesOrderHub.delegates.returnorder;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.dto.mapper.CreditNoteEventMapper;
-import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
-import de.kfzteile24.salesOrderHub.exception.SalesOrderReturnNotFoundException;
-import de.kfzteile24.salesOrderHub.services.SalesOrderService;
+import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
@@ -21,7 +19,7 @@ class PublishCreditNoteReceivedDelegate implements JavaDelegate {
     private SnsPublishService snsPublishService;
 
     @Autowired
-    private SalesOrderService salesOrderService;
+    private SalesOrderReturnService salesOrderReturnService;
 
     @Autowired
     private CreditNoteEventMapper creditNoteEventMapper;
@@ -30,11 +28,7 @@ class PublishCreditNoteReceivedDelegate implements JavaDelegate {
     public void execute(DelegateExecution delegateExecution) throws Exception {
 
         var orderNumber = (String) delegateExecution.getVariable(Variables.ORDER_NUMBER.getName());
-        var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
-                .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
-        SalesOrderReturn salesOrderReturn = salesOrder.getSalesOrderReturnList().stream()
-                .filter(r -> r.getOrderNumber().equals(orderNumber)).findFirst()
-                .orElseThrow(() -> new SalesOrderReturnNotFoundException(orderNumber));
+        SalesOrderReturn salesOrderReturn = salesOrderReturnService.getByOrderNumber(orderNumber);
         var salesCreditNoteCreatedMessage = salesOrderReturn.getSalesCreditNoteCreatedMessage();
         var salesCreditNoteReceivedEvent =
                 creditNoteEventMapper.toSalesCreditNoteReceivedEvent(salesCreditNoteCreatedMessage);

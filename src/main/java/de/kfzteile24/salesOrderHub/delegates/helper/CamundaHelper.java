@@ -32,7 +32,6 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.RECURRING;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.CUSTOMER_TYPE;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_GROUP_ID;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROWS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.PAYMENT_TYPE;
@@ -96,7 +95,6 @@ public class CamundaHelper {
 
         Map<String, Object> variables = Map.of(
                 ORDER_NUMBER.getName(), salesOrderReturn.getOrderNumber(),
-                ORDER_GROUP_ID.getName(), salesOrderReturn.getOrderGroupId(),
                 PUBLISH_DELAY.getName(), publishDelay);
         return runtimeService.createMessageCorrelation(originChannel.getName())
                 .processInstanceBusinessKey(salesOrderReturn.getOrderNumber())

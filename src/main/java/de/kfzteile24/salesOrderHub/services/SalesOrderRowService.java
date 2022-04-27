@@ -182,7 +182,7 @@ public class SalesOrderRowService {
         var negativedCreditNoteLine = negateCreditNoteLines(creditNoteLines);
         var returnOrderJson = recalculateOrderByReturns(salesOrder, getOrderRowUpdateItems(negativedCreditNoteLine));
 
-        returnOrderJson.getOrderHeader().setOrderNumber(salesOrder.getOrderNumber());
+        returnOrderJson.getOrderHeader().setOrderNumber(salesCreditNoteHeader.getCreditNoteNumber());
 
         var salesOrderReturn = SalesOrderReturn.builder()
                 .orderGroupId(orderNumber)

@@ -4,6 +4,7 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderReturnNotFoundException;
+import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import lombok.extern.slf4j.Slf4j;
@@ -20,18 +21,13 @@ class PublishReturnOrderCreatedDelegate implements JavaDelegate {
     private SnsPublishService snsPublishService;
 
     @Autowired
-    private SalesOrderService salesOrderService;
+    private SalesOrderReturnService salesOrderReturnService;
 
     @Override
     public void execute(DelegateExecution delegateExecution) throws Exception {
 
         var orderNumber = (String) delegateExecution.getVariable(Variables.ORDER_NUMBER.getName());
-        var orderGroupId = (String) delegateExecution.getVariable(Variables.ORDER_GROUP_ID.getName());
-        var salesOrder = salesOrderService.getOrderByOrderNumber(orderGroupId)
-                .orElseThrow(() -> new SalesOrderNotFoundException(orderGroupId));
-        SalesOrderReturn salesOrderReturn = salesOrder.getSalesOrderReturnList().stream()
-                .filter(r -> r.getOrderNumber().equals(orderNumber)).findFirst()
-                .orElseThrow(() -> new SalesOrderReturnNotFoundException(orderNumber));
+        SalesOrderReturn salesOrderReturn = salesOrderReturnService.getByOrderNumber(orderNumber);
         snsPublishService.publishReturnOrderCreatedEvent(salesOrderReturn);
         log.info("Sales Order Return created for order number: {}", orderNumber);
     }
