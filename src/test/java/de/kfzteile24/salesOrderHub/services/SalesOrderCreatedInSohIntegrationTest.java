@@ -9,6 +9,7 @@ import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.SumValues;
 import de.kfzteile24.soh.order.dto.Totals;
+
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
@@ -90,7 +91,9 @@ class SalesOrderCreatedInSohIntegrationTest {
                 "1.62",
                 "11.01",
                 "9.17",
-                "11.01");
+                "11.01",
+                "0",
+                "0");
     }
 
     @Test
@@ -124,7 +127,9 @@ class SalesOrderCreatedInSohIntegrationTest {
                 "50.26",
                 "372.22",
                 "310.38",
-                "372.22");
+                "372.22",
+                "11.90",
+                "10.00");
         checkOrderRows(newOrderNumberCreatedInSoh, rowSku1, rowSku2, rowSku3);
     }
 
@@ -159,7 +164,9 @@ class SalesOrderCreatedInSohIntegrationTest {
                 "3.24",
                 "22.02",
                 "18.34",
-                "22.02");
+                "22.02",
+                "0",
+                "0");
     }
 
     private void checkTotalsValues(String orderNumber,
@@ -169,7 +176,9 @@ class SalesOrderCreatedInSohIntegrationTest {
                                    String totalDiscountNet,
                                    String grandTotalGross,
                                    String grandTotalNet,
-                                   String paymentTotal) {
+                                   String paymentTotal,
+                                   String shippingGross,
+                                   String shippingNet) {
 
         SalesOrder updatedOrder = salesOrderService.getOrderByOrderNumber(orderNumber).orElse(null);
         assertNotNull(updatedOrder);
@@ -181,8 +190,8 @@ class SalesOrderCreatedInSohIntegrationTest {
         assertEquals(new BigDecimal(grandTotalGross), totals.getGrandTotalGross());
         assertEquals(new BigDecimal(grandTotalNet), totals.getGrandTotalNet());
         assertEquals(new BigDecimal(paymentTotal), totals.getPaymentTotal());
-        assertNull(totals.getShippingCostGross());
-        assertNull(totals.getShippingCostNet());
+        assertEquals(new BigDecimal(shippingGross), totals.getShippingCostGross());
+        assertEquals(new BigDecimal(shippingNet), totals.getShippingCostNet());
         assertNotNull(totals.getSurcharges());
         assertNull(totals.getSurcharges().getDepositGross());
         assertNull(totals.getSurcharges().getDepositNet());

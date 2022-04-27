@@ -196,6 +196,7 @@ class SalesOrderServiceTest {
                 .unitNetAmount(BigDecimal.valueOf(9))
                 .lineNetAmount(BigDecimal.valueOf(9).multiply(quantity))
                 .taxRate(BigDecimal.TEN)
+                .isShippingCost(false)
                 .build();
 
         CoreSalesInvoiceHeader coreSalesInvoiceHeader = new CoreSalesInvoiceHeader();
