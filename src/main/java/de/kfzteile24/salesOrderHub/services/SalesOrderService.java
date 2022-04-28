@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.INVOICE_RECEIVED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
+import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getGrossValue;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getSumValue;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.isNotNullAndEqual;
 import static java.text.MessageFormat.format;
@@ -112,10 +113,14 @@ public class SalesOrderService {
     public SalesOrder createSalesOrderForInvoice(CoreSalesInvoiceCreatedMessage salesInvoiceCreatedMessage,
                                                  SalesOrder originalSalesOrder,
                                                  String newOrderNumber) {
+
+        CoreSalesInvoiceHeader salesInvoiceHeader = salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
         Order order = createOrderForSubsequentSalesOrder(salesInvoiceCreatedMessage, originalSalesOrder);
         order.getOrderHeader().setPlatform(Platform.SOH);
-        order.getOrderHeader().setDocumentRefNumber(salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber());
-        recalculateTotals(order);
+        order.getOrderHeader().setDocumentRefNumber(salesInvoiceHeader.getInvoiceNumber());
+        var shippingCostDocumentLine =  salesInvoiceHeader.getInvoiceLines().stream()
+                .filter(CoreSalesFinancialDocumentLine::getIsShippingCost).findFirst().orElse(null);
+        recalculateTotals(order, shippingCostDocumentLine);
 
         var salesOrder = SalesOrder.builder()
                 .orderNumber(newOrderNumber)
@@ -162,10 +167,12 @@ public class SalesOrderService {
         var items = salesInvoiceHeader.getInvoiceLines();
         List<OrderRows> orderRows = new ArrayList<>();
         for (CoreSalesFinancialDocumentLine item : items) {
-            orderRows.addAll(orderUtil.createOrderRowFromOriginalSalesOrder(
-                    originalSalesOrder,
-                    item,
-                    orderUtil.getLastRowKey(originalSalesOrder)));
+            if (!item.getIsShippingCost()) {
+                orderRows.addAll(orderUtil.createOrderRowFromOriginalSalesOrder(
+                        originalSalesOrder,
+                        item,
+                        orderUtil.getLastRowKey(originalSalesOrder)));
+            }
         }
         orderRows = orderRows.stream()
                 .filter(Objects::nonNull)
@@ -266,7 +273,7 @@ public class SalesOrderService {
         return foundSalesOrders.stream().map(SalesOrder::getOrderNumber).distinct().collect(Collectors.toList());
     }
 
-    private void recalculateTotals(Order order) {
+    private void recalculateTotals(Order order, CoreSalesFinancialDocumentLine shippingCostLine) {
 
         List<OrderRows> orderRows = order.getOrderRows();
         List<SumValues> sumValues = orderRows.stream().map(OrderRows::getSumValues).collect(Collectors.toList());
@@ -276,6 +283,9 @@ public class SalesOrderService {
         BigDecimal totalDiscountNet = getSumValue(SumValues::getDiscountNet, sumValues);
         BigDecimal grandTotalGross = goodsTotalGross.subtract(totalDiscountGross);
         BigDecimal grantTotalNet = goodsTotalNet.subtract(totalDiscountNet);
+        BigDecimal shippingCostNet = shippingCostLine != null ? shippingCostLine.getUnitNetAmount() : BigDecimal.ZERO;
+        BigDecimal shippingCostGross = shippingCostLine != null ?
+                getGrossValue(shippingCostLine.getUnitNetAmount(), shippingCostLine.getTaxRate()) : BigDecimal.ZERO;
 
         Totals totals = Totals.builder()
                 .goodsTotalGross(goodsTotalGross)
@@ -287,8 +297,8 @@ public class SalesOrderService {
                 .paymentTotal(grandTotalGross)
                 .grandTotalTaxes(calculateGrandTotalTaxes(order))
                 .surcharges(Surcharges.builder().build())
-                .shippingCostGross(null)
-                .shippingCostNet(null)
+                .shippingCostGross(shippingCostGross)
+                .shippingCostNet(shippingCostNet)
                 .build();
 
         order.getOrderHeader().setTotals(totals);
