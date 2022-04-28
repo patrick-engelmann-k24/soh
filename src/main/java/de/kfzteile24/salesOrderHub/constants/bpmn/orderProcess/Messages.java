@@ -12,7 +12,8 @@ public enum Messages implements BpmItem {
     ORDER_INVOICE_ADDRESS_CHANGE_RECEIVED("msgInvoiceAddressChangeReceived"),
     ORDER_CANCELLATION_RECEIVED("msgOrderCancellationReceived"),
     INVOICE_CREATED("msgInvoiceCreated"),
-    ORDER_CREATED_IN_SOH("msgOrderCreatedInSoh")
+    ORDER_CREATED_IN_SOH("msgOrderCreatedInSoh"),
+    CORE_CREDIT_NOTE_CREATED("msgCoreCreditNoteCreated")
     ;
 
     private final String name;

@@ -1,4 +1,4 @@
-package de.kfzteile24.salesOrderHub.dto.sns.creditnote;
+package de.kfzteile24.salesOrderHub.dto.shared.creditnote;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import de.kfzteile24.salesOrderHub.constants.CurrencyType;

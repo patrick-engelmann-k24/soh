@@ -54,7 +54,6 @@ public class SqsReceiveService {
     private final CamundaHelper camundaHelper;
     private final ObjectMapper objectMapper;
     private final SalesOrderPaymentSecuredService salesOrderPaymentSecuredService;
-    private final SnsPublishService snsPublishService;
 
     /**
      * Consume sqs for new orders from ecp shop
@@ -371,7 +370,6 @@ public class SqsReceiveService {
     @SqsListener(value = "${soh.sqs.queue.coreSalesCreditNoteCreated}", deletionPolicy = ON_SUCCESS)
     @SneakyThrows(JsonProcessingException.class)
     @Trace(metricName = "Handling core sales credit note created message", dispatcher = true)
-    @Transactional
     public void queueListenerCoreSalesCreditNoteCreated(
             String rawMessage,
             @Header("SenderId") String senderId,
@@ -380,17 +378,10 @@ public class SqsReceiveService {
         String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
         SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage =
                 objectMapper.readValue(body, SalesCreditNoteCreatedMessage.class);
-        var salesCreditNoteHeader = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader();
-        var orderNumber = salesCreditNoteHeader.getOrderNumber();
-        var creditNoteLines = salesCreditNoteHeader.getCreditNoteLines();
+
+        var orderNumber = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber();
         log.info("Received core sales credit note created message with order number: {}", orderNumber);
-
-        var salesOrderReturn = salesOrderRowService.handleSalesOrderReturn(
-                orderNumber,
-                salesCreditNoteHeader.getCreditNoteNumber(),
-                creditNoteLines);
-
-        snsPublishService.publishReturnOrderCreatedEvent(salesOrderReturn);
+        salesOrderRowService.handleSalesOrderReturn(orderNumber, salesCreditNoteCreatedMessage);
     }
 
     /**
@@ -454,7 +445,7 @@ public class SqsReceiveService {
             ProcessInstance result = camundaHelper.createOrderProcess(
                     salesOrderService.createSalesOrder(originalSalesOrder), ORDER_RECEIVED_ECP);
             log.info("Original sales order is updated by core sales invoice created message with " +
-                            "order number: {} and invoice number: {}. Process-Instance-ID: {} ",
+                            "order number: {} and invoice number: {}.",
                     orderNumber,
                     invoiceNumber);
 

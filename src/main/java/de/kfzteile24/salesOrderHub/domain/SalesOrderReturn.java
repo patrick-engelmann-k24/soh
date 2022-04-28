@@ -1,6 +1,8 @@
 package de.kfzteile24.salesOrderHub.domain;
 
+import de.kfzteile24.salesOrderHub.domain.converter.CreditNoteMessageConverter;
 import de.kfzteile24.salesOrderHub.domain.converter.OrderJsonConverter;
+import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -47,5 +49,9 @@ public class SalesOrderReturn {
     @Column(columnDefinition = "json")
     @Convert(converter = OrderJsonConverter.class)
     private Order returnOrderJson;
+
+    @Column(columnDefinition = "json", name = "credit_note_event")
+    @Convert(converter = CreditNoteMessageConverter.class)
+    private SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage;
 
 }

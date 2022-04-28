@@ -106,6 +106,10 @@ data "aws_sns_topic" "sns_soh_return_order_created_v1" {
   name = "soh-return-order-created-v1"
 }
 
+data "aws_sns_topic" "sns_soh_credit_note_received_v1" {
+  name = "soh-credit-note-received-v1"
+}
+
 # subscriptions of sqs to sns
 resource "aws_sns_topic_subscription" "sns_subscription_ecp_orders_v3" {
   endpoint = aws_sqs_queue.ecp_shop_orders.arn

@@ -11,7 +11,8 @@ import lombok.RequiredArgsConstructor;
 public enum ProcessDefinition {
     SALES_ORDER_PROCESS("SalesOrderProcess_v2"),
     SALES_ORDER_ROW_FULFILLMENT_PROCESS("OrderRowFulfillmentProcess"),
-    SAVE_INVOICE_PROCESS("SaveInvoiceProcess");
+    SAVE_INVOICE_PROCESS("SaveInvoiceProcess"),
+    RETURN_ORDER_PROCESS("ReturnOrderProcess");
 
     @NonNull
     private String name;

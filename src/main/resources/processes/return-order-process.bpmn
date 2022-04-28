@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1ej4vps" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.12.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.15.0">
+  <bpmn:message id="Message_0k05b9j" name="msgCoreCreditNoteCreated" />
+  <bpmn:collaboration id="Collaboration_19pm6dq">
+    <bpmn:participant id="Soh" name="SOH" processRef="ReturnOrderProcess" />
+    <bpmn:participant id="Core" name="CORE" processRef="Process_1a4ut5n" />
+    <bpmn:participant id="Erp" name="ERP" processRef="Process_0fkhbk5" />
+    <bpmn:messageFlow id="Flow_0j2q3qd" name="core-sales-credit-note-created-v1" sourceRef="Core" targetRef="eventStartMsgCoreCreditNoteCreated" />
+    <bpmn:messageFlow id="Flow_0y20rrr" name="soh-credit-note-received-v1" sourceRef="eventEndMsgCoreCreditNoteReceived" targetRef="Erp" />
+    <bpmn:messageFlow id="Flow_09h08yk" name="soh-return-order-created-v1" sourceRef="eventInterMsgReturnOrderCreated" targetRef="Erp" />
+  </bpmn:collaboration>
+  <bpmn:process id="ReturnOrderProcess" name="Return order process" isExecutable="true">
+    <bpmn:laneSet id="LaneSet_1seutye" />
+    <bpmn:endEvent id="eventEndMsgCoreCreditNoteReceived" name="Publish credit note received">
+      <bpmn:incoming>Flow_09ysqxu</bpmn:incoming>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_0rnirb3" camunda:delegateExpression="${publishCreditNoteReceivedDelegate}" />
+    </bpmn:endEvent>
+    <bpmn:startEvent id="eventStartMsgCoreCreditNoteCreated" name="Core credit note created">
+      <bpmn:outgoing>Flow_0run8bt</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_0n3j2tt" messageRef="Message_0k05b9j" />
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_0r17qyv" sourceRef="eventInterMsgReturnOrderCreated" targetRef="Event_13s33zk" />
+    <bpmn:sequenceFlow id="Flow_09ysqxu" sourceRef="Event_13s33zk" targetRef="eventEndMsgCoreCreditNoteReceived" />
+    <bpmn:sequenceFlow id="Flow_0run8bt" sourceRef="eventStartMsgCoreCreditNoteCreated" targetRef="eventInterMsgReturnOrderCreated" />
+    <bpmn:intermediateThrowEvent id="eventInterMsgReturnOrderCreated" name="Publish return order created">
+      <bpmn:incoming>Flow_0run8bt</bpmn:incoming>
+      <bpmn:outgoing>Flow_0r17qyv</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_0jt2ph2" camunda:delegateExpression="${publishReturnOrderCreatedDelegate}" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:intermediateCatchEvent id="Event_13s33zk">
+      <bpmn:incoming>Flow_0r17qyv</bpmn:incoming>
+      <bpmn:outgoing>Flow_09ysqxu</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_0eef5hm">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">#{publishDelay}</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:textAnnotation id="TextAnnotation_18tghkc">
+      <bpmn:text>Re-publish core credit note created event</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_0x530n9" sourceRef="eventEndMsgCoreCreditNoteReceived" targetRef="TextAnnotation_18tghkc" />
+    <bpmn:textAnnotation id="TextAnnotation_0u1aom7">
+      <bpmn:text>Optional, configurable delay between event publishing</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_1b1rxs0" sourceRef="Event_13s33zk" targetRef="TextAnnotation_0u1aom7" />
+  </bpmn:process>
+  <bpmn:process id="Process_1a4ut5n" isExecutable="false" />
+  <bpmn:process id="Process_0fkhbk5" isExecutable="false" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_19pm6dq">
+      <bpmndi:BPMNShape id="Participant_0081t5k_di" bpmnElement="Soh" isHorizontal="true">
+        <dc:Bounds x="125" y="218" width="650" height="302" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_0u1aom7_di" bpmnElement="TextAnnotation_0u1aom7">
+        <dc:Bounds x="520" y="240" width="100" height="68" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_09ysqxu_di" bpmnElement="Flow_09ysqxu">
+        <di:waypoint x="518" y="347" />
+        <di:waypoint x="612" y="347" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0r17qyv_di" bpmnElement="Flow_0r17qyv">
+        <di:waypoint x="378" y="347" />
+        <di:waypoint x="482" y="347" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0run8bt_di" bpmnElement="Flow_0run8bt">
+        <di:waypoint x="215" y="347" />
+        <di:waypoint x="342" y="347" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_1jy27xs_di" bpmnElement="eventEndMsgCoreCreditNoteReceived">
+        <dc:Bounds x="612" y="329" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="601" y="372" width="67" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0uj7mam_di" bpmnElement="eventStartMsgCoreCreditNoteCreated">
+        <dc:Bounds x="179" y="329" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="158" y="372" width="79" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_18tghkc_di" bpmnElement="TextAnnotation_18tghkc">
+        <dc:Bounds x="650" y="240" width="100" height="54" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1xihl1z_di" bpmnElement="eventInterMsgReturnOrderCreated">
+        <dc:Bounds x="342" y="329" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="324" y="291.5" width="71" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1rtlnyf_di" bpmnElement="Event_13s33zk">
+        <dc:Bounds x="482" y="329" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_0x530n9_di" bpmnElement="Association_0x530n9">
+        <di:waypoint x="641" y="333" />
+        <di:waypoint x="670" y="294" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_1b1rxs0_di" bpmnElement="Association_1b1rxs0">
+        <di:waypoint x="511" y="333" />
+        <di:waypoint x="530" y="308" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Participant_0iuo2jh_di" bpmnElement="Core" isHorizontal="true">
+        <dc:Bounds x="125" y="80" width="650" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_06nsh9o_di" bpmnElement="Erp" isHorizontal="true">
+        <dc:Bounds x="125" y="590" width="650" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0j2q3qd_di" bpmnElement="Flow_0j2q3qd">
+        <di:waypoint x="197" y="140" />
+        <di:waypoint x="197" y="329" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="207" y="166" width="85" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0y20rrr_di" bpmnElement="Flow_0y20rrr">
+        <di:waypoint x="630" y="365" />
+        <di:waypoint x="630" y="590" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="641" y="536" width="78" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_09h08yk_di" bpmnElement="Flow_09h08yk">
+        <di:waypoint x="360" y="365" />
+        <di:waypoint x="360" y="590" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="366" y="536" width="88" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -43,4 +43,7 @@ public class AwsSnsConfig {
 
     @Value("${soh.sns.topic.returnOrderCreatedV1}")
     private String snsReturnOrderCreatedV1;
+
+    @Value("${soh.sns.topic.creditNoteReceivedV1}")
+    private String snsCreditNoteReceivedV1;
 }
