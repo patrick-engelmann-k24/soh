@@ -13,6 +13,7 @@ public enum Messages implements BpmItem {
     ORDER_CANCELLATION_RECEIVED("msgOrderCancellationReceived"),
     INVOICE_CREATED("msgInvoiceCreated"),
     ORDER_CREATED_IN_SOH("msgOrderCreatedInSoh"),
+    CORE_INVOICE_CREATION_RECEIVED("msgCoreInvoiceCreationReceived"),
     CORE_CREDIT_NOTE_CREATED("msgCoreCreditNoteCreated")
     ;
 

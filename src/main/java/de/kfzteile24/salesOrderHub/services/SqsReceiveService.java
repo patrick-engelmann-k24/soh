@@ -403,6 +403,7 @@ public class SqsReceiveService {
         var orderNumber = salesInvoiceHeader.getOrderNumber();
         var invoiceNumber = salesInvoiceHeader.getInvoiceNumber();
         var newOrderNumber = orderNumber + "-" + invoiceNumber;
+        SalesOrder salesOrderForOrderProcess;
         log.info("Received core sales invoice created message with order number: {} and invoice number: {}",
                 orderNumber, invoiceNumber);
 
@@ -412,7 +413,8 @@ public class SqsReceiveService {
                     .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
 
             if (salesOrderService.isFullyMatchedWithOriginalOrder(originalSalesOrder, itemList)) {
-                updateOriginalSalesOrder(orderNumber, invoiceNumber, originalSalesOrder);
+                updateOriginalSalesOrder(salesInvoiceCreatedMessage, originalSalesOrder);
+                salesOrderForOrderProcess = originalSalesOrder;
             } else {
                 SalesOrder subsequentOrder = salesOrderService.createSalesOrderForInvoice(
                         salesInvoiceCreatedMessage,
@@ -427,7 +429,10 @@ public class SqsReceiveService {
                             invoiceNumber,
                             result.getProcessInstanceId());
                 }
+                salesOrderForOrderProcess = subsequentOrder;
             }
+
+            publishInvoiceEvent(salesOrderForOrderProcess);
         } catch (Exception e) {
             log.error("Core sales invoice created received message error:\r\nOrderNumber: {}\r\nInvoiceNumber: {}\r\nError-Message: {}",
                     orderNumber,
@@ -437,8 +442,25 @@ public class SqsReceiveService {
         }
     }
 
-    protected void updateOriginalSalesOrder(String orderNumber, String invoiceNumber, SalesOrder originalSalesOrder) {
+    private void publishInvoiceEvent(SalesOrder salesOrder) {
+
+        ProcessInstance result = camundaHelper.startInvoiceReceivedProcess(salesOrder);
+
+        if (result != null) {
+            log.info("Order process for publishing core sales invoice created msg is started with " +
+                    "order number: {} and sales order id: {}. Process-Instance-ID: {} ",
+                    salesOrder.getOrderNumber(),
+                    salesOrder.getId(),
+                    result.getProcessInstanceId());
+        }
+    }
+
+    protected void updateOriginalSalesOrder(CoreSalesInvoiceCreatedMessage invoiceMsg,
+                                            SalesOrder originalSalesOrder) {
+        var orderNumber = invoiceMsg.getSalesInvoice().getSalesInvoiceHeader().getOrderNumber();
+        var invoiceNumber = invoiceMsg.getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber();
         originalSalesOrder.getLatestJson().getOrderHeader().setDocumentRefNumber(invoiceNumber);
+        originalSalesOrder.setInvoiceEvent(invoiceMsg);
         salesOrderService.updateOrder(originalSalesOrder);
 
         if (!camundaHelper.checkIfActiveProcessExists(orderNumber)) {

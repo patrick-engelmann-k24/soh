@@ -58,6 +58,7 @@ soh:
       orderInvoiceCreatedV1: ${soh_order_invoice_created_v1}
       shipmentConfirmedV1: ${sns_soh_shipment_confirmed_v1}
       returnOrderCreatedV1: ${sns_soh_return_order_created_v1}
+      coreInvoiceReceivedV1: ${sns_soh_core_invoice_received_v1}
       creditNoteReceivedV1: ${sns_soh_credit_note_received_v1}
   sqs:
     queue:
@@ -125,5 +126,8 @@ kfzteile:
   # KEEP OFF ON PRODUCTION
   #
   deleteUnusedProcesses: true
+  process-config:
+    subsequent-order-process:
+      publish-delay: PT10S
   orderReturnProcess:
     publishDelay: PT10S

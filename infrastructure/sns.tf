@@ -106,6 +106,10 @@ data "aws_sns_topic" "sns_soh_return_order_created_v1" {
   name = "soh-return-order-created-v1"
 }
 
+data "aws_sns_topic" "sns_soh_core_invoice_received_v1" {
+  name = "soh-core-invoice-received-v1"
+}
+
 data "aws_sns_topic" "sns_soh_credit_note_received_v1" {
   name = "soh-credit-note-received-v1"
 }

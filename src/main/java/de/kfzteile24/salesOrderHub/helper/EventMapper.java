@@ -1,5 +1,7 @@
 package de.kfzteile24.salesOrderHub.helper;
 
+import de.kfzteile24.salesOrderHub.dto.events.CoreSalesInvoiceCreatedReceivedEvent;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.shared.creditnote.CreditNoteLine;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesFinancialDocumentLine;
 import org.mapstruct.Mapper;
@@ -14,4 +16,5 @@ public interface EventMapper {
     EventMapper INSTANCE = Mappers.getMapper(EventMapper.class);
 
     CoreSalesFinancialDocumentLine toCoreSalesFinancialDocumentLine(CreditNoteLine item);
+    CoreSalesInvoiceCreatedReceivedEvent toCoreSalesInvoiceCreatedReceivedEvent(CoreSalesInvoiceCreatedMessage msg);
 }

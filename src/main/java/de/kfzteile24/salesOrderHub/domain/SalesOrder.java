@@ -1,6 +1,8 @@
 package de.kfzteile24.salesOrderHub.domain;
 
+import de.kfzteile24.salesOrderHub.domain.converter.CoreSalesInvoiceCreatedMessageJsonConverter;
 import de.kfzteile24.salesOrderHub.domain.converter.OrderJsonConverter;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -58,6 +60,10 @@ public class SalesOrder extends AbstractBaseEntity {
 
     @Column(name = "sales_channel")
     private String salesChannel;
+
+    @Column(name = "invoice_event", columnDefinition = "json")
+    @Convert(converter = CoreSalesInvoiceCreatedMessageJsonConverter.class)
+    private CoreSalesInvoiceCreatedMessage invoiceEvent;
 
     @ToString.Exclude
     @EqualsAndHashCode.Exclude

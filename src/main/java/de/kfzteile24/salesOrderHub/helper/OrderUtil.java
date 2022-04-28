@@ -182,7 +182,7 @@ public class OrderUtil {
         row.setUnitValues(roundUnitValues(OrderMapper.INSTANCE.updateByGoodsValue(row.getUnitValues(), unitPriceGross, unitPriceNet)));
         row.setSumValues(roundSumValues(OrderMapper.INSTANCE.toSumValues(row.getUnitValues(), row.getQuantity())));
     }
-  
+
     private UnitValues roundUnitValues(UnitValues unitValues) {
         //Rounding Modes are given as in the calculation-service repo
         unitValues.setGoodsValueGross(round(unitValues.getGoodsValueGross(), HALF_UP));

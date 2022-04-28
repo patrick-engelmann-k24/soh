@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 
@@ -72,6 +73,10 @@ public class SalesOrderService {
 
     public List<SalesOrder> getOrderByOrderGroupId(String orderGroupId) {
         return orderRepository.findAllByOrderGroupIdOrderByUpdatedAtDesc(orderGroupId);
+    }
+
+    public Optional<SalesOrder> getOrderById(UUID salesOrderId) {
+        return orderRepository.findById(salesOrderId);
     }
 
     @Transactional
@@ -129,6 +134,7 @@ public class SalesOrderService {
                 .customerEmail(order.getOrderHeader().getCustomer().getCustomerEmail())
                 .originalOrder(order)
                 .latestJson(order)
+                .invoiceEvent(salesInvoiceCreatedMessage)
                 .build();
         return createSalesOrder(salesOrder);
     }

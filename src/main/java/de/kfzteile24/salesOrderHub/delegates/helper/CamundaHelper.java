@@ -2,11 +2,11 @@ package de.kfzteile24.salesOrderHub.delegates.helper;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
@@ -40,6 +40,10 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SALES_CHANNEL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SHIPMENT_METHOD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.VIRTUAL_ORDER_ROWS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_GROUP_ID;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SALES_ORDER_ID;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.PUBLISH_DELAY;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_INVOICE_CREATION_RECEIVED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.VOUCHER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.DELIVERY_ADDRESS_CHANGE_POSSIBLE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.ORDER_ROW_ID;
@@ -52,6 +56,9 @@ public class CamundaHelper {
     private final HistoryService historyService;
     private final RuntimeService runtimeService;
 
+    @Value("${kfzteile.process-config.subsequent-order-process.publish-delay}")
+    private String publishDelayForSubsequentOrders;
+  
     @Value("${kfzteile.orderReturnProcess.publishDelay}")
     private String publishDelay;
 
@@ -64,7 +71,7 @@ public class CamundaHelper {
         final List<HistoricActivityInstance> collect = finishedInstances.parallelStream()
                 .filter(e -> e.getActivityId().equals(activityId))
                 .collect(toList());
-        return collect.size() > 0;
+        return !collect.isEmpty();
     }
 
     public boolean hasNotPassed(final String processInstance, final String activityId) {
@@ -81,6 +88,22 @@ public class CamundaHelper {
     protected HistoricActivityInstanceQuery historicActivityInstanceQuery(final String processInstance) {
         return historyService.createHistoricActivityInstanceQuery()
                 .processInstanceId(processInstance);
+    }
+
+    public ProcessInstance startInvoiceReceivedProcess(SalesOrder salesOrder) {
+        if (salesOrder.getId() == null)
+            throw new NotFoundException("Sales order id could not be null");
+
+        Map<String, Object> variables = Map.of(
+                ORDER_NUMBER.getName(), salesOrder.getOrderNumber(),
+                ORDER_GROUP_ID.getName(), salesOrder.getOrderGroupId(),
+                SALES_ORDER_ID.getName(), salesOrder.getId(),
+                PUBLISH_DELAY.getName(), publishDelayForSubsequentOrders);
+
+        return runtimeService.createMessageCorrelation(CORE_INVOICE_CREATION_RECEIVED.getName())
+                .processInstanceBusinessKey(salesOrder.getId().toString())
+                .setVariables(variables)
+                .correlateWithResult().getProcessInstance();
     }
 
     public ProcessInstance createOrderProcess(SalesOrder salesOrder, Messages originChannel) {
@@ -192,7 +215,7 @@ public class CamundaHelper {
                                                           String orderItemSku) {
         return runtimeService.createMessageCorrelation(itemMessages.getName())
                 .processInstanceBusinessKey(orderNumber + "#" + orderItemSku)
-                .setVariable(Variables.ORDER_GROUP_ID.getName(), orderGroupId)
+                .setVariable(ORDER_GROUP_ID.getName(), orderGroupId)
                 .setVariable(RowVariables.ORDER_ROW_ID.getName(), orderItemSku)
                 .correlateWithResult();
     }

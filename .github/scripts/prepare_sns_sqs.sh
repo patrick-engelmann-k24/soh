@@ -41,6 +41,7 @@ TOPICS="
     soh-return-order-created-v1
     soh-credit-note-received-v1
     soh-core-sales-invoice-created
+    soh-core-invoice-received-v1
     "
 
 # Outdated topics
