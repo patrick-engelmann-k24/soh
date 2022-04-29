@@ -214,15 +214,6 @@ class SalesOrderRowServiceIntegrationTest {
             assertThatNoSubprocessExists(orderNumber, orderRows.getSku());
         }
 
-        HistoricProcessInstance historicProcessInstance = historyService.createHistoricProcessInstanceQuery()
-                .processDefinitionKey(SALES_ORDER_PROCESS.getName())
-                .variableValueEquals(Variables.ORDER_NUMBER.getName(), orderNumber)
-                .singleResult();
-
-        var updatedSkus = (List<String>) runtimeService.getVariable(historicProcessInstance.getId(),
-                Variables.ORDER_ROWS.getName());
-        assertEquals(0, updatedSkus.size());
-
         auditLogUtil.assertAuditLogExists(salesOrder.getId(), ORDER_ROW_CANCELLED, 3);
         assertFalse(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
                 camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), orderRowSkus.get(0)) &&
