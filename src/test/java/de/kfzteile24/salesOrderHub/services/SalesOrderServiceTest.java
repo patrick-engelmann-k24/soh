@@ -173,6 +173,7 @@ class SalesOrderServiceTest {
         assertThat(createdSalesOrder.getLatestJson()).isNotNull();
         assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getPlatform()).isNotNull();
         assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getPlatform()).isEqualTo(Platform.SOH);
+        assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getOrderNumber()).isEqualTo(newOrderNumber);
         assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber()).isEqualTo(invoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber());
         assertThat(createdSalesOrder.getId()).isNull();
         assertThat(createdSalesOrder.getLatestJson().getOrderRows()).hasSize(1);

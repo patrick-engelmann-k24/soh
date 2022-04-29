@@ -122,6 +122,7 @@ public class SalesOrderService {
         CoreSalesInvoiceHeader salesInvoiceHeader = salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
         Order order = createOrderForSubsequentSalesOrder(salesInvoiceCreatedMessage, originalSalesOrder);
         order.getOrderHeader().setPlatform(Platform.SOH);
+        order.getOrderHeader().setOrderNumber(newOrderNumber);
         order.getOrderHeader().setDocumentRefNumber(salesInvoiceHeader.getInvoiceNumber());
         var shippingCostDocumentLine =  salesInvoiceHeader.getInvoiceLines().stream()
                 .filter(CoreSalesFinancialDocumentLine::getIsShippingCost).findFirst().orElse(null);
