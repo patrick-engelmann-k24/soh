@@ -26,7 +26,7 @@
       <bpmn:messageEventDefinition id="MessageEventDefinition_1g1vwlv" messageRef="Message_182v5lz" />
     </bpmn:intermediateCatchEvent>
     <bpmn:subProcess id="subProcessOrderRowCancellationShipment" triggeredByEvent="true">
-      <bpmn:endEvent id="eventOrderRowCancellationHandled" name="Order row cancelled" camunda:asyncBefore="true">
+      <bpmn:endEvent id="eventOrderRowCancellationHandled" name="Order row cancelled">
         <bpmn:incoming>Flow_0qf55k6</bpmn:incoming>
         <bpmn:messageEventDefinition id="MessageEventDefinition_0k1qe9j" camunda:delegateExpression="${orderRowCancelledDelegate}" />
       </bpmn:endEvent>
