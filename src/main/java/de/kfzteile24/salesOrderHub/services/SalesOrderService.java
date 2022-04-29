@@ -288,11 +288,11 @@ public class SalesOrderService {
         BigDecimal goodsTotalNet = getSumValue(SumValues::getGoodsValueNet, sumValues);
         BigDecimal totalDiscountGross = getSumValue(SumValues::getDiscountGross, sumValues);
         BigDecimal totalDiscountNet = getSumValue(SumValues::getDiscountNet, sumValues);
-        BigDecimal grandTotalGross = goodsTotalGross.subtract(totalDiscountGross);
-        BigDecimal grantTotalNet = goodsTotalNet.subtract(totalDiscountNet);
         BigDecimal shippingCostNet = shippingCostLine != null ? shippingCostLine.getUnitNetAmount() : BigDecimal.ZERO;
         BigDecimal shippingCostGross = shippingCostLine != null ?
                 getGrossValue(shippingCostLine.getUnitNetAmount(), shippingCostLine.getTaxRate()) : BigDecimal.ZERO;
+        BigDecimal grandTotalGross = goodsTotalGross.subtract(totalDiscountGross).add(shippingCostGross);
+        BigDecimal grantTotalNet = goodsTotalNet.subtract(totalDiscountNet).add(shippingCostNet);
 
         Totals totals = Totals.builder()
                 .goodsTotalGross(goodsTotalGross)

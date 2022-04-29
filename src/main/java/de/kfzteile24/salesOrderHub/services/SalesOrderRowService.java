@@ -285,6 +285,9 @@ public class SalesOrderRowService {
                 .ifPresent(creditNoteLine -> {
                     totals.setShippingCostNet(creditNoteLine.getLineNetAmount());
                     totals.setShippingCostGross(getGrossValue(creditNoteLine));
+                    totals.setGrandTotalNet(totals.getGrandTotalNet().add(totals.getShippingCostNet()));
+                    totals.setGrandTotalGross(totals.getGrandTotalGross().add(totals.getShippingCostGross()));
+                    totals.setPaymentTotal(totals.getGrandTotalGross());
                 });
     }
 

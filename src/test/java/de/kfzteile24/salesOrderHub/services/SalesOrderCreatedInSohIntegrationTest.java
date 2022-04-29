@@ -9,12 +9,6 @@ import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.SumValues;
 import de.kfzteile24.soh.order.dto.Totals;
-
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Paths;
-import java.util.Objects;
-
 import de.kfzteile24.soh.order.dto.UnitValues;
 import lombok.SneakyThrows;
 import org.camunda.bpm.engine.ProcessEngine;
@@ -25,8 +19,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.net.URISyntaxException;
+import java.nio.file.Paths;
 import java.util.List;
+import java.util.Objects;
 
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -125,9 +123,9 @@ class SalesOrderCreatedInSohIntegrationTest {
                 "360.64",
                 "60.30",
                 "50.26",
-                "372.22",
-                "310.38",
-                "372.22",
+                "384.12",
+                "320.38",
+                "384.12",
                 "11.90",
                 "10.00");
         checkOrderRows(newOrderNumberCreatedInSoh, rowSku1, rowSku2, rowSku3);
