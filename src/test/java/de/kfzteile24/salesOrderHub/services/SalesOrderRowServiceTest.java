@@ -127,6 +127,7 @@ class SalesOrderRowServiceTest {
     @Test
     void testHandleDropshipmentPurchaseOrderBookedFalse() {
 
+        prepareOrderProcessMocks();
         final var salesOrder = createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
         final var orderNumber = salesOrder.getOrderNumber();
 

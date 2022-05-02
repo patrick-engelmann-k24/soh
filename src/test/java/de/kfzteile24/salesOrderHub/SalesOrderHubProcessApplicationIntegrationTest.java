@@ -18,6 +18,7 @@ package de.kfzteile24.salesOrderHub;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_ECP;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_ORDER_CANCELLED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.NONE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
@@ -100,6 +101,7 @@ class SalesOrderHubProcessApplicationIntegrationTest {
                         .setVariable(Variables.PAYMENT_TYPE.getName(), CREDIT_CARD.getName())
                         .setVariable(Variables.ORDER_VALID.getName(), true)
                         .setVariable(Variables.ORDER_ROWS.getName(), orderRows)
+                        .setVariable(IS_ORDER_CANCELLED.getName(), false)
                         .setVariable(Variables.SHIPMENT_METHOD.getName(), REGULAR.getName())
                         .correlateWithResult().getProcessInstance();
 
