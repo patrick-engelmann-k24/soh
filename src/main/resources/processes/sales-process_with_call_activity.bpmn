@@ -192,7 +192,7 @@
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${isSohOrder}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_0n3f7ws" name="Yes" sourceRef="gwXORCheckOrderCancellation" targetRef="eventEndMsgOrderCancelled">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${sOrderCancelled}</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${isOrderCancelled}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:endEvent id="eventEndMsgOrderCancelled" name="Order cancelled">
       <bpmn:incoming>Flow_0n3f7ws</bpmn:incoming>
