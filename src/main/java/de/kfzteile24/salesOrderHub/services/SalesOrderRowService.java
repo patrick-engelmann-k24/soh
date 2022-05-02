@@ -39,7 +39,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_CREDIT_NOTE_CREATED;
@@ -393,9 +392,7 @@ public class SalesOrderRowService {
 
     private boolean isOrderFullyCancelled(Order order) {
 
-        Stream<OrderRows> orderRowsStream = order.getOrderRows().stream()
-                .filter(orderRow -> helper.isShipped(orderRow.getShippingType()));
-        return orderRowsStream.allMatch(OrderRows::getIsCancelled);
+        return order.getOrderRows().stream().allMatch(OrderRows::getIsCancelled);
     }
 
     private void correlateMessageForOrderRowCancelCancellation(String orderNumber, String orderRowId) {
