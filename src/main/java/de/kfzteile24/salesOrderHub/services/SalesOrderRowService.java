@@ -78,8 +78,8 @@ public class SalesOrderRowService {
 
     public boolean cancelOrderProcessIfFullyCancelled(SalesOrder salesOrder) {
 
-        if (isOrderFullyCancelled(salesOrder.getLatestJson())) {
-            log.info("Order with order number: {} is fully cancelled, cancelling the order process", salesOrder.getOrderNumber());
+        if (salesOrder.getLatestJson().getOrderRows().stream().allMatch(OrderRows::getIsCancelled)) {
+            log.info("Order with order number: {} is fully cancelled", salesOrder.getOrderNumber());
             for (OrderRows orderRow : salesOrder.getLatestJson().getOrderRows()) {
                 if (!helper.isShipped(orderRow.getShippingType())) {
                     orderRow.setIsCancelled(true);
@@ -354,9 +354,7 @@ public class SalesOrderRowService {
         salesOrderService.save(salesOrder, Action.ORDER_ROW_CANCELLED);
 
         boolean isOrderCancelled = cancelOrderProcessIfFullyCancelled(salesOrder);
-        log.info("The order cancellation check has the following result. " +
-                        "Order Number: {}, Is Order Cancelled?: {}",
-                orderNumber, isOrderCancelled);
+        log.info("Is order with order number: {} fully check result: {}", orderNumber, isOrderCancelled);
         var processInstance = runtimeService.createProcessInstanceQuery()
                 .processDefinitionKey(SALES_ORDER_PROCESS.getName())
                 .variableValueEquals(Variables.ORDER_NUMBER.getName(), orderNumber)
@@ -398,17 +396,6 @@ public class SalesOrderRowService {
                 .orElseThrow(() -> new SalesOrderNotFoundException("Could not find order: " + orderNumber));
         Order originalOrder = (Order) salesOrder.getOriginalOrder();
         return originalOrder.getOrderRows().stream().map(OrderRows::getSku).collect(Collectors.toList());
-    }
-
-    private boolean isOrderFullyCancelled(Order order) {
-
-        for (OrderRows orderRows : order.getOrderRows()) {
-            if (!orderRows.getIsCancelled()) {
-                log.info("Order Row with sku: {} is not cancelled", orderRows.getSku());
-                return false;
-            }
-        }
-        return true;
     }
 
     private void correlateMessageForOrderRowCancelCancellation(String orderNumber, String orderRowId) {
