@@ -27,6 +27,9 @@ public class CheckOrderCancelledDelegate implements ExecutionListener {
         final var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException("Could not find order: " + orderNumber));
         boolean isOrderCancelled = salesOrderRowService.cancelOrderProcessIfFullyCancelled(salesOrder);
+        log.info("The order cancellation check has the following result. " +
+                        "Order Number: {}, Is Order Cancelled?: {}",
+                orderNumber, isOrderCancelled);
         delegateExecution.setVariable(Variables.IS_ORDER_CANCELLED.getName(), isOrderCancelled);
     }
 }
