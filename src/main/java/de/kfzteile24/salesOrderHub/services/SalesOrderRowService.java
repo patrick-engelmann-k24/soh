@@ -392,7 +392,13 @@ public class SalesOrderRowService {
 
     private boolean isOrderFullyCancelled(Order order) {
 
-        return order.getOrderRows().stream().allMatch(OrderRows::getIsCancelled);
+        for (OrderRows orderRows : order.getOrderRows()) {
+            if (!orderRows.getIsCancelled()) {
+                log.info("Order Row with sku: {} is not cancelled", orderRows.getSku());
+                return false;
+            }
+        }
+        return true;
     }
 
     private void correlateMessageForOrderRowCancelCancellation(String orderNumber, String orderRowId) {
