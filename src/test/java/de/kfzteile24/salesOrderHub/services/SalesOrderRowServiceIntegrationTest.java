@@ -3,7 +3,6 @@ package de.kfzteile24.salesOrderHub.services;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
@@ -17,7 +16,6 @@ import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Totals;
 import org.assertj.core.util.Lists;
 import org.camunda.bpm.engine.HistoryService;
-import org.camunda.bpm.engine.MismatchingMessageCorrelationException;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.history.HistoricProcessInstance;
@@ -44,7 +42,6 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Shipme
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ROW_CANCELLED;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.reset;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -183,7 +180,6 @@ class SalesOrderRowServiceIntegrationTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     public void testCancelAllOrderRows() {
         final var salesOrder =
                 salesOrderUtil.createPersistedSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
@@ -347,12 +343,9 @@ class SalesOrderRowServiceIntegrationTest {
     }
 
     public void assertThatNoSubprocessExists(String orderNumber, String sku) {
-        assertThatThrownBy(() ->
-                runtimeService.createMessageCorrelation(Messages.ORDER_CANCELLATION_RECEIVED.getName())
-                        .processInstanceBusinessKey(orderNumber)
-                        .processInstanceVariableEquals(RowVariables.ORDER_ROW_ID.getName(), sku)
-                        .correlateWithResult())
-                .isInstanceOf(MismatchingMessageCorrelationException.class);
+        assertFalse(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+                camundaHelper.checkIfOrderRowProcessExists(orderNumber, sku)
+        ));
     }
 
     @Test
@@ -365,7 +358,6 @@ class SalesOrderRowServiceIntegrationTest {
                 .map(OrderRows::getSku)
                 .collect(toList());
         final var skuToCancel = orderRowSkus.get(1);
-        final var aliveSkus = orderRowSkus.stream().filter(sku -> !sku.equals(skuToCancel)).collect(toList());
 
         // create second sales order with same values except order number
         final var salesOrder2 = salesOrderUtil.createPersistedSalesOrderV3WithDiffGroupId(false, REGULAR, CREDIT_CARD, NEW, salesOrder1.getOrderGroupId());

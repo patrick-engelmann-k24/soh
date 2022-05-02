@@ -26,7 +26,8 @@ public enum Variables implements BpmItem {
     IS_BRANCH_ORDER("isBranchOrder"),
     IS_SOH_ORDER("isSohOrder"),
     POSITIVE_PAYMENT_TYPE("positivePaymentType"),
-    PUBLISH_DELAY("publishDelay")
+    PUBLISH_DELAY("publishDelay"),
+    IS_ORDER_CANCELLED("isOrderCancelled")
     ;
 
     private final String name;

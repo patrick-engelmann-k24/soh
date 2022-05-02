@@ -37,7 +37,6 @@ import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
-import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -69,9 +68,6 @@ class SalesOrderHubProcessApplicationIntegrationTest {
 
     @Autowired
     private CamundaHelper camundaHelper;
-
-    @Autowired
-    private TimedPollingService pollingService;
 
     private SalesOrder testOrder;
 
@@ -118,35 +114,6 @@ class SalesOrderHubProcessApplicationIntegrationTest {
         util.sendMessage(RowMessages.ROW_SHIPPED.getName(), orderNumber);
 
         assertThat(salesOrderProcessInstance).isEnded().hasPassed(Events.END_MSG_ORDER_COMPLETED.getName());
-    }
-
-    @Test
-    public void salesOrderCancellationTest() {
-        final String orderNumber = testOrder.getOrderNumber();
-        final List<String> orderRows = util.getOrderRows(orderNumber, 5);
-
-        ProcessInstance salesOrderProcessInstance =
-                runtimeService.createMessageCorrelation(Messages.ORDER_RECEIVED_MARKETPLACE.getName())
-                        .processInstanceBusinessKey(orderNumber)
-                        .setVariable(Variables.ORDER_NUMBER.getName(), orderNumber)
-                        .setVariable(Variables.PAYMENT_TYPE.getName(), CREDIT_CARD.getName())
-                        .setVariable(Variables.ORDER_VALID.getName(), true)
-                        .setVariable(Variables.ORDER_ROWS.getName(), orderRows)
-                        .setVariable(Variables.SHIPMENT_METHOD.getName(), REGULAR.getName())
-                        .correlateWithResult().getProcessInstance();
-
-        assertTrue(util.isProcessWaitingAtExpectedToken(salesOrderProcessInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName()));
-
-        runtimeService.createMessageCorrelation(Messages.ORDER_CANCELLATION_RECEIVED.getName())
-                .processInstanceBusinessKey(orderNumber)
-                .correlateWithResult();
-
-        pollingService.pollWithDefaultTiming(() -> {
-            assertThat(salesOrderProcessInstance)
-                    .isEnded()
-                    .hasPassed(Events.ORDER_CANCELLATION_RECEIVED.getName());
-            return true;
-        });
     }
 
     @Test

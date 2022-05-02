@@ -78,7 +78,7 @@ public class SalesOrderRowService {
     @NonNull
     private final InvoiceService invoiceService;
 
-    public void cancelOrderProcessIfFullyCancelled(SalesOrder salesOrder) {
+    public boolean cancelOrderProcessIfFullyCancelled(SalesOrder salesOrder) {
 
         if (isOrderFullyCancelled(salesOrder.getLatestJson())) {
             log.info("Order with order number: {} is fully cancelled, cancelling the order process", salesOrder.getOrderNumber());
@@ -88,7 +88,9 @@ public class SalesOrderRowService {
                 }
             }
             salesOrderService.save(salesOrder, Action.ORDER_CANCELLED);
-            correlateMessageForOrderCancellation(salesOrder.getOrderNumber());
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -403,13 +405,6 @@ public class SalesOrderRowService {
                 .processInstanceVariableEquals(Variables.ORDER_NUMBER.getName(), orderNumber)
                 .processInstanceVariableEquals(RowVariables.ORDER_ROW_ID.getName(), orderRowId)
                 .correlateWithResultAndVariables(true);
-    }
-
-    private void correlateMessageForOrderCancellation(String orderNumber) {
-        log.info("Starting cancelling order process for order number: {}", orderNumber);
-        runtimeService.createMessageCorrelation(Messages.ORDER_CANCELLATION_RECEIVED.getName())
-                .processInstanceVariableEquals(Variables.ORDER_NUMBER.getName(), orderNumber)
-                .correlateWithResult();
     }
 
     public void publishOrderRowMsg(RowMessages rowMessage,
