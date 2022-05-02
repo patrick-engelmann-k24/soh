@@ -306,6 +306,8 @@ public class SalesOrderRowService {
     }
 
     public void cancelOrderRow(String orderRowId, String orderNumber) {
+
+        markOrderRowAsCancelled(orderNumber, orderRowId);
         if (helper.checkIfOrderRowProcessExists(orderNumber, orderRowId)) {
             correlateMessageForOrderRowCancelCancellation(orderNumber, orderRowId);
 
@@ -319,8 +321,6 @@ public class SalesOrderRowService {
         } else {
             log.debug("Sales order process does not exist for order number {}", orderNumber);
         }
-
-        markOrderRowAsCancelled(orderNumber, orderRowId);
         log.info("Order row cancelled for order number: {} and order row: {}", orderNumber, orderRowId);
     }
 
@@ -352,6 +352,16 @@ public class SalesOrderRowService {
 
         recalculateOrder(latestJson, cancelledOrderRow);
         salesOrderService.save(salesOrder, Action.ORDER_ROW_CANCELLED);
+
+        boolean isOrderCancelled = cancelOrderProcessIfFullyCancelled(salesOrder);
+        log.info("The order cancellation check has the following result. " +
+                        "Order Number: {}, Is Order Cancelled?: {}",
+                orderNumber, isOrderCancelled);
+        var processInstance = runtimeService.createProcessInstanceQuery()
+                .processDefinitionKey(SALES_ORDER_PROCESS.getName())
+                .variableValueEquals(Variables.ORDER_NUMBER.getName(), orderNumber)
+                .singleResult();
+        runtimeService.setVariable(processInstance.getId(), Variables.IS_ORDER_CANCELLED.getName(), isOrderCancelled);
     }
 
     private void recalculateOrder(Order latestJson, OrderRows cancelledOrderRow) {
