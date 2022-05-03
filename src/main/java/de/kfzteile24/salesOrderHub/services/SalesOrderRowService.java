@@ -244,14 +244,20 @@ public class SalesOrderRowService {
         returnLatestJson.getOrderRows().stream()
                 .map(OrderRows::getSumValues)
                 .forEach(sumValues -> {
-                    totals.setGoodsTotalGross(totals.getGoodsTotalGross().add(sumValues.getGoodsValueGross()));
-                    totals.setGoodsTotalNet(totals.getGrandTotalNet().add(sumValues.getGoodsValueNet()));
-                    totals.setTotalDiscountGross(totals.getTotalDiscountGross().add(sumValues.getDiscountGross()));
-                    totals.setTotalDiscountNet(totals.getTotalDiscountNet().add(sumValues.getDiscountNet()));
+                    totals.setGoodsTotalGross(totals.getGoodsTotalGross().add(
+                            Optional.ofNullable(sumValues.getGoodsValueGross()).orElse(BigDecimal.ZERO)));
+                    totals.setGoodsTotalNet(totals.getGrandTotalNet().add(
+                            Optional.ofNullable(sumValues.getGoodsValueNet()).orElse(BigDecimal.ZERO)));
+                    totals.setTotalDiscountGross(totals.getTotalDiscountGross().add(
+                            Optional.ofNullable(sumValues.getDiscountGross()).orElse(BigDecimal.ZERO)));
+                    totals.setTotalDiscountNet(totals.getTotalDiscountNet().add(
+                            Optional.ofNullable(sumValues.getDiscountNet()).orElse(BigDecimal.ZERO)));
                 });
 
-        totals.setGrandTotalGross(totals.getGoodsTotalGross().subtract(totals.getTotalDiscountGross()));
-        totals.setGrandTotalNet(totals.getGoodsTotalNet().subtract(totals.getTotalDiscountNet()));
+        totals.setGrandTotalGross(totals.getGoodsTotalGross().subtract(
+                Optional.ofNullable(totals.getTotalDiscountGross()).orElse(BigDecimal.ZERO)));
+        totals.setGrandTotalNet(totals.getGoodsTotalNet().subtract(
+                Optional.ofNullable(totals.getTotalDiscountNet()).orElse(BigDecimal.ZERO)));
         totals.setPaymentTotal(totals.getGrandTotalGross());
 
         returnLatestJson.getOrderHeader().setTotals(totals);
