@@ -65,6 +65,9 @@ public class SalesOrderRowService {
     private final SalesOrderService salesOrderService;
 
     @NonNull
+    private final SalesOrderReturnService salesOrderReturnService;
+
+    @NonNull
     private final TimedPollingService timedPollingService;
 
     @NonNull
@@ -189,11 +192,12 @@ public class SalesOrderRowService {
                 .orderGroupId(orderNumber)
                 .orderNumber(salesCreditNoteHeader.getCreditNoteNumber())
                 .returnOrderJson(returnOrderJson)
+                .salesOrder(salesOrder)
                 .salesCreditNoteCreatedMessage(salesCreditNoteCreatedMessage)
                 .build();
 
         updateShippingCosts(salesOrderReturn, negativedCreditNoteLine);
-        SalesOrderReturn savedSalesOrderReturn = salesOrderService.addSalesOrderReturn(salesOrder, salesOrderReturn);
+        SalesOrderReturn savedSalesOrderReturn = salesOrderReturnService.save(salesOrderReturn);
         ProcessInstance result = helper.createReturnOrderProcess(savedSalesOrderReturn, CORE_CREDIT_NOTE_CREATED);
         if (result != null) {
             log.info("New return order process started for order number: {}. Process-Instance-ID: {} ",

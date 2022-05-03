@@ -151,23 +151,6 @@ public class SalesOrderService {
         return save(salesOrder, INVOICE_RECEIVED);
     }
 
-    @Transactional
-    public SalesOrderReturn addSalesOrderReturn(SalesOrder salesOrder, SalesOrderReturn salesOrderReturn) {
-        salesOrderReturn.setSalesOrder(salesOrder);
-        salesOrder.getSalesOrderReturnList().add(salesOrderReturn);
-        SalesOrder saved = save(salesOrder, Action.RETURN_ORDER_CREATED);
-        return saved.getSalesOrderReturnList().stream()
-                .filter(r -> r.getOrderNumber().equals(salesOrderReturn.getOrderNumber())).findFirst().orElse(null);
-    }
-
-    public SalesOrder findLastOrderByOrderGroupId(String orderGroupId) {
-        return getOrderByOrderGroupId(orderGroupId)
-                .stream()
-                .findFirst() // the most recent one
-                .orElseThrow(() -> new SalesOrderNotFoundCustomException(
-                        format("for the given order group id {0}", orderGroupId)));
-    }
-
     protected Order createOrderForSubsequentSalesOrder(CoreSalesInvoiceCreatedMessage coreSalesInvoiceCreatedMessage,
                                                        SalesOrder originalSalesOrder) {
         CoreSalesInvoiceHeader salesInvoiceHeader = coreSalesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();

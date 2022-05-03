@@ -17,4 +17,9 @@ public class SalesOrderReturnService {
 
         return salesOrderReturnRepository.findByOrderNumber(orderNumber);
     }
+
+    public SalesOrderReturn save(SalesOrderReturn salesOrderReturn) {
+
+        return salesOrderReturnRepository.save(salesOrderReturn);
+    }
 }
