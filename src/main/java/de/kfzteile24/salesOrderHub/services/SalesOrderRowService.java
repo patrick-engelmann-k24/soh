@@ -1,6 +1,5 @@
 package de.kfzteile24.salesOrderHub.services;
 
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
@@ -40,7 +39,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_CREDIT_NOTE_CREATED;
@@ -78,17 +76,19 @@ public class SalesOrderRowService {
     @NonNull
     private final InvoiceService invoiceService;
 
-    public void cancelOrderProcessIfFullyCancelled(SalesOrder salesOrder) {
+    public boolean cancelOrderProcessIfFullyCancelled(SalesOrder salesOrder) {
 
-        if (isOrderFullyCancelled(salesOrder.getLatestJson())) {
-            log.info("Order with order number: {} is fully cancelled, cancelling the order process", salesOrder.getOrderNumber());
+        if (salesOrder.getLatestJson().getOrderRows().stream().allMatch(OrderRows::getIsCancelled)) {
+            log.info("Order with order number: {} is fully cancelled", salesOrder.getOrderNumber());
             for (OrderRows orderRow : salesOrder.getLatestJson().getOrderRows()) {
                 if (!helper.isShipped(orderRow.getShippingType())) {
                     orderRow.setIsCancelled(true);
                 }
             }
             salesOrderService.save(salesOrder, Action.ORDER_CANCELLED);
-            correlateMessageForOrderCancellation(salesOrder.getOrderNumber());
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -306,6 +306,8 @@ public class SalesOrderRowService {
     }
 
     public void cancelOrderRow(String orderRowId, String orderNumber) {
+
+        markOrderRowAsCancelled(orderNumber, orderRowId);
         if (helper.checkIfOrderRowProcessExists(orderNumber, orderRowId)) {
             correlateMessageForOrderRowCancelCancellation(orderNumber, orderRowId);
 
@@ -319,8 +321,6 @@ public class SalesOrderRowService {
         } else {
             log.debug("Sales order process does not exist for order number {}", orderNumber);
         }
-
-        markOrderRowAsCancelled(orderNumber, orderRowId);
         log.info("Order row cancelled for order number: {} and order row: {}", orderNumber, orderRowId);
     }
 
@@ -352,6 +352,14 @@ public class SalesOrderRowService {
 
         recalculateOrder(latestJson, cancelledOrderRow);
         salesOrderService.save(salesOrder, Action.ORDER_ROW_CANCELLED);
+
+        boolean isOrderCancelled = cancelOrderProcessIfFullyCancelled(salesOrder);
+        log.info("Is order with order number: {} fully check result: {}", orderNumber, isOrderCancelled);
+        var processInstance = runtimeService.createProcessInstanceQuery()
+                .processDefinitionKey(SALES_ORDER_PROCESS.getName())
+                .variableValueEquals(Variables.ORDER_NUMBER.getName(), orderNumber)
+                .singleResult();
+        runtimeService.setVariable(processInstance.getId(), Variables.IS_ORDER_CANCELLED.getName(), isOrderCancelled);
     }
 
     private void recalculateOrder(Order latestJson, OrderRows cancelledOrderRow) {
@@ -390,26 +398,12 @@ public class SalesOrderRowService {
         return originalOrder.getOrderRows().stream().map(OrderRows::getSku).collect(Collectors.toList());
     }
 
-    private boolean isOrderFullyCancelled(Order order) {
-
-        Stream<OrderRows> orderRowsStream = order.getOrderRows().stream()
-                .filter(orderRow -> helper.isShipped(orderRow.getShippingType()));
-        return orderRowsStream.allMatch(OrderRows::getIsCancelled);
-    }
-
     private void correlateMessageForOrderRowCancelCancellation(String orderNumber, String orderRowId) {
         log.info("Starting cancelling order row process for order number: {} and order row: {}", orderNumber, orderRowId);
         runtimeService.createMessageCorrelation(RowMessages.ORDER_ROW_CANCELLATION_RECEIVED.getName())
                 .processInstanceVariableEquals(Variables.ORDER_NUMBER.getName(), orderNumber)
                 .processInstanceVariableEquals(RowVariables.ORDER_ROW_ID.getName(), orderRowId)
                 .correlateWithResultAndVariables(true);
-    }
-
-    private void correlateMessageForOrderCancellation(String orderNumber) {
-        log.info("Starting cancelling order process for order number: {}", orderNumber);
-        runtimeService.createMessageCorrelation(Messages.ORDER_CANCELLATION_RECEIVED.getName())
-                .processInstanceVariableEquals(Variables.ORDER_NUMBER.getName(), orderNumber)
-                .correlateWithResult();
     }
 
     public void publishOrderRowMsg(RowMessages rowMessage,

@@ -1,7 +1,9 @@
 package de.kfzteile24.salesOrderHub.services;
 
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.OrderMapper;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
@@ -12,6 +14,7 @@ import de.kfzteile24.soh.order.dto.Totals;
 import de.kfzteile24.soh.order.dto.UnitValues;
 import lombok.SneakyThrows;
 import org.camunda.bpm.engine.ProcessEngine;
+import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,6 +29,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Objects;
 
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.MSG_ORDER_PAYMENT_SECURED;
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -56,6 +60,8 @@ class SalesOrderCreatedInSohIntegrationTest {
     private SalesOrderUtil salesOrderUtil;
     @Autowired
     private TimedPollingService timerService;
+    @Autowired
+    private BpmUtil util;
 
     @BeforeEach
     public void setup() {
@@ -68,6 +74,9 @@ class SalesOrderCreatedInSohIntegrationTest {
         var senderId = "Delivery";
         var receiveCount = 1;
         var salesOrder = salesOrderUtil.createNewSalesOrder();
+        final ProcessInstance orderProcess = camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
+        assertTrue(util.isProcessWaitingAtExpectedToken(orderProcess, MSG_ORDER_PAYMENT_SECURED.getName()));
+        util.sendMessage(Messages.ORDER_RECEIVED_PAYMENT_SECURED.getName(), salesOrder.getOrderNumber());
 
         String originalOrderNumber = salesOrder.getOrderNumber();
         String invoiceNumber = "10";
@@ -100,6 +109,8 @@ class SalesOrderCreatedInSohIntegrationTest {
         var senderId = "Delivery";
         var receiveCount = 1;
         var salesOrder = salesOrderUtil.createNewSalesOrderHavingCancelledRow();
+        final ProcessInstance orderProcess = camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
+        assertTrue(util.isProcessWaitingAtExpectedToken(orderProcess, MSG_ORDER_PAYMENT_SECURED.getName()));
 
         String originalOrderNumber = salesOrder.getOrderNumber();
         String invoiceNumber = "10";
@@ -140,6 +151,8 @@ class SalesOrderCreatedInSohIntegrationTest {
         var row = OrderMapper.INSTANCE.toOrderRow(salesOrder.getLatestJson().getOrderRows().get(1));
         salesOrder.getLatestJson().getOrderRows().add(row);
         salesOrderService.updateOrder(salesOrder);
+        final ProcessInstance orderProcess = camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
+        assertTrue(util.isProcessWaitingAtExpectedToken(orderProcess, MSG_ORDER_PAYMENT_SECURED.getName()));
 
         String originalOrderNumber = salesOrder.getOrderNumber();
         String invoiceNumber = "10";

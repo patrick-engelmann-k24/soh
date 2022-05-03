@@ -1,6 +1,7 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.MSG_ORDER_PAYMENT_SECURED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_ORDER_CANCELLED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.INVOICE_ADDRESS_CHANGED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
@@ -178,6 +179,7 @@ class ChangeInvoiceAddressPossibleDelegateIntegrationTest {
         processVariables.put(Variables.ORDER_NUMBER.getName(), orderNumber);
         processVariables.put(Variables.PAYMENT_TYPE.getName(), CREDIT_CARD.getName());
         processVariables.put(Variables.ORDER_VALID.getName(), true);
+        processVariables.put(IS_ORDER_CANCELLED.getName(), false);
         processVariables.put(Variables.ORDER_ROWS.getName(), orderItems);
 
         return runtimeService.createMessageCorrelation(Messages.ORDER_RECEIVED_MARKETPLACE.getName())

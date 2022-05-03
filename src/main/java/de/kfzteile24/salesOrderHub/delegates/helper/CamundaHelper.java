@@ -32,6 +32,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.RECURRING;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.CUSTOMER_TYPE;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_ORDER_CANCELLED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROWS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.PAYMENT_TYPE;
@@ -42,7 +43,6 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.VIRTUAL_ORDER_ROWS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_GROUP_ID;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SALES_ORDER_ID;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.PUBLISH_DELAY;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_INVOICE_CREATION_RECEIVED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.VOUCHER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.DELIVERY_ADDRESS_CHANGE_POSSIBLE;
@@ -154,6 +154,7 @@ public class CamundaHelper {
         processVariables.put(ORDER_NUMBER.getName(), orderNumber);
         processVariables.put(PAYMENT_TYPE.getName(), paymentType);
         processVariables.put(ORDER_ROWS.getName(), orderRowSkus);
+        processVariables.put(IS_ORDER_CANCELLED.getName(), false);
         processVariables.put(CUSTOMER_TYPE.getName(),
                 salesOrder.isRecurringOrder() ? RECURRING.getType() : NEW.getType());
         processVariables.put(SALES_CHANNEL.getName(), salesOrder.getSalesChannel());
