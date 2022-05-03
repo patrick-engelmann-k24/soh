@@ -203,7 +203,11 @@ public class SalesOrderRowService {
 
     public Order recalculateOrderByReturns(SalesOrder salesOrder, Collection<CreditNoteLine> items) {
 
+        var itemNumbers = items.stream().map(CreditNoteLine::getItemNumber).collect(Collectors.toList());
         var returnLatestJson = orderUtil.copyOrderJson(salesOrder.getLatestJson());
+        var returnOrderRows = returnLatestJson.getOrderRows().stream()
+                .filter(row -> itemNumbers.contains(row.getSku())).collect(Collectors.toList());
+        returnLatestJson.setOrderRows(returnOrderRows);
         var totals = returnLatestJson.getOrderHeader().getTotals();
 
         items.forEach(item -> {
