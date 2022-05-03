@@ -178,7 +178,8 @@ public class SalesOrderRowService {
 
         var salesCreditNoteHeader = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader();
         var creditNoteLines = salesCreditNoteHeader.getCreditNoteLines();
-        var salesOrder = salesOrderService.findLastOrderByOrderGroupId(orderNumber);
+        var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
+                .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
         var negativedCreditNoteLine = negateCreditNoteLines(creditNoteLines);
         var returnOrderJson = recalculateOrderByReturns(salesOrder, getOrderRowUpdateItems(negativedCreditNoteLine));
 
