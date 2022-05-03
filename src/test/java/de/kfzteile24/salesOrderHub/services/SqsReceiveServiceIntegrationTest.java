@@ -457,7 +457,7 @@ class SqsReceiveServiceIntegrationTest {
         latestOrderJson.getOrderHeader().getTotals().setShippingCostNet(BigDecimal.valueOf(10.00).setScale(2, RoundingMode.HALF_UP));
         expectedSalesOrder.setLatestJson(latestOrderJson);
 
-        verify(salesOrderService).findLastOrderByOrderGroupId("580309129");
+        verify(salesOrderService).getOrderByOrderNumber("580309129");
 
         verify(salesOrderRowService).handleSalesOrderReturn(eq("580309129"), eq(salesCreditNoteCreatedMessage));
 
