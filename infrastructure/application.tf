@@ -65,8 +65,8 @@ module "application_module" {
     soh_sqs_core_sales_credit_note_created     = aws_sqs_queue.soh_core_sales_credit_note_created.id
     soh_sqs_core_sales_invoice_created         = aws_sqs_queue.soh_core_sales_invoice_created.id
 
-    core_sales_invoice_flag                    = var.ignore_core_sales_invoice
-    core_credit_note_flag                      = var.ignore_core_credit_note
+    ignore_core_sales_invoice                  = var.ignore_core_sales_invoice
+    ignore_core_credit_note                    = var.ignore_core_credit_note
   }
 
   ssm_secrets_count = 7
