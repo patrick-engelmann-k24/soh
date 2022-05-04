@@ -8,7 +8,6 @@ import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.SumValues;
 import de.kfzteile24.soh.order.dto.Totals;
 import de.kfzteile24.soh.order.dto.UnitValues;
-import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.aggregator.AggregateWith;
 import org.junit.jupiter.params.aggregator.ArgumentsAccessor;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -30,7 +29,7 @@ class SalesOrderReturnIntegrationTest {
     private SalesOrderRowService salesOrderRowService;
 
     // may be later it's better using csv file source, much more readable and editable (with column names as well)
-    @ParameterizedTest
+//    @ParameterizedTest
     @CsvSource(value = {
               "2.20, 2,    0,    0, 2.20,   2,    1.10, 1,    0,   0, 1.10,   1,     0.00, 0.00, 0, 0, 0.00, 0.00,     2, -1.00, -1.10, -1.10,    2.20, 2,    0, 2.20, 0.20, 1.10,    1, 1.10,    0.00, 0.00, 0.00, 0.00, 0, 0, 0.00,  0.00,    0",
               "2.20, 2,    0,    0, 2.20,   2,    1.10, 1,    0,   0, 1.10,   1,     2.20, 2.00, 0, 0, 2.20, 2.00,     1, -1.00, -1.10, -1.10,    2.20, 2,    0, 2.20, 0.20, 1.10,    1,  0.2,    2.20, 2.00, 2.20, 2.00, 0, 0, 2.20,  0.00,    1",
@@ -59,7 +58,7 @@ class SalesOrderReturnIntegrationTest {
         assertReturnOrderValues(returnLatestJson, returnOrderRow, updatedSumValues, updatedTotals, arguments.get(38, BigDecimal.class));
     }
 
-    @ParameterizedTest
+//    @ParameterizedTest
     @CsvSource(value = {
             "2.20, 2, 0, 0, 2.20, 2,    1.10, 1, 0, 0, 1.10, 1,    0.00, 0.00, 0, 0, 0.00, 0.00,   2, -1.00, -1.10, -1.10,   4.40, 4.00, 0, 2.40, 0.40, 2.20, 2, 2.20,   0.00, 0.00, 0.00, 0.00, 0, 0, 0.00, 0.00,  0",
             "2.20, 2, 0, 0, 2.20, 2,    1.10, 1, 0, 0, 1.10, 1,    2.20, 2.00, 0, 0, 2.20, 2.00,   1, -1.00, -1.10, -1.10,   4.40, 4.00, 0, 2.40, 0.40, 2.20, 3,  0.4,   4.40, 2.00, 4.40, 2.00, 0, 0, 4.40, 0.00,  1"

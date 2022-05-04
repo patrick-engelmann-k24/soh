@@ -16,7 +16,6 @@ import de.kfzteile24.salesOrderHub.exception.GrandTotalTaxNotFoundException;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.CalculationUtil;
-import de.kfzteile24.salesOrderHub.helper.EventMapper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
@@ -215,13 +214,10 @@ public class SalesOrderRowService {
         var totals = returnLatestJson.getOrderHeader().getTotals();
 
         items.forEach(item -> {
-            var orderRow = returnLatestJson.getOrderRows().stream()
-                    .filter(r -> StringUtils.pathEquals(r.getSku(), item.getItemNumber()))
-                    .findFirst()
-                    .orElse(orderUtil.createNewOrderRow(
-                            EventMapper.INSTANCE.toCoreSalesFinancialDocumentLine(item),
-                            ((Order) salesOrder.getOriginalOrder()).getOrderRows().get(0).getShippingType(),
-                            orderUtil.getLastRowKey(salesOrder)));
+            var originalOrderRow = salesOrder.getLatestJson().getOrderRows().stream()
+                    .filter(r -> StringUtils.pathEquals(r.getSku(), item.getItemNumber())).findFirst().orElseThrow();
+            var orderRow = orderUtil.createNewOrderRowFromCreditNoteItem(
+                    item, originalOrderRow, orderUtil.getLastRowKey(salesOrder));
             orderUtil.recalculateOrderRow(orderRow, item);
 
             var sumValues = orderRow.getSumValues();
@@ -229,11 +225,7 @@ public class SalesOrderRowService {
             totals.getGrandTotalTaxes().stream()
                     .filter(tax -> tax.getRate().compareTo(item.getTaxRate()) == 0)
                     .findFirst()
-                    .ifPresentOrElse(tax -> {
-                                var taxValue = returnOrderRowTaxValue.compareTo(BigDecimal.ZERO) == 0 ? returnOrderRowTaxValue :
-                                        tax.getValue().subtract(returnOrderRowTaxValue);
-                                tax.setValue(taxValue);
-                            },
+                    .ifPresentOrElse(tax -> tax.setValue(returnOrderRowTaxValue),
                             () -> {
                                 throw new GrandTotalTaxNotFoundException(
                                         format(ERROR_MSG_GRAND_TOTAL_TAX_NOT_FOUND_BY_TAX_RATE,
