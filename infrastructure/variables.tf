@@ -57,3 +57,11 @@ variable "invoices_from_core_sns" {
 variable "db_performance_insight" {
   type = bool
 }
+
+variable "ignore_core_sales_invoice" {
+  type = bool
+}
+
+variable "ignore_core_credit_note" {
+  type = bool
+}

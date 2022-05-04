@@ -68,4 +68,5 @@ soh:
       maxNumberOfMessages: 10
       waitTimeOut: 10
 
-
+ignore_core_sales_invoice: false
+ignore_core_credit_note: false

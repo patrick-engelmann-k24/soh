@@ -87,3 +87,6 @@ camunda:
       create: All tasks
     history-level: FULL
     history-level-default: FULL
+
+ignoreCoreSalesInvoice: false
+ignoreCoreCreditNote: false
