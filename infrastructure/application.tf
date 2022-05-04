@@ -64,6 +64,9 @@ module "application_module" {
     soh_sqs_dropshipment_purchase_order_booked = aws_sqs_queue.dropshipment_purchase_order_booked.id
     soh_sqs_core_sales_credit_note_created     = aws_sqs_queue.soh_core_sales_credit_note_created.id
     soh_sqs_core_sales_invoice_created         = aws_sqs_queue.soh_core_sales_invoice_created.id
+
+    core_sales_invoice_flag                    = var.ignore_core_sales_invoice
+    core_credit_note_flag                      = var.ignore_core_credit_note
   }
 
   ssm_secrets_count = 7

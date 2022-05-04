@@ -1,6 +1,7 @@
 package de.kfzteile24.salesOrderHub.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.kfzteile24.salesOrderHub.configuration.FeatureFlagConfig;
 import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
@@ -65,6 +66,8 @@ class SqsReceiveServiceTest {
     private SalesOrderPaymentSecuredService salesOrderPaymentSecuredService;
     @Mock
     private CamundaHelper camundaHelper;
+    @Mock
+    private FeatureFlagConfig featureFlagConfig;
     @InjectMocks
     private SqsReceiveService sqsReceiveService;
 
@@ -105,6 +108,7 @@ class SqsReceiveServiceTest {
 
         when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.of(salesOrder));
         when(salesOrderService.createSalesOrderForInvoice(any(), any(), any())).thenReturn(salesOrder);
+        when(featureFlagConfig.getIgnoreCoreSalesInvoice()).thenReturn(false);
 
         String coreSalesInvoiceCreatedMessage = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
         sqsReceiveService.queueListenerCoreSalesInvoiceCreated(coreSalesInvoiceCreatedMessage, ANY_SENDER_ID,

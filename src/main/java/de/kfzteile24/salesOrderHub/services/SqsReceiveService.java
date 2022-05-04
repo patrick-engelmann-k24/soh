@@ -3,6 +3,7 @@ package de.kfzteile24.salesOrderHub.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.newrelic.api.agent.Trace;
+import de.kfzteile24.salesOrderHub.configuration.FeatureFlagConfig;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
@@ -54,6 +55,7 @@ public class SqsReceiveService {
     private final CamundaHelper camundaHelper;
     private final ObjectMapper objectMapper;
     private final SalesOrderPaymentSecuredService salesOrderPaymentSecuredService;
+    private final FeatureFlagConfig featureFlagConfig;
 
     /**
      * Consume sqs for new orders from ecp shop
@@ -375,13 +377,17 @@ public class SqsReceiveService {
             @Header("SenderId") String senderId,
             @Header("ApproximateReceiveCount") Integer receiveCount) {
 
-        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-        SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage =
-                objectMapper.readValue(body, SalesCreditNoteCreatedMessage.class);
+        if (featureFlagConfig.getIgnoreCoreCreditNote()) {
+            log.info("Core Credit Note is ignored");
+        } else {
+            String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+            SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage =
+                    objectMapper.readValue(body, SalesCreditNoteCreatedMessage.class);
 
-        var orderNumber = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber();
-        log.info("Received core sales credit note created message with order number: {}", orderNumber);
-        salesOrderRowService.handleSalesOrderReturn(orderNumber, salesCreditNoteCreatedMessage);
+            var orderNumber = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber();
+            log.info("Received core sales credit note created message with order number: {}", orderNumber);
+            salesOrderRowService.handleSalesOrderReturn(orderNumber, salesCreditNoteCreatedMessage);
+        }
     }
 
     /**
@@ -396,49 +402,53 @@ public class SqsReceiveService {
             @Header("SenderId") String senderId,
             @Header("ApproximateReceiveCount") Integer receiveCount
     ) {
-        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-        CoreSalesInvoiceCreatedMessage salesInvoiceCreatedMessage = objectMapper.readValue(body, CoreSalesInvoiceCreatedMessage.class);
-        CoreSalesInvoiceHeader salesInvoiceHeader = salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
-        var itemList = salesInvoiceHeader.getInvoiceLines();
-        var orderNumber = salesInvoiceHeader.getOrderNumber();
-        var invoiceNumber = salesInvoiceHeader.getInvoiceNumber();
-        var newOrderNumber = orderNumber + "-" + invoiceNumber;
-        SalesOrder salesOrderForOrderProcess;
-        log.info("Received core sales invoice created message with order number: {} and invoice number: {}",
-                orderNumber, invoiceNumber);
+        if (featureFlagConfig.getIgnoreCoreSalesInvoice()) {
+            log.info("Core Sales Invoice is ignored");
+        } else {
+            String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+            CoreSalesInvoiceCreatedMessage salesInvoiceCreatedMessage = objectMapper.readValue(body, CoreSalesInvoiceCreatedMessage.class);
+            CoreSalesInvoiceHeader salesInvoiceHeader = salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
+            var itemList = salesInvoiceHeader.getInvoiceLines();
+            var orderNumber = salesInvoiceHeader.getOrderNumber();
+            var invoiceNumber = salesInvoiceHeader.getInvoiceNumber();
+            var newOrderNumber = orderNumber + "-" + invoiceNumber;
+            SalesOrder salesOrderForOrderProcess;
+            log.info("Received core sales invoice created message with order number: {} and invoice number: {}",
+                    orderNumber, invoiceNumber);
 
-        try {
-            // Fetch original sales order
-            var originalSalesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
-                    .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
+            try {
+                // Fetch original sales order
+                var originalSalesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
+                        .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
 
-            if (salesOrderService.isFullyMatchedWithOriginalOrder(originalSalesOrder, itemList)) {
-                updateOriginalSalesOrder(salesInvoiceCreatedMessage, originalSalesOrder);
-                salesOrderForOrderProcess = originalSalesOrder;
-            } else {
-                SalesOrder subsequentOrder = salesOrderService.createSalesOrderForInvoice(
-                        salesInvoiceCreatedMessage,
-                        originalSalesOrder,
-                        newOrderNumber);
-                handleCancellationForOrderRows(originalSalesOrder, subsequentOrder.getLatestJson().getOrderRows());
-                ProcessInstance result = camundaHelper.createOrderProcess(subsequentOrder, ORDER_CREATED_IN_SOH);
-                if (result != null) {
-                    log.info("New soh order process started by core sales invoice created message with " +
-                                    "order number: {} and invoice number: {}. Process-Instance-ID: {} ",
-                            orderNumber,
-                            invoiceNumber,
-                            result.getProcessInstanceId());
+                if (salesOrderService.isFullyMatchedWithOriginalOrder(originalSalesOrder, itemList)) {
+                    updateOriginalSalesOrder(salesInvoiceCreatedMessage, originalSalesOrder);
+                    salesOrderForOrderProcess = originalSalesOrder;
+                } else {
+                    SalesOrder subsequentOrder = salesOrderService.createSalesOrderForInvoice(
+                            salesInvoiceCreatedMessage,
+                            originalSalesOrder,
+                            newOrderNumber);
+                    handleCancellationForOrderRows(originalSalesOrder, subsequentOrder.getLatestJson().getOrderRows());
+                    ProcessInstance result = camundaHelper.createOrderProcess(subsequentOrder, ORDER_CREATED_IN_SOH);
+                    if (result != null) {
+                        log.info("New soh order process started by core sales invoice created message with " +
+                                        "order number: {} and invoice number: {}. Process-Instance-ID: {} ",
+                                orderNumber,
+                                invoiceNumber,
+                                result.getProcessInstanceId());
+                    }
+                    salesOrderForOrderProcess = subsequentOrder;
                 }
-                salesOrderForOrderProcess = subsequentOrder;
-            }
 
-            publishInvoiceEvent(salesOrderForOrderProcess);
-        } catch (Exception e) {
-            log.error("Core sales invoice created received message error:\r\nOrderNumber: {}\r\nInvoiceNumber: {}\r\nError-Message: {}",
-                    orderNumber,
-                    invoiceNumber,
-                    e.getMessage());
-            throw e;
+                publishInvoiceEvent(salesOrderForOrderProcess);
+            } catch (Exception e) {
+                log.error("Core sales invoice created received message error:\r\nOrderNumber: {}\r\nInvoiceNumber: {}\r\nError-Message: {}",
+                        orderNumber,
+                        invoiceNumber,
+                        e.getMessage());
+                throw e;
+            }
         }
     }
 
