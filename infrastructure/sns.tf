@@ -78,6 +78,10 @@ data "aws_sns_topic" "sns_core_subsequent_delivery_note_printed" {
   name = "core-subsequent-delivery-note-printed-v1"
 }
 
+data "aws_sns_topic" "sns_core_sales_invoice_created" {
+  name = "core-sales-invoice-created-v1"
+}
+
 data "aws_sns_topic" "sns_soh_order_invoice_created_v1" {
   name = "soh-order-invoice-created-v1"
 }
@@ -100,6 +104,14 @@ data "aws_sns_topic" "sns_core_sales_credit_note_created_v1" {
 
 data "aws_sns_topic" "sns_soh_return_order_created_v1" {
   name = "soh-return-order-created-v1"
+}
+
+data "aws_sns_topic" "sns_soh_core_invoice_received_v1" {
+  name = "soh-core-invoice-received-v1"
+}
+
+data "aws_sns_topic" "sns_soh_credit_note_received_v1" {
+  name = "soh-credit-note-received-v1"
 }
 
 # subscriptions of sqs to sns
@@ -177,6 +189,13 @@ resource "aws_sns_topic_subscription" "sns_subscription_subsequent_delivery_note
   endpoint = aws_sqs_queue.soh_subsequent_delivery_received.arn
   protocol = "sqs"
   topic_arn = data.aws_sns_topic.sns_core_subsequent_delivery_note_printed.arn
+}
+
+# subscription for core sales invoice created
+resource "aws_sns_topic_subscription" "sns_subscription_core_invoice_created" {
+  endpoint = aws_sqs_queue.soh_core_sales_invoice_created.arn
+  protocol = "sqs"
+  topic_arn = data.aws_sns_topic.sns_soh_order_invoice_created_v1.arn
 }
 
 # subscription for payment secured published by ECP

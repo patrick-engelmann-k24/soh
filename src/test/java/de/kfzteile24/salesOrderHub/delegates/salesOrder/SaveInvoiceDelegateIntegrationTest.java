@@ -5,6 +5,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.MSG
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.INVOICE_CREATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_MARKETPLACE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.INVOICE_URL;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_ORDER_CANCELLED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROWS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_VALID;
@@ -230,6 +231,7 @@ class SaveInvoiceDelegateIntegrationTest {
         processVariables.put(ORDER_NUMBER.getName(), orderNumber);
         processVariables.put(PAYMENT_TYPE.getName(), CREDIT_CARD.getName());
         processVariables.put(ORDER_VALID.getName(), true);
+        processVariables.put(IS_ORDER_CANCELLED.getName(), false);
         processVariables.put(ORDER_ROWS.getName(), orderItems);
 
         return runtimeService.createMessageCorrelation(ORDER_RECEIVED_MARKETPLACE.getName())

@@ -12,3 +12,5 @@ db_instance_scale              = 1
 container_min_count            = 2
 container_max_count            = 3
 db_performance_insight         = true
+ignore_core_sales_invoice      = true
+ignore_core_credit_note        = true

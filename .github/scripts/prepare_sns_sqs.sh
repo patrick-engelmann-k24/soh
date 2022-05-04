@@ -39,6 +39,9 @@ TOPICS="
     soh-dropshipment-purchase-order-booked
     soh-core-sales-credit-note-created
     soh-return-order-created-v1
+    soh-credit-note-received-v1
+    soh-core-sales-invoice-created
+    soh-core-invoice-received-v1
     "
 
 # Outdated topics

@@ -1,13 +1,14 @@
 package de.kfzteile24.salesOrderHub.services;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
-import de.kfzteile24.salesOrderHub.dto.sns.creditnote.CreditNoteLine;
+import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
+import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.ObjectUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
@@ -106,6 +107,8 @@ class SqsReceiveServiceIntegrationTest {
     private SalesOrderUtil salesOrderUtil;
     @Autowired
     private ObjectUtil objectUtil;
+    @Autowired
+    private ObjectMapper objectMapper;
     @SpyBean
     private SnsPublishService snsPublishService;
     @SpyBean
@@ -116,76 +119,6 @@ class SqsReceiveServiceIntegrationTest {
         reset();
         init(processEngine);
         bpmUtil.cleanUp();
-    }
-
-    @Test
-    void testQueueListenerCoreCancellationNotFullyCancelled() {
-
-        String orderRawMessage = readResource("examples/ecpOrderMessageWithTwoRows.json");
-        Order order = getOrder(orderRawMessage);
-        SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(order));
-        camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
-        bpmUtil.sendMessage(ORDER_RECEIVED_PAYMENT_SECURED, salesOrder.getOrderNumber());
-
-        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
-                camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())) &&
-                camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), "2270-13012")
-        );
-
-        String cancellationRawMessage = readResource("examples/coreCancellationOneRowMessage.json");
-        sqsReceiveService.queueListenerCoreCancellation(cancellationRawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
-
-        assertTrue(timerService.pollWithDefaultTiming(
-                () -> camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
-        assertFalse(timerService.pollWithDefaultTiming(
-                () -> camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), "2270-13012")));
-
-        SalesOrder updated = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber()).orElse(null);
-        assertNotNull(updated);
-        Totals totals = updated.getLatestJson().getOrderHeader().getTotals();
-        assertEquals(new BigDecimal("100.00"), totals.getGoodsTotalGross());
-        assertEquals(new BigDecimal("100.00"), totals.getGoodsTotalNet());
-        assertEquals(new BigDecimal("50.00"), totals.getTotalDiscountGross());
-        assertEquals(new BigDecimal("30.00"), totals.getTotalDiscountNet());
-        assertEquals(new BigDecimal("50.00"), totals.getGrandTotalGross());
-        assertEquals(new BigDecimal("70.00"), totals.getGrandTotalNet());
-        assertEquals(new BigDecimal("50.00"), totals.getPaymentTotal());
-    }
-
-    @Test
-    void testQueueListenerCoreCancellationFullyCancelled() {
-
-        String orderRawMessage = readResource("examples/ecpOrderMessageWithTwoRows.json");
-        Order order = getOrder(orderRawMessage);
-        SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(order));
-        camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
-        bpmUtil.sendMessage(Messages.ORDER_RECEIVED_PAYMENT_SECURED.getName(), salesOrder.getOrderNumber());
-
-        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
-                camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())) &&
-                camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), "2270-13012") &&
-                camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), "2270-13013")
-        );
-
-        String cancellationRawMessage = readResource("examples/coreCancellationTwoRowsMessage.json");
-        sqsReceiveService.queueListenerCoreCancellation(cancellationRawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
-
-        assertFalse(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
-                camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber()) &&
-                        camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), "2270-13012") &&
-                        camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), "2270-13013")
-        ));
-
-        SalesOrder updated = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber()).orElse(null);
-        assertNotNull(updated);
-        Totals totals = updated.getLatestJson().getOrderHeader().getTotals();
-        assertEquals(new BigDecimal("86.69"), totals.getGoodsTotalGross());
-        assertEquals(new BigDecimal("88.82"), totals.getGoodsTotalNet());
-        assertEquals(new BigDecimal("49.60"), totals.getTotalDiscountGross());
-        assertEquals(new BigDecimal("29.66"), totals.getTotalDiscountNet());
-        assertEquals(new BigDecimal("37.09"), totals.getGrandTotalGross());
-        assertEquals(new BigDecimal("59.16"), totals.getGrandTotalNet());
-        assertEquals(new BigDecimal("37.09"), totals.getPaymentTotal());
     }
 
     @Test
@@ -465,6 +398,7 @@ class SqsReceiveServiceIntegrationTest {
         assertEquals("13.2",updated.getLatestJson().getOrderHeader().getOrderNumberExternal());
     }
 
+    @SneakyThrows
     @Test
     @DisplayName("IT core sales credit note created event handling")
     void testQueueListenerCoreSalesCreditNoteCreated(TestInfo testInfo) {
@@ -473,6 +407,7 @@ class SqsReceiveServiceIntegrationTest {
 
         var salesOrder = SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
         salesOrder.setOrderGroupId("580309129");
+        salesOrder.setOrderNumber("580309129");
 
         var orderRows = List.of(
                 OrderRows.builder()
@@ -508,6 +443,9 @@ class SqsReceiveServiceIntegrationTest {
         salesOrderService.save(salesOrder, Action.ORDER_CREATED);
 
         var coreReturnDeliveryNotePrinted =  readResource("examples/coreSalesCreditNoteCreated.json");
+        String body = objectMapper.readValue(coreReturnDeliveryNotePrinted, SqsMessage.class).getBody();
+        SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage =
+                objectMapper.readValue(body, SalesCreditNoteCreatedMessage.class);
         sqsReceiveService.queueListenerCoreSalesCreditNoteCreated(coreReturnDeliveryNotePrinted, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
         //set expected values
@@ -519,40 +457,13 @@ class SqsReceiveServiceIntegrationTest {
         latestOrderJson.getOrderHeader().getTotals().setShippingCostNet(BigDecimal.valueOf(10.00).setScale(2, RoundingMode.HALF_UP));
         expectedSalesOrder.setLatestJson(latestOrderJson);
 
-        verify(salesOrderService).findLastOrderByOrderGroupId("580309129");
+        verify(salesOrderService).getOrderByOrderNumber("580309129");
 
-        verify(salesOrderRowService).handleSalesOrderReturn(eq("580309129"), argThat(
-                items -> {
-                    assertThat(items).hasSize(2);
-                    assertThat(items).element(0)
-                            .extracting(CreditNoteLine::getItemNumber).isEqualTo("sku-1");
-                    assertThat(items).element(0)
-                            .extracting(CreditNoteLine::getQuantity)
-                            .extracting(BigDecimal::doubleValue)
-                            .isEqualTo(1.0);
-                    assertThat(items).element(0)
-                            .extracting(CreditNoteLine::getLineNetAmount)
-                            .extracting(BigDecimal::doubleValue)
-                            .isEqualTo(-1.0);
-                    assertThat(items).element(0)
-                            .extracting(CreditNoteLine::getLineTaxAmount)
-                            .extracting(BigDecimal::doubleValue)
-                            .isEqualTo(19.00);
-                    assertThat(items).element(0)
-                            .extracting(CreditNoteLine::getIsShippingCost).isEqualTo(false);
-                    assertThat(items).element(1)
-                            .extracting(CreditNoteLine::getIsShippingCost).isEqualTo(true);
-                    assertThat(items).element(1)
-                            .extracting(CreditNoteLine::getLineNetAmount)
-                            .extracting(BigDecimal::doubleValue)
-                            .isEqualTo(-10.00);
-                    return true;
-                }
-        ));
+        verify(salesOrderRowService).handleSalesOrderReturn(eq("580309129"), eq(salesCreditNoteCreatedMessage));
 
         verify(snsPublishService).publishReturnOrderCreatedEvent(argThat(
                 salesOrderReturn -> {
-                    assertThat(salesOrderReturn.getOrderNumber()).isEqualTo("580309129");
+                    assertThat(salesOrderReturn.getOrderNumber()).isEqualTo("876130");
                     assertThat(salesOrderReturn.getOrderGroupId()).isEqualTo("580309129");
                     return true;
                 }

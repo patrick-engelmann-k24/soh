@@ -1,4 +1,4 @@
-package de.kfzteile24.salesOrderHub.dto.sns.creditnote;
+package de.kfzteile24.salesOrderHub.dto.shared.creditnote;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
@@ -18,11 +18,17 @@ public class CreditNoteLine {
     @JsonProperty("Quantity")
     BigDecimal quantity;
 
+    @JsonProperty("UnitNetAmount")
+    BigDecimal unitNetAmount;
+
     @JsonProperty("LineNetAmount")
     BigDecimal lineNetAmount;
 
     @JsonProperty("LineTaxAmount")
     BigDecimal lineTaxAmount;
+
+    @JsonProperty("TaxRate")
+    BigDecimal taxRate;
 
     @JsonProperty("IsShippingCost")
     Boolean isShippingCost;

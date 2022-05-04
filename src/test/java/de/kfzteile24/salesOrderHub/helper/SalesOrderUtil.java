@@ -118,7 +118,7 @@ public class SalesOrderUtil {
         Order latestJson = objectMapper.readValue(sqsMessage.getBody(), Order.class);
         latestJson.getOrderHeader().setOrderNumber(order.getOrderHeader().getOrderNumber());
         latestJson.getOrderHeader().setOrderGroupId(order.getOrderHeader().getOrderNumber());
-        latestJson.setOrderRows(List.of(latestJson.getOrderRows().get(1)));
+        latestJson.getOrderRows().get(0).setIsCancelled(true);
 
         final SalesOrder testOrder = SalesOrder.builder()
                 .orderNumber(order.getOrderHeader().getOrderNumber())
@@ -314,10 +314,10 @@ public class SalesOrderUtil {
     public static SalesOrder getSalesOrder(String rawMessage) {
         final var order = getOrder(rawMessage);
         return SalesOrder.builder()
-                .orderNumber("514000016")
-                .orderGroupId("514000016")
-                .salesChannel("www-k24-at")
-                .customerEmail("test@kfzteile24.de")
+                .orderNumber(order.getOrderHeader().getOrderNumber())
+                .orderGroupId(order.getOrderHeader().getOrderGroupId())
+                .salesChannel(order.getOrderHeader().getSalesChannel())
+                .customerEmail(order.getOrderHeader().getCustomer().getCustomerEmail())
                 .recurringOrder(Boolean.TRUE)
                 .originalOrder(order)
                 .latestJson(order)

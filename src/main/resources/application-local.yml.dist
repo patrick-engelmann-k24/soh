@@ -40,13 +40,15 @@ soh:
       salesOrderRowCancelled: arn:aws:sns:eu-central-1:000000000000:soh-sales-order-row-cancelled
       salesOrderCancelled:    arn:aws:sns:eu-central-1:000000000000:soh-sales-order-cancelled
       orderInvoiceCreatedV1:  arn:aws:sns:eu-central-1:000000000000:soh-order-invoice-created-v1
-      shipmentConfirmedV1: arn:aws:sns:eu-central-1:000000000000:soh-shipment-confirmed-v1
-      returnOrderCreatedV1: arn:aws:sns:eu-central-1:000000000000:soh-return-order-created-v1
+      shipmentConfirmedV1:    arn:aws:sns:eu-central-1:000000000000:soh-shipment-confirmed-v1
+      returnOrderCreatedV1:   arn:aws:sns:eu-central-1:000000000000:soh-return-order-created-v1
+      coreInvoiceReceivedV1:  arn:aws:sns:eu-central-1:000000000000:soh-core-invoice-received-v1
+      creditNoteReceivedV1: arn:aws:sns:eu-central-1:000000000000:soh-credit-note-received-v1
   sqs:
     queue:
       ecpShopOrders:                  http://localhost:4566/000000000000/soh-ecp-shop-orders-queue
-      bcShopOrders:                  http://localhost:4566/000000000000/soh-bc-shop-orders-queue
-      coreShopOrders:                  http://localhost:4566/000000000000/soh-core-shop-orders-queue
+      bcShopOrders:                   http://localhost:4566/000000000000/soh-bc-shop-orders-queue
+      coreShopOrders:                 http://localhost:4566/000000000000/soh-core-shop-orders-queue
       orderItemShipped:               http://localhost:4566/000000000000/soh-order-item-shipped-queue
       orderPaymentSecured:            http://localhost:4566/000000000000/soh-order-payment-secured-queue
       orderItemTransmittedToLogistic: http://localhost:4566/000000000000/soh-order-item-transmitted-to-logistic-queue
@@ -60,9 +62,11 @@ soh:
       dropshipmentShipmentConfirmed:  http://localhost:4566/000000000000/soh-dropshipment-shipment-confirmed-queue
       dropshipmentPurchaseOrderBooked: http://localhost:4566/000000000000/soh-dropshipment-purchase-order-booked-queue
       coreSalesCreditNoteCreated:     http://localhost:4566/000000000000/soh-core-sales-credit-note-created-queue
+      coreSalesInvoiceCreated:        http://localhost:4566/000000000000/soh-core-sales-invoice-created-queue
   aws:
     config:
       maxNumberOfMessages: 10
       waitTimeOut: 10
 
-
+ignore_core_sales_invoice: false
+ignore_core_credit_note: false

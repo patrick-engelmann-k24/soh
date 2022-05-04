@@ -3,6 +3,7 @@ package de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess;
 import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 
 public enum Variables implements BpmItem {
+    SALES_ORDER_ID("salesOrderId"),
     ORDER_NUMBER("orderNumber"),
     ORDER_GROUP_ID("orderGroupId"),
     PAYMENT_TYPE("paymentType"),
@@ -24,7 +25,9 @@ public enum Variables implements BpmItem {
     SALES_CHANNEL("salesChannel"),
     IS_BRANCH_ORDER("isBranchOrder"),
     IS_SOH_ORDER("isSohOrder"),
-    POSITIVE_PAYMENT_TYPE("positivePaymentType")
+    POSITIVE_PAYMENT_TYPE("positivePaymentType"),
+    PUBLISH_DELAY("publishDelay"),
+    IS_ORDER_CANCELLED("isOrderCancelled")
     ;
 
     private final String name;

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1jqkpwu" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.12.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.15.0">
+  <bpmn:process id="Process_11206iy" isExecutable="true">
+    <bpmn:endEvent id="eventEndMsgCoreInvoiceReceived" name="Publish invoice received">
+      <bpmn:incoming>Flow_05hnn1v</bpmn:incoming>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_18fgu87" camunda:delegateExpression="${publishInvoiceCreationReceivedDelegate}" />
+    </bpmn:endEvent>
+    <bpmn:intermediateCatchEvent id="Event_1bel7ox">
+      <bpmn:incoming>Flow_0qcawrf</bpmn:incoming>
+      <bpmn:outgoing>Flow_05hnn1v</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_092pnxl">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">#{projectConfig.processConfig.subsequentOrderProcess.publishDelay}</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_05hnn1v" sourceRef="Event_1bel7ox" targetRef="eventEndMsgCoreInvoiceReceived" />
+    <bpmn:sequenceFlow id="Flow_0qcawrf" sourceRef="eventStartMsgCoreInvoiceCreationReceived" targetRef="Event_1bel7ox" />
+    <bpmn:startEvent id="eventStartMsgCoreInvoiceCreationReceived" name="Core invoice creation received">
+      <bpmn:outgoing>Flow_0qcawrf</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_1456igq" messageRef="Message_1l4tvva" />
+    </bpmn:startEvent>
+    <bpmn:textAnnotation id="TextAnnotation_1cjhhky">
+      <bpmn:text>Wait 10 seconds</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:textAnnotation id="TextAnnotation_0ugjlos">
+      <bpmn:text>Publish core invoice created event</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_0fpadew" sourceRef="TextAnnotation_0ugjlos" targetRef="eventEndMsgCoreInvoiceReceived" />
+    <bpmn:association id="Association_1hv5yk9" sourceRef="Event_1bel7ox" targetRef="TextAnnotation_1cjhhky" />
+  </bpmn:process>
+  <bpmn:message id="Message_1l4tvva" name="msgCoreInvoiceCreationReceived" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_11206iy">
+      <bpmndi:BPMNShape id="TextAnnotation_1cjhhky_di" bpmnElement="TextAnnotation_1cjhhky">
+        <dc:Bounds x="457" y="80" width="62" height="40" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_0ugjlos_di" bpmnElement="TextAnnotation_0ugjlos">
+        <dc:Bounds x="607" y="73" width="100" height="54" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_05hnn1v_di" bpmnElement="Flow_05hnn1v">
+        <di:waypoint x="536" y="160" />
+        <di:waypoint x="679" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0qcawrf_di" bpmnElement="Flow_0qcawrf">
+        <di:waypoint x="205" y="160" />
+        <di:waypoint x="500" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="eventEndMsgCoreInvoiceReceived_di" bpmnElement="eventEndMsgCoreInvoiceReceived">
+        <dc:Bounds x="679" y="142" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="662" y="188" width="74" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1bel7ox_di" bpmnElement="Event_1bel7ox">
+        <dc:Bounds x="500" y="142" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0oke1cw_di" bpmnElement="eventStartMsgCoreInvoiceCreationReceived">
+        <dc:Bounds x="169" y="142" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="146" y="185" width="84" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_0fpadew_di" bpmnElement="Association_0fpadew">
+        <di:waypoint x="673" y="127" />
+        <di:waypoint x="689" y="144" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_1hv5yk9_di" bpmnElement="Association_1hv5yk9">
+        <di:waypoint x="524" y="143" />
+        <di:waypoint x="503" y="120" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

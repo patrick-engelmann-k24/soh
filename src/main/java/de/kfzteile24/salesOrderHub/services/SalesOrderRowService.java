@@ -1,6 +1,5 @@
 package de.kfzteile24.salesOrderHub.services;
 
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
@@ -10,13 +9,14 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
-import de.kfzteile24.salesOrderHub.dto.sns.creditnote.CreditNoteLine;
+import de.kfzteile24.salesOrderHub.dto.shared.creditnote.CreditNoteLine;
+import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
 import de.kfzteile24.salesOrderHub.exception.GrandTotalTaxNotFoundException;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
-import de.kfzteile24.salesOrderHub.exception.OrderRowNotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.CalculationUtil;
+import de.kfzteile24.salesOrderHub.helper.EventMapper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
@@ -28,6 +28,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
+import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -38,9 +39,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_CREDIT_NOTE_CREATED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_BOOKED;
 import static java.math.RoundingMode.HALF_UP;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ITEM_SHIPPED;
@@ -52,8 +53,6 @@ import static java.util.stream.Collectors.toUnmodifiableSet;
 @RequiredArgsConstructor
 public class SalesOrderRowService {
 
-    public static final String ERROR_MSG_ROW_NOT_FOUND_BY_SKU =
-            "Could not find order row with SKU {0} for order number {1} and order group id {2}";
     public static final String ERROR_MSG_GRAND_TOTAL_TAX_NOT_FOUND_BY_TAX_RATE =
             "Could not find order row with SKU {0} and tax rate {1} for order number {2} and order group id {3}";
     @NonNull
@@ -77,17 +76,19 @@ public class SalesOrderRowService {
     @NonNull
     private final InvoiceService invoiceService;
 
-    public void cancelOrderProcessIfFullyCancelled(SalesOrder salesOrder) {
+    public boolean cancelOrderProcessIfFullyCancelled(SalesOrder salesOrder) {
 
-        if (isOrderFullyCancelled(salesOrder.getLatestJson())) {
-            log.info("Order with order number: {} is fully cancelled, cancelling the order process", salesOrder.getOrderNumber());
+        if (salesOrder.getLatestJson().getOrderRows().stream().allMatch(OrderRows::getIsCancelled)) {
+            log.info("Order with order number: {} is fully cancelled", salesOrder.getOrderNumber());
             for (OrderRows orderRow : salesOrder.getLatestJson().getOrderRows()) {
                 if (!helper.isShipped(orderRow.getShippingType())) {
                     orderRow.setIsCancelled(true);
                 }
             }
-            salesOrderService.save(orderUtil.removeCancelledOrderRowsFromLatestJson(salesOrder), Action.ORDER_CANCELLED);
-            correlateMessageForOrderCancellation(salesOrder.getOrderNumber());
+            salesOrderService.save(salesOrder, Action.ORDER_CANCELLED);
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -101,7 +102,7 @@ public class SalesOrderRowService {
         salesOrder = salesOrderService.save(salesOrder, DROPSHIPMENT_PURCHASE_ORDER_BOOKED);
         if (!message.getBooked()) {
             for (OrderRows orderRows : ((Order) salesOrder.getOriginalOrder()).getOrderRows()) {
-                cancelOrderRow(orderNumber, orderRows.getSku());
+                cancelOrderRowsOfOrderGroup(orderNumber, orderRows.getSku());
             }
             if (timedPollingService.pollWithDefaultTiming(() -> helper.checkIfActiveProcessExists(orderNumber))) {
                 cancelOrderProcessIfFullyCancelled(salesOrder);
@@ -164,34 +165,40 @@ public class SalesOrderRowService {
         for (String sku : skuList) {
             List<String> originalOrderSkus = getOriginalOrderSkus(orderNumber);
             if (originalOrderSkus.contains(sku)) {
-                cancelOrderRow(orderNumber, sku);
+                cancelOrderRowsOfOrderGroup(orderNumber, sku);
             } else {
                 log.error("Sku: {} is not in original order with order number: {}", sku, orderNumber);
             }
         }
     }
 
-    public SalesOrderReturn handleSalesOrderReturn(String orderNumber, Collection<CreditNoteLine> creditNoteLines) {
-        var salesOrder = salesOrderService.findLastOrderByOrderGroupId(orderNumber);
-        var negativedCreditNoteLine = negateCreditNoteLines(creditNoteLines);
-        var items = negativedCreditNoteLine.stream()
-                .filter(creditNoteLine -> !creditNoteLine.getIsShippingCost())
-                .collect(Collectors.toList());
-        var returnOrderJson = recalculateOrderByReturns(salesOrder, items);
+    @Transactional
+    public void handleSalesOrderReturn(
+            String orderNumber, SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage) {
 
-        returnOrderJson.getOrderHeader().setOrderNumber(salesOrder.getOrderNumber());
+        var salesCreditNoteHeader = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader();
+        var creditNoteLines = salesCreditNoteHeader.getCreditNoteLines();
+        var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
+                .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
+        var negativedCreditNoteLine = negateCreditNoteLines(creditNoteLines);
+        var returnOrderJson = recalculateOrderByReturns(salesOrder, getOrderRowUpdateItems(negativedCreditNoteLine));
+
+        returnOrderJson.getOrderHeader().setOrderNumber(salesCreditNoteHeader.getCreditNoteNumber());
 
         var salesOrderReturn = SalesOrderReturn.builder()
                 .orderGroupId(orderNumber)
-                .orderNumber(orderNumber)
+                .orderNumber(salesCreditNoteHeader.getCreditNoteNumber())
                 .returnOrderJson(returnOrderJson)
+                .salesCreditNoteCreatedMessage(salesCreditNoteCreatedMessage)
                 .build();
 
-        salesOrderReturn.setOrderNumber(orderNumber);
         updateShippingCosts(salesOrderReturn, negativedCreditNoteLine);
-        salesOrderService.addSalesOrderReturn(salesOrder, salesOrderReturn);
-
-        return salesOrderReturn;
+        SalesOrderReturn savedSalesOrderReturn = salesOrderService.addSalesOrderReturn(salesOrder, salesOrderReturn);
+        ProcessInstance result = helper.createReturnOrderProcess(savedSalesOrderReturn, CORE_CREDIT_NOTE_CREATED);
+        if (result != null) {
+            log.info("New return order process started for order number: {}. Process-Instance-ID: {} ",
+                    orderNumber, result.getProcessInstanceId());
+        }
     }
 
     public Order recalculateOrderByReturns(SalesOrder salesOrder, Collection<CreditNoteLine> items) {
@@ -203,14 +210,16 @@ public class SalesOrderRowService {
             var orderRow = returnLatestJson.getOrderRows().stream()
                     .filter(r -> StringUtils.pathEquals(r.getSku(), item.getItemNumber()))
                     .findFirst()
-                    .orElseThrow(() -> new OrderRowNotFoundException(ERROR_MSG_ROW_NOT_FOUND_BY_SKU,
-                            item.getItemNumber(), salesOrder.getOrderNumber(), salesOrder.getOrderGroupId()));
+                    .orElse(orderUtil.createNewOrderRow(
+                            EventMapper.INSTANCE.toCoreSalesFinancialDocumentLine(item),
+                            ((Order) salesOrder.getOriginalOrder()).getOrderRows().get(0).getShippingType(),
+                            orderUtil.getLastRowKey(salesOrder)));
             orderUtil.recalculateOrderRow(orderRow, item);
 
             var sumValues = orderRow.getSumValues();
             var returnOrderRowTaxValue = sumValues.getTotalDiscountedGross().subtract(sumValues.getTotalDiscountedNet());
             totals.getGrandTotalTaxes().stream()
-                    .filter(tax -> tax.getRate().compareTo(item.getLineTaxAmount()) == 0)
+                    .filter(tax -> tax.getRate().compareTo(item.getTaxRate()) == 0)
                     .findFirst()
                     .ifPresentOrElse(tax -> {
                                 var taxValue = returnOrderRowTaxValue.compareTo(BigDecimal.ZERO) == 0 ? returnOrderRowTaxValue :
@@ -220,7 +229,7 @@ public class SalesOrderRowService {
                             () -> {
                                 throw new GrandTotalTaxNotFoundException(
                                         format(ERROR_MSG_GRAND_TOTAL_TAX_NOT_FOUND_BY_TAX_RATE,
-                                                item.getItemNumber(), item.getLineTaxAmount(), salesOrder.getOrderNumber(), salesOrder.getOrderGroupId()));
+                                                item.getItemNumber(), item.getTaxRate(), salesOrder.getOrderNumber(), salesOrder.getOrderGroupId()));
                             });
         });
 
@@ -249,14 +258,22 @@ public class SalesOrderRowService {
         return returnLatestJson;
     }
 
+    private List<CreditNoteLine> getOrderRowUpdateItems(Collection<CreditNoteLine> negativedCreditNoteLine) {
+        return negativedCreditNoteLine.stream()
+                .filter(creditNoteLine -> !creditNoteLine.getIsShippingCost())
+                .collect(Collectors.toList());
+    }
+
     private Collection<CreditNoteLine> negateCreditNoteLines(Collection<CreditNoteLine> creditNoteLines) {
         return creditNoteLines.stream().map(creditNoteLine ->
                 CreditNoteLine.builder()
                         .isShippingCost(creditNoteLine.getIsShippingCost())
                         .itemNumber(creditNoteLine.getItemNumber())
+                        .taxRate(creditNoteLine.getTaxRate())
                         .quantity(creditNoteLine.getQuantity().negate())
-                        .lineTaxAmount(creditNoteLine.getLineTaxAmount())
+                        .unitNetAmount(creditNoteLine.getUnitNetAmount().negate())
                         .lineNetAmount(creditNoteLine.getLineNetAmount().negate())
+                        .lineTaxAmount(creditNoteLine.getLineTaxAmount().negate())
                         .build()
         ).collect(Collectors.toList());
     }
@@ -269,6 +286,9 @@ public class SalesOrderRowService {
                 .ifPresent(creditNoteLine -> {
                     totals.setShippingCostNet(creditNoteLine.getLineNetAmount());
                     totals.setShippingCostGross(getGrossValue(creditNoteLine));
+                    totals.setGrandTotalNet(totals.getGrandTotalNet().add(totals.getShippingCostNet()));
+                    totals.setGrandTotalGross(totals.getGrandTotalGross().add(totals.getShippingCostGross()));
+                    totals.setPaymentTotal(totals.getGrandTotalGross());
                 });
     }
 
@@ -278,29 +298,31 @@ public class SalesOrderRowService {
         return CalculationUtil.round(CalculationUtil.getGrossValue(netValue, taxRate), HALF_UP);
     }
 
-    private void cancelOrderRow(String orderGroupId, String orderRowId) {
+    private void cancelOrderRowsOfOrderGroup(String orderGroupId, String orderRowId) {
 
         List<String> orderNumberListByOrderGroupId = salesOrderService.getOrderNumberListByOrderGroupId(orderGroupId, orderRowId);
         for (String orderNumber : orderNumberListByOrderGroupId) {
-
-            if (helper.checkIfOrderRowProcessExists(orderNumber, orderRowId)) {
-                correlateMessageForOrderRowCancelCancellation(orderNumber, orderRowId);
-
-            } else {
-                log.debug("Sales order row process does not exist for order number {} and order row: {}",
-                        orderNumber, orderRowId);
-            }
-
-            if (helper.checkIfActiveProcessExists(orderNumber)) {
-                removeCancelledOrderRowFromProcessVariables(orderNumber, orderRowId);
-            } else {
-                log.debug("Sales order process does not exist for order number {}", orderNumber);
-            }
-
-            markOrderRowAsCancelled(orderNumber, orderRowId);
-            log.info("Order row cancelled for order number: {} and order row: {}", orderNumber, orderRowId);
-
+            cancelOrderRow(orderRowId, orderNumber);
         }
+    }
+
+    public void cancelOrderRow(String orderRowId, String orderNumber) {
+
+        markOrderRowAsCancelled(orderNumber, orderRowId);
+        if (helper.checkIfOrderRowProcessExists(orderNumber, orderRowId)) {
+            correlateMessageForOrderRowCancelCancellation(orderNumber, orderRowId);
+
+        } else {
+            log.debug("Sales order row process does not exist for order number {} and order row: {}",
+                    orderNumber, orderRowId);
+        }
+
+        if (helper.checkIfActiveProcessExists(orderNumber)) {
+            removeCancelledOrderRowFromProcessVariables(orderNumber, orderRowId);
+        } else {
+            log.debug("Sales order process does not exist for order number {}", orderNumber);
+        }
+        log.info("Order row cancelled for order number: {} and order row: {}", orderNumber, orderRowId);
     }
 
     @SuppressWarnings("unchecked")
@@ -330,7 +352,15 @@ public class SalesOrderRowService {
         cancelledOrderRow.setIsCancelled(true);
 
         recalculateOrder(latestJson, cancelledOrderRow);
-        salesOrderService.save(orderUtil.removeCancelledOrderRowsFromLatestJson(salesOrder), Action.ORDER_ROW_CANCELLED);
+        salesOrderService.save(salesOrder, Action.ORDER_ROW_CANCELLED);
+
+        boolean isOrderCancelled = cancelOrderProcessIfFullyCancelled(salesOrder);
+        log.info("Is order with order number: {} fully check result: {}", orderNumber, isOrderCancelled);
+        var processInstance = runtimeService.createProcessInstanceQuery()
+                .processDefinitionKey(SALES_ORDER_PROCESS.getName())
+                .variableValueEquals(Variables.ORDER_NUMBER.getName(), orderNumber)
+                .singleResult();
+        runtimeService.setVariable(processInstance.getId(), Variables.IS_ORDER_CANCELLED.getName(), isOrderCancelled);
     }
 
     private void recalculateOrder(Order latestJson, OrderRows cancelledOrderRow) {
@@ -369,26 +399,12 @@ public class SalesOrderRowService {
         return originalOrder.getOrderRows().stream().map(OrderRows::getSku).collect(Collectors.toList());
     }
 
-    private boolean isOrderFullyCancelled(Order order) {
-
-        Stream<OrderRows> orderRowsStream = order.getOrderRows().stream()
-                .filter(orderRow -> helper.isShipped(orderRow.getShippingType()));
-        return orderRowsStream.allMatch(OrderRows::getIsCancelled);
-    }
-
     private void correlateMessageForOrderRowCancelCancellation(String orderNumber, String orderRowId) {
         log.info("Starting cancelling order row process for order number: {} and order row: {}", orderNumber, orderRowId);
         runtimeService.createMessageCorrelation(RowMessages.ORDER_ROW_CANCELLATION_RECEIVED.getName())
                 .processInstanceVariableEquals(Variables.ORDER_NUMBER.getName(), orderNumber)
                 .processInstanceVariableEquals(RowVariables.ORDER_ROW_ID.getName(), orderRowId)
                 .correlateWithResultAndVariables(true);
-    }
-
-    private void correlateMessageForOrderCancellation(String orderNumber) {
-        log.info("Starting cancelling order process for order number: {}", orderNumber);
-        runtimeService.createMessageCorrelation(Messages.ORDER_CANCELLATION_RECEIVED.getName())
-                .processInstanceVariableEquals(Variables.ORDER_NUMBER.getName(), orderNumber)
-                .correlateWithResult();
     }
 
     public void publishOrderRowMsg(RowMessages rowMessage,

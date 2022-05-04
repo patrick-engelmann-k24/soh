@@ -1,6 +1,6 @@
 package de.kfzteile24.salesOrderHub.services;
 
-import de.kfzteile24.salesOrderHub.dto.sns.creditnote.CreditNoteLine;
+import de.kfzteile24.salesOrderHub.dto.shared.creditnote.CreditNoteLine;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.services.aggregator.Aggregators;
 import de.kfzteile24.soh.order.dto.Order;
@@ -32,9 +32,9 @@ class SalesOrderReturnIntegrationTest {
     // may be later it's better using csv file source, much more readable and editable (with column names as well)
     @ParameterizedTest
     @CsvSource(value = {
-              "2.20,   2,    0,    0, 2.20,   2,    1.10, 1,    0,   0, 1.10,   1,     0.00,  0, 0,       0, 0.00,    0,     -1.00, 2, 10.00,    2.20, 2,    0, 2.20, 0.20, 1.10,    1, 1.10,    0.00, 0, 0.00,    0,    0, 0,   0.00, 0.00,  0",
-              "2.20,   2,    0,    0, 2.20,   2,    1.10, 1,    0,   0, 1.10,   1,     1.10,  1, 0,       0, 1.10,    1,     -1.00, 1, 10.00,    2.20, 2,    0, 2.20, 0.20, 1.10,    1,  0.2,    1.10, 1, 1.10,    1,    0, 0,   1.10, 0.10,  1",
-              "2.20,   2,  0.2, 0.22, 1.98, 1.8,    1.10, 1, 0.11, 0.1, 0.99, 0.9,     1.10,  1, 0.1,  0.11, 0.99,  0.9,     -1.00, 1, 10.00,    2.20, 2, 1.98,  1.8, 0.22,  0.2, 1.98,  0.18,   1.10, 1, 0.99,  0.9, 0.11, 0.1, 0.99, 0.09,  1"
+              "2.20, 2,    0,    0, 2.20,   2,    1.10, 1,    0,   0, 1.10,   1,     0.00, 0.00, 0, 0, 0.00, 0.00,     2, -1.00, -1.10, -1.10,    2.20, 2,    0, 2.20, 0.20, 1.10,    1, 1.10,    0.00, 0.00, 0.00, 0.00, 0, 0, 0.00,  0.00,    0",
+              "2.20, 2,    0,    0, 2.20,   2,    1.10, 1,    0,   0, 1.10,   1,     2.20, 2.00, 0, 0, 2.20, 2.00,     1, -1.00, -1.10, -1.10,    2.20, 2,    0, 2.20, 0.20, 1.10,    1,  0.2,    2.20, 2.00, 2.20, 2.00, 0, 0, 2.20,  0.00,    1",
+              "2.20, 2,  0.2, 0.22, 1.98, 1.8,    1.10, 1, 0.11, 0.1, 0.99, 0.9,     2.20, 2.00, 0, 0, 2.20, 2.00,     1, -1.00, -1.10, -1.10,    2.20, 2, 1.98,  1.8, 0.22,  0.2, 1.98,  0.18,   2.20, 2.00, 2.20, 2.00, 0, 0, 2.20, -0.02,    1"
     })
     void testRecalculateOrderByReturnsOneRowAndOneReturnedItem(@AggregateWith(Aggregators.SumValuesAggregator.class) SumValues sumValues,
                                                                @AggregateWith(Aggregators.UnitValuesAggregator.class) UnitValues unitValues,
@@ -56,13 +56,13 @@ class SalesOrderReturnIntegrationTest {
         var returnLatestJson = salesOrderRowService.recalculateOrderByReturns(salesOrder, List.of(item));
         var returnOrderRow = returnLatestJson.getOrderRows().get(0);
 
-        assertReturnOrderValues(returnLatestJson, returnOrderRow, updatedSumValues, updatedTotals, arguments.get(37, BigDecimal.class));
+        assertReturnOrderValues(returnLatestJson, returnOrderRow, updatedSumValues, updatedTotals, arguments.get(38, BigDecimal.class));
     }
 
     @ParameterizedTest
     @CsvSource(value = {
-            "2.20, 2, 0, 0, 2.20, 2,    1.10, 1, 0, 0, 1.10, 1,    0.00, 0, 0, 0, 0.00, 0,   -1.00, 2, 10.00,   4.40, 4, 0, 2.40, 0.40, 2.20, 2, 2.20,   0.00, 0, 0.00, 0, 0, 0, 0.00, 0.00,  0",
-            "2.20, 2, 0, 0, 2.20, 2,    1.10, 1, 0, 0, 1.10, 1,    1.10, 1, 0, 0, 1.10, 1,   -1.00, 1, 10.00,   4.40, 4, 0, 2.40, 0.40, 2.20, 3,  0.4,   2.20, 1, 2.20, 1, 0, 0, 2.20, 0.20,  1"
+            "2.20, 2, 0, 0, 2.20, 2,    1.10, 1, 0, 0, 1.10, 1,    0.00, 0.00, 0, 0, 0.00, 0.00,   2, -1.00, -1.10, -1.10,   4.40, 4.00, 0, 2.40, 0.40, 2.20, 2, 2.20,   0.00, 0.00, 0.00, 0.00, 0, 0, 0.00, 0.00,  0",
+            "2.20, 2, 0, 0, 2.20, 2,    1.10, 1, 0, 0, 1.10, 1,    2.20, 2.00, 0, 0, 2.20, 2.00,   1, -1.00, -1.10, -1.10,   4.40, 4.00, 0, 2.40, 0.40, 2.20, 3,  0.4,   4.40, 2.00, 4.40, 2.00, 0, 0, 4.40, 0.00,  1"
     })
     void testRecalculateOrderByReturnsTwoRowsAndTwoReturnedItems(@AggregateWith(Aggregators.SumValuesAggregator.class) SumValues sumValues,
                                                                  @AggregateWith(Aggregators.UnitValuesAggregator.class) UnitValues unitValues,
@@ -85,7 +85,7 @@ class SalesOrderReturnIntegrationTest {
 
         var returnLatestJson = salesOrderRowService.recalculateOrderByReturns(salesOrder, List.of(item, anotherItem));
         returnLatestJson.getOrderRows().forEach(returnOrderRow ->
-                        assertReturnOrderValues(returnLatestJson, returnOrderRow, updatedSumValues, updatedTotals, arguments.get(37, BigDecimal.class))
+                        assertReturnOrderValues(returnLatestJson, returnOrderRow, updatedSumValues, updatedTotals, arguments.get(38, BigDecimal.class))
                 );
     }
 

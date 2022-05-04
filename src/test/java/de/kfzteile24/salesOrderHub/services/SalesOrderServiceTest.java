@@ -3,8 +3,10 @@ package de.kfzteile24.salesOrderHub.services;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.domain.converter.InvoiceSource;
-import de.kfzteile24.salesOrderHub.dto.sns.SubsequentDeliveryMessage;
-import de.kfzteile24.salesOrderHub.dto.sns.deliverynote.CoreDeliveryNoteItem;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesFinancialDocumentLine;
+import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoice;
+import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundCustomException;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
@@ -19,14 +21,12 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -97,10 +97,10 @@ class SalesOrderServiceTest {
 
         assertThat(createdSalesOrder.isRecurringOrder()).isTrue();
         assertThat(createdSalesOrder.getLatestJson()).isNotNull();
-        assertThat(createdSalesOrder.getCustomerEmail()).isEqualTo("test@kfzteile24.de");
-        assertThat(createdSalesOrder.getSalesChannel()).isEqualTo("www-k24-at");
-        assertThat(createdSalesOrder.getOrderNumber()).isEqualTo("514000016");
-        assertThat(createdSalesOrder.getOrderGroupId()).isEqualTo("514000016");//The orderNumber should be used to fill the group Id with the same number, since it was missing in the Order JSON.
+        assertThat(createdSalesOrder.getCustomerEmail()).isEqualTo(salesOrder.getCustomerEmail());
+        assertThat(createdSalesOrder.getSalesChannel()).isEqualTo(salesOrder.getSalesChannel());
+        assertThat(createdSalesOrder.getOrderNumber()).isEqualTo(salesOrder.getOrderNumber());
+        assertThat(createdSalesOrder.getOrderGroupId()).isEqualTo(salesOrder.getOrderGroupId());//The orderNumber should be used to fill the group Id with the same number, since it was missing in the Order JSON.
 
         verify(invoiceService).getInvoicesByOrderNumber(eq(salesOrder.getOrderNumber()));
         existingInvoices
@@ -135,29 +135,24 @@ class SalesOrderServiceTest {
     }
 
     @Test
-    void createSalesOrderForSubsequentDelivery() {
+    void testCreateSubsequentSalesOrder() {
         // Prepare sales order
         String rawMessage =  readResource("examples/testmessage.json");
         var salesOrder = getSalesOrder(rawMessage);
+        var originalOrderGroupId = salesOrder.getOrderGroupId();
         updateRowIsCancelledFieldAsTrue(salesOrder); //In order to observe change
         String newOrderNumber = "22222";
         OrderRows orderRow = salesOrder.getLatestJson().getOrderRows().get(0);
 
         // Prepare sub-sequent delivery note obj
-        var subsequentDeliveryMessage = createSubsequentDeliveryNote(
+        var invoiceCreatedMessage = createCoreSalesInvoiceCreatedMessage(
                 salesOrder.getOrderNumber(),
                 orderRow.getSku());
 
         // Mock services
-        when(salesOrderRepository.getOrderByOrderNumber(any())).thenReturn(Optional.of(salesOrder));
         when(invoiceService.getInvoicesByOrderNumber(any())).thenReturn(Set.of());
-        when(orderUtil.createOrderFromOriginalSalesOrder(any(), any(), any())).thenReturn(orderRow);
-        when(salesOrderRepository.save(any())).thenAnswer(new Answer<SalesOrder>() {
-            @Override
-            public SalesOrder answer(InvocationOnMock invocation) throws Throwable {
-                return invocation.getArgument(0);
-            }
-        });
+        when(orderUtil.createOrderRowFromOriginalSalesOrder(any(), any(), any())).thenReturn(List.of(orderRow));
+        when(salesOrderRepository.save(any())).thenAnswer((Answer<SalesOrder>) invocation -> invocation.getArgument(0));
 
         // Establish some updates before the test in order to see the change
         salesOrder.setOrderGroupId("33333"); //set order group id to a different value to observe the change
@@ -167,16 +162,19 @@ class SalesOrderServiceTest {
                 .build();
         salesOrder.getLatestJson().getOrderHeader().getTotals().setGrandTotalTaxes(List.of(actualGrandTotalTax));
 
-        var createdSalesOrder = salesOrderService.createSalesOrderForSubsequentDelivery(
-                subsequentDeliveryMessage,
+        var createdSalesOrder = salesOrderService.createSalesOrderForInvoice(
+                invoiceCreatedMessage,
+                salesOrder,
                 newOrderNumber);
 
         assertThat(createdSalesOrder.getOrderNumber()).isEqualTo(newOrderNumber);
-        assertThat(createdSalesOrder.getOrderGroupId()).isEqualTo(subsequentDeliveryMessage.getOrderNumber());
+        assertThat(createdSalesOrder.getOrderGroupId()).isEqualTo(originalOrderGroupId);
         assertThat(createdSalesOrder.getOriginalOrder()).isNotNull();
         assertThat(createdSalesOrder.getLatestJson()).isNotNull();
         assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getPlatform()).isNotNull();
         assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getPlatform()).isEqualTo(Platform.SOH);
+        assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getOrderNumber()).isEqualTo(newOrderNumber);
+        assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber()).isEqualTo(invoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber());
         assertThat(createdSalesOrder.getId()).isNull();
         assertThat(createdSalesOrder.getLatestJson().getOrderRows()).hasSize(1);
         assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getTotals().getGoodsTotalGross()).isEqualTo(orderRow.getSumValues().getGoodsValueGross());
@@ -191,21 +189,28 @@ class SalesOrderServiceTest {
         );
     }
 
-    private SubsequentDeliveryMessage createSubsequentDeliveryNote(String orderNumber, String sku) {
+    private CoreSalesInvoiceCreatedMessage createCoreSalesInvoiceCreatedMessage(String orderNumber, String sku) {
         BigDecimal quantity = BigDecimal.valueOf(1L);
-        String subsequentDeliveryNumber = "987654321";
-        CoreDeliveryNoteItem item = CoreDeliveryNoteItem.builder()
-                .sku(sku)
+        CoreSalesFinancialDocumentLine item = CoreSalesFinancialDocumentLine.builder()
+                .itemNumber(sku)
                 .quantity(quantity)
-                .unitPriceGross(BigDecimal.TEN)
-                .salesPriceGross(BigDecimal.TEN.multiply(quantity))
+                .unitNetAmount(BigDecimal.valueOf(9))
+                .lineNetAmount(BigDecimal.valueOf(9).multiply(quantity))
                 .taxRate(BigDecimal.TEN)
+                .isShippingCost(false)
                 .build();
-        SubsequentDeliveryMessage subsequent = new SubsequentDeliveryMessage();
-        subsequent.setOrderNumber(orderNumber);
-        subsequent.setItems(List.of(item));
-        subsequent.setSubsequentDeliveryNoteNumber(subsequentDeliveryNumber);
-        return subsequent;
+
+        CoreSalesInvoiceHeader coreSalesInvoiceHeader = new CoreSalesInvoiceHeader();
+        coreSalesInvoiceHeader.setOrderNumber(orderNumber);
+        coreSalesInvoiceHeader.setInvoiceNumber("50");
+        coreSalesInvoiceHeader.setInvoiceLines(List.of(item));
+
+        CoreSalesInvoice coreSalesInvoice = new CoreSalesInvoice();
+        coreSalesInvoice.setSalesInvoiceHeader(coreSalesInvoiceHeader);
+
+        CoreSalesInvoiceCreatedMessage salesInvoiceCreatedMessage = new CoreSalesInvoiceCreatedMessage();
+        salesInvoiceCreatedMessage.setSalesInvoice(coreSalesInvoice);
+        return salesInvoiceCreatedMessage;
     }
 
     private void updateRowIsCancelledFieldAsTrue(SalesOrder salesOrder) {

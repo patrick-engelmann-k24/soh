@@ -3,15 +3,17 @@ package de.kfzteile24.salesOrderHub.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.AwsSnsConfig;
-import de.kfzteile24.salesOrderHub.dto.events.OrderCancelledEvent;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
+import de.kfzteile24.salesOrderHub.dto.events.OrderCancelledEvent;
 import de.kfzteile24.salesOrderHub.dto.events.OrderRowCancelledEvent;
+import de.kfzteile24.salesOrderHub.dto.events.ReturnOrderCreatedEvent;
+import de.kfzteile24.salesOrderHub.dto.events.SalesCreditNoteReceivedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderCompletedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInfoEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInvoiceCreatedEvent;
-import de.kfzteile24.salesOrderHub.dto.events.ReturnOrderCreatedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderShipmentConfirmedEvent;
+import de.kfzteile24.salesOrderHub.dto.events.CoreSalesInvoiceCreatedReceivedEvent;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.NonNull;
@@ -87,6 +89,13 @@ public class SnsPublishService {
                 salesOrderInvoiceCreatedEvent, orderNumber);
     }
 
+    public void publishCoreInvoiceReceivedEvent(CoreSalesInvoiceCreatedReceivedEvent event) {
+        var orderNumber = event.getSalesInvoice().getSalesInvoiceHeader().getOrderNumber();
+
+        publishEvent(config.getSnsCoreInvoiceReceivedV1(), "Core Sales Invoice Received V1",
+                event, orderNumber);
+    }
+
     public void publishSalesOrderShipmentConfirmedEvent(SalesOrder salesOrder, Collection<String> trackingLinks) {
 
         var salesOrderShipmentConfirmedEvent = SalesOrderShipmentConfirmedEvent.builder()
@@ -106,6 +115,13 @@ public class SnsPublishService {
 
         publishEvent(config.getSnsReturnOrderCreatedV1(), "Return Order Created V1",
                 returnOrderCreatedEvent, salesOrderReturn.getOrderNumber());
+    }
+
+    public void publishCreditNoteReceivedEvent(SalesCreditNoteReceivedEvent salesCreditNoteReceivedEvent) {
+        var orderNumber =
+                salesCreditNoteReceivedEvent.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber();
+        publishEvent(config.getSnsCreditNoteReceivedV1(), "Credit Note Received V1",
+                salesCreditNoteReceivedEvent, orderNumber);
     }
 
     protected void sendLatestOrderJson(String topic, String subject, String orderNumber) {

@@ -3,22 +3,23 @@ package de.kfzteile24.salesOrderHub.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.newrelic.api.agent.Trace;
+import de.kfzteile24.salesOrderHub.configuration.FeatureFlagConfig;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.dto.sns.CoreCancellationMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.FulfillmentMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.OrderPaymentSecuredMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
-import de.kfzteile24.salesOrderHub.dto.sns.SubsequentDeliveryMessage;
-import de.kfzteile24.salesOrderHub.dto.sns.cancellation.CoreCancellationItem;
+import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.soh.order.dto.Order;
+import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Platform;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -54,7 +55,7 @@ public class SqsReceiveService {
     private final CamundaHelper camundaHelper;
     private final ObjectMapper objectMapper;
     private final SalesOrderPaymentSecuredService salesOrderPaymentSecuredService;
-    private final SnsPublishService snsPublishService;
+    private final FeatureFlagConfig featureFlagConfig;
 
     /**
      * Consume sqs for new orders from ecp shop
@@ -151,7 +152,7 @@ public class SqsReceiveService {
         log.info("Received order payment secured message with order number: {} ", orderNumber);
 
         Optional.of(salesOrderService.getOrderByOrderNumber(orderNumber)
-                .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber)))
+                        .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber)))
                 .filter(not(salesOrderPaymentSecuredService::hasOrderPaypalPaymentType))
                 .ifPresentOrElse(p -> salesOrderPaymentSecuredService.correlateOrderReceivedPaymentSecured(orderNumber),
                         () -> log.info("Order with order number: {} has paypal payment type. Prevent processing order payment secured message", orderNumber));
@@ -279,70 +280,27 @@ public class SqsReceiveService {
     /**
      * Consume messages from sqs for event core cancellation
      */
+    @Deprecated(since = "We are switching to core sales invoice: queueListenerCoreSalesInvoiceCreated")
     @SqsListener(value = "${soh.sqs.queue.coreCancellation}", deletionPolicy = ON_SUCCESS)
-    @SneakyThrows(JsonProcessingException.class)
     @Trace(metricName = "Handling CoreCancellation message", dispatcher = true)
     public void queueListenerCoreCancellation(String rawMessage,
                                               @Header("SenderId") String senderId,
                                               @Header("ApproximateReceiveCount") Integer receiveCount) {
-        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-
-        CoreCancellationMessage coreCancellationMessage = objectMapper.readValue(body, CoreCancellationMessage.class);
-
-        try {
-            final var orderNumber = coreCancellationMessage.getOrderNumber();
-            log.info("Received core cancellation with order number: {}, original delivery note: {} and cancellation delivery note: {}",
-                    orderNumber,
-                    coreCancellationMessage.getOriginalDeliveryNoteNumber(),
-                    coreCancellationMessage.getCancellationDeliveryNoteNumber());
-
-            List<String> skuList = coreCancellationMessage.getItems().stream()
-                    .map(CoreCancellationItem::getSku).collect(Collectors.toList());
-            salesOrderRowService.cancelOrderRows(coreCancellationMessage.getOrderNumber(), skuList);
-
-            log.info("Core cancellation for order number {}, original delivery note: {} and cancellation delivery note: {}",
-                    orderNumber,
-                    coreCancellationMessage.getOriginalDeliveryNoteNumber(),
-                    coreCancellationMessage.getCancellationDeliveryNoteNumber());
-        } catch (Exception e) {
-            log.error("Core cancellation for order number: {} message error: ", coreCancellationMessage.getOrderNumber(), e);
-            throw e;
-        }
+        log.info("Received message on deprecated queue coreCancellation. \nMessage is ignored.");
     }
 
     /**
      * Consume messages from sqs for subsequent delivery received
      */
+    @Deprecated(since = "We are switching to core sales invoice: queueListenerCoreSalesInvoiceCreated")
     @SqsListener(value = "${soh.sqs.queue.subsequentDeliveryReceived}")
-    @SneakyThrows(JsonProcessingException.class)
-    @Transactional
     @Trace(metricName = "Handling subsequent delivery note printed message", dispatcher = true)
     public void queueListenerSubsequentDeliveryReceived(
             String rawMessage,
             @Header("SenderId") String senderId,
             @Header("ApproximateReceiveCount") Integer receiveCount
     ) {
-        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-        SubsequentDeliveryMessage subsequent = objectMapper.readValue(body, SubsequentDeliveryMessage.class);
-        String newOrderNumber = subsequent.getOrderNumber() + "-" + subsequent.getSubsequentDeliveryNoteNumber();
-        log.info("Received subsequent delivery note message with order number: {} ", subsequent.getOrderNumber());
-
-        try {
-            SalesOrder salesOrder = salesOrderService.createSalesOrderForSubsequentDelivery(subsequent, newOrderNumber);
-            ProcessInstance result = camundaHelper.createOrderProcess(salesOrder, ORDER_CREATED_IN_SOH);
-
-            if (result != null) {
-                log.info("New soh order process started for subsequent delivery note with " +
-                                "order number: {}. Process-Instance-ID: {} ",
-                        newOrderNumber,
-                        result.getProcessInstanceId());
-            }
-        } catch (Exception e) {
-            log.error("Subsequent delivery received message error:\r\nOrderNumber: {}\r\nError-Message: {}",
-                    newOrderNumber,
-                    e.getMessage());
-            throw e;
-        }
+        log.info("Received message on deprecated queue subsequentDeliveryReceived. \nMessage is ignored.");
     }
 
     /**
@@ -414,22 +372,131 @@ public class SqsReceiveService {
     @SqsListener(value = "${soh.sqs.queue.coreSalesCreditNoteCreated}", deletionPolicy = ON_SUCCESS)
     @SneakyThrows(JsonProcessingException.class)
     @Trace(metricName = "Handling core sales credit note created message", dispatcher = true)
-    @Transactional
     public void queueListenerCoreSalesCreditNoteCreated(
             String rawMessage,
             @Header("SenderId") String senderId,
             @Header("ApproximateReceiveCount") Integer receiveCount) {
 
-        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-        SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage =
-                objectMapper.readValue(body, SalesCreditNoteCreatedMessage.class);
-        var salesCreditNoteHeader = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader();
-        var orderNumber = salesCreditNoteHeader.getOrderNumber();
-        var creditNoteLines = salesCreditNoteHeader.getCreditNoteLines();
-        log.info("Received core sales credit note created message with order number: {}", orderNumber);
+        if (featureFlagConfig.getIgnoreCoreCreditNote()) {
+            log.info("Core Credit Note is ignored");
+        } else {
+            String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+            SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage =
+                    objectMapper.readValue(body, SalesCreditNoteCreatedMessage.class);
 
-        var salesOrderReturn = salesOrderRowService.handleSalesOrderReturn(orderNumber, creditNoteLines);
+            var orderNumber = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber();
+            log.info("Received core sales credit note created message with order number: {}", orderNumber);
+            salesOrderRowService.handleSalesOrderReturn(orderNumber, salesCreditNoteCreatedMessage);
+        }
+    }
 
-        snsPublishService.publishReturnOrderCreatedEvent(salesOrderReturn);
+    /**
+     * Consume messages from sqs for core sales invoice created
+     */
+    @SqsListener(value = "${soh.sqs.queue.coreSalesInvoiceCreated}")
+    @SneakyThrows(JsonProcessingException.class)
+    @Transactional
+    @Trace(metricName = "Handling core sales invoice created message", dispatcher = true)
+    public void queueListenerCoreSalesInvoiceCreated(
+            String rawMessage,
+            @Header("SenderId") String senderId,
+            @Header("ApproximateReceiveCount") Integer receiveCount
+    ) {
+        if (featureFlagConfig.getIgnoreCoreSalesInvoice()) {
+            log.info("Core Sales Invoice is ignored");
+        } else {
+            String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+            CoreSalesInvoiceCreatedMessage salesInvoiceCreatedMessage = objectMapper.readValue(body, CoreSalesInvoiceCreatedMessage.class);
+            CoreSalesInvoiceHeader salesInvoiceHeader = salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
+            var itemList = salesInvoiceHeader.getInvoiceLines();
+            var orderNumber = salesInvoiceHeader.getOrderNumber();
+            var invoiceNumber = salesInvoiceHeader.getInvoiceNumber();
+            var newOrderNumber = orderNumber + "-" + invoiceNumber;
+            SalesOrder salesOrderForOrderProcess;
+            log.info("Received core sales invoice created message with order number: {} and invoice number: {}",
+                    orderNumber, invoiceNumber);
+
+            try {
+                // Fetch original sales order
+                var originalSalesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
+                        .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
+
+                if (salesOrderService.isFullyMatchedWithOriginalOrder(originalSalesOrder, itemList)) {
+                    updateOriginalSalesOrder(salesInvoiceCreatedMessage, originalSalesOrder);
+                    salesOrderForOrderProcess = originalSalesOrder;
+                } else {
+                    SalesOrder subsequentOrder = salesOrderService.createSalesOrderForInvoice(
+                            salesInvoiceCreatedMessage,
+                            originalSalesOrder,
+                            newOrderNumber);
+                    handleCancellationForOrderRows(originalSalesOrder, subsequentOrder.getLatestJson().getOrderRows());
+                    ProcessInstance result = camundaHelper.createOrderProcess(subsequentOrder, ORDER_CREATED_IN_SOH);
+                    if (result != null) {
+                        log.info("New soh order process started by core sales invoice created message with " +
+                                        "order number: {} and invoice number: {}. Process-Instance-ID: {} ",
+                                orderNumber,
+                                invoiceNumber,
+                                result.getProcessInstanceId());
+                    }
+                    salesOrderForOrderProcess = subsequentOrder;
+                }
+
+                publishInvoiceEvent(salesOrderForOrderProcess);
+            } catch (Exception e) {
+                log.error("Core sales invoice created received message error:\r\nOrderNumber: {}\r\nInvoiceNumber: {}\r\nError-Message: {}",
+                        orderNumber,
+                        invoiceNumber,
+                        e.getMessage());
+                throw e;
+            }
+        }
+    }
+
+    private void publishInvoiceEvent(SalesOrder salesOrder) {
+
+        ProcessInstance result = camundaHelper.startInvoiceReceivedProcess(salesOrder);
+
+        if (result != null) {
+            log.info("Order process for publishing core sales invoice created msg is started with " +
+                    "order number: {} and sales order id: {}. Process-Instance-ID: {} ",
+                    salesOrder.getOrderNumber(),
+                    salesOrder.getId(),
+                    result.getProcessInstanceId());
+        }
+    }
+
+    protected void updateOriginalSalesOrder(CoreSalesInvoiceCreatedMessage invoiceMsg,
+                                            SalesOrder originalSalesOrder) {
+        var orderNumber = invoiceMsg.getSalesInvoice().getSalesInvoiceHeader().getOrderNumber();
+        var invoiceNumber = invoiceMsg.getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber();
+        originalSalesOrder.getLatestJson().getOrderHeader().setDocumentRefNumber(invoiceNumber);
+        originalSalesOrder.setInvoiceEvent(invoiceMsg);
+        salesOrderService.updateOrder(originalSalesOrder);
+
+        if (!camundaHelper.checkIfActiveProcessExists(orderNumber)) {
+            ProcessInstance result = camundaHelper.createOrderProcess(
+                    salesOrderService.createSalesOrder(originalSalesOrder), ORDER_RECEIVED_ECP);
+            log.info("Original sales order is updated by core sales invoice created message with " +
+                            "order number: {} and invoice number: {}.",
+                    orderNumber,
+                    invoiceNumber);
+
+            if (result != null) {
+                log.info("Order process re-started by core sales invoice created message with " +
+                                "order number: {} and invoice number: {}. Process-Instance-ID: {} ",
+                        orderNumber,
+                        invoiceNumber,
+                        result.getProcessInstanceId());
+            }
+        }
+    }
+
+    protected void handleCancellationForOrderRows(SalesOrder salesOrder, List<OrderRows> orderRows) {
+        var originalOrderRowSkuList = salesOrder.getLatestJson().getOrderRows().stream()
+                .filter(row -> !row.getIsCancelled())
+                .map(OrderRows::getSku).collect(Collectors.toSet());
+        orderRows.stream()
+                .filter(row -> originalOrderRowSkuList.contains(row.getSku()))
+                .forEach(row -> salesOrderRowService.cancelOrderRow(row.getSku(), salesOrder.getOrderNumber()));
     }
 }

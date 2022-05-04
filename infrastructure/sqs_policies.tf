@@ -747,3 +747,45 @@ resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_dropshipment_purchas
   queue_url = aws_sqs_queue.dropshipment_purchase_order_booked.id
   policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_dropshipment_purchase_order_booked.json
 }
+
+data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_soh_core_sales_invoice_created" {
+  statement {
+    sid = "SNS-soh-core-sales-invoice-created"
+    effect = "Allow"
+
+    actions = [
+      "sqs:SendMessage",
+    ]
+
+    principals {
+      identifiers = ["*"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_core_sales_invoice_created.arn
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sqs:*",
+    ]
+
+    principals {
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_core_sales_invoice_created.arn
+    ]
+  }
+}
+
+resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_soh_core_sales_invoice_created" {
+  queue_url = aws_sqs_queue.soh_core_sales_invoice_created.id
+  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_soh_core_sales_invoice_created.json
+}

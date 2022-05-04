@@ -1,21 +1,20 @@
 package de.kfzteile24.salesOrderHub.services;
 
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.helper.BpmUtil;
+import de.kfzteile24.salesOrderHub.helper.OrderMapper;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.SumValues;
 import de.kfzteile24.soh.order.dto.Totals;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Paths;
-import java.util.Objects;
-
 import de.kfzteile24.soh.order.dto.UnitValues;
 import lombok.SneakyThrows;
 import org.camunda.bpm.engine.ProcessEngine;
+import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,9 +22,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.net.URISyntaxException;
+import java.nio.file.Paths;
 import java.util.List;
+import java.util.Objects;
 
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.MSG_ORDER_PAYMENT_SECURED;
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -56,6 +60,8 @@ class SalesOrderCreatedInSohIntegrationTest {
     private SalesOrderUtil salesOrderUtil;
     @Autowired
     private TimedPollingService timerService;
+    @Autowired
+    private BpmUtil util;
 
     @BeforeEach
     public void setup() {
@@ -63,23 +69,26 @@ class SalesOrderCreatedInSohIntegrationTest {
     }
 
     @Test
-    public void testQueueListenerSubsequentDeliveryNote() {
+    public void testQueueListenerCoreSalesInvoiceCreated() {
 
         var senderId = "Delivery";
         var receiveCount = 1;
         var salesOrder = salesOrderUtil.createNewSalesOrder();
+        final ProcessInstance orderProcess = camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
+        assertTrue(util.isProcessWaitingAtExpectedToken(orderProcess, MSG_ORDER_PAYMENT_SECURED.getName()));
+        util.sendMessage(Messages.ORDER_RECEIVED_PAYMENT_SECURED.getName(), salesOrder.getOrderNumber());
 
         String originalOrderNumber = salesOrder.getOrderNumber();
-        String subDeliveryOrderNumber = "111001110";
+        String invoiceNumber = "10";
         String rowSku = "2010-10183";
-        String subsequentDeliveryMsg = readResource("examples/subsequentDeliveryNoteWithOneItem.json");
+        String invoiceEvent = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
 
         //Replace order number with randomly created order number as expected
-        subsequentDeliveryMsg = subsequentDeliveryMsg.replace("524001248", originalOrderNumber);
+        invoiceEvent = invoiceEvent.replace("524001248", originalOrderNumber);
 
-        sqsReceiveService.queueListenerSubsequentDeliveryReceived(subsequentDeliveryMsg, senderId, receiveCount);
+        sqsReceiveService.queueListenerCoreSalesInvoiceCreated(invoiceEvent, senderId, receiveCount);
 
-        String newOrderNumberCreatedInSoh = originalOrderNumber + "-" + subDeliveryOrderNumber;
+        String newOrderNumberCreatedInSoh = originalOrderNumber + "-" + invoiceNumber;
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku)));
         checkTotalsValues(newOrderNumberCreatedInSoh,
@@ -89,29 +98,33 @@ class SalesOrderCreatedInSohIntegrationTest {
                 "1.62",
                 "11.01",
                 "9.17",
-                "11.01");
+                "11.01",
+                "0",
+                "0");
     }
 
     @Test
-    public void testQueueListenerSubsequentDeliveryNoteWithMultipleItems() {
+    public void testQueueListenerCoreSalesInvoiceCreatedWithMultipleItems() {
 
         var senderId = "Delivery";
         var receiveCount = 1;
         var salesOrder = salesOrderUtil.createNewSalesOrderHavingCancelledRow();
+        final ProcessInstance orderProcess = camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
+        assertTrue(util.isProcessWaitingAtExpectedToken(orderProcess, MSG_ORDER_PAYMENT_SECURED.getName()));
 
         String originalOrderNumber = salesOrder.getOrderNumber();
-        String subDeliveryOrderNumber = "111001110";
+        String invoiceNumber = "10";
         String rowSku1 = "1440-47378";
         String rowSku2 = "2010-10183";
         String rowSku3 = "2022-KBA";
-        String subsequentDeliveryMsg = readResource("examples/subsequentDeliveryNoteWithMultipleItems.json");
+        String invoiceEvent = readResource("examples/coreSalesInvoiceCreatedMultipleItems.json");
 
         //Replace order number with randomly created order number as expected
-        subsequentDeliveryMsg = subsequentDeliveryMsg.replace("524001248", originalOrderNumber);
+        invoiceEvent = invoiceEvent.replace("524001248", originalOrderNumber);
 
-        sqsReceiveService.queueListenerSubsequentDeliveryReceived(subsequentDeliveryMsg, senderId, receiveCount);
+        sqsReceiveService.queueListenerCoreSalesInvoiceCreated(invoiceEvent, senderId, receiveCount);
 
-        String newOrderNumberCreatedInSoh = originalOrderNumber + "-" + subDeliveryOrderNumber;
+        String newOrderNumberCreatedInSoh = originalOrderNumber + "-" + invoiceNumber;
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku1)));
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku2)));
@@ -121,10 +134,50 @@ class SalesOrderCreatedInSohIntegrationTest {
                 "360.64",
                 "60.30",
                 "50.26",
-                "372.22",
-                "310.38",
-                "372.22");
+                "384.12",
+                "320.38",
+                "384.12",
+                "11.90",
+                "10.00");
         checkOrderRows(newOrderNumberCreatedInSoh, rowSku1, rowSku2, rowSku3);
+    }
+
+    @Test
+    public void testQueueListenerCoreSalesInvoiceCreatedWithConsolidatedItems() {
+
+        var senderId = "Delivery";
+        var receiveCount = 1;
+        var salesOrder = salesOrderUtil.createNewSalesOrder();
+        var row = OrderMapper.INSTANCE.toOrderRow(salesOrder.getLatestJson().getOrderRows().get(1));
+        salesOrder.getLatestJson().getOrderRows().add(row);
+        salesOrderService.updateOrder(salesOrder);
+        final ProcessInstance orderProcess = camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
+        assertTrue(util.isProcessWaitingAtExpectedToken(orderProcess, MSG_ORDER_PAYMENT_SECURED.getName()));
+
+        String originalOrderNumber = salesOrder.getOrderNumber();
+        String invoiceNumber = "10";
+        String rowSku = "2010-10183";
+        String invoiceEvent = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
+
+        //Update necessary parts in invoice event
+        invoiceEvent = invoiceEvent.replace("524001248", originalOrderNumber);
+        invoiceEvent = invoiceEvent.replace("ItemNumber\": \"2010-10183\",\n\t\t\t\t\t\"Quantity\": 1.0", "ItemNumber\": \"2010-10183\",\n\t\t\t\t\t\"Quantity\": 3.0");
+
+        sqsReceiveService.queueListenerCoreSalesInvoiceCreated(invoiceEvent, senderId, receiveCount);
+
+        String newOrderNumberCreatedInSoh = originalOrderNumber + "-" + invoiceNumber;
+        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
+        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku)));
+        checkTotalsValues(newOrderNumberCreatedInSoh,
+                "25.90",
+                "21.58",
+                "3.88",
+                "3.24",
+                "22.02",
+                "18.34",
+                "22.02",
+                "0",
+                "0");
     }
 
     private void checkTotalsValues(String orderNumber,
@@ -134,7 +187,9 @@ class SalesOrderCreatedInSohIntegrationTest {
                                    String totalDiscountNet,
                                    String grandTotalGross,
                                    String grandTotalNet,
-                                   String paymentTotal) {
+                                   String paymentTotal,
+                                   String shippingGross,
+                                   String shippingNet) {
 
         SalesOrder updatedOrder = salesOrderService.getOrderByOrderNumber(orderNumber).orElse(null);
         assertNotNull(updatedOrder);
@@ -146,8 +201,8 @@ class SalesOrderCreatedInSohIntegrationTest {
         assertEquals(new BigDecimal(grandTotalGross), totals.getGrandTotalGross());
         assertEquals(new BigDecimal(grandTotalNet), totals.getGrandTotalNet());
         assertEquals(new BigDecimal(paymentTotal), totals.getPaymentTotal());
-        assertNull(totals.getShippingCostGross());
-        assertNull(totals.getShippingCostNet());
+        assertEquals(new BigDecimal(shippingGross), totals.getShippingCostGross());
+        assertEquals(new BigDecimal(shippingNet), totals.getShippingCostNet());
         assertNotNull(totals.getSurcharges());
         assertNull(totals.getSurcharges().getDepositGross());
         assertNull(totals.getSurcharges().getDepositNet());
@@ -192,19 +247,19 @@ class SalesOrderCreatedInSohIntegrationTest {
                 "2",
                 "19",
                 UnitValues.builder()
-                        .goodsValueGross(new BigDecimal("10"))
+                        .goodsValueGross(new BigDecimal("10.00"))
                         .goodsValueNet(new BigDecimal("8.40"))
                         .discountGross(new BigDecimal("0"))
                         .discountNet(new BigDecimal("0"))
-                        .discountedGross(new BigDecimal("10"))
+                        .discountedGross(new BigDecimal("10.00"))
                         .discountedNet(new BigDecimal("8.40"))
                         .build(),
                 SumValues.builder()
-                        .goodsValueGross(new BigDecimal("20"))
+                        .goodsValueGross(new BigDecimal("20.00"))
                         .goodsValueNet(new BigDecimal("16.80"))
                         .discountGross(new BigDecimal("0"))
                         .discountNet(new BigDecimal("0"))
-                        .totalDiscountedGross(new BigDecimal("20"))
+                        .totalDiscountedGross(new BigDecimal("20.00"))
                         .totalDiscountedNet(new BigDecimal("16.80"))
                         .build());
         checkOrderRowValues(

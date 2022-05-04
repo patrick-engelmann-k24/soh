@@ -58,6 +58,8 @@ soh:
       orderInvoiceCreatedV1: ${soh_order_invoice_created_v1}
       shipmentConfirmedV1: ${sns_soh_shipment_confirmed_v1}
       returnOrderCreatedV1: ${sns_soh_return_order_created_v1}
+      coreInvoiceReceivedV1: ${sns_soh_core_invoice_received_v1}
+      creditNoteReceivedV1: ${sns_soh_credit_note_received_v1}
   sqs:
     queue:
       ecpShopOrders: ${soh_sqs_ecp_shop_orders}
@@ -76,6 +78,7 @@ soh:
       dropshipmentShipmentConfirmed: ${soh_sqs_dropshipment_shipment_confirmed}
       dropshipmentPurchaseOrderBooked: ${soh_sqs_dropshipment_purchase_order_booked}
       coreSalesCreditNoteCreated: ${soh_sqs_core_sales_credit_note_created}
+      coreSalesInvoiceCreated: ${soh_sqs_core_sales_invoice_created}
   aws:
     config:
       maxNumberOfMessages: 10
@@ -123,3 +126,11 @@ kfzteile:
   # KEEP OFF ON PRODUCTION
   #
   deleteUnusedProcesses: true
+  process-config:
+    subsequent-order-process:
+      publish-delay: PT10S
+  orderReturnProcess:
+    publishDelay: PT10S
+
+ignoreCoreSalesInvoice: ${ignore_core_sales_invoice}
+ignoreCoreCreditNote: ${ignore_core_credit_note}

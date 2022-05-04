@@ -5,9 +5,10 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
 import de.kfzteile24.salesOrderHub.domain.audit.AuditLog;
-import de.kfzteile24.salesOrderHub.dto.sns.SubsequentDeliveryMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesFinancialDocumentLine;
+import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundCustomException;
-import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.OrderMapper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
@@ -29,13 +30,18 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
+import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.INVOICE_RECEIVED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
+import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getGrossValue;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getSumValue;
+import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.isNotNullAndEqual;
 import static java.text.MessageFormat.format;
 
 @Service
@@ -69,6 +75,10 @@ public class SalesOrderService {
         return orderRepository.findAllByOrderGroupIdOrderByUpdatedAtDesc(orderGroupId);
     }
 
+    public Optional<SalesOrder> getOrderById(UUID salesOrderId) {
+        return orderRepository.findById(salesOrderId);
+    }
+
     @Transactional
     public SalesOrder createSalesOrder(SalesOrder salesOrder) {
         salesOrder.setRecurringOrder(isRecurringOrder(salesOrder));
@@ -93,7 +103,6 @@ public class SalesOrderService {
                 .build();
 
         auditLogRepository.save(auditLog);
-
         return storedOrder;
     }
 
@@ -106,18 +115,27 @@ public class SalesOrderService {
     }
 
     @Transactional
-    public SalesOrder createSalesOrderForSubsequentDelivery(SubsequentDeliveryMessage subsequent, String newOrderNumber) {
-        Order order = createOrderFromSubsequentDelivery(subsequent);
+    public SalesOrder createSalesOrderForInvoice(CoreSalesInvoiceCreatedMessage salesInvoiceCreatedMessage,
+                                                 SalesOrder originalSalesOrder,
+                                                 String newOrderNumber) {
+
+        CoreSalesInvoiceHeader salesInvoiceHeader = salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
+        Order order = createOrderForSubsequentSalesOrder(salesInvoiceCreatedMessage, originalSalesOrder);
         order.getOrderHeader().setPlatform(Platform.SOH);
-        recalculateOrder(order);
+        order.getOrderHeader().setOrderNumber(newOrderNumber);
+        order.getOrderHeader().setDocumentRefNumber(salesInvoiceHeader.getInvoiceNumber());
+        var shippingCostDocumentLine =  salesInvoiceHeader.getInvoiceLines().stream()
+                .filter(CoreSalesFinancialDocumentLine::getIsShippingCost).findFirst().orElse(null);
+        recalculateTotals(order, shippingCostDocumentLine);
 
         var salesOrder = SalesOrder.builder()
                 .orderNumber(newOrderNumber)
-                .orderGroupId(subsequent.getOrderNumber())
+                .orderGroupId(order.getOrderHeader().getOrderGroupId())
                 .salesChannel(order.getOrderHeader().getSalesChannel())
                 .customerEmail(order.getOrderHeader().getCustomer().getCustomerEmail())
                 .originalOrder(order)
                 .latestJson(order)
+                .invoiceEvent(salesInvoiceCreatedMessage)
                 .build();
         return createSalesOrder(salesOrder);
     }
@@ -133,10 +151,13 @@ public class SalesOrderService {
         return save(salesOrder, INVOICE_RECEIVED);
     }
 
-    public SalesOrder addSalesOrderReturn(SalesOrder salesOrder, SalesOrderReturn salesOrderReturn) {
+    @Transactional
+    public SalesOrderReturn addSalesOrderReturn(SalesOrder salesOrder, SalesOrderReturn salesOrderReturn) {
         salesOrderReturn.setSalesOrder(salesOrder);
         salesOrder.getSalesOrderReturnList().add(salesOrderReturn);
-        return save(salesOrder, Action.RETURN_ORDER_CREATED);
+        SalesOrder saved = save(salesOrder, Action.RETURN_ORDER_CREATED);
+        return saved.getSalesOrderReturnList().stream()
+                .filter(r -> r.getOrderNumber().equals(salesOrderReturn.getOrderNumber())).findFirst().orElse(null);
     }
 
     public SalesOrder findLastOrderByOrderGroupId(String orderGroupId) {
@@ -147,23 +168,60 @@ public class SalesOrderService {
                         format("for the given order group id {0}", orderGroupId)));
     }
 
-    protected Order createOrderFromSubsequentDelivery(SubsequentDeliveryMessage subsequent) {
-        var originalSalesOrder = getOrderByOrderNumber(subsequent.getOrderNumber())
-                .orElseThrow(() -> new SalesOrderNotFoundException(subsequent.getOrderNumber()));
-
-        var orderRows = subsequent.getItems().stream()
-                .map(item -> orderUtil.createOrderFromOriginalSalesOrder(
+    protected Order createOrderForSubsequentSalesOrder(CoreSalesInvoiceCreatedMessage coreSalesInvoiceCreatedMessage,
+                                                       SalesOrder originalSalesOrder) {
+        CoreSalesInvoiceHeader salesInvoiceHeader = coreSalesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
+        var items = salesInvoiceHeader.getInvoiceLines();
+        List<OrderRows> orderRows = new ArrayList<>();
+        for (CoreSalesFinancialDocumentLine item : items) {
+            if (!item.getIsShippingCost()) {
+                orderRows.addAll(orderUtil.createOrderRowFromOriginalSalesOrder(
                         originalSalesOrder,
                         item,
-                        orderUtil.getLastRowKey(originalSalesOrder)))
+                        orderUtil.getLastRowKey(originalSalesOrder)));
+            }
+        }
+        orderRows = orderRows.stream()
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
-        var order = originalSalesOrder.getLatestJson();
+        var version = originalSalesOrder.getLatestJson().getVersion();
+        var orderHeader = originalSalesOrder.getLatestJson().getOrderHeader();
         return Order.builder()
-                .version(order.getVersion())
-                .orderHeader(OrderMapper.INSTANCE.toOrderHeader(order.getOrderHeader()))
+                .version(version)
+                .orderHeader(OrderMapper.INSTANCE.toOrderHeader(orderHeader))
                 .orderRows(orderRows)
                 .build();
+    }
+
+    public boolean isFullyMatchedWithOriginalOrder(SalesOrder originalSalesOrder,
+                                                   List<CoreSalesFinancialDocumentLine> items) {
+        // Check if there is no other sales order namely subsequent order
+        var ordersByOrderGroupId = getOrderByOrderGroupId(originalSalesOrder.getOrderGroupId());
+        if (ordersByOrderGroupId.size() > 1) {
+            return false;
+        }
+
+        // Check if all sku names are matching with original sales order
+        var orderRows = originalSalesOrder.getLatestJson().getOrderRows();
+        var skuList = orderRows.stream().map(OrderRows::getSku).collect(Collectors.toSet());
+        if (!items.stream().allMatch(row -> skuList.contains(row.getItemNumber()))) {
+            return false;
+        }
+
+        // Check if all order rows have same values within the invoice event
+        for (OrderRows row : orderRows) {
+            var item = items.stream().filter(each -> row.getSku().equals(each.getItemNumber())).findFirst().orElse(null);
+            if (item == null)
+                return false;
+            if (!isNotNullAndEqual(item.getQuantity(), row.getQuantity()))
+                return false;
+            if (!isNotNullAndEqual(item.getTaxRate(), row.getTaxRate()))
+                return false;
+            if (!isNotNullAndEqual(item.getUnitNetAmount(), row.getUnitValues().getGoodsValueNet()))
+                return false;
+        }
+        return true;
     }
 
     public List<String> getOrderNumberListByOrderGroupId(String orderGroupId, String orderItemSku) {
@@ -222,7 +280,7 @@ public class SalesOrderService {
         return foundSalesOrders.stream().map(SalesOrder::getOrderNumber).distinct().collect(Collectors.toList());
     }
 
-    private void recalculateOrder(Order order) {
+    private void recalculateTotals(Order order, CoreSalesFinancialDocumentLine shippingCostLine) {
 
         List<OrderRows> orderRows = order.getOrderRows();
         List<SumValues> sumValues = orderRows.stream().map(OrderRows::getSumValues).collect(Collectors.toList());
@@ -230,8 +288,11 @@ public class SalesOrderService {
         BigDecimal goodsTotalNet = getSumValue(SumValues::getGoodsValueNet, sumValues);
         BigDecimal totalDiscountGross = getSumValue(SumValues::getDiscountGross, sumValues);
         BigDecimal totalDiscountNet = getSumValue(SumValues::getDiscountNet, sumValues);
-        BigDecimal grandTotalGross = goodsTotalGross.subtract(totalDiscountGross);
-        BigDecimal grantTotalNet = goodsTotalNet.subtract(totalDiscountNet);
+        BigDecimal shippingCostNet = shippingCostLine != null ? shippingCostLine.getUnitNetAmount() : BigDecimal.ZERO;
+        BigDecimal shippingCostGross = shippingCostLine != null ?
+                getGrossValue(shippingCostLine.getUnitNetAmount(), shippingCostLine.getTaxRate()) : BigDecimal.ZERO;
+        BigDecimal grandTotalGross = goodsTotalGross.subtract(totalDiscountGross).add(shippingCostGross);
+        BigDecimal grantTotalNet = goodsTotalNet.subtract(totalDiscountNet).add(shippingCostNet);
 
         Totals totals = Totals.builder()
                 .goodsTotalGross(goodsTotalGross)
@@ -243,8 +304,8 @@ public class SalesOrderService {
                 .paymentTotal(grandTotalGross)
                 .grandTotalTaxes(calculateGrandTotalTaxes(order))
                 .surcharges(Surcharges.builder().build())
-                .shippingCostGross(null)
-                .shippingCostNet(null)
+                .shippingCostGross(shippingCostGross)
+                .shippingCostNet(shippingCostNet)
                 .build();
 
         order.getOrderHeader().setTotals(totals);

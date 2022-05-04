@@ -1,6 +1,8 @@
 package de.kfzteile24.salesOrderHub.domain;
 
+import de.kfzteile24.salesOrderHub.domain.converter.CreditNoteMessageConverter;
 import de.kfzteile24.salesOrderHub.domain.converter.OrderJsonConverter;
+import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,10 +19,12 @@ import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
+import javax.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
+@Table(name = "return_order", schema = "public", catalog = "soh")
 @Data
 @Builder
 @AllArgsConstructor
@@ -45,5 +49,9 @@ public class SalesOrderReturn {
     @Column(columnDefinition = "json")
     @Convert(converter = OrderJsonConverter.class)
     private Order returnOrderJson;
+
+    @Column(columnDefinition = "json", name = "credit_note_event")
+    @Convert(converter = CreditNoteMessageConverter.class)
+    private SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage;
 
 }

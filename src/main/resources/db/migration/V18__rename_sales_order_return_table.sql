@@ -1,0 +1,1 @@
+ALTER TABLE IF EXISTS public."sales_order_return" RENAME TO "return_order";

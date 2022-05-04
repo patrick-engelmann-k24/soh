@@ -1,29 +1,29 @@
 package de.kfzteile24.salesOrderHub.helper;
 
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.dto.sns.creditnote.CreditNoteLine;
-import de.kfzteile24.salesOrderHub.dto.sns.deliverynote.CoreDeliveryNoteItem;
+import de.kfzteile24.salesOrderHub.dto.shared.creditnote.CreditNoteLine;
+import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesFinancialDocumentLine;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.SumValues;
-import de.kfzteile24.soh.order.dto.Totals;
 import de.kfzteile24.soh.order.dto.UnitValues;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getGrossValue;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getMultipliedValue;
-import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getNetValue;
-import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getSumOfGoodsNetFromSumOfGoodsGross;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getValueOrDefault;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.isGreater;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.isNotNullAndNotEqual;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.round;
-import static java.math.RoundingMode.HALF_DOWN;
 import static java.math.RoundingMode.HALF_UP;
 
 /**
@@ -42,13 +42,9 @@ public class OrderUtil {
         return objectUtil.deepCopyOf(orderJson, Order.class);
     }
 
-    public Totals copyTotals(Totals totals) {
-        return objectUtil.deepCopyOf(totals, Totals.class);
-    }
-
     public Integer getLastRowKey(SalesOrder originalSalesOrder) {
         var originalOrder = (Order) originalSalesOrder.getOriginalOrder();
-        return originalOrder.getOrderRows().stream().map(OrderRows::getRowKey).reduce(0, Integer::max);
+        return originalOrder.getOrderRows().stream().map(OrderRows::getRowKey).filter(Objects::nonNull).reduce(0, Integer::max);
     }
 
     public SalesOrder removeCancelledOrderRowsFromLatestJson(SalesOrder salesOrder) {
@@ -59,17 +55,16 @@ public class OrderUtil {
         return salesOrder;
     }
 
-    public OrderRows createOrderFromOriginalSalesOrder(SalesOrder salesOrder, CoreDeliveryNoteItem item, Integer lastRowKey) {
-        var orderRow = filterFromLatestJson(salesOrder, item);
-        if (orderRow == null) {
-            orderRow = filterFromOriginalOrder(salesOrder, item);
+    public List<OrderRows> createOrderRowFromOriginalSalesOrder(SalesOrder originalSalesOrder, CoreSalesFinancialDocumentLine item, Integer lastRowKey) {
+        List<OrderRows> orderRows = new ArrayList<>();
+        List<OrderRows> rowFromLatestJson = createRowFromLatestJson(originalSalesOrder, item);
+        if (rowFromLatestJson != null && !rowFromLatestJson.isEmpty()) {
+           orderRows.addAll(rowFromLatestJson);
+        } else {
+            var shippingType = ((Order) originalSalesOrder.getOriginalOrder()).getOrderRows().get(0).getShippingType();
+            orderRows.add(createNewOrderRow(item, shippingType, lastRowKey));
         }
-        if (orderRow == null) {
-            var shippingType = ((Order) salesOrder.getOriginalOrder()).getOrderRows().get(0).getShippingType();
-            orderRow = createNewOrderRow(item, shippingType, lastRowKey);
-        }
-        orderRow.setIsCancelled(false);
-        return orderRow;
+        return orderRows;
     }
 
     public OrderRows recalculateOrderRow(OrderRows orderRow, CreditNoteLine item) {
@@ -77,29 +72,33 @@ public class OrderUtil {
         return orderRow;
     }
 
-    private OrderRows filterFromLatestJson(SalesOrder salesOrder, CoreDeliveryNoteItem item) {
-        return filterFromOrder(item, salesOrder.getLatestJson());
+    private List<OrderRows> createRowFromLatestJson(SalesOrder salesOrder, CoreSalesFinancialDocumentLine item) {
+        return salesOrder.getLatestJson().getOrderRows().stream()
+                .filter(row -> row.getSku().equals(item.getItemNumber()))
+                .map(OrderMapper.INSTANCE::toOrderRow)
+                .map(row -> {
+                    row.setIsCancelled(false);
+                    if (row.getQuantity().compareTo(item.getQuantity()) <= 0) {
+                        return updateOrderRowByNewItemValues(row, item);
+                    } else {
+                        item.setQuantity(item.getQuantity().subtract(row.getQuantity()));
+                        return row;
+                    }
+                })
+                .collect(Collectors.toList());
     }
 
-    private OrderRows filterFromOriginalOrder(SalesOrder salesOrder, CoreDeliveryNoteItem item) {
-        return filterFromOrder(item, (Order) salesOrder.getOriginalOrder());
-    }
-
-    private OrderRows createNewOrderRow(CoreDeliveryNoteItem item, String shippingType, Integer lastRowKey) {
-        var unitPriceGross = item.getUnitPriceGross();
-        var unitPriceNet = getNetValue(item.getUnitPriceGross(), item.getTaxRate());
-        var sumOfGoodsPriceGross =
-                Optional.ofNullable(item.getSalesPriceGross())
-                        .orElse(getMultipliedValue(item.getUnitPriceGross(), item.getQuantity()));
-        var sumOfGoodsPriceNet = getSumOfGoodsNetFromSumOfGoodsGross(
-                item.getSalesPriceGross(),
-                item.getQuantity(),
-                item.getTaxRate());
+    public OrderRows createNewOrderRow(CoreSalesFinancialDocumentLine item, String shippingType, Integer lastRowKey) {
+        var unitPriceGross = getGrossValue(item.getUnitNetAmount(), item.getTaxRate());
+        var unitPriceNet = item.getUnitNetAmount();
+        var sumOfGoodsPriceGross = getMultipliedValue(unitPriceGross, item.getQuantity());
+        var sumOfGoodsPriceNet = getMultipliedValue(unitPriceNet, item.getQuantity());
 
         return OrderRows.builder()
                 .rowKey(lastRowKey + 1)
+                .isCancelled(false)
                 .shippingType(shippingType)
-                .sku(item.getSku())
+                .sku(item.getItemNumber())
                 .quantity(Optional.ofNullable(item.getQuantity()).orElse(BigDecimal.ONE))
                 .taxRate(Optional.ofNullable(item.getTaxRate()).orElse(BigDecimal.ZERO))
                 .unitValues(roundUnitValues(UnitValues.builder()
@@ -117,46 +116,53 @@ public class OrderUtil {
                 .build();
     }
 
-    private OrderRows filterFromOrder(CoreDeliveryNoteItem item, Order latestOrder) {
-        var orderRow = OrderMapper.INSTANCE.toOrderRow(latestOrder.getOrderRows().stream()
-                .filter(row -> row.getSku().equals(item.getSku()))
-                .findFirst().orElse(null));
-        updateOrderRowByNewItemValues(orderRow, item);
-        return orderRow;
-    }
-
-    protected void updateOrderRowByNewItemValues(OrderRows row, CoreDeliveryNoteItem item) {
+    protected OrderRows updateOrderRowByNewItemValues(OrderRows row, CoreSalesFinancialDocumentLine item) {
         if (row != null) {
             if (isNotNullAndNotEqual(item.getTaxRate(), row.getTaxRate())) {
                 updateOrderRowByTaxRate(row, item.getTaxRate());
             }
 
-            if (isNotNullAndNotEqual(item.getUnitPriceGross(), row.getUnitValues().getGoodsValueGross())) {
-                updateOrderRowByUnitPriceGross(row, item.getUnitPriceGross());
+            if (isNotNullAndNotEqual(item.getUnitNetAmount(), row.getUnitValues().getGoodsValueNet())) {
+                updateOrderRowByUnitPriceNet(row, item.getUnitNetAmount());
             }
 
             if (isNotNullAndNotEqual(item.getQuantity(), row.getQuantity())) {
                 updateOrderRowByQuantity(row, item.getQuantity());
             }
-
-            if (isNotNullAndNotEqual(item.getSalesPriceGross(), row.getSumValues().getGoodsValueGross())) {
-                updateOrderRowBySalesPriceGross(row, item.getSalesPriceGross());
-            }
         }
+        return row;
     }
 
     protected void decreaseOrderRowByNewItemValues(OrderRows row, CreditNoteLine item) {
         if (row != null) {
-            var rowQuantity = getValueOrDefault(row.getQuantity(), BigDecimal.ZERO);
-            var itemQuantity = getValueOrDefault(item.getQuantity(), BigDecimal.ZERO);
-
-            if (isGreater(itemQuantity, rowQuantity)) {
-                throw new IllegalArgumentException("Return item quantity must be less than or equal row quantity");
+            if (isNotNullAndNotEqual(item.getTaxRate(), row.getTaxRate())) {
+                updateOrderRowByTaxRate(row, item.getTaxRate());
             }
-
-            var updatedQuantity = rowQuantity.subtract(itemQuantity);
-            updateOrderRowByQuantity(row, updatedQuantity);
+            decreaseOrderRowByUnitNetValue(row, item);
+            decreaseOrderRowByQuantity(row, item);
         }
+    }
+
+    private void decreaseOrderRowByUnitNetValue(OrderRows row, CreditNoteLine item) {
+        var rowUnitNetValue = getValueOrDefault(row.getUnitValues().getGoodsValueNet(), BigDecimal.ZERO);
+        var itemUnitNetValue = getValueOrDefault(item.getUnitNetAmount(), BigDecimal.ZERO);
+
+        if (!itemUnitNetValue.equals(BigDecimal.ZERO)) {
+            var updatedValue = rowUnitNetValue.subtract(itemUnitNetValue);
+            updateOrderRowByUnitPriceNet(row, updatedValue);
+        }
+    }
+
+    protected void decreaseOrderRowByQuantity(OrderRows row, CreditNoteLine item) {
+        var rowQuantity = getValueOrDefault(row.getQuantity(), BigDecimal.ZERO);
+        var itemQuantity = getValueOrDefault(item.getQuantity(), BigDecimal.ZERO);
+
+        if (isGreater(itemQuantity, rowQuantity)) {
+            throw new IllegalArgumentException("Return item quantity must be less than or equal row quantity");
+        }
+
+        var updatedQuantity = rowQuantity.subtract(itemQuantity);
+        updateOrderRowByQuantity(row, updatedQuantity);
     }
 
     private void updateOrderRowByTaxRate(OrderRows row, BigDecimal taxRate) {
@@ -170,15 +176,10 @@ public class OrderUtil {
         row.setSumValues(roundSumValues(OrderMapper.INSTANCE.toSumValues(row.getUnitValues(), quantity)));
     }
 
-    private void updateOrderRowByUnitPriceGross(OrderRows row, BigDecimal unitPriceGross) {
-        var unitPriceNet = getNetValue(unitPriceGross, row.getTaxRate());
+    private void updateOrderRowByUnitPriceNet(OrderRows row, BigDecimal unitPriceNet) {
+        var unitPriceGross = getGrossValue(unitPriceNet, row.getTaxRate());
         row.setUnitValues(roundUnitValues(OrderMapper.INSTANCE.updateByGoodsValue(row.getUnitValues(), unitPriceGross, unitPriceNet)));
         row.setSumValues(roundSumValues(OrderMapper.INSTANCE.toSumValues(row.getUnitValues(), row.getQuantity())));
-    }
-
-    private void updateOrderRowBySalesPriceGross(OrderRows row, BigDecimal salesPriceGross) {
-        BigDecimal salesPriceNet = getSumOfGoodsNetFromSumOfGoodsGross(salesPriceGross, row.getQuantity(), row.getTaxRate());
-        row.setSumValues(roundSumValues(OrderMapper.INSTANCE.updateByGoodsValue(row.getSumValues(), salesPriceGross, salesPriceNet)));
     }
 
     private UnitValues roundUnitValues(UnitValues unitValues) {
@@ -208,8 +209,8 @@ public class OrderUtil {
         sumValues.setGoodsValueNet(round(sumValues.getGoodsValueNet(), HALF_UP));
         sumValues.setDiscountGross(round(sumValues.getDiscountGross(), HALF_UP));
         sumValues.setDiscountNet(round(sumValues.getDiscountNet(), HALF_UP));
-        sumValues.setTotalDiscountedGross(round(sumValues.getTotalDiscountedGross(), HALF_DOWN));
-        sumValues.setTotalDiscountedNet(round(sumValues.getTotalDiscountedNet(), HALF_DOWN));
+        sumValues.setTotalDiscountedGross(round(sumValues.getTotalDiscountedGross(), HALF_UP));
+        sumValues.setTotalDiscountedNet(round(sumValues.getTotalDiscountedNet(), HALF_UP));
         sumValues.setDepositGross(round(sumValues.getDepositGross(), HALF_UP));
         sumValues.setDepositNet(round(sumValues.getDepositNet(), HALF_UP));
         sumValues.setBulkyGoodsGross(round(sumValues.getBulkyGoodsGross(), HALF_UP));

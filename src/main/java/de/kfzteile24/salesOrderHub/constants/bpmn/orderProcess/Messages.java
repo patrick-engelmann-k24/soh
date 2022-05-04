@@ -10,9 +10,10 @@ public enum Messages implements BpmItem {
     ORDER_RECEIVED_BRANCH("msgOrderReceivedBranch"),
     ORDER_RECEIVED_GARAGE("msgOrderReceivedGarage"),
     ORDER_INVOICE_ADDRESS_CHANGE_RECEIVED("msgInvoiceAddressChangeReceived"),
-    ORDER_CANCELLATION_RECEIVED("msgOrderCancellationReceived"),
     INVOICE_CREATED("msgInvoiceCreated"),
-    ORDER_CREATED_IN_SOH("msgOrderCreatedInSoh")
+    ORDER_CREATED_IN_SOH("msgOrderCreatedInSoh"),
+    CORE_INVOICE_CREATION_RECEIVED("msgCoreInvoiceCreationReceived"),
+    CORE_CREDIT_NOTE_CREATED("msgCoreCreditNoteCreated")
     ;
 
     private final String name;

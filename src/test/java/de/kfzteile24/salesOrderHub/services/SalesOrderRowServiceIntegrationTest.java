@@ -3,21 +3,16 @@ package de.kfzteile24.salesOrderHub.services;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
-import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
-import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.AuditLogUtil;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
-import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Totals;
 import org.assertj.core.util.Lists;
 import org.camunda.bpm.engine.HistoryService;
-import org.camunda.bpm.engine.MismatchingMessageCorrelationException;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.history.HistoricProcessInstance;
@@ -27,12 +22,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.List;
-import java.util.UUID;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
@@ -42,7 +35,6 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Shipme
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ROW_CANCELLED;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.reset;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -55,9 +47,6 @@ class SalesOrderRowServiceIntegrationTest {
 
     @Autowired
     private SalesOrderRowService salesOrderRowService;
-
-    @Autowired
-    private SalesOrderRepository salesOrderRepository;
 
     @Autowired
     private AuditLogUtil auditLogUtil;
@@ -112,8 +101,14 @@ class SalesOrderRowServiceIntegrationTest {
         assertTrue(updatedSalesOrder.isPresent());
 
         Order latestJson = updatedSalesOrder.get().getLatestJson();
-        assertThat(latestJson.getOrderRows().stream().filter(OrderRows::getIsCancelled).count()).isZero();
-        checkTotalsValues(latestJson.getOrderHeader().getTotals());
+        for (OrderRows orderRows : latestJson.getOrderRows()) {
+            if (orderRows.getSku().equals(skuToCancel)) {
+                assertTrue(orderRows.getIsCancelled());
+                checkTotalsValues(latestJson.getOrderHeader().getTotals());
+            } else {
+                assertFalse(orderRows.getIsCancelled());
+            }
+        }
 
         HistoricProcessInstance historicProcessInstance = historyService.createHistoricProcessInstanceQuery()
                 .processDefinitionKey(SALES_ORDER_PROCESS.getName())
@@ -151,8 +146,14 @@ class SalesOrderRowServiceIntegrationTest {
         assertTrue(updatedSalesOrder.isPresent());
 
         Order latestJson = updatedSalesOrder.get().getLatestJson();
-        assertThat(latestJson.getOrderRows().stream().filter(OrderRows::getIsCancelled).count()).isZero();
-        checkTotalsValues(latestJson.getOrderHeader().getTotals());
+        for (OrderRows orderRows : latestJson.getOrderRows()) {
+            if (orderRows.getSku().equals(skuToCancel)) {
+                assertTrue(orderRows.getIsCancelled());
+                checkTotalsValues(latestJson.getOrderHeader().getTotals());
+            } else {
+                assertFalse(orderRows.getIsCancelled());
+            }
+        }
 
         HistoricProcessInstance historicProcessInstance = historyService.createHistoricProcessInstanceQuery()
                 .processDefinitionKey(SALES_ORDER_PROCESS.getName())
@@ -169,7 +170,6 @@ class SalesOrderRowServiceIntegrationTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     public void testCancelAllOrderRows() {
         final var salesOrder =
                 salesOrderUtil.createPersistedSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
@@ -199,15 +199,6 @@ class SalesOrderRowServiceIntegrationTest {
             assertTrue(orderRows.getIsCancelled());
             assertThatNoSubprocessExists(orderNumber, orderRows.getSku());
         }
-
-        HistoricProcessInstance historicProcessInstance = historyService.createHistoricProcessInstanceQuery()
-                .processDefinitionKey(SALES_ORDER_PROCESS.getName())
-                .variableValueEquals(Variables.ORDER_NUMBER.getName(), orderNumber)
-                .singleResult();
-
-        var updatedSkus = (List<String>) runtimeService.getVariable(historicProcessInstance.getId(),
-                Variables.ORDER_ROWS.getName());
-        assertEquals(0, updatedSkus.size());
 
         auditLogUtil.assertAuditLogExists(salesOrder.getId(), ORDER_ROW_CANCELLED, 3);
         assertFalse(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
@@ -342,62 +333,8 @@ class SalesOrderRowServiceIntegrationTest {
     }
 
     public void assertThatNoSubprocessExists(String orderNumber, String sku) {
-        assertThatThrownBy(() ->
-                runtimeService.createMessageCorrelation(Messages.ORDER_CANCELLATION_RECEIVED.getName())
-                        .processInstanceBusinessKey(orderNumber)
-                        .processInstanceVariableEquals(RowVariables.ORDER_ROW_ID.getName(), sku)
-                        .correlateWithResult())
-                .isInstanceOf(MismatchingMessageCorrelationException.class);
-    }
-
-    @Test
-    @Transactional
-    public void multipleOrderRowCancellationCanBeDoneAccordingToSameOrderGroupId() {
-
-        // create first sales order
-        final var salesOrder1 = salesOrderUtil.createPersistedSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
-        final var orderRowSkus = salesOrder1.getLatestJson().getOrderRows().stream()
-                .map(OrderRows::getSku)
-                .collect(toList());
-        final var skuToCancel = orderRowSkus.get(1);
-        final var aliveSkus = orderRowSkus.stream().filter(sku -> !sku.equals(skuToCancel)).collect(toList());
-
-        // create second sales order with same values except order number
-        final var salesOrder2 = salesOrderUtil.createPersistedSalesOrderV3WithDiffGroupId(false, REGULAR, CREDIT_CARD, NEW, salesOrder1.getOrderGroupId());
-
-        try {
-            camundaHelper.createOrderProcess(salesOrder1, Messages.ORDER_RECEIVED_ECP);
-            assertThat(compareIsCancelledFields(salesOrder1, orderRowSkus)).isTrue();
-            assertThat(compareIsCancelledFields(salesOrder2, orderRowSkus)).isTrue();
-            salesOrderRowService.cancelOrderRows(salesOrder1.getOrderNumber(), Lists.newArrayList(skuToCancel));
-
-
-            assertThat(compareIsCancelledFields(salesOrder1, aliveSkus)).isTrue();
-            assertThat(compareIsCancelledFields(salesOrder2, aliveSkus)).isTrue();
-        } finally {
-            assert salesOrder1.getId() != null;
-            assert salesOrder2.getId() != null;
-            deleteTestInput(List.of(salesOrder1.getId(), salesOrder2.getId()));
-        }
-    }
-
-    private boolean compareIsCancelledFields(SalesOrder salesOrder, List<String> skuList) {
-
-
-        assert salesOrder.getId() != null;
-        var foundSalesOrder = salesOrderRepository.findById(salesOrder.getId());
-        if (foundSalesOrder.isPresent()) {
-            return foundSalesOrder.get().getLatestJson().getOrderRows().stream()
-                    .map(OrderRows::getSku)
-                    .collect(toList())
-                    .containsAll(skuList);
-
-        } else {
-            throw new SalesOrderNotFoundException(salesOrder.getOrderNumber());
-        }
-    }
-
-    private void deleteTestInput(List<UUID> orderIdList) {
-        orderIdList.forEach(uuid -> salesOrderRepository.deleteById(uuid));
+        assertFalse(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+                camundaHelper.checkIfOrderRowProcessExists(orderNumber, sku)
+        ));
     }
 }
