@@ -24,7 +24,6 @@ import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getValueOrDefau
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.isGreater;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.isNotNullAndNotEqual;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.round;
-import static java.math.RoundingMode.HALF_DOWN;
 import static java.math.RoundingMode.HALF_UP;
 
 /**
@@ -210,8 +209,8 @@ public class OrderUtil {
         sumValues.setGoodsValueNet(round(sumValues.getGoodsValueNet(), HALF_UP));
         sumValues.setDiscountGross(round(sumValues.getDiscountGross(), HALF_UP));
         sumValues.setDiscountNet(round(sumValues.getDiscountNet(), HALF_UP));
-        sumValues.setTotalDiscountedGross(round(sumValues.getTotalDiscountedGross(), HALF_DOWN));
-        sumValues.setTotalDiscountedNet(round(sumValues.getTotalDiscountedNet(), HALF_DOWN));
+        sumValues.setTotalDiscountedGross(round(sumValues.getTotalDiscountedGross(), HALF_UP));
+        sumValues.setTotalDiscountedNet(round(sumValues.getTotalDiscountedNet(), HALF_UP));
         sumValues.setDepositGross(round(sumValues.getDepositGross(), HALF_UP));
         sumValues.setDepositNet(round(sumValues.getDepositNet(), HALF_UP));
         sumValues.setBulkyGoodsGross(round(sumValues.getBulkyGoodsGross(), HALF_UP));

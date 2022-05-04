@@ -12,7 +12,9 @@ import org.mapstruct.factory.Mappers;
 
 import java.math.BigDecimal;
 
-import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.*;
+import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getNetValue;
+import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getMultipliedValue;
+import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getDiscountResult;
 
 /**
  * @author samet
@@ -26,16 +28,15 @@ public interface OrderMapper {
 
     OrderRows toOrderRow(OrderRows orderRow);
 
-    @Mapping(target = "rrpGross", source = "rrpNet", qualifiedByName = "calculateGross")
-    @Mapping(target = "goodsValueGross", source = "goodsValueNet", qualifiedByName = "calculateGross")
-    @Mapping(target = "depositGross", source = "depositNet", qualifiedByName = "calculateGross")
-    @Mapping(target = "bulkyGoodsGross", source = "bulkyGoodsNet", qualifiedByName = "calculateGross")
-    @Mapping(target = "riskyGoodsGross", source = "riskyGoodsNet", qualifiedByName = "calculateGross")
-    @Mapping(target = "discountGross", source = "discountGross", qualifiedByName = "calculateGross")
-    @Mapping(target = "discountNet", source = "discountNet", qualifiedByName = "calculateGross")
+    @Mapping(target = "rrpNet", source = "rrpGross", qualifiedByName = "calculateNet")
+    @Mapping(target = "goodsValueNet", source = "goodsValueGross", qualifiedByName = "calculateNet")
+    @Mapping(target = "depositNet", source = "depositGross", qualifiedByName = "calculateNet")
+    @Mapping(target = "bulkyGoodsNet", source = "bulkyGoodsGross", qualifiedByName = "calculateNet")
+    @Mapping(target = "riskyGoodsNet", source = "riskyGoodsGross", qualifiedByName = "calculateNet")
+    @Mapping(target = "discountGross", source = "discountNet", qualifiedByName = "calculateNet")
+    @Mapping(target = "exchangePartValueNet", source = "exchangePartValueGross", qualifiedByName = "calculateNet")
     @Mapping(target = "discountedGross", source = "unitValues", qualifiedByName = "evaluateDiscountGross")
     @Mapping(target = "discountedNet", source = "unitValues", qualifiedByName = "evaluateDiscountNet")
-    @Mapping(target = "exchangePartValueGross", source = "exchangePartValueNet", qualifiedByName = "calculateGross")
     UnitValues updateByTaxRate(UnitValues unitValues, @Context BigDecimal taxRate);
 
     @Mapping(target = "goodsValueGross", source = "goodsGrossValue")
@@ -76,9 +77,9 @@ public interface OrderMapper {
         return getMultipliedValue(value, quantity);
     }
 
-    @Named("calculateGross")
-    default BigDecimal calculateGross(BigDecimal value, @Context BigDecimal taxRate) {
-        return getGrossValue(value, taxRate);
+    @Named("calculateNet")
+    default BigDecimal calculateNet(BigDecimal value, @Context BigDecimal taxRate) {
+        return getNetValue(value, taxRate);
     }
 
     @Named("evaluateDiscountGross")
