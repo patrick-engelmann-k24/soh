@@ -68,6 +68,8 @@ class SqsReceiveServiceTest {
     private CamundaHelper camundaHelper;
     @Mock
     private FeatureFlagConfig featureFlagConfig;
+    @Mock
+    private SnsPublishService snsPublishService;
     @InjectMocks
     private SqsReceiveService sqsReceiveService;
 
@@ -82,7 +84,8 @@ class SqsReceiveServiceTest {
         sqsReceiveService.queueListenerEcpShopOrders(rawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
         verify(camundaHelper).createOrderProcess(any(SalesOrder.class), any(Messages.class));
-        verify(salesOrderService, never()).getOrderByOrderNumber(eq("524001240"));
+        verify(salesOrderService).createSalesOrder(salesOrder);
+        verify(salesOrderService, never()).getOrderByOrderNumber(eq(salesOrder.getOrderNumber()));
     }
 
     @Test
@@ -242,6 +245,32 @@ class SqsReceiveServiceTest {
         DropshipmentPurchaseOrderBookedMessage message =
                 objectMapper.readValue(body, DropshipmentPurchaseOrderBookedMessage.class);
         verify(salesOrderRowService).handleDropshipmentPurchaseOrderBooked(message);
+    }
+
+    @Test
+    void testQueueListenerMigrationCoreSalesOrderCreatedDuplication() {
+
+        String rawMessage = readResource("examples/ecpOrderMessage.json");
+        SalesOrder salesOrder = getSalesOrder(rawMessage);
+        when(salesOrderService.getOrderByOrderNumber(eq(salesOrder.getOrderNumber()))).thenReturn(Optional.of(salesOrder));
+
+        sqsReceiveService.queueListenerMigrationCoreSalesOrderCreated(rawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+
+        verify(snsPublishService).publishMigrationOrderCreated(salesOrder.getOrderNumber());
+    }
+
+    @Test
+    void testQueueListenerMigrationCoreSalesOrderCreatedNewOrder() {
+
+        String rawMessage = readResource("examples/ecpOrderMessage.json");
+        SalesOrder salesOrder = getSalesOrder(rawMessage);
+
+        when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.empty());
+        when(salesOrderService.createSalesOrder(any())).thenReturn(salesOrder);
+
+        sqsReceiveService.queueListenerMigrationCoreSalesOrderCreated(rawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+
+        verify(camundaHelper).createOrderProcess(eq(salesOrder), any(Messages.class));
     }
 
     @SneakyThrows({URISyntaxException.class, IOException.class})

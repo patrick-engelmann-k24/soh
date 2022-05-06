@@ -124,6 +124,10 @@ public class SnsPublishService {
                 salesCreditNoteReceivedEvent, orderNumber);
     }
 
+    public void publishMigrationOrderCreated(String orderNumber) {
+        sendLatestOrderJson(config.getSnsMigrationOrderCreatedV2(), "Migration Sales order created V2", orderNumber);
+    }
+
     protected void sendLatestOrderJson(String topic, String subject, String orderNumber) {
         final var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));

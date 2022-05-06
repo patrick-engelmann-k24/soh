@@ -56,6 +56,7 @@ public class SqsReceiveService {
     private final ObjectMapper objectMapper;
     private final SalesOrderPaymentSecuredService salesOrderPaymentSecuredService;
     private final FeatureFlagConfig featureFlagConfig;
+    private final SnsPublishService snsPublishService;
 
     /**
      * Consume sqs for new orders from ecp shop
@@ -498,5 +499,31 @@ public class SqsReceiveService {
         orderRows.stream()
                 .filter(row -> originalOrderRowSkuList.contains(row.getSku()))
                 .forEach(row -> salesOrderRowService.cancelOrderRow(row.getSku(), salesOrder.getOrderNumber()));
+    }
+
+    /**
+     * Consume messages from sqs for migration core sales order created published by core-publisher
+     */
+    @SqsListener(value = "${soh.sqs.queue.migrationCoreSalesOrderCreated}", deletionPolicy = ON_SUCCESS)
+    @SneakyThrows(JsonProcessingException.class)
+    @Trace(metricName = "Handling migration core sales order created message", dispatcher = true)
+    @Transactional
+    public void queueListenerMigrationCoreSalesOrderCreated(
+            String rawMessage,
+            @Header("SenderId") String senderId,
+            @Header("ApproximateReceiveCount") Integer receiveCount) {
+
+        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+        Order order = objectMapper.readValue(body, Order.class);
+        String orderNumber = order.getOrderHeader().getOrderNumber();
+
+        final Optional<SalesOrder> salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber);
+        if (salesOrder.isPresent()) {
+            log.info("Order with order number: {} is duplicated for migration. Publishing event on migration topic", orderNumber);
+            snsPublishService.publishMigrationOrderCreated(orderNumber);
+        } else {
+            log.info("Order with order number: {} is a new order. Call redirected to normal flow.", orderNumber);
+            queueListenerEcpShopOrders(rawMessage, senderId, receiveCount);
+        }
     }
 }

@@ -60,6 +60,7 @@ soh:
       returnOrderCreatedV1: ${sns_soh_return_order_created_v1}
       coreInvoiceReceivedV1: ${sns_soh_core_invoice_received_v1}
       creditNoteReceivedV1: ${sns_soh_credit_note_received_v1}
+      migrationOrderCreatedV2: ${sns_migration_soh_order_created_v2}
   sqs:
     queue:
       ecpShopOrders: ${soh_sqs_ecp_shop_orders}
@@ -79,6 +80,7 @@ soh:
       dropshipmentPurchaseOrderBooked: ${soh_sqs_dropshipment_purchase_order_booked}
       coreSalesCreditNoteCreated: ${soh_sqs_core_sales_credit_note_created}
       coreSalesInvoiceCreated: ${soh_sqs_core_sales_invoice_created}
+      migrationCoreSalesOrderCreated: ${soh_sqs_migration_core_sales_order_created}
   aws:
     config:
       maxNumberOfMessages: 10

@@ -306,6 +306,28 @@ class SnsPublishServiceTest {
         );
     }
 
+    @Test
+    @SneakyThrows
+    void testPublishMigrationOrderCreated() {
+
+        final var expectedTopic = "migration-soh-order-created-v2";
+        final var expectedSubject = "Migration Sales order created V2";
+
+        SalesOrder salesOrder = createNewSalesOrderV3(true, REGULAR, CREDIT_CARD, NEW);
+        var orderNumber = salesOrder.getOrderNumber();
+        given(salesOrderService.getOrderByOrderNumber(orderNumber)).willReturn(Optional.of(salesOrder));
+        given(awsSnsConfig.getSnsMigrationOrderCreatedV2()).willReturn(expectedTopic);
+
+        snsPublishService.publishMigrationOrderCreated(orderNumber);
+
+        final var expectedMigrationSalesOrderInfoV2 = SalesOrderInfoEvent.builder()
+                .recurringOrder(salesOrder.isRecurringOrder())
+                .order(salesOrder.getLatestJson())
+                .build();
+        verify(notificationMessagingTemplate).sendNotification(expectedTopic,
+                objectMapper.writeValueAsString(expectedMigrationSalesOrderInfoV2), expectedSubject);
+    }
+
     @SneakyThrows(Exception.class)
     private void verifyPublishedEvent(String expectedTopic, String expectedSubject, Consumer<String> executor) {
         final String rawMessage = readResource("examples/ecpOrderMessage.json");
