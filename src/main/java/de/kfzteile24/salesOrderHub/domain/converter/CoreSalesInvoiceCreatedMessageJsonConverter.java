@@ -26,6 +26,6 @@ public class CoreSalesInvoiceCreatedMessageJsonConverter implements AttributeCon
     @Override
     @SneakyThrows(JsonProcessingException.class)
     public Object convertToEntityAttribute(String jsonValue) {
-        return objectMapper.readValue(jsonValue, CoreSalesInvoiceCreatedMessage.class);
+        return jsonValue == null ? null : objectMapper.readValue(jsonValue, CoreSalesInvoiceCreatedMessage.class);
     }
 }

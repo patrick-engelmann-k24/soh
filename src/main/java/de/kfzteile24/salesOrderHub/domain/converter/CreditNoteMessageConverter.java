@@ -26,6 +26,6 @@ public class CreditNoteMessageConverter implements AttributeConverter<Object, St
     @Override
     @SneakyThrows(JsonProcessingException.class)
     public Object convertToEntityAttribute(String dbData) {
-        return objectMapper.readValue(dbData, SalesCreditNoteCreatedMessage.class);
+        return dbData == null ? null : objectMapper.readValue(dbData, SalesCreditNoteCreatedMessage.class);
     }
 }
