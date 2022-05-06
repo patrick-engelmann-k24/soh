@@ -9,7 +9,6 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMetho
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.domain.converter.InvoiceSource;
-import de.kfzteile24.salesOrderHub.dto.events.SalesOrderCompletedEvent;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.soh.order.dto.*;
@@ -329,13 +328,6 @@ public class SalesOrderUtil {
         ObjectMapper mapper = new ObjectMapperConfig().objectMapper();
         final var sqsMessage = mapper.readValue(rawMessage, SqsMessage.class);
         return mapper.readValue(sqsMessage.getBody(), Order.class);
-    }
-
-    @SneakyThrows(JsonProcessingException.class)
-    public static SalesOrderCompletedEvent getOrderCompleted(String rawMessage) {
-        ObjectMapper mapper = new ObjectMapperConfig().objectMapper();
-        final var sqsMessage = mapper.readValue(rawMessage, SqsMessage.class);
-        return mapper.readValue(sqsMessage.getBody(), SalesOrderCompletedEvent.class);
     }
 
     public static SalesOrderInvoice createSalesOrderInvoice(final String orderNumber, final boolean isCorrection) {

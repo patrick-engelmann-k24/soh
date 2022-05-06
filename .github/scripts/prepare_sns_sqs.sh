@@ -42,6 +42,8 @@ TOPICS="
     soh-credit-note-received-v1
     soh-core-sales-invoice-created
     soh-core-invoice-received-v1
+    migration-core-sales-order-created
+    migration-soh-order-created-v2
     "
 
 # Outdated topics

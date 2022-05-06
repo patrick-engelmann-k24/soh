@@ -496,6 +496,46 @@ class SqsReceiveServiceIntegrationTest {
         ));
     }
 
+    @Test
+    void testQueueListenerMigrationCoreSalesOrderCreated() {
+
+        String orderRawMessage = readResource("examples/ecpOrderMessage.json");
+        Order order = getOrder(orderRawMessage);
+
+        sqsReceiveService.queueListenerMigrationCoreSalesOrderCreated(orderRawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+
+        assertTrue(timerService.pollWithDefaultTiming(
+                () -> camundaHelper.checkIfActiveProcessExists(order.getOrderHeader().getOrderNumber())));
+
+        SalesOrder updated = salesOrderService.getOrderByOrderNumber(order.getOrderHeader().getOrderNumber()).orElse(null);
+        assertNotNull(updated);
+        assertEquals(order, updated.getLatestJson());
+        assertEquals(order, updated.getOriginalOrder());
+    }
+
+    @Test
+    void testQueueListenerMigrationCoreSalesOrderCreatedDuplicateOrder() {
+
+        String orderRawMessage = readResource("examples/ecpOrderMessageWithTwoRows.json");
+        Order order = getOrder(orderRawMessage);
+        SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(order));
+        camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
+
+        assertTrue(timerService.pollWithDefaultTiming(() ->
+                camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber()))
+        );
+
+        sqsReceiveService.queueListenerMigrationCoreSalesOrderCreated(orderRawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+
+        assertTrue(timerService.pollWithDefaultTiming(
+                () -> camundaHelper.checkIfActiveProcessExists(order.getOrderHeader().getOrderNumber())));
+
+        SalesOrder updated = salesOrderService.getOrderByOrderNumber(order.getOrderHeader().getOrderNumber()).orElse(null);
+        assertNotNull(updated);
+        assertEquals(order, updated.getLatestJson());
+        assertEquals(order, updated.getOriginalOrder());
+    }
+
     @SneakyThrows({URISyntaxException.class, IOException.class})
     private String readResource(String path) {
         return java.nio.file.Files.readString(Paths.get(

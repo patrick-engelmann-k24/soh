@@ -46,6 +46,7 @@ module "application_module" {
     sns_soh_return_order_created_v1            = data.aws_sns_topic.sns_soh_return_order_created_v1.arn
     sns_soh_core_invoice_received_v1           = data.aws_sns_topic.sns_soh_core_invoice_received_v1.arn
     sns_soh_credit_note_received_v1            = data.aws_sns_topic.sns_soh_credit_note_received_v1.arn
+    sns_migration_soh_order_create_v2          = data.aws_sns_topic.sns_migration_soh_order_created_v2.arn
 
     soh_sqs_ecp_shop_orders                    = aws_sqs_queue.ecp_shop_orders.id
     soh_sqs_bc_shop_orders                     = aws_sqs_queue.bc_shop_orders.id
@@ -64,6 +65,7 @@ module "application_module" {
     soh_sqs_dropshipment_purchase_order_booked = aws_sqs_queue.dropshipment_purchase_order_booked.id
     soh_sqs_core_sales_credit_note_created     = aws_sqs_queue.soh_core_sales_credit_note_created.id
     soh_sqs_core_sales_invoice_created         = aws_sqs_queue.soh_core_sales_invoice_created.id
+    soh_sqs_migration_core_sales_order_created = aws_sqs_queue.soh_migration_core_sales_order_created.id
 
     ignore_core_sales_invoice                  = var.ignore_core_sales_invoice
     ignore_core_credit_note                    = var.ignore_core_credit_note
