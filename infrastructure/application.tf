@@ -46,7 +46,7 @@ module "application_module" {
     sns_soh_return_order_created_v1            = data.aws_sns_topic.sns_soh_return_order_created_v1.arn
     sns_soh_core_invoice_received_v1           = data.aws_sns_topic.sns_soh_core_invoice_received_v1.arn
     sns_soh_credit_note_received_v1            = data.aws_sns_topic.sns_soh_credit_note_received_v1.arn
-    sns_migration_soh_order_create_v2          = data.aws_sns_topic.sns_migration_soh_order_created_v2.arn
+    sns_migration_soh_order_created_v2          = data.aws_sns_topic.sns_migration_soh_order_created_v2.arn
 
     soh_sqs_ecp_shop_orders                    = aws_sqs_queue.ecp_shop_orders.id
     soh_sqs_bc_shop_orders                     = aws_sqs_queue.bc_shop_orders.id

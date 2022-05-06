@@ -23,7 +23,7 @@ env:
   soh_sales_order_row_cancellation: 'arn:aws:sns:eu-central-1:000000000000:soh-sales-order-row-cancellation'
   soh_sales_order_cancellation:  'arn:aws:sns:eu-central-1:000000000000:soh-sales-order-cancellation'
   soh_order_invoice_created_v1:  'arn:aws:sns:eu-central-1:000000000000:soh-order-invoice-created-v1'
-  migration_soh_order_create_v2: 'arn:aws:sns:eu-central-1:000000000000:migration-soh-order-created-v2'
+  migration_soh_order_created_v2: 'arn:aws:sns:eu-central-1:000000000000:migration-soh-order-created-v2'
   soh_sqs_ecp_shop_orders: 'http://localhost:4566/000000000000/soh-ecp-shop-orders-queue'
   soh_sqs_bc_shop_orders: 'http://localhost:4566/000000000000/soh-bc-shop-orders-queue'
   soh_sqs_core_shop_orders: 'http://localhost:4566/000000000000/soh-core-shop-orders-queue'
