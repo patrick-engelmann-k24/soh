@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getGrossValue;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getMultipliedValue;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getValueOrDefault;
-import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.isGreater;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.isNotNullAndNotEqual;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.round;
 import static java.math.RoundingMode.HALF_UP;
@@ -47,14 +46,6 @@ public class OrderUtil {
         return originalOrder.getOrderRows().stream().map(OrderRows::getRowKey).filter(Objects::nonNull).reduce(0, Integer::max);
     }
 
-    public SalesOrder removeCancelledOrderRowsFromLatestJson(SalesOrder salesOrder) {
-        salesOrder.getLatestJson().setOrderRows(
-                salesOrder.getLatestJson().getOrderRows().stream()
-                        .filter(row -> !row.getIsCancelled())
-                        .collect(Collectors.toList()));
-        return salesOrder;
-    }
-
     public List<OrderRows> createOrderRowFromOriginalSalesOrder(SalesOrder originalSalesOrder, CoreSalesFinancialDocumentLine item, Integer lastRowKey) {
         List<OrderRows> orderRows = new ArrayList<>();
         List<OrderRows> rowFromLatestJson = createRowFromLatestJson(originalSalesOrder, item);
@@ -67,9 +58,11 @@ public class OrderUtil {
         return orderRows;
     }
 
-    public OrderRows recalculateOrderRow(OrderRows orderRow, CreditNoteLine item) {
-        decreaseOrderRowByNewItemValues(orderRow, item);
-        return orderRow;
+    public void updateOrderRowValues(OrderRows orderRow, CreditNoteLine item) {
+
+        if (orderRow != null) {
+            updateOrderRowByUnitPriceNet(orderRow, getValueOrDefault(item.getUnitNetAmount(), BigDecimal.ZERO));
+        }
     }
 
     private List<OrderRows> createRowFromLatestJson(SalesOrder salesOrder, CoreSalesFinancialDocumentLine item) {
@@ -116,6 +109,51 @@ public class OrderUtil {
                 .build();
     }
 
+    public OrderRows createNewOrderRowFromCreditNoteItem(CreditNoteLine item, OrderRows originalOrderRow, Integer lastRowKey) {
+
+        var unitPriceGross = getGrossValue(item.getUnitNetAmount(), item.getTaxRate());
+        var unitPriceNet = item.getUnitNetAmount();
+        var sumOfGoodsPriceGross = getMultipliedValue(unitPriceGross, item.getQuantity());
+        var sumOfGoodsPriceNet = getMultipliedValue(unitPriceNet, item.getQuantity());
+
+        return OrderRows.builder()
+                .rowKey(lastRowKey + 1)
+                .isCancelled(originalOrderRow.getIsCancelled())
+                .isPriceHammer(originalOrderRow.getIsPriceHammer())
+                .sku(item.getItemNumber())
+                .name(originalOrderRow.getName())
+                .dataSupplierNumber(originalOrderRow.getDataSupplierNumber())
+                .manufacturerProductNumber(originalOrderRow.getManufacturerProductNumber())
+                .ean(originalOrderRow.getEan())
+                .genart(originalOrderRow.getGenart())
+                .setReferenceId(originalOrderRow.getSetReferenceId())
+                .setReferenceName(originalOrderRow.getSetReferenceName())
+                .customerNote(originalOrderRow.getCustomerNote())
+                .quantity(Optional.ofNullable(item.getQuantity()).orElse(BigDecimal.ONE))
+                .taxRate(Optional.ofNullable(item.getTaxRate()).orElse(BigDecimal.ZERO))
+                .partIdentificationProperties(originalOrderRow.getPartIdentificationProperties())
+                .estimatedDeliveryDate(originalOrderRow.getEstimatedDeliveryDate())
+                .shippingType(originalOrderRow.getShippingType())
+                .clickCollectBranchId(originalOrderRow.getClickCollectBranchId())
+                .shippingAddressKey(originalOrderRow.getShippingAddressKey())
+                .shippingProvider(originalOrderRow.getShippingProvider())
+                .trackingNumbers(originalOrderRow.getTrackingNumbers())
+                .vendor(originalOrderRow.getVendor())
+                .unitValues(roundUnitValues(UnitValues.builder()
+                        .goodsValueGross(unitPriceGross)
+                        .goodsValueNet(unitPriceNet)
+                        .discountedGross(unitPriceGross)
+                        .discountedNet(unitPriceNet)
+                        .build()))
+                .sumValues(roundSumValues(SumValues.builder()
+                        .goodsValueGross(sumOfGoodsPriceGross)
+                        .goodsValueNet(sumOfGoodsPriceNet)
+                        .totalDiscountedGross(sumOfGoodsPriceGross)
+                        .totalDiscountedNet(sumOfGoodsPriceNet)
+                        .build()))
+                .build();
+    }
+
     protected OrderRows updateOrderRowByNewItemValues(OrderRows row, CoreSalesFinancialDocumentLine item) {
         if (row != null) {
             if (isNotNullAndNotEqual(item.getTaxRate(), row.getTaxRate())) {
@@ -131,38 +169,6 @@ public class OrderUtil {
             }
         }
         return row;
-    }
-
-    protected void decreaseOrderRowByNewItemValues(OrderRows row, CreditNoteLine item) {
-        if (row != null) {
-            if (isNotNullAndNotEqual(item.getTaxRate(), row.getTaxRate())) {
-                updateOrderRowByTaxRate(row, item.getTaxRate());
-            }
-            decreaseOrderRowByUnitNetValue(row, item);
-            decreaseOrderRowByQuantity(row, item);
-        }
-    }
-
-    private void decreaseOrderRowByUnitNetValue(OrderRows row, CreditNoteLine item) {
-        var rowUnitNetValue = getValueOrDefault(row.getUnitValues().getGoodsValueNet(), BigDecimal.ZERO);
-        var itemUnitNetValue = getValueOrDefault(item.getUnitNetAmount(), BigDecimal.ZERO);
-
-        if (!itemUnitNetValue.equals(BigDecimal.ZERO)) {
-            var updatedValue = rowUnitNetValue.subtract(itemUnitNetValue);
-            updateOrderRowByUnitPriceNet(row, updatedValue);
-        }
-    }
-
-    protected void decreaseOrderRowByQuantity(OrderRows row, CreditNoteLine item) {
-        var rowQuantity = getValueOrDefault(row.getQuantity(), BigDecimal.ZERO);
-        var itemQuantity = getValueOrDefault(item.getQuantity(), BigDecimal.ZERO);
-
-        if (isGreater(itemQuantity, rowQuantity)) {
-            throw new IllegalArgumentException("Return item quantity must be less than or equal row quantity");
-        }
-
-        var updatedQuantity = rowQuantity.subtract(itemQuantity);
-        updateOrderRowByQuantity(row, updatedQuantity);
     }
 
     private void updateOrderRowByTaxRate(OrderRows row, BigDecimal taxRate) {

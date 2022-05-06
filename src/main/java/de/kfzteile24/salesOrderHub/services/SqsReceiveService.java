@@ -454,7 +454,7 @@ public class SqsReceiveService {
 
     private void publishInvoiceEvent(SalesOrder salesOrder) {
 
-        ProcessInstance result = camundaHelper.startInvoiceReceivedProcess(salesOrder);
+        ProcessInstance result = camundaHelper.startInvoiceCreatedReceivedProcess(salesOrder);
 
         if (result != null) {
             log.info("Order process for publishing core sales invoice created msg is started with " +

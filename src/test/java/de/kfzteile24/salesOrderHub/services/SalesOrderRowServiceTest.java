@@ -53,6 +53,9 @@ class SalesOrderRowServiceTest {
     private SalesOrderService salesOrderService;
 
     @Mock
+    private SalesOrderReturnService salesOrderReturnService;
+
+    @Mock
     private TimedPollingService timedPollingService;
 
     @Mock
