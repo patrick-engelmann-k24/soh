@@ -236,5 +236,5 @@ resource "aws_sns_topic_subscription" "sns_subscription_core-sales-credit-note-c
 resource "aws_sns_topic_subscription" "sns_subscription_core_sales_invoice_created_v1" {
   endpoint  = aws_sqs_queue.soh_migration_core_sales_order_created.arn
   protocol  = "sqs"
-  topic_arn = data.aws_sns_topic.sns_migration_core_sales_order_created_v1
+  topic_arn = data.aws_sns_topic.sns_migration_core_sales_order_created_v1.arn
 }
