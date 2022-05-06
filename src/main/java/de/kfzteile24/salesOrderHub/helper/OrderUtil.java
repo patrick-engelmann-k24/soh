@@ -59,8 +59,11 @@ public class OrderUtil {
         return orderRows;
     }
 
-    public void recalculateOrderRow(OrderRows orderRow, CreditNoteLine item) {
-        decreaseOrderRowByNewItemValues(orderRow, item);
+    public void updateOrderRowValues(OrderRows orderRow, CreditNoteLine item) {
+
+        if (orderRow != null) {
+            updateOrderRowByUnitPriceNet(orderRow, getValueOrDefault(item.getUnitNetAmount(), BigDecimal.ZERO));
+        }
     }
 
     private List<OrderRows> createRowFromLatestJson(SalesOrder salesOrder, CoreSalesFinancialDocumentLine item) {
@@ -155,7 +158,6 @@ public class OrderUtil {
     protected OrderRows updateOrderRowByNewItemValues(OrderRows row, CoreSalesFinancialDocumentLine item) {
         if (row != null) {
             if (isNotNullAndNotEqual(item.getTaxRate(), row.getTaxRate())) {
-                row.setTaxRate(item.getTaxRate());
                 updateOrderRowByTaxRate(row, item.getTaxRate());
             }
 
@@ -170,26 +172,8 @@ public class OrderUtil {
         return row;
     }
 
-    protected void decreaseOrderRowByNewItemValues(OrderRows row, CreditNoteLine item) {
-        if (row != null) {
-            if (isNotNullAndNotEqual(item.getTaxRate(), row.getTaxRate())) {
-                updateOrderRowByTaxRate(row, item.getTaxRate());
-            }
-            decreaseOrderRowByUnitNetValue(row, item);
-        }
-    }
-
-    private void decreaseOrderRowByUnitNetValue(OrderRows row, CreditNoteLine item) {
-        var rowUnitNetValue = getValueOrDefault(row.getUnitValues().getGoodsValueNet(), BigDecimal.ZERO);
-        var itemUnitNetValue = getValueOrDefault(item.getUnitNetAmount(), BigDecimal.ZERO);
-
-        if (!itemUnitNetValue.equals(BigDecimal.ZERO)) {
-            var updatedValue = rowUnitNetValue.subtract(itemUnitNetValue);
-            updateOrderRowByUnitPriceNet(row, updatedValue);
-        }
-    }
-
     private void updateOrderRowByTaxRate(OrderRows row, BigDecimal taxRate) {
+        row.setTaxRate(taxRate);
         row.setUnitValues(roundUnitValues(OrderMapper.INSTANCE.updateByTaxRate(row.getUnitValues(), taxRate)));
         row.setSumValues(roundSumValues(OrderMapper.INSTANCE.toSumValues(row.getUnitValues(), row.getQuantity())));
     }

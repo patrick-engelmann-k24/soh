@@ -25,6 +25,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.compress.utils.Lists;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
@@ -182,8 +183,8 @@ public class SalesOrderRowService {
         var creditNoteLines = salesCreditNoteHeader.getCreditNoteLines();
         var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
-        var negativedCreditNoteLine = negateCreditNoteLines(creditNoteLines);
-        var returnOrderJson = recalculateOrderByReturns(salesOrder, getOrderRowUpdateItems(negativedCreditNoteLine));
+        var returnOrderJson = recalculateOrderByReturns(salesOrder, getOrderRowUpdateItems(creditNoteLines));
+        updateShippingCosts(returnOrderJson, creditNoteLines);
 
         returnOrderJson.getOrderHeader().setOrderNumber(salesCreditNoteHeader.getCreditNoteNumber());
 
@@ -195,7 +196,6 @@ public class SalesOrderRowService {
                 .salesCreditNoteCreatedMessage(salesCreditNoteCreatedMessage)
                 .build();
 
-        updateShippingCosts(salesOrderReturn, negativedCreditNoteLine);
         SalesOrderReturn savedSalesOrderReturn = salesOrderReturnService.save(salesOrderReturn);
         ProcessInstance result = helper.createReturnOrderProcess(savedSalesOrderReturn, CORE_CREDIT_NOTE_CREATED);
         if (result != null) {
@@ -206,19 +206,17 @@ public class SalesOrderRowService {
 
     public Order recalculateOrderByReturns(SalesOrder salesOrder, Collection<CreditNoteLine> items) {
 
-        var itemNumbers = items.stream().map(CreditNoteLine::getItemNumber).collect(Collectors.toList());
         var returnLatestJson = orderUtil.copyOrderJson(salesOrder.getLatestJson());
-        var returnOrderRows = returnLatestJson.getOrderRows().stream()
-                .filter(row -> itemNumbers.contains(row.getSku())).collect(Collectors.toList());
-        returnLatestJson.setOrderRows(returnOrderRows);
+        returnLatestJson.setOrderRows(Lists.newArrayList());
         var totals = returnLatestJson.getOrderHeader().getTotals();
 
         items.forEach(item -> {
             var originalOrderRow = salesOrder.getLatestJson().getOrderRows().stream()
-                    .filter(r -> StringUtils.pathEquals(r.getSku(), item.getItemNumber())).findFirst().orElseThrow();
+                    .filter(r -> StringUtils.pathEquals(r.getSku(), item.getItemNumber()))
+                    .findFirst().orElse(OrderRows.builder().build());
             var orderRow = orderUtil.createNewOrderRowFromCreditNoteItem(
                     item, originalOrderRow, orderUtil.getLastRowKey(salesOrder));
-            orderUtil.recalculateOrderRow(orderRow, item);
+            orderUtil.updateOrderRowValues(orderRow, item);
 
             var sumValues = orderRow.getSumValues();
             var returnOrderRowTaxValue = sumValues.getTotalDiscountedGross().subtract(sumValues.getTotalDiscountedNet());
@@ -231,6 +229,7 @@ public class SalesOrderRowService {
                                         format(ERROR_MSG_GRAND_TOTAL_TAX_NOT_FOUND_BY_TAX_RATE,
                                                 item.getItemNumber(), item.getTaxRate(), salesOrder.getOrderNumber(), salesOrder.getOrderGroupId()));
                             });
+            returnLatestJson.getOrderRows().add(orderRow);
         });
 
         totals.setGoodsTotalGross(BigDecimal.ZERO);
@@ -246,7 +245,7 @@ public class SalesOrderRowService {
                 .forEach(sumValues -> {
                     totals.setGoodsTotalGross(totals.getGoodsTotalGross().add(
                             Optional.ofNullable(sumValues.getGoodsValueGross()).orElse(BigDecimal.ZERO)));
-                    totals.setGoodsTotalNet(totals.getGrandTotalNet().add(
+                    totals.setGoodsTotalNet(totals.getGoodsTotalNet().add(
                             Optional.ofNullable(sumValues.getGoodsValueNet()).orElse(BigDecimal.ZERO)));
                     totals.setTotalDiscountGross(totals.getTotalDiscountGross().add(
                             Optional.ofNullable(sumValues.getDiscountGross()).orElse(BigDecimal.ZERO)));
@@ -270,22 +269,8 @@ public class SalesOrderRowService {
                 .collect(Collectors.toList());
     }
 
-    private Collection<CreditNoteLine> negateCreditNoteLines(Collection<CreditNoteLine> creditNoteLines) {
-        return creditNoteLines.stream().map(creditNoteLine ->
-                CreditNoteLine.builder()
-                        .isShippingCost(creditNoteLine.getIsShippingCost())
-                        .itemNumber(creditNoteLine.getItemNumber())
-                        .taxRate(creditNoteLine.getTaxRate())
-                        .quantity(creditNoteLine.getQuantity().negate())
-                        .unitNetAmount(creditNoteLine.getUnitNetAmount().negate())
-                        .lineNetAmount(creditNoteLine.getLineNetAmount().negate())
-                        .lineTaxAmount(creditNoteLine.getLineTaxAmount().negate())
-                        .build()
-        ).collect(Collectors.toList());
-    }
-
-    private void updateShippingCosts(SalesOrderReturn salesOrderReturn, Collection<CreditNoteLine> creditNoteLines) {
-        var totals = salesOrderReturn.getReturnOrderJson().getOrderHeader().getTotals();
+    private void updateShippingCosts(Order returnOrder, Collection<CreditNoteLine> creditNoteLines) {
+        var totals = returnOrder.getOrderHeader().getTotals();
         creditNoteLines.stream()
                 .filter(CreditNoteLine::getIsShippingCost)
                 .findFirst()
