@@ -70,9 +70,4 @@ public class SalesOrder extends AbstractBaseEntity {
     @OneToMany(mappedBy = "salesOrder", cascade = CascadeType.ALL)
     private Set<SalesOrderInvoice> salesOrderInvoiceList;
 
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    @OneToMany(mappedBy = "salesOrder", cascade = CascadeType.ALL)
-    private Set<SalesOrderReturn> salesOrderReturnList;
-
 }

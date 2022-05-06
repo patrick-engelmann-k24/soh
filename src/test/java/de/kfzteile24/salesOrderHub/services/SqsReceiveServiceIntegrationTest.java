@@ -6,20 +6,19 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
+import de.kfzteile24.salesOrderHub.dto.shared.creditnote.SalesCreditNoteHeader;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
-import de.kfzteile24.salesOrderHub.helper.ObjectUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.soh.order.dto.GrandTotalTaxes;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
-import de.kfzteile24.soh.order.dto.SumValues;
 import de.kfzteile24.soh.order.dto.Totals;
-import de.kfzteile24.soh.order.dto.UnitValues;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -41,7 +40,6 @@ import org.springframework.test.annotation.DirtiesContext;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -106,7 +104,7 @@ class SqsReceiveServiceIntegrationTest {
     @Autowired
     private SalesOrderUtil salesOrderUtil;
     @Autowired
-    private ObjectUtil objectUtil;
+    private SalesOrderReturnService salesOrderReturnService;
     @Autowired
     private ObjectMapper objectMapper;
     @SpyBean
@@ -408,59 +406,87 @@ class SqsReceiveServiceIntegrationTest {
         var salesOrder = SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
         salesOrder.setOrderGroupId("580309129");
         salesOrder.setOrderNumber("580309129");
-
-        var orderRows = List.of(
-                OrderRows.builder()
-                        .sumValues(SumValues.builder()
-                                .goodsValueGross(BigDecimal.valueOf(3.38))
-                                .goodsValueNet(BigDecimal.valueOf(2))
-                                .build())
-                        .unitValues(UnitValues.builder()
-                                .goodsValueGross(BigDecimal.valueOf(3.38))
-                                .goodsValueNet(BigDecimal.valueOf(2))
-                                .build())
-                        .taxRate(BigDecimal.valueOf(19))
-                        .quantity(BigDecimal.valueOf(2))
-                        .sku("sku-1")
-                        .build()
-        );
-
-        var totals = Totals.builder()
-                .goodsTotalGross(BigDecimal.valueOf(2.38))
-                .goodsTotalNet(BigDecimal.valueOf(2))
-                .grandTotalGross(BigDecimal.valueOf(2.38))
-                .grandTotalNet(BigDecimal.valueOf(2))
-                .paymentTotal(BigDecimal.valueOf(2.38))
-                .grandTotalTaxes(List.of(GrandTotalTaxes.builder()
-                        .rate(BigDecimal.valueOf(19))
-                        .value(BigDecimal.valueOf(0.38))
-                        .build()))
-                .build();
-
-        salesOrder.getLatestJson().getOrderHeader().setTotals(totals);
-        salesOrder.getLatestJson().setOrderRows(orderRows);
+        salesOrder.getLatestJson().getOrderHeader().getTotals().setGrandTotalTaxes(List.of(GrandTotalTaxes.builder()
+                .rate(BigDecimal.valueOf(19))
+                .value(BigDecimal.valueOf(0.38))
+                .build()));
 
         salesOrderService.save(salesOrder, Action.ORDER_CREATED);
 
-        var coreReturnDeliveryNotePrinted =  readResource("examples/coreSalesCreditNoteCreated.json");
+        var coreReturnDeliveryNotePrinted = readResource("examples/coreSalesCreditNoteCreated.json");
         String body = objectMapper.readValue(coreReturnDeliveryNotePrinted, SqsMessage.class).getBody();
         SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage =
                 objectMapper.readValue(body, SalesCreditNoteCreatedMessage.class);
         sqsReceiveService.queueListenerCoreSalesCreditNoteCreated(coreReturnDeliveryNotePrinted, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
-        //set expected values
-        var expectedSalesOrder = createSalesOrderFromOrder(salesOrder);
-        expectedSalesOrder.setVersion(1L);
-        var order = expectedSalesOrder.getLatestJson();
-        var latestOrderJson = objectUtil.deepCopyOf(order, Order.class);
-        latestOrderJson.getOrderHeader().getTotals().setShippingCostGross(BigDecimal.valueOf(11.90).setScale(2, RoundingMode.HALF_UP));
-        latestOrderJson.getOrderHeader().getTotals().setShippingCostNet(BigDecimal.valueOf(10.00).setScale(2, RoundingMode.HALF_UP));
-        expectedSalesOrder.setLatestJson(latestOrderJson);
+        SalesCreditNoteHeader salesCreditNoteHeader = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader();
+        String creditNoteNumber = salesCreditNoteHeader.getCreditNoteNumber();
+        SalesOrderReturn returnSalesOrder = salesOrderReturnService.getByOrderNumber(creditNoteNumber);
+        Order returnOrder = returnSalesOrder.getReturnOrderJson();
+
+        checkOrderRowValues(returnOrder.getOrderRows());
+        checkTotalsValues(returnOrder.getOrderHeader().getTotals());
+        checkEventIsPublished(salesCreditNoteCreatedMessage);
+    }
+
+    private void checkOrderRowValues(List<OrderRows> returnOrderRows) {
+
+        assertEquals(3, returnOrderRows.size());
+
+        OrderRows orderRows = returnOrderRows.stream().filter(r -> r.getSku().equals("sku-1")).findFirst().orElse(null);
+        checkOrderRowValues(orderRows,
+                new BigDecimal("1"), new BigDecimal("19.0"),
+                new BigDecimal("-1.0"), new BigDecimal("-1.19"),
+                new BigDecimal("-1.0"), new BigDecimal("-1.19"));
+
+        orderRows = returnOrderRows.stream().filter(r -> r.getSku().equals("new-sku")).findFirst().orElse(null);
+        checkOrderRowValues(orderRows,
+                new BigDecimal("1"), new BigDecimal("19.0"),
+                new BigDecimal("10.0"), new BigDecimal("11.90"),
+                new BigDecimal("10.0"), new BigDecimal("11.90"));
+
+        orderRows = returnOrderRows.stream().filter(r -> r.getSku().equals("sku-2")).findFirst().orElse(null);
+        checkOrderRowValues(orderRows,
+                new BigDecimal("-2"), new BigDecimal("19.0"),
+                new BigDecimal("17.39"), new BigDecimal("20.69"),
+                new BigDecimal("-34.78"), new BigDecimal("-41.38"));
+    }
+
+    private void checkOrderRowValues(OrderRows orderRows,
+                                     BigDecimal quantity, BigDecimal taxRate,
+                                     BigDecimal unitNetValue, BigDecimal unitGrossValue,
+                                     BigDecimal sumNetValue, BigDecimal sumGrossValue) {
+
+        assertNotNull(orderRows);
+        assertEquals(quantity, orderRows.getQuantity());
+        assertEquals(taxRate, orderRows.getTaxRate());
+
+        assertEquals(unitNetValue, orderRows.getUnitValues().getGoodsValueNet());
+        assertEquals(unitGrossValue, orderRows.getUnitValues().getGoodsValueGross());
+
+        assertEquals(sumNetValue, orderRows.getSumValues().getGoodsValueNet());
+        assertEquals(sumGrossValue, orderRows.getSumValues().getGoodsValueGross());
+    }
+
+    private void checkTotalsValues(Totals totals) {
+
+        assertNotNull(totals);
+
+        assertEquals(new BigDecimal("-25.78"), totals.getGoodsTotalNet());
+        assertEquals(new BigDecimal("-30.67"), totals.getGoodsTotalGross());
+        assertEquals(BigDecimal.ZERO, totals.getTotalDiscountNet());
+        assertEquals(BigDecimal.ZERO, totals.getTotalDiscountGross());
+        assertEquals(new BigDecimal("-35.78"), totals.getGrandTotalNet());
+        assertEquals(new BigDecimal("-42.57"), totals.getGrandTotalGross());
+        assertEquals(new BigDecimal("-42.57"), totals.getPaymentTotal());
+        assertEquals(new BigDecimal("-10.0"), totals.getShippingCostNet());
+        assertEquals(new BigDecimal("-11.90"), totals.getShippingCostGross());
+    }
+
+    private void checkEventIsPublished(SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage) {
 
         verify(salesOrderService).getOrderByOrderNumber("580309129");
-
         verify(salesOrderRowService).handleSalesOrderReturn(eq("580309129"), eq(salesCreditNoteCreatedMessage));
-
         verify(snsPublishService).publishReturnOrderCreatedEvent(argThat(
                 salesOrderReturn -> {
                     assertThat(salesOrderReturn.getOrderNumber()).isEqualTo("876130");
