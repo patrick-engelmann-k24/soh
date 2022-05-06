@@ -43,7 +43,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.VIRTUAL_ORDER_ROWS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_GROUP_ID;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SALES_ORDER_ID;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_INVOICE_CREATION_RECEIVED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_SALES_INVOICE_CREATED_RECEIVED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.VOUCHER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.DELIVERY_ADDRESS_CHANGE_POSSIBLE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.ORDER_ROW_ID;
@@ -90,7 +90,7 @@ public class CamundaHelper {
                 .processInstanceId(processInstance);
     }
 
-    public ProcessInstance startInvoiceReceivedProcess(SalesOrder salesOrder) {
+    public ProcessInstance startInvoiceCreatedReceivedProcess(SalesOrder salesOrder) {
         if (salesOrder.getId() == null)
             throw new NotFoundException("Sales order id could not be null");
 
@@ -100,7 +100,7 @@ public class CamundaHelper {
                 SALES_ORDER_ID.getName(), salesOrder.getId(),
                 PUBLISH_DELAY.getName(), publishDelayForSubsequentOrders);
 
-        return runtimeService.createMessageCorrelation(CORE_INVOICE_CREATION_RECEIVED.getName())
+        return runtimeService.createMessageCorrelation(CORE_SALES_INVOICE_CREATED_RECEIVED.getName())
                 .processInstanceBusinessKey(salesOrder.getId().toString())
                 .setVariables(variables)
                 .correlateWithResult().getProcessInstance();

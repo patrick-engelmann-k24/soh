@@ -18,7 +18,7 @@ import java.util.UUID;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class PublishInvoiceCreationReceivedDelegate implements JavaDelegate {
+public class PublishCoreSalesInvoiceCreatedReceivedDelegate implements JavaDelegate {
 
     @NonNull
     private final SnsPublishService snsPublishService;
@@ -34,6 +34,6 @@ public class PublishInvoiceCreationReceivedDelegate implements JavaDelegate {
                 .orElseThrow(() -> new SalesOrderNotFoundCustomException("Could not find order with id: " + salesOrderId
                         + " for publishing core sales invoice event"));
         snsPublishService.publishCoreInvoiceReceivedEvent(EventMapper.INSTANCE.toCoreSalesInvoiceCreatedReceivedEvent(salesOrder.getInvoiceEvent()));
-        log.info("{} delegate invoked", PublishInvoiceCreationReceivedDelegate.class.getSimpleName());
+        log.info("{} delegate invoked", PublishCoreSalesInvoiceCreatedReceivedDelegate.class.getSimpleName());
     }
 }
