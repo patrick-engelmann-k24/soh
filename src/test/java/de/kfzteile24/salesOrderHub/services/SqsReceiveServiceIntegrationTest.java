@@ -447,9 +447,9 @@ class SqsReceiveServiceIntegrationTest {
 
         orderRows = returnOrderRows.stream().filter(r -> r.getSku().equals("sku-2")).findFirst().orElse(null);
         checkOrderRowValues(orderRows,
-                new BigDecimal("-2"), new BigDecimal("19.0"),
-                new BigDecimal("17.39"), new BigDecimal("20.69"),
-                new BigDecimal("-34.78"), new BigDecimal("-41.38"));
+                new BigDecimal("-2"), new BigDecimal("20.0"),
+                new BigDecimal("17.39"), new BigDecimal("20.87"),
+                new BigDecimal("-34.78"), new BigDecimal("-41.74"));
     }
 
     private void checkOrderRowValues(OrderRows orderRows,
@@ -473,14 +473,23 @@ class SqsReceiveServiceIntegrationTest {
         assertNotNull(totals);
 
         assertEquals(new BigDecimal("-25.78"), totals.getGoodsTotalNet());
-        assertEquals(new BigDecimal("-30.67"), totals.getGoodsTotalGross());
+        assertEquals(new BigDecimal("-31.03"), totals.getGoodsTotalGross());
         assertEquals(BigDecimal.ZERO, totals.getTotalDiscountNet());
         assertEquals(BigDecimal.ZERO, totals.getTotalDiscountGross());
         assertEquals(new BigDecimal("-35.78"), totals.getGrandTotalNet());
-        assertEquals(new BigDecimal("-42.57"), totals.getGrandTotalGross());
-        assertEquals(new BigDecimal("-42.57"), totals.getPaymentTotal());
+        assertEquals(new BigDecimal("-42.93"), totals.getGrandTotalGross());
+        assertEquals(new BigDecimal("-42.93"), totals.getPaymentTotal());
         assertEquals(new BigDecimal("-10.0"), totals.getShippingCostNet());
         assertEquals(new BigDecimal("-11.90"), totals.getShippingCostGross());
+
+        List<GrandTotalTaxes> grandTotalTaxes = totals.getGrandTotalTaxes();
+        assertEquals(2, grandTotalTaxes.size());
+        GrandTotalTaxes grandTotalTax = grandTotalTaxes.stream().filter(tax -> tax.getRate().equals(new BigDecimal("19.0"))).findFirst().orElse(null);
+        assertNotNull(grandTotalTax);
+        assertEquals(new BigDecimal("-0.19"), grandTotalTax.getValue());
+        grandTotalTax = grandTotalTaxes.stream().filter(tax -> tax.getRate().equals(new BigDecimal("20.0"))).findFirst().orElse(null);
+        assertNotNull(grandTotalTax);
+        assertEquals(new BigDecimal("-6.96"), grandTotalTax.getValue());
     }
 
     private void checkEventIsPublished(SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage) {
