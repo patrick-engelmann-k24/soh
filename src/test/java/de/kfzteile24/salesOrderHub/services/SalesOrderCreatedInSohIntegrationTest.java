@@ -251,7 +251,6 @@ class SalesOrderCreatedInSohIntegrationTest {
                                      UnitValues expectedUnitValues,
                                      SumValues expectedSumValues) {
         assertEquals(sku, row.getSku());
-        assertNull(row.getShippingType());
         assertEquals(new BigDecimal(quantity), row.getQuantity());
         assertEquals(new BigDecimal(taxRate), row.getTaxRate());
         assertEquals(expectedUnitValues.getGoodsValueGross(), row.getUnitValues().getGoodsValueGross());
