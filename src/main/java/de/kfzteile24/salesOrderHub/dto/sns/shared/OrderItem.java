@@ -2,7 +2,7 @@ package de.kfzteile24.salesOrderHub.dto.sns.shared;
 
 import java.math.BigDecimal;
 
-public interface DocumentLine {
+public interface OrderItem {
 
     public String getItemNumber();
 

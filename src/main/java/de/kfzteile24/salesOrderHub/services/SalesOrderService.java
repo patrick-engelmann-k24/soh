@@ -158,9 +158,7 @@ public class SalesOrderService {
         List<OrderRows> orderRows = new ArrayList<>();
         for (CoreSalesFinancialDocumentLine item : items) {
             if (!item.getIsShippingCost()) {
-                orderRows.add(orderUtil.createOrderRowFromOriginalSalesOrder(
-                        originalSalesOrder,
-                        item));
+                orderRows.add(orderUtil.createNewOrderRow(item, originalSalesOrder));
             }
         }
         orderRows = orderRows.stream()

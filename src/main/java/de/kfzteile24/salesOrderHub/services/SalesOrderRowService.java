@@ -211,8 +211,7 @@ public class SalesOrderRowService {
         var totals = returnLatestJson.getOrderHeader().getTotals();
 
         items.forEach(item -> {
-            var orderRow = orderUtil.createNewOrderRowFromCreditNoteItem(
-                    item, salesOrder);
+            var orderRow = orderUtil.createNewOrderRow(item, salesOrder);
             orderUtil.updateOrderRowValues(orderRow, item);
 
             var sumValues = orderRow.getSumValues();

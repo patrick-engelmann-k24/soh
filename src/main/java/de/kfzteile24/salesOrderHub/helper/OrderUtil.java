@@ -1,9 +1,8 @@
 package de.kfzteile24.salesOrderHub.helper;
 
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.dto.shared.creditnote.CreditNoteLine;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesFinancialDocumentLine;
-import de.kfzteile24.salesOrderHub.dto.sns.shared.DocumentLine;
+import de.kfzteile24.salesOrderHub.dto.sns.shared.OrderItem;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.SumValues;
@@ -47,12 +46,7 @@ public class OrderUtil {
         return originalOrder.getOrderRows().stream().map(OrderRows::getRowKey).filter(Objects::nonNull).reduce(0, Integer::max);
     }
 
-    public OrderRows createOrderRowFromOriginalSalesOrder(SalesOrder originalSalesOrder, CoreSalesFinancialDocumentLine item) {
-        var shippingType = ((Order) originalSalesOrder.getOriginalOrder()).getOrderRows().get(0).getShippingType();
-        return createNewOrderRow(item, originalSalesOrder, shippingType);
-    }
-
-    public void updateOrderRowValues(OrderRows orderRow, DocumentLine item) {
+    public void updateOrderRowValues(OrderRows orderRow, OrderItem item) {
 
         if (orderRow != null) {
             updateOrderRowByUnitPriceNet(orderRow, getValueOrDefault(item.getUnitNetAmount(), BigDecimal.ZERO));
@@ -75,17 +69,7 @@ public class OrderUtil {
                 .collect(Collectors.toList());
     }
 
-    public OrderRows createNewOrderRow(CoreSalesFinancialDocumentLine item, SalesOrder salesOrder,
-                                       String shippingType) {
-        return buildNewOrderRow(item, salesOrder, shippingType);
-    }
-
-
-    public OrderRows createNewOrderRowFromCreditNoteItem(CreditNoteLine item, SalesOrder salesOrder) {
-        return buildNewOrderRow(item, salesOrder, null);
-    }
-
-    private OrderRows buildNewOrderRow(DocumentLine item, SalesOrder salesOrder, String shippingType) {
+    public OrderRows createNewOrderRow(OrderItem item, SalesOrder salesOrder) {
 
         Integer lastRowKey = getLastRowKey(salesOrder);
 
@@ -115,7 +99,7 @@ public class OrderUtil {
                 .taxRate(Optional.ofNullable(item.getTaxRate()).orElse(BigDecimal.ZERO))
                 .partIdentificationProperties(originalOrderRow.getPartIdentificationProperties())
                 .estimatedDeliveryDate(originalOrderRow.getEstimatedDeliveryDate())
-                .shippingType(shippingType != null ? shippingType : originalOrderRow.getShippingType())
+                .shippingType(originalOrderRow.getShippingType())
                 .clickCollectBranchId(originalOrderRow.getClickCollectBranchId())
                 .shippingAddressKey(originalOrderRow.getShippingAddressKey())
                 .shippingProvider(originalOrderRow.getShippingProvider())
