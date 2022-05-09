@@ -4,7 +4,6 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
-import de.kfzteile24.salesOrderHub.helper.OrderMapper;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
@@ -94,11 +93,11 @@ class SalesOrderCreatedInSohIntegrationTest {
         checkTotalsValues(newOrderNumberCreatedInSoh,
                 "12.95",
                 "10.79",
-                "1.94",
-                "1.62",
-                "11.01",
-                "9.17",
-                "11.01",
+                "0.0",
+                "0.0",
+                "12.95",
+                "10.79",
+                "12.95",
                 "0",
                 "0");
     }
@@ -108,7 +107,7 @@ class SalesOrderCreatedInSohIntegrationTest {
 
         var senderId = "Delivery";
         var receiveCount = 1;
-        var salesOrder = salesOrderUtil.createNewSalesOrderHavingCancelledRow();
+        var salesOrder = salesOrderUtil.createNewSalesOrder();
         final ProcessInstance orderProcess = camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
         assertTrue(util.isProcessWaitingAtExpectedToken(orderProcess, MSG_ORDER_PAYMENT_SECURED.getName()));
 
@@ -132,52 +131,14 @@ class SalesOrderCreatedInSohIntegrationTest {
         checkTotalsValues(newOrderNumberCreatedInSoh,
                 "432.52",
                 "360.64",
-                "60.30",
-                "50.26",
-                "384.12",
-                "320.38",
-                "384.12",
-                "11.90",
-                "10.00");
-        checkOrderRows(newOrderNumberCreatedInSoh, rowSku1, rowSku2, rowSku3);
-    }
-
-    @Test
-    public void testQueueListenerCoreSalesInvoiceCreatedWithConsolidatedItems() {
-
-        var senderId = "Delivery";
-        var receiveCount = 1;
-        var salesOrder = salesOrderUtil.createNewSalesOrder();
-        var row = OrderMapper.INSTANCE.toOrderRow(salesOrder.getLatestJson().getOrderRows().get(1));
-        salesOrder.getLatestJson().getOrderRows().add(row);
-        salesOrderService.updateOrder(salesOrder);
-        final ProcessInstance orderProcess = camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
-        assertTrue(util.isProcessWaitingAtExpectedToken(orderProcess, MSG_ORDER_PAYMENT_SECURED.getName()));
-
-        String originalOrderNumber = salesOrder.getOrderNumber();
-        String invoiceNumber = "10";
-        String rowSku = "2010-10183";
-        String invoiceEvent = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
-
-        //Update necessary parts in invoice event
-        invoiceEvent = invoiceEvent.replace("524001248", originalOrderNumber);
-        invoiceEvent = invoiceEvent.replace("ItemNumber\": \"2010-10183\",\n\t\t\t\t\t\"Quantity\": 1.0", "ItemNumber\": \"2010-10183\",\n\t\t\t\t\t\"Quantity\": 3.0");
-
-        sqsReceiveService.queueListenerCoreSalesInvoiceCreated(invoiceEvent, senderId, receiveCount);
-
-        String newOrderNumberCreatedInSoh = originalOrderNumber + "-" + invoiceNumber;
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku)));
-        checkTotalsValues(newOrderNumberCreatedInSoh,
-                "25.90",
-                "21.58",
-                "3.88",
-                "3.24",
-                "22.02",
-                "18.34",
-                "22.02",
                 "0",
-                "0");
+                "0",
+                "444.42",
+                "370.64",
+                "444.42",
+                "11.9",
+                "10.0");
+        checkOrderRows(newOrderNumberCreatedInSoh, rowSku1, rowSku2, rowSku3);
     }
 
     private void checkTotalsValues(String orderNumber,
@@ -221,66 +182,63 @@ class SalesOrderCreatedInSohIntegrationTest {
         checkOrderRowValues(
                 orderRows.get(0),
                 sku1,
-                1,
                 "2",
-                "20.0",
+                "20",
                 UnitValues.builder()
-                        .goodsValueGross(new BigDecimal("201.00"))
-                        .goodsValueNet(new BigDecimal("167.50"))
-                        .discountGross(new BigDecimal("30.15"))
-                        .discountNet(new BigDecimal("25.13"))
-                        .discountedGross(new BigDecimal("170.85"))
-                        .discountedNet(new BigDecimal("142.37"))
+                        .goodsValueGross(new BigDecimal("201.0"))
+                        .goodsValueNet(new BigDecimal("167.5"))
+                        .discountGross(BigDecimal.ZERO)
+                        .discountNet(BigDecimal.ZERO)
+                        .discountedGross(new BigDecimal("201.0"))
+                        .discountedNet(new BigDecimal("167.5"))
                         .build(),
                 SumValues.builder()
-                        .goodsValueGross(new BigDecimal("402.00"))
-                        .goodsValueNet(new BigDecimal("335.00"))
-                        .discountGross(new BigDecimal("60.30"))
-                        .discountNet(new BigDecimal("50.26"))
-                        .totalDiscountedGross(new BigDecimal("341.70"))
-                        .totalDiscountedNet(new BigDecimal("284.74"))
+                        .goodsValueGross(new BigDecimal("402.0"))
+                        .goodsValueNet(new BigDecimal("335.0"))
+                        .discountGross(BigDecimal.ZERO)
+                        .discountNet(BigDecimal.ZERO)
+                        .totalDiscountedGross(new BigDecimal("402.0"))
+                        .totalDiscountedNet(new BigDecimal("335.0"))
                         .build());
         checkOrderRowValues(
                 orderRows.get(1),
                 sku2,
-                2,
                 "2",
                 "19",
                 UnitValues.builder()
                         .goodsValueGross(new BigDecimal("10.00"))
-                        .goodsValueNet(new BigDecimal("8.40"))
-                        .discountGross(new BigDecimal("0"))
-                        .discountNet(new BigDecimal("0"))
+                        .goodsValueNet(new BigDecimal("8.4"))
+                        .discountGross(BigDecimal.ZERO)
+                        .discountNet(BigDecimal.ZERO)
                         .discountedGross(new BigDecimal("10.00"))
-                        .discountedNet(new BigDecimal("8.40"))
+                        .discountedNet(new BigDecimal("8.4"))
                         .build(),
                 SumValues.builder()
                         .goodsValueGross(new BigDecimal("20.00"))
-                        .goodsValueNet(new BigDecimal("16.80"))
-                        .discountGross(new BigDecimal("0"))
-                        .discountNet(new BigDecimal("0"))
+                        .goodsValueNet(new BigDecimal("16.8"))
+                        .discountGross(BigDecimal.ZERO)
+                        .discountNet(BigDecimal.ZERO)
                         .totalDiscountedGross(new BigDecimal("20.00"))
-                        .totalDiscountedNet(new BigDecimal("16.80"))
+                        .totalDiscountedNet(new BigDecimal("16.8"))
                         .build());
         checkOrderRowValues(
                 orderRows.get(2),
                 sku3,
-                3,
                 "1",
                 "19",
                 UnitValues.builder()
                         .goodsValueGross(new BigDecimal("10.52"))
                         .goodsValueNet(new BigDecimal("8.84"))
-                        .discountGross(null)
-                        .discountNet(null)
+                        .discountGross(BigDecimal.ZERO)
+                        .discountNet(BigDecimal.ZERO)
                         .discountedGross(new BigDecimal("10.52"))
                         .discountedNet(new BigDecimal("8.84"))
                         .build(),
                 SumValues.builder()
                         .goodsValueGross(new BigDecimal("10.52"))
                         .goodsValueNet(new BigDecimal("8.84"))
-                        .discountGross(null)
-                        .discountNet(null)
+                        .discountGross(BigDecimal.ZERO)
+                        .discountNet(BigDecimal.ZERO)
                         .totalDiscountedGross(new BigDecimal("10.52"))
                         .totalDiscountedNet(new BigDecimal("8.84"))
                         .build());
@@ -288,13 +246,11 @@ class SalesOrderCreatedInSohIntegrationTest {
 
     private void checkOrderRowValues(OrderRows row,
                                      String sku,
-                                     Integer rowKey,
                                      String quantity,
                                      String taxRate,
                                      UnitValues expectedUnitValues,
                                      SumValues expectedSumValues) {
         assertEquals(sku, row.getSku());
-        assertEquals(rowKey, row.getRowKey());
         assertEquals("shipment_regular", row.getShippingType());
         assertEquals(new BigDecimal(quantity), row.getQuantity());
         assertEquals(new BigDecimal(taxRate), row.getTaxRate());

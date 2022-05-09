@@ -52,7 +52,7 @@ public class OrderUtil {
         return createNewOrderRow(item, originalSalesOrder, shippingType);
     }
 
-    public void updateOrderRowValues(OrderRows orderRow, CreditNoteLine item) {
+    public void updateOrderRowValues(OrderRows orderRow, DocumentLine item) {
 
         if (orderRow != null) {
             updateOrderRowByUnitPriceNet(orderRow, getValueOrDefault(item.getUnitNetAmount(), BigDecimal.ZERO));
@@ -98,7 +98,7 @@ public class OrderUtil {
         var sumOfGoodsPriceGross = getMultipliedValue(unitPriceGross, item.getQuantity());
         var sumOfGoodsPriceNet = getMultipliedValue(unitPriceNet, item.getQuantity());
 
-        return OrderRows.builder()
+        OrderRows orderRow = OrderRows.builder()
                 .rowKey(lastRowKey + 1)
                 .isCancelled(originalOrderRow.getIsCancelled())
                 .isPriceHammer(originalOrderRow.getIsPriceHammer())
@@ -134,6 +134,8 @@ public class OrderUtil {
                         .totalDiscountedNet(sumOfGoodsPriceNet)
                         .build()))
                 .build();
+        updateOrderRowValues(orderRow, item);
+        return orderRow;
     }
 
     protected OrderRows updateOrderRowByNewItemValues(OrderRows row, CoreSalesFinancialDocumentLine item) {
