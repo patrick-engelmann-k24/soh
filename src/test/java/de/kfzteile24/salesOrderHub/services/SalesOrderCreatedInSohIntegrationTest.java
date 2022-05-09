@@ -108,7 +108,7 @@ class SalesOrderCreatedInSohIntegrationTest {
 
         var senderId = "Delivery";
         var receiveCount = 1;
-        var salesOrder = salesOrderUtil.createNewSalesOrderHavingCancelledRow();
+        var salesOrder = salesOrderUtil.createNewSalesOrder();
         final ProcessInstance orderProcess = camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
         assertTrue(util.isProcessWaitingAtExpectedToken(orderProcess, MSG_ORDER_PAYMENT_SECURED.getName()));
 

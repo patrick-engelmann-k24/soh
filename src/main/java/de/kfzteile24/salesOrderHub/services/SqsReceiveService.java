@@ -526,4 +526,44 @@ public class SqsReceiveService {
             queueListenerEcpShopOrders(rawMessage, senderId, receiveCount);
         }
     }
+
+    /**
+     * Consume messages from sqs for migration core sales invoice created
+     */
+    @SqsListener(value = "${soh.sqs.queue.migrationCoreSalesInvoiceCreated}", deletionPolicy = ON_SUCCESS)
+    @SneakyThrows(JsonProcessingException.class)
+    @Trace(metricName = "Handling migration core sales invoice created message", dispatcher = true)
+    @Transactional
+    public void queueListenerMigrationCoreSalesInvoiceCreated(
+            String rawMessage,
+            @Header("SenderId") String senderId,
+            @Header("ApproximateReceiveCount") Integer receiveCount) {
+
+        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+        CoreSalesInvoiceCreatedMessage salesInvoiceCreatedMessage = objectMapper.readValue(body, CoreSalesInvoiceCreatedMessage.class);
+        CoreSalesInvoiceHeader salesInvoiceHeader = salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
+        var orderNumber = salesInvoiceHeader.getOrderNumber();
+        var invoiceNumber = salesInvoiceHeader.getInvoiceNumber();
+        log.info("Received migration core sales invoice created message with order number: {} and invoice number: {}",
+                orderNumber, invoiceNumber);
+
+        try {
+            var optionalSalesOrder = salesOrderService.getOrderByOrderGroupId(orderNumber).stream()
+                    .filter(salesOrder -> invoiceNumber.equals(salesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber()))
+                    .findFirst();
+
+            if (optionalSalesOrder.isPresent()) {
+                salesOrderRowService.handleMigrationSubsequentOrder(salesInvoiceCreatedMessage, optionalSalesOrder.get());
+            } else {
+                log.info("Invoice with invoice number: {} is a new invoice. Call redirected to normal flow.", invoiceNumber);
+                queueListenerCoreSalesInvoiceCreated(rawMessage, senderId, receiveCount);
+            }
+        } catch (Exception e) {
+            log.error("Migration core sales invoice created received message error:\r\nOrderNumber: {}\r\nInvoiceNumber: {}\r\nError-Message: {}",
+                    orderNumber,
+                    invoiceNumber,
+                    e.getMessage());
+            throw e;
+        }
+    }
 }

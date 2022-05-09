@@ -128,6 +128,25 @@ public class SnsPublishService {
         sendLatestOrderJson(config.getSnsMigrationOrderCreatedV2(), "Migration Sales order created V2", orderNumber);
     }
 
+    public void publishMigrationOrderRowCancelled(String orderNumber, String orderRowId) {
+        final var orderRowCancelled = OrderRowCancelledEvent.builder()
+                .orderNumber(orderNumber)
+                .orderRowNumber(orderRowId)
+                .build();
+
+        publishEvent(config.getSnsMigrationSalesOrderRowCancellationV1(), "Sales order row cancelled",
+                orderRowCancelled, orderNumber);
+    }
+
+    public void publishMigrationOrderCancelled(Order order) {
+        final var orderCancelled = OrderCancelledEvent.builder()
+                .order(order)
+                .build();
+
+        publishEvent(config.getSnsMigrationSalesOrderCancellationV1(), "Sales order cancelled",
+                orderCancelled, order.getOrderHeader().getOrderNumber());
+    }
+
     protected void sendLatestOrderJson(String topic, String subject, String orderNumber) {
         final var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));

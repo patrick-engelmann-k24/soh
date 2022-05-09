@@ -7,6 +7,7 @@ import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.dto.events.OrderRowCancelledEvent;
+import de.kfzteile24.salesOrderHub.dto.events.OrderCancelledEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderCompletedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInfoEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInvoiceCreatedEvent;
@@ -326,6 +327,72 @@ class SnsPublishServiceTest {
                 .build();
         verify(notificationMessagingTemplate).sendNotification(expectedTopic,
                 objectMapper.writeValueAsString(expectedMigrationSalesOrderInfoV2), expectedSubject);
+    }
+
+    @Test
+    @SneakyThrows(Exception.class)
+    void testPublishMigrationOrderRowCancelled() {
+        final var expectedTopic = "migration-soh-sales-order-row-cancelled";
+        final var expectedSubject = "Sales order row cancelled";
+
+        given(awsSnsConfig.getSnsMigrationSalesOrderRowCancellationV1()).willReturn(expectedTopic);
+
+        final var latestOrderJson = createNewSalesOrderV3(true, REGULAR, CREDIT_CARD, NEW).getLatestJson();
+
+        final OrderRows canceledOrderRow = latestOrderJson.getOrderRows().get(0);
+
+        snsPublishService.publishMigrationOrderRowCancelled(latestOrderJson.getOrderHeader().getOrderNumber(), canceledOrderRow.getSku());
+
+        var expectedEvent = OrderRowCancelledEvent.builder()
+                .orderNumber(latestOrderJson.getOrderHeader().getOrderNumber())
+                .orderRowNumber(canceledOrderRow.getSku())
+                .build();
+
+        verify(notificationMessagingTemplate).sendNotification(
+                eq(expectedTopic),
+                argThat(json -> {
+                    try {
+                        final var publishedEvent = objectMapper.readValue(((String) json), OrderRowCancelledEvent.class);
+
+                        assertEquals(expectedEvent.getOrderNumber(), publishedEvent.getOrderNumber());
+                        assertEquals(expectedEvent.getOrderRowNumber(), publishedEvent.getOrderRowNumber());
+                    } catch (JsonProcessingException e) {
+                        throw new IllegalArgumentException(e);
+                    }
+                    return true;
+                }),
+                eq(expectedSubject));
+    }
+
+    @Test
+    @SneakyThrows(Exception.class)
+    void testPublishMigrationOrderCancelled() {
+        final var expectedTopic = "migration-soh-sales-order-cancelled";
+        final var expectedSubject = "Sales order cancelled";
+
+        given(awsSnsConfig.getSnsMigrationSalesOrderCancellationV1()).willReturn(expectedTopic);
+
+        final var latestOrderJson = createNewSalesOrderV3(true, REGULAR, CREDIT_CARD, NEW).getLatestJson();
+
+        snsPublishService.publishMigrationOrderCancelled(latestOrderJson);
+
+        var expectedEvent = OrderCancelledEvent.builder()
+                .order(latestOrderJson)
+                .build();
+
+        verify(notificationMessagingTemplate).sendNotification(
+                eq(expectedTopic),
+                argThat(json -> {
+                    try {
+                        final var publishedEvent = objectMapper.readValue(((String) json), OrderCancelledEvent.class);
+
+                        assertEquals(expectedEvent.getOrder(), publishedEvent.getOrder());
+                    } catch (JsonProcessingException e) {
+                        throw new IllegalArgumentException(e);
+                    }
+                    return true;
+                }),
+                eq(expectedSubject));
     }
 
     @SneakyThrows(Exception.class)

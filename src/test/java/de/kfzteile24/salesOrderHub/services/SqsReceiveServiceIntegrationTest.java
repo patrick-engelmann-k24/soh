@@ -545,6 +545,60 @@ class SqsReceiveServiceIntegrationTest {
         assertEquals(order, updated.getOriginalOrder());
     }
 
+    @Test
+    void testQueueListenerMigrationCoreSalesInvoiceCreated() {
+
+        var senderId = "Delivery";
+        var receiveCount = 1;
+        var salesOrder = salesOrderUtil.createNewSalesOrderHavingCancelledRow();
+
+        String originalOrderNumber = salesOrder.getOrderNumber();
+        String invoiceNumber = "10";
+        String rowSku1 = "1440-47378";
+        String rowSku2 = "2010-10183";
+        String rowSku3 = "2022-KBA";
+        String migrationInvoiceMsg = readResource("examples/coreSalesInvoiceCreatedMultipleItems.json");
+
+        //Replace order number with randomly created order number as expected
+        migrationInvoiceMsg = migrationInvoiceMsg.replace("524001248", originalOrderNumber);
+
+        sqsReceiveService.queueListenerMigrationCoreSalesInvoiceCreated(migrationInvoiceMsg, senderId, receiveCount);
+
+        String newOrderNumberCreatedInSoh = originalOrderNumber + "-" + invoiceNumber;
+        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
+        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku1)));
+        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku2)));
+        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku3)));
+    }
+
+    @Test
+    void testQueueListenerMigrationCoreSalesInvoiceCreatedDuplicateSubsequentOrder() {
+
+        var senderId = "Delivery";
+        var receiveCount = 1;
+        var salesOrder = salesOrderUtil.createNewSalesOrder();
+
+        String originalOrderNumber = salesOrder.getOrderNumber();
+        String invoiceNumber = "10";
+        String rowSku = "2010-10183";
+        String invoiceMsg = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
+
+        //Replace order number with randomly created order number as expected
+        invoiceMsg = invoiceMsg.replace("524001248", originalOrderNumber);
+
+        sqsReceiveService.queueListenerCoreSalesInvoiceCreated(invoiceMsg, senderId, receiveCount);
+
+        String newOrderNumberCreatedInSoh = originalOrderNumber + "-" + invoiceNumber;
+        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
+
+        sqsReceiveService.queueListenerMigrationCoreSalesInvoiceCreated(invoiceMsg, "Migration Delivery", 1);
+
+        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
+
+        verify(snsPublishService).publishMigrationOrderRowCancelled(eq(originalOrderNumber), eq(rowSku));
+        verify(snsPublishService).publishMigrationOrderCreated(eq(newOrderNumberCreatedInSoh));
+    }
+
     @SneakyThrows({URISyntaxException.class, IOException.class})
     private String readResource(String path) {
         return java.nio.file.Files.readString(Paths.get(

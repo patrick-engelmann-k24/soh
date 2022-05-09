@@ -43,7 +43,10 @@ TOPICS="
     soh-core-sales-invoice-created
     soh-core-invoice-received-v1
     migration-core-sales-order-created
+    migration-core-sales-invoice-created
     migration-soh-order-created-v2
+    migration-soh-sales-order-row-cancellation-v1
+    migration-soh-sales-order-cancellation-v1
     "
 
 # Outdated topics

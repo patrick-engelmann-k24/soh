@@ -9,6 +9,7 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMetho
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.domain.converter.InvoiceSource;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.soh.order.dto.*;
@@ -117,7 +118,7 @@ public class SalesOrderUtil {
         Order latestJson = objectMapper.readValue(sqsMessage.getBody(), Order.class);
         latestJson.getOrderHeader().setOrderNumber(order.getOrderHeader().getOrderNumber());
         latestJson.getOrderHeader().setOrderGroupId(order.getOrderHeader().getOrderNumber());
-        latestJson.getOrderRows().get(0).setIsCancelled(true);
+        latestJson.setOrderRows(List.of(latestJson.getOrderRows().get(1)));
 
         final SalesOrder testOrder = SalesOrder.builder()
                 .orderNumber(order.getOrderHeader().getOrderNumber())
@@ -321,6 +322,25 @@ public class SalesOrderUtil {
                 .originalOrder(order)
                 .latestJson(order)
                 .build();
+    }
+
+    public static SalesOrder getSalesOrder(Order order) {
+        return SalesOrder.builder()
+                .orderNumber(order.getOrderHeader().getOrderNumber())
+                .orderGroupId(order.getOrderHeader().getOrderNumber())
+                .salesChannel(order.getOrderHeader().getSalesChannel())
+                .customerEmail(order.getOrderHeader().getCustomer().getCustomerEmail())
+                .recurringOrder(Boolean.TRUE)
+                .originalOrder(order)
+                .latestJson(order)
+                .build();
+    }
+
+    @SneakyThrows(JsonProcessingException.class)
+    public static CoreSalesInvoiceCreatedMessage getInvoiceMsg(String rawMessage) {
+        ObjectMapper objectMapper = new ObjectMapperConfig().objectMapper();
+        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+        return objectMapper.readValue(body, CoreSalesInvoiceCreatedMessage.class);
     }
 
     @SneakyThrows(JsonProcessingException.class)

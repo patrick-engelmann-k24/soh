@@ -52,4 +52,10 @@ public class AwsSnsConfig {
 
     @Value("${soh.sns.topic.migrationOrderCreatedV2}")
     private String snsMigrationOrderCreatedV2;
+
+    @Value("${soh.sns.topic.migrationSalesOrderRowCancellationV1}")
+    private String snsMigrationSalesOrderRowCancellationV1;
+
+    @Value("${soh.sns.topic.migrationSalesOrderCancellationV1}")
+    private String snsMigrationSalesOrderCancellationV1;
 }
