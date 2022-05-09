@@ -12,11 +12,11 @@ import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.shared.creditnote.CreditNoteLine;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
-import de.kfzteile24.salesOrderHub.exception.GrandTotalTaxNotFoundException;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.CalculationUtil;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
+import de.kfzteile24.soh.order.dto.GrandTotalTaxes;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.SumValues;
@@ -53,8 +53,6 @@ import static java.util.stream.Collectors.toUnmodifiableSet;
 @RequiredArgsConstructor
 public class SalesOrderRowService {
 
-    public static final String ERROR_MSG_GRAND_TOTAL_TAX_NOT_FOUND_BY_TAX_RATE =
-            "Could not find order row with SKU {0} and tax rate {1} for order number {2} and order group id {3}";
     @NonNull
     private final CamundaHelper helper;
 
@@ -217,18 +215,6 @@ public class SalesOrderRowService {
             var orderRow = orderUtil.createNewOrderRowFromCreditNoteItem(
                     item, originalOrderRow, orderUtil.getLastRowKey(salesOrder));
             orderUtil.updateOrderRowValues(orderRow, item);
-
-            var sumValues = orderRow.getSumValues();
-            var returnOrderRowTaxValue = sumValues.getTotalDiscountedGross().subtract(sumValues.getTotalDiscountedNet());
-            totals.getGrandTotalTaxes().stream()
-                    .filter(tax -> tax.getRate().compareTo(item.getTaxRate()) == 0)
-                    .findFirst()
-                    .ifPresentOrElse(tax -> tax.setValue(returnOrderRowTaxValue),
-                            () -> {
-                                throw new GrandTotalTaxNotFoundException(
-                                        format(ERROR_MSG_GRAND_TOTAL_TAX_NOT_FOUND_BY_TAX_RATE,
-                                                item.getItemNumber(), item.getTaxRate(), salesOrder.getOrderNumber(), salesOrder.getOrderGroupId()));
-                            });
             returnLatestJson.getOrderRows().add(orderRow);
         });
 
@@ -258,6 +244,7 @@ public class SalesOrderRowService {
         totals.setGrandTotalNet(totals.getGoodsTotalNet().subtract(
                 Optional.ofNullable(totals.getTotalDiscountNet()).orElse(BigDecimal.ZERO)));
         totals.setPaymentTotal(totals.getGrandTotalGross());
+        totals.setGrandTotalTaxes(salesOrderService.calculateGrandTotalTaxes(returnLatestJson));
 
         returnLatestJson.getOrderHeader().setTotals(totals);
         return returnLatestJson;
@@ -280,6 +267,12 @@ public class SalesOrderRowService {
                     totals.setGrandTotalNet(totals.getGrandTotalNet().add(totals.getShippingCostNet()));
                     totals.setGrandTotalGross(totals.getGrandTotalGross().add(totals.getShippingCostGross()));
                     totals.setPaymentTotal(totals.getGrandTotalGross());
+                    BigDecimal fullTaxValue = totals.getGrandTotalGross().subtract(totals.getGrandTotalNet());
+                    BigDecimal sumTaxValues = totals.getGrandTotalTaxes().stream()
+                            .map(GrandTotalTaxes::getValue).reduce(BigDecimal.ZERO, BigDecimal::add);
+                    BigDecimal taxValueToAdd = fullTaxValue.subtract(sumTaxValues);
+                    totals.getGrandTotalTaxes().stream().findFirst().
+                            ifPresent(tax -> tax.setValue(tax.getValue().add(taxValueToAdd)));
                 });
     }
 
