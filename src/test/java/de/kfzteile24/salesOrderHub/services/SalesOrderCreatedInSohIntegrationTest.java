@@ -133,11 +133,11 @@ class SalesOrderCreatedInSohIntegrationTest {
                 "360.64",
                 "0",
                 "0",
-                "444.42",
-                "370.64",
-                "444.42",
-                "11.9",
-                "10.0");
+                "445.60",
+                "371.63",
+                "445.60",
+                "13.08",
+                "10.99");
         checkOrderRows(newOrderNumberCreatedInSoh, rowSku1, rowSku2, rowSku3);
     }
 

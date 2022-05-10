@@ -60,7 +60,7 @@ public class CalculationUtil {
         if (netValue == null || taxRate == null)
             return netValue;
 
-        return netValue.multiply(BigDecimal.valueOf(100).add(taxRate)).divide(BigDecimal.valueOf(100), MATH_CONTEXT);
+        return round(netValue.multiply(BigDecimal.valueOf(100).add(taxRate)).divide(BigDecimal.valueOf(100), MATH_CONTEXT), RoundingMode.HALF_UP);
     }
 
     public static BigDecimal getNetValue(BigDecimal grossValue, BigDecimal taxRate) {
