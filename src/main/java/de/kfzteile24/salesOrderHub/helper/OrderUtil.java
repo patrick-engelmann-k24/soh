@@ -84,8 +84,8 @@ public class OrderUtil {
 
         OrderRows orderRow = OrderRows.builder()
                 .rowKey(lastRowKey + 1)
-                .isCancelled(originalOrderRow.getIsCancelled())
-                .isPriceHammer(originalOrderRow.getIsPriceHammer())
+                .isCancelled(false)
+                .isPriceHammer(false)
                 .sku(item.getItemNumber())
                 .name(originalOrderRow.getName())
                 .dataSupplierNumber(originalOrderRow.getDataSupplierNumber())
