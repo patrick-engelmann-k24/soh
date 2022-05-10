@@ -325,8 +325,8 @@ public class SalesOrderRowService {
     }
 
     private BigDecimal getGrossValue(CreditNoteLine creditNoteLine) {
-        var taxRate = creditNoteLine.getLineTaxAmount().abs();
-        var netValue = creditNoteLine.getLineNetAmount();
+        var taxRate = creditNoteLine.getTaxRate().abs();
+        var netValue = creditNoteLine.getUnitNetAmount();
         return CalculationUtil.round(CalculationUtil.getGrossValue(netValue, taxRate), HALF_UP);
     }
 
