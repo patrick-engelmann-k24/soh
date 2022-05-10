@@ -327,7 +327,7 @@ public class SalesOrderRowService {
     private BigDecimal getGrossValue(CreditNoteLine creditNoteLine) {
         var taxRate = creditNoteLine.getTaxRate().abs();
         var netValue = creditNoteLine.getUnitNetAmount();
-        return CalculationUtil.round(CalculationUtil.getGrossValue(netValue, taxRate), HALF_UP);
+        return CalculationUtil.getGrossValue(netValue, taxRate);
     }
 
     private void cancelOrderRowsOfOrderGroup(String orderGroupId, String orderRowId) {
