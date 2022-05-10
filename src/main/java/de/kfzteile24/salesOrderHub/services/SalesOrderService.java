@@ -157,10 +157,7 @@ public class SalesOrderService {
         List<OrderRows> orderRows = new ArrayList<>();
         for (CoreSalesFinancialDocumentLine item : items) {
             if (!item.getIsShippingCost()) {
-                orderRows.addAll(orderUtil.createOrderRowFromOriginalSalesOrder(
-                        originalSalesOrder,
-                        item,
-                        orderUtil.getLastRowKey(originalSalesOrder)));
+                orderRows.add(orderUtil.createNewOrderRow(item, originalSalesOrder));
             }
         }
         orderRows = orderRows.stream()
@@ -289,6 +286,15 @@ public class SalesOrderService {
                 .shippingCostGross(shippingCostGross)
                 .shippingCostNet(shippingCostNet)
                 .build();
+
+        if (shippingCostLine != null) {
+            BigDecimal fullTaxValue = grandTotalGross.subtract(grantTotalNet);
+            BigDecimal sumTaxValues = totals.getGrandTotalTaxes().stream()
+                    .map(GrandTotalTaxes::getValue).reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal taxValueToAdd = fullTaxValue.subtract(sumTaxValues);
+            totals.getGrandTotalTaxes().stream().findFirst().
+                    ifPresent(tax -> tax.setValue(tax.getValue().add(taxValueToAdd)));
+        }
 
         order.getOrderHeader().setTotals(totals);
     }

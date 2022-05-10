@@ -261,11 +261,7 @@ public class SalesOrderRowService {
         var totals = returnLatestJson.getOrderHeader().getTotals();
 
         items.forEach(item -> {
-            var originalOrderRow = salesOrder.getLatestJson().getOrderRows().stream()
-                    .filter(r -> StringUtils.pathEquals(r.getSku(), item.getItemNumber()))
-                    .findFirst().orElse(OrderRows.builder().build());
-            var orderRow = orderUtil.createNewOrderRowFromCreditNoteItem(
-                    item, originalOrderRow, orderUtil.getLastRowKey(salesOrder));
+            var orderRow = orderUtil.createNewOrderRow(item, salesOrder);
             orderUtil.updateOrderRowValues(orderRow, item);
             returnLatestJson.getOrderRows().add(orderRow);
         });
@@ -329,8 +325,8 @@ public class SalesOrderRowService {
     }
 
     private BigDecimal getGrossValue(CreditNoteLine creditNoteLine) {
-        var taxRate = creditNoteLine.getLineTaxAmount().abs();
-        var netValue = creditNoteLine.getLineNetAmount();
+        var taxRate = creditNoteLine.getTaxRate().abs();
+        var netValue = creditNoteLine.getUnitNetAmount();
         return CalculationUtil.round(CalculationUtil.getGrossValue(netValue, taxRate), HALF_UP);
     }
 

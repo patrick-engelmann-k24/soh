@@ -550,7 +550,7 @@ class SqsReceiveServiceIntegrationTest {
 
         var senderId = "Delivery";
         var receiveCount = 1;
-        var salesOrder = salesOrderUtil.createNewSalesOrderHavingCancelledRow();
+        var salesOrder = salesOrderUtil.createNewSalesOrder();
 
         String originalOrderNumber = salesOrder.getOrderNumber();
         String invoiceNumber = "10";
