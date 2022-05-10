@@ -447,9 +447,9 @@ class SqsReceiveServiceIntegrationTest {
 
         orderRows = returnOrderRows.stream().filter(r -> r.getSku().equals("sku-2")).findFirst().orElse(null);
         checkOrderRowValues(orderRows,
-                new BigDecimal("-2"), new BigDecimal("19.0"),
-                new BigDecimal("17.39"), new BigDecimal("20.69"),
-                new BigDecimal("-34.78"), new BigDecimal("-41.38"));
+                new BigDecimal("-2"), new BigDecimal("20.0"),
+                new BigDecimal("17.39"), new BigDecimal("20.87"),
+                new BigDecimal("-34.78"), new BigDecimal("-41.74"));
     }
 
     private void checkOrderRowValues(OrderRows orderRows,
@@ -473,14 +473,23 @@ class SqsReceiveServiceIntegrationTest {
         assertNotNull(totals);
 
         assertEquals(new BigDecimal("-25.78"), totals.getGoodsTotalNet());
-        assertEquals(new BigDecimal("-30.67"), totals.getGoodsTotalGross());
+        assertEquals(new BigDecimal("-31.03"), totals.getGoodsTotalGross());
         assertEquals(BigDecimal.ZERO, totals.getTotalDiscountNet());
         assertEquals(BigDecimal.ZERO, totals.getTotalDiscountGross());
         assertEquals(new BigDecimal("-35.78"), totals.getGrandTotalNet());
-        assertEquals(new BigDecimal("-42.57"), totals.getGrandTotalGross());
-        assertEquals(new BigDecimal("-42.57"), totals.getPaymentTotal());
+        assertEquals(new BigDecimal("-42.93"), totals.getGrandTotalGross());
+        assertEquals(new BigDecimal("-42.93"), totals.getPaymentTotal());
         assertEquals(new BigDecimal("-10.0"), totals.getShippingCostNet());
         assertEquals(new BigDecimal("-11.90"), totals.getShippingCostGross());
+
+        List<GrandTotalTaxes> grandTotalTaxes = totals.getGrandTotalTaxes();
+        assertEquals(2, grandTotalTaxes.size());
+        GrandTotalTaxes grandTotalTax = grandTotalTaxes.stream().filter(tax -> tax.getRate().equals(new BigDecimal("19.0"))).findFirst().orElse(null);
+        assertNotNull(grandTotalTax);
+        assertEquals(new BigDecimal("-0.19"), grandTotalTax.getValue());
+        grandTotalTax = grandTotalTaxes.stream().filter(tax -> tax.getRate().equals(new BigDecimal("20.0"))).findFirst().orElse(null);
+        assertNotNull(grandTotalTax);
+        assertEquals(new BigDecimal("-6.96"), grandTotalTax.getValue());
     }
 
     private void checkEventIsPublished(SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage) {
@@ -534,6 +543,106 @@ class SqsReceiveServiceIntegrationTest {
         assertNotNull(updated);
         assertEquals(order, updated.getLatestJson());
         assertEquals(order, updated.getOriginalOrder());
+    }
+
+    @Test
+    void testQueueListenerMigrationCoreSalesInvoiceCreated() {
+
+        var senderId = "Delivery";
+        var receiveCount = 1;
+        var salesOrder = salesOrderUtil.createNewSalesOrderHavingCancelledRow();
+
+        String originalOrderNumber = salesOrder.getOrderNumber();
+        String invoiceNumber = "10";
+        String rowSku1 = "1440-47378";
+        String rowSku2 = "2010-10183";
+        String rowSku3 = "2022-KBA";
+        String migrationInvoiceMsg = readResource("examples/coreSalesInvoiceCreatedMultipleItems.json");
+
+        //Replace order number with randomly created order number as expected
+        migrationInvoiceMsg = migrationInvoiceMsg.replace("524001248", originalOrderNumber);
+
+        sqsReceiveService.queueListenerMigrationCoreSalesInvoiceCreated(migrationInvoiceMsg, senderId, receiveCount);
+
+        String newOrderNumberCreatedInSoh = originalOrderNumber + "-" + invoiceNumber;
+        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
+        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku1)));
+        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku2)));
+        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku3)));
+    }
+
+    @Test
+    void testQueueListenerMigrationCoreSalesInvoiceCreatedDuplicateSubsequentOrder() {
+
+        var senderId = "Delivery";
+        var receiveCount = 1;
+        var salesOrder = salesOrderUtil.createNewSalesOrder();
+
+        String originalOrderNumber = salesOrder.getOrderNumber();
+        String invoiceNumber = "10";
+        String rowSku = "2010-10183";
+        String invoiceMsg = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
+
+        //Replace order number with randomly created order number as expected
+        invoiceMsg = invoiceMsg.replace("524001248", originalOrderNumber);
+
+        sqsReceiveService.queueListenerCoreSalesInvoiceCreated(invoiceMsg, senderId, receiveCount);
+
+        String newOrderNumberCreatedInSoh = originalOrderNumber + "-" + invoiceNumber;
+        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
+
+        sqsReceiveService.queueListenerMigrationCoreSalesInvoiceCreated(invoiceMsg, "Migration Delivery", 1);
+
+        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
+
+        verify(snsPublishService).publishMigrationOrderRowCancelled(eq(originalOrderNumber), eq(rowSku));
+        verify(snsPublishService).publishMigrationOrderCreated(eq(newOrderNumberCreatedInSoh));
+    }
+
+    @Test
+    @DisplayName("IT migration core sales credit note created event handling")
+    void testQueueListenerMigrationCoreSalesCreditNoteCreated(TestInfo testInfo) {
+
+        log.info(testInfo.getDisplayName());
+
+        var salesOrder = salesOrderUtil.createSalesOrderForMigrationInvoiceTest();
+        var orderNumber = salesOrder.getOrderNumber();
+        var creditNumber = "876130";
+
+        var coreReturnDeliveryNotePrinted =  readResource("examples/coreSalesCreditNoteCreated.json");
+        sqsReceiveService.queueListenerMigrationCoreSalesCreditNoteCreated(coreReturnDeliveryNotePrinted, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+
+        verify(snsPublishService).publishReturnOrderCreatedEvent(argThat(
+                salesOrderReturn -> {
+                    assertThat(salesOrderReturn.getOrderNumber()).isEqualTo(creditNumber);
+                    assertThat(salesOrderReturn.getOrderGroupId()).isEqualTo(orderNumber);
+                    return true;
+                }
+        ));
+    }
+
+    @Test
+    @DisplayName("IT migration core sales credit note created event handling if related return order already exists")
+    void testQueueListenerMigrationCoreSalesCreditNoteCreatedDuplicateReturnOrder(TestInfo testInfo) {
+
+        log.info(testInfo.getDisplayName());
+
+        var salesOrder = salesOrderUtil.createSalesOrderForMigrationInvoiceTest();
+        var orderNumber = salesOrder.getOrderNumber();
+        var creditNumber = "876130";
+
+        var coreReturnDeliveryNotePrinted =  readResource("examples/coreSalesCreditNoteCreated.json");
+        sqsReceiveService.queueListenerCoreSalesCreditNoteCreated(coreReturnDeliveryNotePrinted, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+
+        sqsReceiveService.queueListenerMigrationCoreSalesCreditNoteCreated(coreReturnDeliveryNotePrinted, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+
+        verify(snsPublishService).publishMigrationReturnOrderCreatedEvent(argThat(
+                salesOrderReturn -> {
+                    assertThat(salesOrderReturn.getOrderNumber()).isEqualTo(creditNumber);
+                    assertThat(salesOrderReturn.getOrderGroupId()).isEqualTo(orderNumber);
+                    return true;
+                }
+        ));
     }
 
     @SneakyThrows({URISyntaxException.class, IOException.class})

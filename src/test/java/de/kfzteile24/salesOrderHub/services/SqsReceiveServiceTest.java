@@ -6,11 +6,14 @@ import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
+import de.kfzteile24.salesOrderHub.dto.mapper.CreditNoteEventMapper;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
+import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
@@ -32,7 +35,11 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerTy
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.PAYPAL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getCreditNoteMsg;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrderReturn;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrderFromOrder;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.any;
@@ -61,6 +68,8 @@ class SqsReceiveServiceTest {
     @Mock
     private SalesOrderService salesOrderService;
     @Mock
+    private SalesOrderReturnService salesOrderReturnService;
+    @Mock
     private SalesOrderRowService salesOrderRowService;
     @Mock
     private SalesOrderPaymentSecuredService salesOrderPaymentSecuredService;
@@ -70,6 +79,8 @@ class SqsReceiveServiceTest {
     private FeatureFlagConfig featureFlagConfig;
     @Mock
     private SnsPublishService snsPublishService;
+    @Mock
+    private CreditNoteEventMapper creditNoteEventMapper;
     @InjectMocks
     private SqsReceiveService sqsReceiveService;
 
@@ -271,6 +282,44 @@ class SqsReceiveServiceTest {
         sqsReceiveService.queueListenerMigrationCoreSalesOrderCreated(rawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
         verify(camundaHelper).createOrderProcess(eq(salesOrder), any(Messages.class));
+    }
+
+    @Test
+    void testQueueListenerMigrationCoreSalesCreditNoteCreatedDuplication() {
+
+        String rawEventMessage = readResource("examples/coreSalesCreditNoteCreated.json");
+        var creditNoteMsg = getCreditNoteMsg(rawEventMessage);
+        var orderNumber = creditNoteMsg.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber();
+
+        SalesOrder salesOrder = createSalesOrder(orderNumber);
+        SalesOrderReturn salesOrderReturn = getSalesOrderReturn(salesOrder);
+        when(salesOrderReturnService.getByOrderGroupId(eq(salesOrderReturn.getOrderGroupId()))).thenReturn(Optional.of(salesOrderReturn));
+
+        sqsReceiveService.queueListenerMigrationCoreSalesCreditNoteCreated(rawEventMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+
+        verify(snsPublishService).publishMigrationReturnOrderCreatedEvent(salesOrderReturn);
+    }
+
+    @Test
+    void testQueueListenerMigrationCoreSalesCreditNoteCreatedNewCreditNote() {
+
+        String rawEventMessage = readResource("examples/coreSalesCreditNoteCreated.json");
+        var creditNoteMsg = getCreditNoteMsg(rawEventMessage);
+        var orderNumber = creditNoteMsg.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber();
+
+        when(salesOrderReturnService.getByOrderGroupId(any())).thenReturn(Optional.empty());
+
+        sqsReceiveService.queueListenerMigrationCoreSalesCreditNoteCreated(rawEventMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+
+        verify(salesOrderRowService).handleSalesOrderReturn(eq(orderNumber), eq(creditNoteMsg));
+    }
+
+    private SalesOrder createSalesOrder(String orderNumber) {
+        String rawOrderMessage = readResource("examples/ecpOrderMessage.json");
+        Order order = getOrder(rawOrderMessage);
+        order.getOrderHeader().setOrderNumber(orderNumber);
+        order.getOrderHeader().setOrderGroupId(orderNumber);
+        return createSalesOrderFromOrder(order);
     }
 
     @SneakyThrows({URISyntaxException.class, IOException.class})

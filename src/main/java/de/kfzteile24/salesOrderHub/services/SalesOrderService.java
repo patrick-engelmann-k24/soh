@@ -2,7 +2,6 @@ package de.kfzteile24.salesOrderHub.services;
 
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
-import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
 import de.kfzteile24.salesOrderHub.domain.audit.AuditLog;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
@@ -300,7 +299,7 @@ public class SalesOrderService {
         order.getOrderHeader().setTotals(totals);
     }
 
-    private List<GrandTotalTaxes> calculateGrandTotalTaxes(Order order) {
+    public List<GrandTotalTaxes> calculateGrandTotalTaxes(Order order) {
 
         List<GrandTotalTaxes> oldGrandTotalTaxesList = order.getOrderHeader().getTotals().getGrandTotalTaxes();
         List<GrandTotalTaxes> grandTotalTaxesList = order.getOrderRows().stream()

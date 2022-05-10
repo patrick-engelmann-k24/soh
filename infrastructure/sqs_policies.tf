@@ -790,10 +790,6 @@ resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_soh_core_sales_invoi
   policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_soh_core_sales_invoice_created.json
 }
 
-
-
-
-
 data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_migration_sales_order_created" {
   statement {
     sid = "SNS-migration-sales-order-created"
@@ -834,4 +830,88 @@ data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_migration_sa
 resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_migration_sales_order_created" {
   queue_url = aws_sqs_queue.soh_migration_core_sales_order_created.id
   policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_migration_sales_order_created.json
+}
+
+data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_migration_core_sales_invoice_created" {
+  statement {
+    sid = "SNS-migration-core-sales-invoice-created"
+    effect = "Allow"
+
+    actions = [
+      "sqs:SendMessage",
+    ]
+
+    principals {
+      identifiers = ["*"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_migration_core_sales_invoice_created.arn
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sqs:*",
+    ]
+
+    principals {
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_migration_core_sales_invoice_created.arn
+    ]
+  }
+}
+
+resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_soh_migration_core_sales_invoice_created" {
+  queue_url = aws_sqs_queue.soh_migration_core_sales_invoice_created.id
+  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_migration_core_sales_invoice_created.json
+}
+
+data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_migration_core_sales_credit_note_created" {
+  statement {
+    sid = "SNS-migration-core-sales-credit-note-created"
+    effect = "Allow"
+
+    actions = [
+      "sqs:SendMessage",
+    ]
+
+    principals {
+      identifiers = ["*"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_migration_core_sales_credit_note_created.arn
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sqs:*",
+    ]
+
+    principals {
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_migration_core_sales_credit_note_created.arn
+    ]
+  }
+}
+
+resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_soh_migration_core_sales_credit_note_created" {
+  queue_url = aws_sqs_queue.soh_migration_core_sales_credit_note_created.id
+  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_migration_core_sales_credit_note_created.json
 }
