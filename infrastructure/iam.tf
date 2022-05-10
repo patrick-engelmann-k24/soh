@@ -25,8 +25,8 @@ data "aws_iam_policy_document" "sns_sqs_access_policy" {
       data.aws_sns_topic.sns_soh_core_invoice_received_v1.arn,
       data.aws_sns_topic.sns_soh_credit_note_received_v1.arn,
       data.aws_sns_topic.sns_migration_soh_order_created_v2.arn,
-      data.aws_sns_topic.sns_migration_soh_sales_order_row_cancellation_v1.arn,
-      data.aws_sns_topic.sns_migration_soh_sales_order_cancellation_v1.arn,
+      data.aws_sns_topic.sns_migration_soh_sales_order_row_cancelled_v1.arn,
+      data.aws_sns_topic.sns_migration_soh_sales_order_cancelled_v1.arn,
       data.aws_sns_topic.sns_migration_core_sales_invoice_created.arn
     ]
   }

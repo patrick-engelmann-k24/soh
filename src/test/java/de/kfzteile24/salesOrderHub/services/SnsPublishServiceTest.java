@@ -335,7 +335,7 @@ class SnsPublishServiceTest {
         final var expectedTopic = "migration-soh-sales-order-row-cancelled";
         final var expectedSubject = "Sales order row cancelled";
 
-        given(awsSnsConfig.getSnsMigrationSalesOrderRowCancellationV1()).willReturn(expectedTopic);
+        given(awsSnsConfig.getSnsMigrationSalesOrderRowCancelledV1()).willReturn(expectedTopic);
 
         final var latestOrderJson = createNewSalesOrderV3(true, REGULAR, CREDIT_CARD, NEW).getLatestJson();
 
@@ -370,7 +370,7 @@ class SnsPublishServiceTest {
         final var expectedTopic = "migration-soh-sales-order-cancelled";
         final var expectedSubject = "Sales order cancelled";
 
-        given(awsSnsConfig.getSnsMigrationSalesOrderCancellationV1()).willReturn(expectedTopic);
+        given(awsSnsConfig.getSnsMigrationSalesOrderCancelledV1()).willReturn(expectedTopic);
 
         final var latestOrderJson = createNewSalesOrderV3(true, REGULAR, CREDIT_CARD, NEW).getLatestJson();
 

@@ -122,12 +122,12 @@ data "aws_sns_topic" "sns_migration_soh_order_created_v2" {
   name = "migration-soh-order-created-v2"
 }
 
-data "aws_sns_topic" "sns_migration_soh_sales_order_row_cancellation_v1" {
-  name = "migration-soh-sales-order-row-cancellation-v1"
+data "aws_sns_topic" "sns_migration_soh_sales_order_row_cancelled_v1" {
+  name = "migration-soh-sales-order-row-cancelled-v1"
 }
 
-data "aws_sns_topic" "sns_migration_soh_sales_order_cancellation_v1" {
-  name = "migration-soh-sales-order-cancellation-v1"
+data "aws_sns_topic" "sns_migration_soh_sales_order_cancelled_v1" {
+  name = "migration-soh-sales-order-cancelled-v1"
 }
 
 data "aws_sns_topic" "sns_migration_core_sales_invoice_created" {

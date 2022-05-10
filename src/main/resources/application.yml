@@ -61,8 +61,8 @@ soh:
       coreInvoiceReceivedV1: ${sns_soh_core_invoice_received_v1}
       creditNoteReceivedV1: ${sns_soh_credit_note_received_v1}
       migrationOrderCreatedV2: ${sns_migration_soh_order_created_v2}
-      migrationSalesOrderRowCancellationV1: ${sns_migration_soh_sales_order_row_cancellation_v1}
-      migrationSalesOrderCancellationV1: ${sns_migration_soh_sales_order_cancellation_v1}
+      migrationSalesOrderRowCancelledV1: ${sns_migration_soh_sales_order_row_cancelled_v1}
+      migrationSalesOrderCancelledV1: ${sns_migration_soh_sales_order_cancelled_v1}
   sqs:
     queue:
       ecpShopOrders: ${soh_sqs_ecp_shop_orders}

@@ -45,8 +45,8 @@ TOPICS="
     migration-core-sales-order-created
     migration-core-sales-invoice-created
     migration-soh-order-created-v2
-    migration-soh-sales-order-row-cancellation-v1
-    migration-soh-sales-order-cancellation-v1
+    migration-soh-sales-order-row-cancelled-v1
+    migration-soh-sales-order-cancelled-v1
     "
 
 # Outdated topics

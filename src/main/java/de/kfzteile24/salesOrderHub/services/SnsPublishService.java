@@ -134,7 +134,7 @@ public class SnsPublishService {
                 .orderRowNumber(orderRowId)
                 .build();
 
-        publishEvent(config.getSnsMigrationSalesOrderRowCancellationV1(), "Sales order row cancelled",
+        publishEvent(config.getSnsMigrationSalesOrderRowCancelledV1(), "Sales order row cancelled",
                 orderRowCancelled, orderNumber);
     }
 
@@ -143,7 +143,7 @@ public class SnsPublishService {
                 .order(order)
                 .build();
 
-        publishEvent(config.getSnsMigrationSalesOrderCancellationV1(), "Sales order cancelled",
+        publishEvent(config.getSnsMigrationSalesOrderCancelledV1(), "Sales order cancelled",
                 orderCancelled, order.getOrderHeader().getOrderNumber());
     }
 

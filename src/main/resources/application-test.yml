@@ -39,8 +39,8 @@ soh:
       coreInvoiceReceivedV1:  arn:aws:sns:eu-central-1:000000000000:soh-core-invoice-received-v1
       creditNoteReceivedV1:   arn:aws:sns:eu-central-1:000000000000:soh-credit-note-received-v1
       migrationOrderCreatedV2: arn:aws:sns:eu-central-1:000000000000:migration-soh-order-created-v2
-      migrationSalesOrderRowCancellationV1: arn:aws:sns:eu-central-1:000000000000:migration-soh-sales-order-row-cancellation-v1
-      migrationSalesOrderCancellationV1: arn:aws:sns:eu-central-1:000000000000:migration-soh-sales-order-cancellation-v1
+      migrationSalesOrderRowCancelledV1: arn:aws:sns:eu-central-1:000000000000:migration-soh-sales-order-row-cancelled-v1
+      migrationSalesOrderCancelledV1: arn:aws:sns:eu-central-1:000000000000:migration-soh-sales-order-cancelled-v1
   sqs:
     queue:
       ecpShopOrders:                  http://localhost:4566/000000000000/soh-ecp-shop-orders-queue
