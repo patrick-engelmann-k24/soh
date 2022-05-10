@@ -63,6 +63,7 @@ soh:
       migrationOrderCreatedV2: ${sns_migration_soh_order_created_v2}
       migrationSalesOrderRowCancelledV1: ${sns_migration_soh_sales_order_row_cancelled_v1}
       migrationSalesOrderCancelledV1: ${sns_migration_soh_sales_order_cancelled_v1}
+      migrationReturnOrderCreatedV1: ${sns_migration_soh_return_order_created_v1}
   sqs:
     queue:
       ecpShopOrders: ${soh_sqs_ecp_shop_orders}
@@ -84,6 +85,7 @@ soh:
       coreSalesInvoiceCreated: ${soh_sqs_core_sales_invoice_created}
       migrationCoreSalesOrderCreated: ${soh_sqs_migration_core_sales_order_created}
       migrationCoreSalesInvoiceCreated: ${soh_sqs_migration_core_sales_invoice_created}
+      migrationCoreSalesCreditNoteCreated: ${soh_sqs_migration_core_sales_credit_note_created}
   aws:
     config:
       maxNumberOfMessages: 10

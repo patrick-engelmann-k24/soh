@@ -6,6 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
 @Slf4j
 public class SalesOrderReturnService {
@@ -14,12 +16,14 @@ public class SalesOrderReturnService {
     private SalesOrderReturnRepository salesOrderReturnRepository;
 
     public SalesOrderReturn getByOrderNumber(String orderNumber) {
-
         return salesOrderReturnRepository.findByOrderNumber(orderNumber);
     }
 
-    public SalesOrderReturn save(SalesOrderReturn salesOrderReturn) {
+    public Optional<SalesOrderReturn> getByOrderGroupId(String orderGroupId) {
+        return salesOrderReturnRepository.findFirstByOrderGroupIdOrderByCreatedAtDesc(orderGroupId);
+    }
 
+    public SalesOrderReturn save(SalesOrderReturn salesOrderReturn) {
         return salesOrderReturnRepository.save(salesOrderReturn);
     }
 }

@@ -134,6 +134,14 @@ data "aws_sns_topic" "sns_migration_core_sales_invoice_created" {
   name = "migration-core-sales-invoice-created-v1"
 }
 
+data "aws_sns_topic" "sns_migration_soh_return_order_created_v1" {
+  name = "migration-soh-return-order-created-v1"
+}
+
+data "aws_sns_topic" "sns_migration_core_sales_credit_note_created" {
+  name = "migration-core-sales-credit-note-created-v1"
+}
+
 # subscriptions of sqs to sns
 resource "aws_sns_topic_subscription" "sns_subscription_ecp_orders_v3" {
   endpoint = aws_sqs_queue.ecp_shop_orders.arn
@@ -255,4 +263,11 @@ resource "aws_sns_topic_subscription" "sns_subscription_migration_sales_invoice_
   endpoint = aws_sqs_queue.soh_migration_core_sales_invoice_created.arn
   protocol = "sqs"
   topic_arn = data.aws_sns_topic.sns_migration_core_sales_invoice_created.arn
+}
+
+# subscription for migration core sales credit note created
+resource "aws_sns_topic_subscription" "sns_subscription_migration_core_sales_credit_note_created" {
+  endpoint = aws_sqs_queue.soh_migration_core_sales_credit_note_created.arn
+  protocol = "sqs"
+  topic_arn = data.aws_sns_topic.sns_migration_core_sales_credit_note_created.arn
 }

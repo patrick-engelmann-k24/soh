@@ -599,6 +599,52 @@ class SqsReceiveServiceIntegrationTest {
         verify(snsPublishService).publishMigrationOrderCreated(eq(newOrderNumberCreatedInSoh));
     }
 
+    @Test
+    @DisplayName("IT migration core sales credit note created event handling")
+    void testQueueListenerMigrationCoreSalesCreditNoteCreated(TestInfo testInfo) {
+
+        log.info(testInfo.getDisplayName());
+
+        var salesOrder = salesOrderUtil.createSalesOrderForMigrationInvoiceTest();
+        var orderNumber = salesOrder.getOrderNumber();
+        var creditNumber = "876130";
+
+        var coreReturnDeliveryNotePrinted =  readResource("examples/coreSalesCreditNoteCreated.json");
+        sqsReceiveService.queueListenerMigrationCoreSalesCreditNoteCreated(coreReturnDeliveryNotePrinted, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+
+        verify(snsPublishService).publishReturnOrderCreatedEvent(argThat(
+                salesOrderReturn -> {
+                    assertThat(salesOrderReturn.getOrderNumber()).isEqualTo(creditNumber);
+                    assertThat(salesOrderReturn.getOrderGroupId()).isEqualTo(orderNumber);
+                    return true;
+                }
+        ));
+    }
+
+    @Test
+    @DisplayName("IT migration core sales credit note created event handling if related return order already exists")
+    void testQueueListenerMigrationCoreSalesCreditNoteCreatedDuplicateReturnOrder(TestInfo testInfo) {
+
+        log.info(testInfo.getDisplayName());
+
+        var salesOrder = salesOrderUtil.createSalesOrderForMigrationInvoiceTest();
+        var orderNumber = salesOrder.getOrderNumber();
+        var creditNumber = "876130";
+
+        var coreReturnDeliveryNotePrinted =  readResource("examples/coreSalesCreditNoteCreated.json");
+        sqsReceiveService.queueListenerCoreSalesCreditNoteCreated(coreReturnDeliveryNotePrinted, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+
+        sqsReceiveService.queueListenerMigrationCoreSalesCreditNoteCreated(coreReturnDeliveryNotePrinted, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+
+        verify(snsPublishService).publishMigrationReturnOrderCreatedEvent(argThat(
+                salesOrderReturn -> {
+                    assertThat(salesOrderReturn.getOrderNumber()).isEqualTo(creditNumber);
+                    assertThat(salesOrderReturn.getOrderGroupId()).isEqualTo(orderNumber);
+                    return true;
+                }
+        ));
+    }
+
     @SneakyThrows({URISyntaxException.class, IOException.class})
     private String readResource(String path) {
         return java.nio.file.Files.readString(Paths.get(

@@ -395,6 +395,34 @@ class SnsPublishServiceTest {
                 eq(expectedSubject));
     }
 
+    @Test
+    @SneakyThrows
+    void testPublishMigrationReturnOrderCreated() {
+        final var expectedTopic = "migration-soh-return-order-created";
+        final var expectedSubject = "Return Order Created V1";
+
+        final var salesOrder = createNewSalesOrderV3(true, REGULAR, CREDIT_CARD, NEW);
+
+        final var salesOrderReturn = SalesOrderReturn.builder()
+                .returnOrderJson(salesOrder.getLatestJson())
+                .orderNumber(salesOrder.getOrderNumber())
+                .build();
+
+        when(awsSnsConfig.getSnsMigrationReturnOrderCreatedV1()).thenReturn(expectedTopic);
+
+        final var returnOrderCreatedEvent = ReturnOrderCreatedEvent.builder()
+                .order(salesOrderReturn.getReturnOrderJson())
+                .build();
+
+        snsPublishService.publishMigrationReturnOrderCreatedEvent(salesOrderReturn);
+
+        verify(notificationMessagingTemplate).sendNotification(
+                expectedTopic,
+                objectMapper.writeValueAsString(returnOrderCreatedEvent),
+                expectedSubject
+        );
+    }
+
     @SneakyThrows(Exception.class)
     private void verifyPublishedEvent(String expectedTopic, String expectedSubject, Consumer<String> executor) {
         final String rawMessage = readResource("examples/ecpOrderMessage.json");

@@ -147,6 +147,15 @@ public class SnsPublishService {
                 orderCancelled, order.getOrderHeader().getOrderNumber());
     }
 
+    public void publishMigrationReturnOrderCreatedEvent(SalesOrderReturn salesOrderReturn) {
+        var returnOrderCreatedEvent = ReturnOrderCreatedEvent.builder()
+                .order(salesOrderReturn.getReturnOrderJson())
+                .build();
+
+        publishEvent(config.getSnsMigrationReturnOrderCreatedV1(), "Return Order Created V1",
+                returnOrderCreatedEvent, salesOrderReturn.getOrderNumber());
+    }
+
     protected void sendLatestOrderJson(String topic, String subject, String orderNumber) {
         final var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));

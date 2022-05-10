@@ -8,6 +8,7 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.dto.mapper.CreditNoteEventMapper;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
@@ -52,11 +53,13 @@ public class SqsReceiveService {
     private final RuntimeService runtimeService;
     private final SalesOrderService salesOrderService;
     private final SalesOrderRowService salesOrderRowService;
+    private final SalesOrderReturnService salesOrderReturnService;
     private final CamundaHelper camundaHelper;
     private final ObjectMapper objectMapper;
     private final SalesOrderPaymentSecuredService salesOrderPaymentSecuredService;
     private final FeatureFlagConfig featureFlagConfig;
     private final SnsPublishService snsPublishService;
+    private final CreditNoteEventMapper creditNoteEventMapper;
 
     /**
      * Consume sqs for new orders from ecp shop
@@ -564,6 +567,48 @@ public class SqsReceiveService {
                     invoiceNumber,
                     e.getMessage());
             throw e;
+        }
+    }
+
+    /**
+     * Consume messages from sqs for migration core sales credit note created
+     */
+    @SqsListener(value = "${soh.sqs.queue.migrationCoreSalesCreditNoteCreated}", deletionPolicy = ON_SUCCESS)
+    @SneakyThrows(JsonProcessingException.class)
+    @Trace(metricName = "Handling migration core sales credit note created message", dispatcher = true)
+    @Transactional
+    public void queueListenerMigrationCoreSalesCreditNoteCreated(
+            String rawMessage,
+            @Header("SenderId") String senderId,
+            @Header("ApproximateReceiveCount") Integer receiveCount) {
+
+        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+        var salesCreditNoteCreatedMessage =
+                objectMapper.readValue(body, SalesCreditNoteCreatedMessage.class);
+        var salesCreditNoteHeader = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader();
+        var orderNumber = salesCreditNoteHeader.getOrderNumber();
+        var creditNoteNumber = salesCreditNoteHeader.getCreditNoteNumber();
+
+        var returnOrder = salesOrderReturnService.getByOrderGroupId(orderNumber);
+        if (returnOrder.isPresent()) {
+            snsPublishService.publishMigrationReturnOrderCreatedEvent(returnOrder.get());
+            log.info("Return order with order number {} and credit note number: {} is duplicated for migration. " +
+                            "Publishing event on migration topic",
+                    orderNumber,
+                    creditNoteNumber);
+
+            var salesCreditNoteReceivedEvent =
+                    creditNoteEventMapper.toSalesCreditNoteReceivedEvent(salesCreditNoteCreatedMessage);
+            snsPublishService.publishCreditNoteReceivedEvent(salesCreditNoteReceivedEvent);
+            log.info("Publishing migration credit note created event for order number {} and credit note number: {}",
+                    orderNumber,
+                    creditNoteNumber);
+        } else {
+            log.info("Return order with order number {} and credit note number: {} is a new order." +
+                            "Call redirected to normal flow.",
+                    orderNumber,
+                    creditNoteNumber);
+            queueListenerCoreSalesCreditNoteCreated(rawMessage, senderId, receiveCount);
         }
     }
 }

@@ -41,6 +41,7 @@ soh:
       migrationOrderCreatedV2: arn:aws:sns:eu-central-1:000000000000:migration-soh-order-created-v2
       migrationSalesOrderRowCancelledV1: arn:aws:sns:eu-central-1:000000000000:migration-soh-sales-order-row-cancelled-v1
       migrationSalesOrderCancelledV1: arn:aws:sns:eu-central-1:000000000000:migration-soh-sales-order-cancelled-v1
+      migrationReturnOrderCreatedV1: arn:aws:sns:eu-central-1:000000000000:migration-soh-return-order-created-v1
   sqs:
     queue:
       ecpShopOrders:                  http://localhost:4566/000000000000/soh-ecp-shop-orders-queue
@@ -62,6 +63,7 @@ soh:
       coreSalesInvoiceCreated:        http://localhost:4566/000000000000/soh-core-sales-invoice-created-queue
       migrationCoreSalesOrderCreated: http://localhost:4566/000000000000/migration-core-sales-order-created-queue
       migrationCoreSalesInvoiceCreated: http://localhost:4566/000000000000/migration-core-sales-invoice-created-queue
+      migrationCoreSalesCreditNoteCreated: http://localhost:4566/000000000000/migration-core-sales-credit-note-created-queue
   aws:
     config:
       maxNumberOfMessages: 10
