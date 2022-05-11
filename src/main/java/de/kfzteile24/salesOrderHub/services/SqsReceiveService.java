@@ -415,7 +415,7 @@ public class SqsReceiveService {
             var itemList = salesInvoiceHeader.getInvoiceLines();
             var orderNumber = salesInvoiceHeader.getOrderNumber();
             var invoiceNumber = salesInvoiceHeader.getInvoiceNumber();
-            var newOrderNumber = orderNumber + "-" + invoiceNumber;
+            var newOrderNumber = salesOrderService.createOrderNumberInSOH(orderNumber, invoiceNumber);
             SalesOrder salesOrderForOrderProcess;
             log.info("Received core sales invoice created message with order number: {} and invoice number: {}",
                     orderNumber, invoiceNumber);
@@ -589,9 +589,10 @@ public class SqsReceiveService {
         var orderNumber = salesCreditNoteHeader.getOrderNumber();
         var creditNoteNumber = salesCreditNoteHeader.getCreditNoteNumber();
 
-        var returnOrder = salesOrderReturnService.getByOrderGroupId(orderNumber);
-        if (returnOrder.isPresent()) {
-            snsPublishService.publishMigrationReturnOrderCreatedEvent(returnOrder.get());
+        var returnOrder = salesOrderReturnService.getByOrderNumber(
+                salesOrderService.createOrderNumberInSOH(orderNumber, creditNoteNumber));
+        if (returnOrder != null) {
+            snsPublishService.publishMigrationReturnOrderCreatedEvent(returnOrder);
             log.info("Return order with order number {} and credit note number: {} is duplicated for migration. " +
                             "Publishing event on migration topic",
                     orderNumber,

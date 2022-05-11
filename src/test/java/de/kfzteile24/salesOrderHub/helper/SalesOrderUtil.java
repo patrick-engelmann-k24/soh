@@ -230,10 +230,10 @@ public class SalesOrderUtil {
                 .build();
     }
 
-    public static SalesOrderReturn getSalesOrderReturn(SalesOrder salesOrder) {
+    public static SalesOrderReturn getSalesOrderReturn(SalesOrder salesOrder, String creditNoteNumber) {
         return SalesOrderReturn.builder()
                 .salesOrder(salesOrder)
-                .orderNumber(salesOrder.getOrderNumber())
+                .orderNumber(createOrderNumberInSOH(salesOrder.getOrderNumber(), creditNoteNumber))
                 .orderGroupId(salesOrder.getOrderGroupId())
                 .returnOrderJson(salesOrder.getLatestJson())
                 .build();
@@ -369,6 +369,10 @@ public class SalesOrderUtil {
         ObjectMapper mapper = new ObjectMapperConfig().objectMapper();
         final var sqsMessage = mapper.readValue(rawMessage, SqsMessage.class);
         return mapper.readValue(sqsMessage.getBody(), Order.class);
+    }
+
+    public static String createOrderNumberInSOH(String orderNumber, String reference) {
+        return orderNumber + "-" + reference;
     }
 
     public static SalesOrderInvoice createSalesOrderInvoice(final String orderNumber, final boolean isCorrection) {

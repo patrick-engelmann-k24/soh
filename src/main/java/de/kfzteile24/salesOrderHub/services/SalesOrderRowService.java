@@ -46,7 +46,6 @@ import java.util.stream.Collectors;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_CREDIT_NOTE_CREATED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_BOOKED;
-import static java.math.RoundingMode.HALF_UP;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ITEM_SHIPPED;
 import static java.text.MessageFormat.format;
 import static java.util.stream.Collectors.toUnmodifiableSet;
@@ -191,7 +190,7 @@ public class SalesOrderRowService {
 
         var salesOrderReturn = SalesOrderReturn.builder()
                 .orderGroupId(orderNumber)
-                .orderNumber(salesCreditNoteHeader.getCreditNoteNumber())
+                .orderNumber(orderUtil.createOrderNumberInSOH(orderNumber, salesCreditNoteHeader.getCreditNoteNumber()))
                 .returnOrderJson(returnOrderJson)
                 .salesOrder(salesOrder)
                 .salesCreditNoteCreatedMessage(salesCreditNoteCreatedMessage)
@@ -210,7 +209,7 @@ public class SalesOrderRowService {
                                                SalesOrder salesOrder) {
         var orderNumber = salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader().getOrderNumber();
         var invoiceNumber = salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber();
-        var newOrderNumber = orderNumber + "-" + invoiceNumber;
+        var newOrderNumber = orderUtil.createOrderNumberInSOH(orderNumber, invoiceNumber);
 
         if (!salesOrder.getOrderNumber().equals(orderNumber)) {
             var originalSalesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
