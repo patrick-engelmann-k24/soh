@@ -7,6 +7,7 @@ import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.dto.events.OrderRowCancelledEvent;
+import de.kfzteile24.salesOrderHub.dto.events.OrderCancelledEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderCompletedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInfoEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInvoiceCreatedEvent;
@@ -298,6 +299,122 @@ class SnsPublishServiceTest {
                 .build();
 
         snsPublishService.publishReturnOrderCreatedEvent(salesOrderReturn);
+
+        verify(notificationMessagingTemplate).sendNotification(
+                expectedTopic,
+                objectMapper.writeValueAsString(returnOrderCreatedEvent),
+                expectedSubject
+        );
+    }
+
+    @Test
+    @SneakyThrows
+    void testPublishMigrationOrderCreated() {
+
+        final var expectedTopic = "migration-soh-order-created-v2";
+        final var expectedSubject = "Migration Sales order created V2";
+
+        SalesOrder salesOrder = createNewSalesOrderV3(true, REGULAR, CREDIT_CARD, NEW);
+        var orderNumber = salesOrder.getOrderNumber();
+        given(salesOrderService.getOrderByOrderNumber(orderNumber)).willReturn(Optional.of(salesOrder));
+        given(awsSnsConfig.getSnsMigrationOrderCreatedV2()).willReturn(expectedTopic);
+
+        snsPublishService.publishMigrationOrderCreated(orderNumber);
+
+        final var expectedMigrationSalesOrderInfoV2 = SalesOrderInfoEvent.builder()
+                .recurringOrder(salesOrder.isRecurringOrder())
+                .order(salesOrder.getLatestJson())
+                .build();
+        verify(notificationMessagingTemplate).sendNotification(expectedTopic,
+                objectMapper.writeValueAsString(expectedMigrationSalesOrderInfoV2), expectedSubject);
+    }
+
+    @Test
+    @SneakyThrows(Exception.class)
+    void testPublishMigrationOrderRowCancelled() {
+        final var expectedTopic = "migration-soh-sales-order-row-cancelled";
+        final var expectedSubject = "Sales order row cancelled";
+
+        given(awsSnsConfig.getSnsMigrationSalesOrderRowCancelledV1()).willReturn(expectedTopic);
+
+        final var latestOrderJson = createNewSalesOrderV3(true, REGULAR, CREDIT_CARD, NEW).getLatestJson();
+
+        final OrderRows canceledOrderRow = latestOrderJson.getOrderRows().get(0);
+
+        snsPublishService.publishMigrationOrderRowCancelled(latestOrderJson.getOrderHeader().getOrderNumber(), canceledOrderRow.getSku());
+
+        var expectedEvent = OrderRowCancelledEvent.builder()
+                .orderNumber(latestOrderJson.getOrderHeader().getOrderNumber())
+                .orderRowNumber(canceledOrderRow.getSku())
+                .build();
+
+        verify(notificationMessagingTemplate).sendNotification(
+                eq(expectedTopic),
+                argThat(json -> {
+                    try {
+                        final var publishedEvent = objectMapper.readValue(((String) json), OrderRowCancelledEvent.class);
+
+                        assertEquals(expectedEvent.getOrderNumber(), publishedEvent.getOrderNumber());
+                        assertEquals(expectedEvent.getOrderRowNumber(), publishedEvent.getOrderRowNumber());
+                    } catch (JsonProcessingException e) {
+                        throw new IllegalArgumentException(e);
+                    }
+                    return true;
+                }),
+                eq(expectedSubject));
+    }
+
+    @Test
+    @SneakyThrows(Exception.class)
+    void testPublishMigrationOrderCancelled() {
+        final var expectedTopic = "migration-soh-sales-order-cancelled";
+        final var expectedSubject = "Sales order cancelled";
+
+        given(awsSnsConfig.getSnsMigrationSalesOrderCancelledV1()).willReturn(expectedTopic);
+
+        final var latestOrderJson = createNewSalesOrderV3(true, REGULAR, CREDIT_CARD, NEW).getLatestJson();
+
+        snsPublishService.publishMigrationOrderCancelled(latestOrderJson);
+
+        var expectedEvent = OrderCancelledEvent.builder()
+                .order(latestOrderJson)
+                .build();
+
+        verify(notificationMessagingTemplate).sendNotification(
+                eq(expectedTopic),
+                argThat(json -> {
+                    try {
+                        final var publishedEvent = objectMapper.readValue(((String) json), OrderCancelledEvent.class);
+
+                        assertEquals(expectedEvent.getOrder(), publishedEvent.getOrder());
+                    } catch (JsonProcessingException e) {
+                        throw new IllegalArgumentException(e);
+                    }
+                    return true;
+                }),
+                eq(expectedSubject));
+    }
+
+    @Test
+    @SneakyThrows
+    void testPublishMigrationReturnOrderCreated() {
+        final var expectedTopic = "migration-soh-return-order-created";
+        final var expectedSubject = "Return Order Created V1";
+
+        final var salesOrder = createNewSalesOrderV3(true, REGULAR, CREDIT_CARD, NEW);
+
+        final var salesOrderReturn = SalesOrderReturn.builder()
+                .returnOrderJson(salesOrder.getLatestJson())
+                .orderNumber(salesOrder.getOrderNumber())
+                .build();
+
+        when(awsSnsConfig.getSnsMigrationReturnOrderCreatedV1()).thenReturn(expectedTopic);
+
+        final var returnOrderCreatedEvent = ReturnOrderCreatedEvent.builder()
+                .order(salesOrderReturn.getReturnOrderJson())
+                .build();
+
+        snsPublishService.publishMigrationReturnOrderCreatedEvent(salesOrderReturn);
 
         verify(notificationMessagingTemplate).sendNotification(
                 expectedTopic,

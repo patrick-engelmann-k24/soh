@@ -43,7 +43,11 @@ soh:
       shipmentConfirmedV1:    arn:aws:sns:eu-central-1:000000000000:soh-shipment-confirmed-v1
       returnOrderCreatedV1:   arn:aws:sns:eu-central-1:000000000000:soh-return-order-created-v1
       coreInvoiceReceivedV1:  arn:aws:sns:eu-central-1:000000000000:soh-core-invoice-received-v1
-      creditNoteReceivedV1: arn:aws:sns:eu-central-1:000000000000:soh-credit-note-received-v1
+      creditNoteReceivedV1:   arn:aws:sns:eu-central-1:000000000000:soh-credit-note-received-v1
+      migrationOrderCreatedV2: arn:aws:sns:eu-central-1:000000000000:migration-soh-order-created-v2
+      migrationSalesOrderRowCancelledV1: arn:aws:sns:eu-central-1:000000000000:migration-soh-sales-order-row-cancelled-v1
+      migrationSalesOrderCancelledV1: arn:aws:sns:eu-central-1:000000000000:migration-soh-sales-order-cancelled-v1
+      migrationReturnOrderCreatedV1: arn:aws:sns:eu-central-1:000000000000:migration-soh-return-order-created-v1
   sqs:
     queue:
       ecpShopOrders:                  http://localhost:4566/000000000000/soh-ecp-shop-orders-queue
@@ -63,6 +67,9 @@ soh:
       dropshipmentPurchaseOrderBooked: http://localhost:4566/000000000000/soh-dropshipment-purchase-order-booked-queue
       coreSalesCreditNoteCreated:     http://localhost:4566/000000000000/soh-core-sales-credit-note-created-queue
       coreSalesInvoiceCreated:        http://localhost:4566/000000000000/soh-core-sales-invoice-created-queue
+      migrationCoreSalesOrderCreated: http://localhost:4566/000000000000/migration-core-sales-order-created-queue
+      migrationCoreSalesInvoiceCreated: http://localhost:4566/000000000000/migration-core-sales-invoice-created-queue
+      migrationCoreSalesCreditNoteCreated: http://localhost:4566/000000000000/migration-core-sales-credit-note-created-queue
   aws:
     config:
       maxNumberOfMessages: 10
@@ -70,3 +77,6 @@ soh:
 
 ignore_core_sales_invoice: false
 ignore_core_credit_note: false
+ignore_migration_core_sales_invoice: false
+ignore_migration_core_sales_credit_note: false
+ignore_migration_core_sales_order: false

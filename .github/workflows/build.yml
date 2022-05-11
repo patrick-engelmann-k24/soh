@@ -23,6 +23,7 @@ env:
   soh_sales_order_row_cancellation: 'arn:aws:sns:eu-central-1:000000000000:soh-sales-order-row-cancellation'
   soh_sales_order_cancellation:  'arn:aws:sns:eu-central-1:000000000000:soh-sales-order-cancellation'
   soh_order_invoice_created_v1:  'arn:aws:sns:eu-central-1:000000000000:soh-order-invoice-created-v1'
+  migration_soh_order_created_v2: 'arn:aws:sns:eu-central-1:000000000000:migration-soh-order-created-v2'
   soh_sqs_ecp_shop_orders: 'http://localhost:4566/000000000000/soh-ecp-shop-orders-queue'
   soh_sqs_bc_shop_orders: 'http://localhost:4566/000000000000/soh-bc-shop-orders-queue'
   soh_sqs_core_shop_orders: 'http://localhost:4566/000000000000/soh-core-shop-orders-queue'
@@ -40,8 +41,14 @@ env:
   soh_sqs_dropshipment_purchase_order_booked: 'http://localhost:4566/000000000000/soh-dropshipment-purchase-order-booked-queue'
   soh_sqs_core_sales_credit_note_created: 'http://localhost:4566/000000000000/soh-core-sales-credit-note-created-queue'
   soh_sqs_core_invoice_created: 'http://localhost:4566/000000000000/soh-core-sales-invoice-created-queue'
+  soh_sqs_migration_core_sales_order_created: 'http://localhost:4566/000000000000/migration-core-sales-order-created-queue'
+  soh_sqs_migration_core_sales_invoice_created: 'http://localhost:4566/000000000000/migration-core-sales-invoice-created-queue'
+  soh_sqs_migration_core_sales_credit_note_created: 'http://localhost:4566/000000000000/migration-core-sales-credit-note-created-queue'
   ignore_core_sales_invoice: false
   ignore_core_credit_note: false
+  ignore_migration_core_sales_invoice: false
+  ignore_migration_core_sales_credit_note: false
+  ignore_migration_core_sales_order: false
 
 on: [push]
 

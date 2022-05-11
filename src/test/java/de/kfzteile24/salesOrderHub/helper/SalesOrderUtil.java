@@ -8,8 +8,10 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
+import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.domain.converter.InvoiceSource;
-import de.kfzteile24.salesOrderHub.dto.events.SalesOrderCompletedEvent;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.soh.order.dto.*;
@@ -33,8 +35,11 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.RECURRING;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.NONE;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -103,36 +108,6 @@ public class SalesOrderUtil {
         return testOrder;
     }
 
-    @SneakyThrows(JsonProcessingException.class)
-    public SalesOrder createNewSalesOrderHavingCancelledRow() {
-        InputStream testFileStream = getClass().getResourceAsStream("/examples/testmessage.json");
-        assertNotNull(testFileStream);
-
-        SqsMessage sqsMessage = readTestFile(testFileStream);
-        assertNotNull(sqsMessage);
-
-        Order order = objectMapper.readValue(sqsMessage.getBody(), Order.class);
-        order.getOrderHeader().setOrderNumber(bpmUtil.getRandomOrderNumber());
-        order.getOrderHeader().setOrderGroupId(order.getOrderHeader().getOrderNumber());
-
-        Order latestJson = objectMapper.readValue(sqsMessage.getBody(), Order.class);
-        latestJson.getOrderHeader().setOrderNumber(order.getOrderHeader().getOrderNumber());
-        latestJson.getOrderHeader().setOrderGroupId(order.getOrderHeader().getOrderNumber());
-        latestJson.getOrderRows().get(0).setIsCancelled(true);
-
-        final SalesOrder testOrder = SalesOrder.builder()
-                .orderNumber(order.getOrderHeader().getOrderNumber())
-                .orderGroupId(order.getOrderHeader().getOrderGroupId())
-                .salesChannel(order.getOrderHeader().getSalesChannel())
-                .originalOrder(order)
-                .latestJson(latestJson)
-                .build();
-
-        testOrder.setSalesOrderInvoiceList(new HashSet<>());
-        salesOrderService.save(testOrder, ORDER_CREATED);
-        return testOrder;
-    }
-
     public SalesOrder createPersistedSalesOrderV3(
             boolean shouldContainVirtualItem,
             ShipmentMethod shipmentMethod,
@@ -140,21 +115,6 @@ public class SalesOrderUtil {
             CustomerType customerType) {
         final var salesOrder = createNewSalesOrderV3(
                 shouldContainVirtualItem, shipmentMethod, paymentType, customerType);
-
-        salesOrderService.save(salesOrder, ORDER_CREATED);
-
-        return salesOrder;
-    }
-
-    public SalesOrder createPersistedSalesOrderV3WithDiffGroupId(
-            boolean shouldContainVirtualItem,
-            ShipmentMethod shipmentMethod,
-            PaymentType paymentType,
-            CustomerType customerType,
-            String orderGroupId) {
-        final var salesOrder = createNewSalesOrderV3(
-                shouldContainVirtualItem, shipmentMethod, paymentType, customerType);
-        salesOrder.setOrderGroupId(orderGroupId);
 
         salesOrderService.save(salesOrder, ORDER_CREATED);
 
@@ -270,6 +230,67 @@ public class SalesOrderUtil {
                 .build();
     }
 
+    public static SalesOrderReturn getSalesOrderReturn(SalesOrder salesOrder, String creditNoteNumber) {
+        return SalesOrderReturn.builder()
+                .salesOrder(salesOrder)
+                .orderNumber(createOrderNumberInSOH(salesOrder.getOrderNumber(), creditNoteNumber))
+                .orderGroupId(salesOrder.getOrderGroupId())
+                .returnOrderJson(salesOrder.getLatestJson())
+                .build();
+    }
+
+    @SneakyThrows(JsonProcessingException.class)
+    public static SalesCreditNoteCreatedMessage getCreditNoteMsg(String rawMessage) {
+        ObjectMapper objectMapper = new ObjectMapperConfig().objectMapper();
+        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+        return objectMapper.readValue(body, SalesCreditNoteCreatedMessage.class);
+    }
+
+    public SalesOrder createSalesOrderForMigrationInvoiceTest() {
+        var salesOrder = SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
+        var orderRows = List.of(
+                OrderRows.builder()
+                        .sumValues(SumValues.builder()
+                                .goodsValueGross(BigDecimal.valueOf(3.38))
+                                .goodsValueNet(BigDecimal.valueOf(2))
+                                .build())
+                        .unitValues(UnitValues.builder()
+                                .goodsValueGross(BigDecimal.valueOf(3.38))
+                                .goodsValueNet(BigDecimal.valueOf(2))
+                                .build())
+                        .taxRate(BigDecimal.valueOf(19))
+                        .quantity(BigDecimal.valueOf(2))
+                        .sku("sku-1")
+                        .build()
+        );
+
+        var totals = Totals.builder()
+                .goodsTotalGross(BigDecimal.valueOf(2.38))
+                .goodsTotalNet(BigDecimal.valueOf(2))
+                .grandTotalGross(BigDecimal.valueOf(2.38))
+                .grandTotalNet(BigDecimal.valueOf(2))
+                .paymentTotal(BigDecimal.valueOf(2.38))
+                .grandTotalTaxes(List.of(GrandTotalTaxes.builder()
+                        .rate(BigDecimal.valueOf(19))
+                        .value(BigDecimal.valueOf(0.38))
+                        .build()))
+                .build();
+
+        salesOrder.getLatestJson().getOrderHeader().setTotals(totals);
+        salesOrder.getLatestJson().setOrderRows(orderRows);
+        var order = salesOrder.getLatestJson();
+        var orderNumber = "580309129";
+        salesOrder.setOrderNumber(orderNumber);
+        salesOrder.setOrderGroupId(orderNumber);
+        order.getOrderHeader().setOrderNumber(orderNumber);
+        order.getOrderHeader().setOrderGroupId(orderNumber);
+        salesOrder.setOriginalOrder(order);
+        salesOrder.setLatestJson(order);
+
+        salesOrderService.save(salesOrder, ORDER_CREATED);
+        return salesOrder;
+    }
+
     public static void updatePlatform(SalesOrder salesOrder, Platform platform) {
         salesOrder.getLatestJson().getOrderHeader().setPlatform(platform);
         salesOrder.setOriginalOrder(salesOrder.getLatestJson());
@@ -324,6 +345,25 @@ public class SalesOrderUtil {
                 .build();
     }
 
+    public static SalesOrder getSalesOrder(Order order) {
+        return SalesOrder.builder()
+                .orderNumber(order.getOrderHeader().getOrderNumber())
+                .orderGroupId(order.getOrderHeader().getOrderNumber())
+                .salesChannel(order.getOrderHeader().getSalesChannel())
+                .customerEmail(order.getOrderHeader().getCustomer().getCustomerEmail())
+                .recurringOrder(Boolean.TRUE)
+                .originalOrder(order)
+                .latestJson(order)
+                .build();
+    }
+
+    @SneakyThrows(JsonProcessingException.class)
+    public static CoreSalesInvoiceCreatedMessage getInvoiceMsg(String rawMessage) {
+        ObjectMapper objectMapper = new ObjectMapperConfig().objectMapper();
+        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+        return objectMapper.readValue(body, CoreSalesInvoiceCreatedMessage.class);
+    }
+
     @SneakyThrows(JsonProcessingException.class)
     public static Order getOrder(String rawMessage) {
         ObjectMapper mapper = new ObjectMapperConfig().objectMapper();
@@ -331,11 +371,8 @@ public class SalesOrderUtil {
         return mapper.readValue(sqsMessage.getBody(), Order.class);
     }
 
-    @SneakyThrows(JsonProcessingException.class)
-    public static SalesOrderCompletedEvent getOrderCompleted(String rawMessage) {
-        ObjectMapper mapper = new ObjectMapperConfig().objectMapper();
-        final var sqsMessage = mapper.readValue(rawMessage, SqsMessage.class);
-        return mapper.readValue(sqsMessage.getBody(), SalesOrderCompletedEvent.class);
+    public static String createOrderNumberInSOH(String orderNumber, String reference) {
+        return orderNumber + "-" + reference;
     }
 
     public static SalesOrderInvoice createSalesOrderInvoice(final String orderNumber, final boolean isCorrection) {

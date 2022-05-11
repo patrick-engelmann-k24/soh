@@ -60,6 +60,10 @@ soh:
       returnOrderCreatedV1: ${sns_soh_return_order_created_v1}
       coreInvoiceReceivedV1: ${sns_soh_core_invoice_received_v1}
       creditNoteReceivedV1: ${sns_soh_credit_note_received_v1}
+      migrationOrderCreatedV2: ${sns_migration_soh_order_created_v2}
+      migrationSalesOrderRowCancelledV1: ${sns_migration_soh_sales_order_row_cancelled_v1}
+      migrationSalesOrderCancelledV1: ${sns_migration_soh_sales_order_cancelled_v1}
+      migrationReturnOrderCreatedV1: ${sns_migration_soh_return_order_created_v1}
   sqs:
     queue:
       ecpShopOrders: ${soh_sqs_ecp_shop_orders}
@@ -79,6 +83,9 @@ soh:
       dropshipmentPurchaseOrderBooked: ${soh_sqs_dropshipment_purchase_order_booked}
       coreSalesCreditNoteCreated: ${soh_sqs_core_sales_credit_note_created}
       coreSalesInvoiceCreated: ${soh_sqs_core_sales_invoice_created}
+      migrationCoreSalesOrderCreated: ${soh_sqs_migration_core_sales_order_created}
+      migrationCoreSalesInvoiceCreated: ${soh_sqs_migration_core_sales_invoice_created}
+      migrationCoreSalesCreditNoteCreated: ${soh_sqs_migration_core_sales_credit_note_created}
   aws:
     config:
       maxNumberOfMessages: 10
@@ -134,3 +141,6 @@ kfzteile:
 
 ignoreCoreSalesInvoice: ${ignore_core_sales_invoice}
 ignoreCoreCreditNote: ${ignore_core_credit_note}
+ignoreMigrationCoreSalesInvoice: ${ignore_migration_core_sales_invoice}
+ignoreMigrationCoreSalesCreditNote: ${ignore_migration_core_sales_credit_note}
+ignoreMigrationCoreSalesOrder: ${ignore_migration_core_sales_order}

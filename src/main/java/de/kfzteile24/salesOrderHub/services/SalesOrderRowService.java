@@ -7,16 +7,18 @@ import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.shared.creditnote.CreditNoteLine;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
-import de.kfzteile24.salesOrderHub.exception.GrandTotalTaxNotFoundException;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.CalculationUtil;
+import de.kfzteile24.salesOrderHub.helper.EventMapper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
+import de.kfzteile24.soh.order.dto.GrandTotalTaxes;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.SumValues;
@@ -38,12 +40,12 @@ import java.text.MessageFormat;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_CREDIT_NOTE_CREATED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_BOOKED;
-import static java.math.RoundingMode.HALF_UP;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ITEM_SHIPPED;
 import static java.text.MessageFormat.format;
 import static java.util.stream.Collectors.toUnmodifiableSet;
@@ -53,8 +55,6 @@ import static java.util.stream.Collectors.toUnmodifiableSet;
 @RequiredArgsConstructor
 public class SalesOrderRowService {
 
-    public static final String ERROR_MSG_GRAND_TOTAL_TAX_NOT_FOUND_BY_TAX_RATE =
-            "Could not find order row with SKU {0} and tax rate {1} for order number {2} and order group id {3}";
     @NonNull
     private final CamundaHelper helper;
 
@@ -186,11 +186,12 @@ public class SalesOrderRowService {
         var returnOrderJson = recalculateOrderByReturns(salesOrder, getOrderRowUpdateItems(creditNoteLines));
         updateShippingCosts(returnOrderJson, creditNoteLines);
 
-        returnOrderJson.getOrderHeader().setOrderNumber(salesCreditNoteHeader.getCreditNoteNumber());
+        String newOrderNumber = orderUtil.createOrderNumberInSOH(orderNumber, salesCreditNoteHeader.getCreditNoteNumber());
+        returnOrderJson.getOrderHeader().setOrderNumber(newOrderNumber);
 
         var salesOrderReturn = SalesOrderReturn.builder()
                 .orderGroupId(orderNumber)
-                .orderNumber(salesCreditNoteHeader.getCreditNoteNumber())
+                .orderNumber(newOrderNumber)
                 .returnOrderJson(returnOrderJson)
                 .salesOrder(salesOrder)
                 .salesCreditNoteCreatedMessage(salesCreditNoteCreatedMessage)
@@ -204,6 +205,55 @@ public class SalesOrderRowService {
         }
     }
 
+    @Transactional
+    public void handleMigrationSubsequentOrder(CoreSalesInvoiceCreatedMessage salesInvoiceCreatedMessage,
+                                               SalesOrder salesOrder) {
+        var orderNumber = salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader().getOrderNumber();
+        var invoiceNumber = salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber();
+        var newOrderNumber = orderUtil.createOrderNumberInSOH(orderNumber, invoiceNumber);
+
+        if (!salesOrder.getOrderNumber().equals(orderNumber)) {
+            var originalSalesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
+                    .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
+            handleMigrationCancellationForOrderRows(
+                    originalSalesOrder,
+                    salesOrder.getLatestJson().getOrderRows(),
+                    invoiceNumber);
+            snsPublishService.publishMigrationOrderCreated(newOrderNumber);
+            log.info("Invoice with order number {} and invoice number: {} is duplicated with the original sales order. " +
+                    "Publishing event on migration topic", orderNumber, invoiceNumber);
+        }
+        snsPublishService.publishCoreInvoiceReceivedEvent(
+                EventMapper.INSTANCE.toCoreSalesInvoiceCreatedReceivedEvent(salesOrder.getInvoiceEvent()));
+        log.info("Publishing migration invoice created event with order number {} and invoice number: {}",
+                orderNumber,
+                invoiceNumber);
+    }
+
+    protected void handleMigrationCancellationForOrderRows(SalesOrder salesOrder,
+                                                           List<OrderRows> subsequentOrderRows,
+                                                           String invoiceNumber) {
+        List<OrderRows> salesOrderRowList = salesOrder.getLatestJson().getOrderRows();
+        Set<String> skuList = salesOrderRowList.stream().map(OrderRows::getSku).collect(Collectors.toSet());
+        subsequentOrderRows.stream()
+                .filter(row -> skuList.contains(row.getSku()))
+                .forEach(row -> {
+                    log.info("Invoice with invoice number: {} is duplicated with the subsequent sales order. " +
+                                    "Publishing event on sales order row cancelled migration topic for order number {} " +
+                                    "and order row id {}",
+                            invoiceNumber,
+                            salesOrder.getOrderNumber(),
+                            row.getSku());
+                    snsPublishService.publishMigrationOrderRowCancelled(salesOrder.getOrderNumber(), row.getSku());
+                });
+        if (salesOrderRowList.stream().allMatch(OrderRows::getIsCancelled)) {
+            log.info("Invoice with invoice number: {} is duplicated with the subsequent sales order. " +
+                            "Publishing event on sales order cancelled migration topic for order number {}",
+                    invoiceNumber, salesOrder.getOrderNumber());
+            snsPublishService.publishMigrationOrderCancelled(salesOrder.getLatestJson());
+        }
+    }
+
     public Order recalculateOrderByReturns(SalesOrder salesOrder, Collection<CreditNoteLine> items) {
 
         var returnLatestJson = orderUtil.copyOrderJson(salesOrder.getLatestJson());
@@ -211,24 +261,8 @@ public class SalesOrderRowService {
         var totals = returnLatestJson.getOrderHeader().getTotals();
 
         items.forEach(item -> {
-            var originalOrderRow = salesOrder.getLatestJson().getOrderRows().stream()
-                    .filter(r -> StringUtils.pathEquals(r.getSku(), item.getItemNumber()))
-                    .findFirst().orElse(OrderRows.builder().build());
-            var orderRow = orderUtil.createNewOrderRowFromCreditNoteItem(
-                    item, originalOrderRow, orderUtil.getLastRowKey(salesOrder));
+            var orderRow = orderUtil.createNewOrderRow(item, salesOrder);
             orderUtil.updateOrderRowValues(orderRow, item);
-
-            var sumValues = orderRow.getSumValues();
-            var returnOrderRowTaxValue = sumValues.getTotalDiscountedGross().subtract(sumValues.getTotalDiscountedNet());
-            totals.getGrandTotalTaxes().stream()
-                    .filter(tax -> tax.getRate().compareTo(item.getTaxRate()) == 0)
-                    .findFirst()
-                    .ifPresentOrElse(tax -> tax.setValue(returnOrderRowTaxValue),
-                            () -> {
-                                throw new GrandTotalTaxNotFoundException(
-                                        format(ERROR_MSG_GRAND_TOTAL_TAX_NOT_FOUND_BY_TAX_RATE,
-                                                item.getItemNumber(), item.getTaxRate(), salesOrder.getOrderNumber(), salesOrder.getOrderGroupId()));
-                            });
             returnLatestJson.getOrderRows().add(orderRow);
         });
 
@@ -258,6 +292,7 @@ public class SalesOrderRowService {
         totals.setGrandTotalNet(totals.getGoodsTotalNet().subtract(
                 Optional.ofNullable(totals.getTotalDiscountNet()).orElse(BigDecimal.ZERO)));
         totals.setPaymentTotal(totals.getGrandTotalGross());
+        totals.setGrandTotalTaxes(salesOrderService.calculateGrandTotalTaxes(returnLatestJson));
 
         returnLatestJson.getOrderHeader().setTotals(totals);
         return returnLatestJson;
@@ -280,13 +315,19 @@ public class SalesOrderRowService {
                     totals.setGrandTotalNet(totals.getGrandTotalNet().add(totals.getShippingCostNet()));
                     totals.setGrandTotalGross(totals.getGrandTotalGross().add(totals.getShippingCostGross()));
                     totals.setPaymentTotal(totals.getGrandTotalGross());
+                    BigDecimal fullTaxValue = totals.getGrandTotalGross().subtract(totals.getGrandTotalNet());
+                    BigDecimal sumTaxValues = totals.getGrandTotalTaxes().stream()
+                            .map(GrandTotalTaxes::getValue).reduce(BigDecimal.ZERO, BigDecimal::add);
+                    BigDecimal taxValueToAdd = fullTaxValue.subtract(sumTaxValues);
+                    totals.getGrandTotalTaxes().stream().findFirst().
+                            ifPresent(tax -> tax.setValue(tax.getValue().add(taxValueToAdd)));
                 });
     }
 
     private BigDecimal getGrossValue(CreditNoteLine creditNoteLine) {
-        var taxRate = creditNoteLine.getLineTaxAmount().abs();
-        var netValue = creditNoteLine.getLineNetAmount();
-        return CalculationUtil.round(CalculationUtil.getGrossValue(netValue, taxRate), HALF_UP);
+        var taxRate = creditNoteLine.getTaxRate().abs();
+        var netValue = creditNoteLine.getUnitNetAmount();
+        return CalculationUtil.getGrossValue(netValue, taxRate);
     }
 
     private void cancelOrderRowsOfOrderGroup(String orderGroupId, String orderRowId) {
@@ -351,7 +392,8 @@ public class SalesOrderRowService {
                 .processDefinitionKey(SALES_ORDER_PROCESS.getName())
                 .variableValueEquals(Variables.ORDER_NUMBER.getName(), orderNumber)
                 .singleResult();
-        runtimeService.setVariable(processInstance.getId(), Variables.IS_ORDER_CANCELLED.getName(), isOrderCancelled);
+        if (processInstance != null)
+            runtimeService.setVariable(processInstance.getId(), Variables.IS_ORDER_CANCELLED.getName(), isOrderCancelled);
     }
 
     private void recalculateOrder(Order latestJson, OrderRows cancelledOrderRow) {

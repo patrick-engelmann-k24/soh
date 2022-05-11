@@ -14,12 +14,10 @@ public class SalesOrderReturnService {
     private SalesOrderReturnRepository salesOrderReturnRepository;
 
     public SalesOrderReturn getByOrderNumber(String orderNumber) {
-
         return salesOrderReturnRepository.findByOrderNumber(orderNumber);
     }
 
     public SalesOrderReturn save(SalesOrderReturn salesOrderReturn) {
-
         return salesOrderReturnRepository.save(salesOrderReturn);
     }
 }

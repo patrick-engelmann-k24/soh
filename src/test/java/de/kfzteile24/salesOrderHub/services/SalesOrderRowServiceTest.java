@@ -1,7 +1,9 @@
 package de.kfzteile24.salesOrderHub.services;
 
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
+import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
+import de.kfzteile24.salesOrderHub.helper.EventMapper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
@@ -26,7 +28,9 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Paymen
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_BOOKED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ROW_CANCELLED;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createNewSalesOrderV3;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.*;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createOrderNumberInSOH;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -181,5 +185,53 @@ class SalesOrderRowServiceTest {
         when(processInstanceQuery.singleResult()).thenReturn(processInstance);
 
         return processId;
+    }
+
+    @Test
+    void testQueueListenerMigrationCoreSalesInvoiceCreatedDuplication() {
+
+        String rawEventMessage = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
+        rawEventMessage = rawEventMessage.replace("InvoiceNumber\\\": \\\"10", "InvoiceNumber\\\": \\\"11111");
+        var invoiceMsg = getInvoiceMsg(rawEventMessage);
+        var orderNumber = invoiceMsg.getSalesInvoice().getSalesInvoiceHeader().getOrderNumber();
+        var newOrderNumber = createOrderNumberInSOH(orderNumber, invoiceMsg.getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber());
+
+        SalesOrder salesOrder = createSubsequentSalesOrder(orderNumber, "10");
+        salesOrder.setInvoiceEvent(invoiceMsg);
+        when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.of(salesOrder));
+        when(orderUtil.createOrderNumberInSOH(any(), any())).thenReturn(newOrderNumber);
+
+        salesOrderRowService.handleMigrationSubsequentOrder(invoiceMsg, salesOrder);
+
+        verify(snsPublishService).publishMigrationOrderCreated(newOrderNumber);
+        var event = EventMapper.INSTANCE.toCoreSalesInvoiceCreatedReceivedEvent(invoiceMsg);
+        verify(snsPublishService).publishCoreInvoiceReceivedEvent(event);
+    }
+
+    @Test
+    void testQueueListenerMigrationCoreSalesInvoiceCreatedNewSubsequentOrder() {
+
+        String rawEventMessage = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
+        var invoiceMsg = getInvoiceMsg(rawEventMessage);
+        var orderNumber = invoiceMsg.getSalesInvoice().getSalesInvoiceHeader().getOrderNumber();
+        var newOrderNumber = createOrderNumberInSOH(orderNumber, invoiceMsg.getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber());
+        when(orderUtil.createOrderNumberInSOH(any(), any())).thenReturn(newOrderNumber);
+
+        SalesOrder salesOrder = createSubsequentSalesOrder(orderNumber, "");
+        salesOrder.setInvoiceEvent(invoiceMsg);
+
+        salesOrderRowService.handleMigrationSubsequentOrder(invoiceMsg, salesOrder);
+
+        verify(snsPublishService, never()).publishMigrationOrderCreated(newOrderNumber);
+        var event = EventMapper.INSTANCE.toCoreSalesInvoiceCreatedReceivedEvent(invoiceMsg);
+        verify(snsPublishService).publishCoreInvoiceReceivedEvent(event);
+    }
+
+    private SalesOrder createSubsequentSalesOrder(String orderNumber, String invoiceNumber) {
+        String rawOrderMessage = readResource("examples/ecpOrderMessage.json");
+        Order order = getOrder(rawOrderMessage);
+        order.getOrderHeader().setOrderNumber(orderNumber + invoiceNumber);
+        order.getOrderHeader().setOrderGroupId(orderNumber);
+        return getSalesOrder(order);
     }
 }

@@ -23,7 +23,13 @@ data "aws_iam_policy_document" "sns_sqs_access_policy" {
       data.aws_sns_topic.sns_soh_return_order_created_v1.arn,
       data.aws_sns_topic.sns_core_sales_credit_note_created_v1.arn,
       data.aws_sns_topic.sns_soh_core_invoice_received_v1.arn,
-      data.aws_sns_topic.sns_soh_credit_note_received_v1.arn
+      data.aws_sns_topic.sns_soh_credit_note_received_v1.arn,
+      data.aws_sns_topic.sns_migration_soh_order_created_v2.arn,
+      data.aws_sns_topic.sns_migration_soh_sales_order_row_cancelled_v1.arn,
+      data.aws_sns_topic.sns_migration_soh_sales_order_cancelled_v1.arn,
+      data.aws_sns_topic.sns_migration_soh_return_order_created_v1.arn,
+      data.aws_sns_topic.sns_migration_core_sales_invoice_created.arn,
+      data.aws_sns_topic.sns_migration_core_sales_credit_note_created.arn
     ]
   }
   statement {
@@ -50,7 +56,10 @@ data "aws_iam_policy_document" "sns_sqs_access_policy" {
       aws_sqs_queue.soh_dropshipment_shipment_confirmed.arn,
       aws_sqs_queue.dropshipment_purchase_order_booked.arn,
       aws_sqs_queue.soh_core_sales_credit_note_created.arn,
-      aws_sqs_queue.soh_core_sales_invoice_created.arn
+      aws_sqs_queue.soh_core_sales_invoice_created.arn,
+      aws_sqs_queue.soh_migration_core_sales_order_created.arn,
+      aws_sqs_queue.soh_migration_core_sales_invoice_created.arn,
+      aws_sqs_queue.soh_migration_core_sales_credit_note_created.arn
     ]
   }
 }

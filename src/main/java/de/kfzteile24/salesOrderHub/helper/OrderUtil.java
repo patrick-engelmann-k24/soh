@@ -1,8 +1,8 @@
 package de.kfzteile24.salesOrderHub.helper;
 
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.dto.shared.creditnote.CreditNoteLine;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesFinancialDocumentLine;
+import de.kfzteile24.salesOrderHub.dto.sns.shared.OrderItem;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.SumValues;
@@ -10,9 +10,9 @@ import de.kfzteile24.soh.order.dto.UnitValues;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -46,19 +46,11 @@ public class OrderUtil {
         return originalOrder.getOrderRows().stream().map(OrderRows::getRowKey).filter(Objects::nonNull).reduce(0, Integer::max);
     }
 
-    public List<OrderRows> createOrderRowFromOriginalSalesOrder(SalesOrder originalSalesOrder, CoreSalesFinancialDocumentLine item, Integer lastRowKey) {
-        List<OrderRows> orderRows = new ArrayList<>();
-        List<OrderRows> rowFromLatestJson = createRowFromLatestJson(originalSalesOrder, item);
-        if (rowFromLatestJson != null && !rowFromLatestJson.isEmpty()) {
-           orderRows.addAll(rowFromLatestJson);
-        } else {
-            var shippingType = ((Order) originalSalesOrder.getOriginalOrder()).getOrderRows().get(0).getShippingType();
-            orderRows.add(createNewOrderRow(item, shippingType, lastRowKey));
-        }
-        return orderRows;
+    public String createOrderNumberInSOH(String orderNumber, String reference) {
+        return orderNumber + "-" + reference;
     }
 
-    public void updateOrderRowValues(OrderRows orderRow, CreditNoteLine item) {
+    public void updateOrderRowValues(OrderRows orderRow, OrderItem item) {
 
         if (orderRow != null) {
             updateOrderRowByUnitPriceNet(orderRow, getValueOrDefault(item.getUnitNetAmount(), BigDecimal.ZERO));
@@ -81,44 +73,22 @@ public class OrderUtil {
                 .collect(Collectors.toList());
     }
 
-    public OrderRows createNewOrderRow(CoreSalesFinancialDocumentLine item, String shippingType, Integer lastRowKey) {
+    public OrderRows createNewOrderRow(OrderItem item, SalesOrder salesOrder) {
+
+        Integer lastRowKey = getLastRowKey(salesOrder);
+
+        OrderRows originalOrderRow = salesOrder.getLatestJson().getOrderRows().stream()
+                .filter(r -> StringUtils.pathEquals(r.getSku(), item.getItemNumber()))
+                .findFirst().orElse(OrderRows.builder().build());
+
         var unitPriceGross = getGrossValue(item.getUnitNetAmount(), item.getTaxRate());
         var unitPriceNet = item.getUnitNetAmount();
         var sumOfGoodsPriceGross = getMultipliedValue(unitPriceGross, item.getQuantity());
         var sumOfGoodsPriceNet = getMultipliedValue(unitPriceNet, item.getQuantity());
 
-        return OrderRows.builder()
+        OrderRows orderRow = OrderRows.builder()
                 .rowKey(lastRowKey + 1)
                 .isCancelled(false)
-                .shippingType(shippingType)
-                .sku(item.getItemNumber())
-                .quantity(Optional.ofNullable(item.getQuantity()).orElse(BigDecimal.ONE))
-                .taxRate(Optional.ofNullable(item.getTaxRate()).orElse(BigDecimal.ZERO))
-                .unitValues(roundUnitValues(UnitValues.builder()
-                        .goodsValueGross(unitPriceGross)
-                        .goodsValueNet(unitPriceNet)
-                        .discountedGross(unitPriceGross)
-                        .discountedNet(unitPriceNet)
-                        .build()))
-                .sumValues(roundSumValues(SumValues.builder()
-                        .goodsValueGross(sumOfGoodsPriceGross)
-                        .goodsValueNet(sumOfGoodsPriceNet)
-                        .totalDiscountedGross(sumOfGoodsPriceGross)
-                        .totalDiscountedNet(sumOfGoodsPriceNet)
-                        .build()))
-                .build();
-    }
-
-    public OrderRows createNewOrderRowFromCreditNoteItem(CreditNoteLine item, OrderRows originalOrderRow, Integer lastRowKey) {
-
-        var unitPriceGross = getGrossValue(item.getUnitNetAmount(), item.getTaxRate());
-        var unitPriceNet = item.getUnitNetAmount();
-        var sumOfGoodsPriceGross = getMultipliedValue(unitPriceGross, item.getQuantity());
-        var sumOfGoodsPriceNet = getMultipliedValue(unitPriceNet, item.getQuantity());
-
-        return OrderRows.builder()
-                .rowKey(lastRowKey + 1)
-                .isCancelled(originalOrderRow.getIsCancelled())
                 .isPriceHammer(originalOrderRow.getIsPriceHammer())
                 .sku(item.getItemNumber())
                 .name(originalOrderRow.getName())
@@ -152,6 +122,8 @@ public class OrderUtil {
                         .totalDiscountedNet(sumOfGoodsPriceNet)
                         .build()))
                 .build();
+        updateOrderRowValues(orderRow, item);
+        return orderRow;
     }
 
     protected OrderRows updateOrderRowByNewItemValues(OrderRows row, CoreSalesFinancialDocumentLine item) {
