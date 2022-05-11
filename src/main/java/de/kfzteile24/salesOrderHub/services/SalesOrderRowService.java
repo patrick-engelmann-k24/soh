@@ -186,11 +186,12 @@ public class SalesOrderRowService {
         var returnOrderJson = recalculateOrderByReturns(salesOrder, getOrderRowUpdateItems(creditNoteLines));
         updateShippingCosts(returnOrderJson, creditNoteLines);
 
-        returnOrderJson.getOrderHeader().setOrderNumber(salesCreditNoteHeader.getCreditNoteNumber());
+        String newOrderNumber = orderUtil.createOrderNumberInSOH(orderNumber, salesCreditNoteHeader.getCreditNoteNumber());
+        returnOrderJson.getOrderHeader().setOrderNumber(newOrderNumber);
 
         var salesOrderReturn = SalesOrderReturn.builder()
                 .orderGroupId(orderNumber)
-                .orderNumber(orderUtil.createOrderNumberInSOH(orderNumber, salesCreditNoteHeader.getCreditNoteNumber()))
+                .orderNumber(newOrderNumber)
                 .returnOrderJson(returnOrderJson)
                 .salesOrder(salesOrder)
                 .salesCreditNoteCreatedMessage(salesCreditNoteCreatedMessage)
