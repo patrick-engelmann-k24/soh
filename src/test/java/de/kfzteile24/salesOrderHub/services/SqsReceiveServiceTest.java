@@ -266,7 +266,7 @@ class SqsReceiveServiceTest {
         String rawMessage = readResource("examples/ecpOrderMessage.json");
         SalesOrder salesOrder = getSalesOrder(rawMessage);
         when(salesOrderService.getOrderByOrderNumber(eq(salesOrder.getOrderNumber()))).thenReturn(Optional.of(salesOrder));
-        when(featureFlagConfig.getIgnoreMigrationCoreSalesInvoice()).thenReturn(false);
+        when(featureFlagConfig.getIgnoreMigrationCoreSalesOrder()).thenReturn(false);
 
         sqsReceiveService.queueListenerMigrationCoreSalesOrderCreated(rawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
