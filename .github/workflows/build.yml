@@ -46,6 +46,9 @@ env:
   soh_sqs_migration_core_sales_credit_note_created: 'http://localhost:4566/000000000000/migration-core-sales-credit-note-created-queue'
   ignore_core_sales_invoice: false
   ignore_core_credit_note: false
+  ignore_migration_core_sales_invoice: false
+  ignore_migration_core_sales_credit_note: false
+  ignore_migration_core_sales_order: false
 
 on: [push]
 

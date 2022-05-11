@@ -14,3 +14,6 @@ container_max_count            = 3
 db_performance_insight         = true
 ignore_core_sales_invoice      = true
 ignore_core_credit_note        = true
+ignore_migration_core_sales_invoice      = true
+ignore_migration_core_sales_credit_note  = true
+ignore_migration_core_sales_order        = true

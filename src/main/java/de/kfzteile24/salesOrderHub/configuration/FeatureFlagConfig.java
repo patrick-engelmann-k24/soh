@@ -13,4 +13,13 @@ public class FeatureFlagConfig {
 
     @Value("${ignoreCoreCreditNote}")
     private Boolean ignoreCoreCreditNote;
+
+    @Value("${ignoreCoreCreditNote}")
+    private Boolean ignoreMigrationCoreSalesInvoice;
+
+    @Value("${ignoreCoreCreditNote}")
+    private Boolean ignoreMigrationCoreSalesCreditNote;
+
+    @Value("${ignoreCoreCreditNote}")
+    private Boolean ignoreMigrationCoreSalesOrder;
 }

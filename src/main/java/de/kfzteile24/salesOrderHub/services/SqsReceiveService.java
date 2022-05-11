@@ -516,18 +516,23 @@ public class SqsReceiveService {
             @Header("SenderId") String senderId,
             @Header("ApproximateReceiveCount") Integer receiveCount) {
 
-        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-        Order order = objectMapper.readValue(body, Order.class);
-        String orderNumber = order.getOrderHeader().getOrderNumber();
-
-        final Optional<SalesOrder> salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber);
-        if (salesOrder.isPresent()) {
-            log.info("Order with order number: {} is duplicated for migration. Publishing event on migration topic", orderNumber);
-            snsPublishService.publishMigrationOrderCreated(orderNumber);
+        if (featureFlagConfig.getIgnoreMigrationCoreSalesOrder()) {
+            log.info("Migration Core Sales Order is ignored");
         } else {
-            log.info("Order with order number: {} is a new order. Call redirected to normal flow.", orderNumber);
-            queueListenerEcpShopOrders(rawMessage, senderId, receiveCount);
+            String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+            Order order = objectMapper.readValue(body, Order.class);
+            String orderNumber = order.getOrderHeader().getOrderNumber();
+
+            final Optional<SalesOrder> salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber);
+            if (salesOrder.isPresent()) {
+                log.info("Order with order number: {} is duplicated for migration. Publishing event on migration topic", orderNumber);
+                snsPublishService.publishMigrationOrderCreated(orderNumber);
+            } else {
+                log.info("Order with order number: {} is a new order. Call redirected to normal flow.", orderNumber);
+                queueListenerEcpShopOrders(rawMessage, senderId, receiveCount);
+            }
         }
+
     }
 
     /**
@@ -542,32 +547,37 @@ public class SqsReceiveService {
             @Header("SenderId") String senderId,
             @Header("ApproximateReceiveCount") Integer receiveCount) {
 
-        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-        CoreSalesInvoiceCreatedMessage salesInvoiceCreatedMessage = objectMapper.readValue(body, CoreSalesInvoiceCreatedMessage.class);
-        CoreSalesInvoiceHeader salesInvoiceHeader = salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
-        var orderNumber = salesInvoiceHeader.getOrderNumber();
-        var invoiceNumber = salesInvoiceHeader.getInvoiceNumber();
-        log.info("Received migration core sales invoice created message with order number: {} and invoice number: {}",
-                orderNumber, invoiceNumber);
+        if (featureFlagConfig.getIgnoreMigrationCoreSalesInvoice()) {
+            log.info("Migration Core Sales Invoice is ignored");
+        } else {
+            String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+            CoreSalesInvoiceCreatedMessage salesInvoiceCreatedMessage = objectMapper.readValue(body, CoreSalesInvoiceCreatedMessage.class);
+            CoreSalesInvoiceHeader salesInvoiceHeader = salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
+            var orderNumber = salesInvoiceHeader.getOrderNumber();
+            var invoiceNumber = salesInvoiceHeader.getInvoiceNumber();
+            log.info("Received migration core sales invoice created message with order number: {} and invoice number: {}",
+                    orderNumber, invoiceNumber);
 
-        try {
-            var optionalSalesOrder = salesOrderService.getOrderByOrderGroupId(orderNumber).stream()
-                    .filter(salesOrder -> invoiceNumber.equals(salesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber()))
-                    .findFirst();
+            try {
+                var optionalSalesOrder = salesOrderService.getOrderByOrderGroupId(orderNumber).stream()
+                        .filter(salesOrder -> invoiceNumber.equals(salesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber()))
+                        .findFirst();
 
-            if (optionalSalesOrder.isPresent()) {
-                salesOrderRowService.handleMigrationSubsequentOrder(salesInvoiceCreatedMessage, optionalSalesOrder.get());
-            } else {
-                log.info("Invoice with invoice number: {} is a new invoice. Call redirected to normal flow.", invoiceNumber);
-                queueListenerCoreSalesInvoiceCreated(rawMessage, senderId, receiveCount);
+                if (optionalSalesOrder.isPresent()) {
+                    salesOrderRowService.handleMigrationSubsequentOrder(salesInvoiceCreatedMessage, optionalSalesOrder.get());
+                } else {
+                    log.info("Invoice with invoice number: {} is a new invoice. Call redirected to normal flow.", invoiceNumber);
+                    queueListenerCoreSalesInvoiceCreated(rawMessage, senderId, receiveCount);
+                }
+            } catch (Exception e) {
+                log.error("Migration core sales invoice created received message error:\r\nOrderNumber: {}\r\nInvoiceNumber: {}\r\nError-Message: {}",
+                        orderNumber,
+                        invoiceNumber,
+                        e.getMessage());
+                throw e;
             }
-        } catch (Exception e) {
-            log.error("Migration core sales invoice created received message error:\r\nOrderNumber: {}\r\nInvoiceNumber: {}\r\nError-Message: {}",
-                    orderNumber,
-                    invoiceNumber,
-                    e.getMessage());
-            throw e;
         }
+
     }
 
     /**
@@ -582,33 +592,38 @@ public class SqsReceiveService {
             @Header("SenderId") String senderId,
             @Header("ApproximateReceiveCount") Integer receiveCount) {
 
-        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-        var salesCreditNoteCreatedMessage =
-                objectMapper.readValue(body, SalesCreditNoteCreatedMessage.class);
-        var salesCreditNoteHeader = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader();
-        var orderNumber = salesCreditNoteHeader.getOrderNumber();
-        var creditNoteNumber = salesCreditNoteHeader.getCreditNoteNumber();
-
-        var returnOrder = salesOrderReturnService.getByOrderGroupId(orderNumber);
-        if (returnOrder.isPresent()) {
-            snsPublishService.publishMigrationReturnOrderCreatedEvent(returnOrder.get());
-            log.info("Return order with order number {} and credit note number: {} is duplicated for migration. " +
-                            "Publishing event on migration topic",
-                    orderNumber,
-                    creditNoteNumber);
-
-            var salesCreditNoteReceivedEvent =
-                    creditNoteEventMapper.toSalesCreditNoteReceivedEvent(salesCreditNoteCreatedMessage);
-            snsPublishService.publishCreditNoteReceivedEvent(salesCreditNoteReceivedEvent);
-            log.info("Publishing migration credit note created event for order number {} and credit note number: {}",
-                    orderNumber,
-                    creditNoteNumber);
+        if (featureFlagConfig.getIgnoreMigrationCoreSalesCreditNote()) {
+            log.info("Migration Core Sales Credit Note is ignored");
         } else {
-            log.info("Return order with order number {} and credit note number: {} is a new order." +
-                            "Call redirected to normal flow.",
-                    orderNumber,
-                    creditNoteNumber);
-            queueListenerCoreSalesCreditNoteCreated(rawMessage, senderId, receiveCount);
+            String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+            var salesCreditNoteCreatedMessage =
+                    objectMapper.readValue(body, SalesCreditNoteCreatedMessage.class);
+            var salesCreditNoteHeader = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader();
+            var orderNumber = salesCreditNoteHeader.getOrderNumber();
+            var creditNoteNumber = salesCreditNoteHeader.getCreditNoteNumber();
+
+            var returnOrder = salesOrderReturnService.getByOrderGroupId(orderNumber);
+            if (returnOrder.isPresent()) {
+                snsPublishService.publishMigrationReturnOrderCreatedEvent(returnOrder.get());
+                log.info("Return order with order number {} and credit note number: {} is duplicated for migration. " +
+                                "Publishing event on migration topic",
+                        orderNumber,
+                        creditNoteNumber);
+
+                var salesCreditNoteReceivedEvent =
+                        creditNoteEventMapper.toSalesCreditNoteReceivedEvent(salesCreditNoteCreatedMessage);
+                snsPublishService.publishCreditNoteReceivedEvent(salesCreditNoteReceivedEvent);
+                log.info("Publishing migration credit note created event for order number {} and credit note number: {}",
+                        orderNumber,
+                        creditNoteNumber);
+            } else {
+                log.info("Return order with order number {} and credit note number: {} is a new order." +
+                                "Call redirected to normal flow.",
+                        orderNumber,
+                        creditNoteNumber);
+                queueListenerCoreSalesCreditNoteCreated(rawMessage, senderId, receiveCount);
+            }
         }
+
     }
 }
