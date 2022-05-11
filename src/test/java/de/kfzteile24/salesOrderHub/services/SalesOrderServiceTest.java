@@ -151,7 +151,7 @@ class SalesOrderServiceTest {
 
         // Mock services
         when(invoiceService.getInvoicesByOrderNumber(any())).thenReturn(Set.of());
-        when(orderUtil.createNewOrderRow(any(), any())).thenReturn(orderRow);
+        when(orderUtil.createNewOrderRow(any(), any(), any())).thenReturn(orderRow);
         when(salesOrderRepository.save(any())).thenAnswer((Answer<SalesOrder>) invocation -> invocation.getArgument(0));
 
         // Establish some updates before the test in order to see the change

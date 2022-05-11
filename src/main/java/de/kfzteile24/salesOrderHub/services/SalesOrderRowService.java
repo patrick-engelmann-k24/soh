@@ -259,12 +259,14 @@ public class SalesOrderRowService {
         var returnLatestJson = orderUtil.copyOrderJson(salesOrder.getLatestJson());
         returnLatestJson.setOrderRows(Lists.newArrayList());
         var totals = returnLatestJson.getOrderHeader().getTotals();
+        var lastRowKey = orderUtil.getLastRowKey(salesOrder);
 
-        items.forEach(item -> {
-            var orderRow = orderUtil.createNewOrderRow(item, salesOrder);
+        for (CreditNoteLine item : items) {
+            var orderRow = orderUtil.createNewOrderRow(item, salesOrder, lastRowKey);
             orderUtil.updateOrderRowValues(orderRow, item);
             returnLatestJson.getOrderRows().add(orderRow);
-        });
+            lastRowKey = orderUtil.updateLastRowKey(salesOrder, lastRowKey);
+        }
 
         totals.setGoodsTotalGross(BigDecimal.ZERO);
         totals.setGoodsTotalNet(BigDecimal.ZERO);
