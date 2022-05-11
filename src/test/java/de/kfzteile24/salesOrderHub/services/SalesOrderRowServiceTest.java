@@ -29,6 +29,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Shipme
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_BOOKED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ROW_CANCELLED;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.*;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createOrderNumberInSOH;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -193,11 +194,12 @@ class SalesOrderRowServiceTest {
         rawEventMessage = rawEventMessage.replace("InvoiceNumber\\\": \\\"10", "InvoiceNumber\\\": \\\"11111");
         var invoiceMsg = getInvoiceMsg(rawEventMessage);
         var orderNumber = invoiceMsg.getSalesInvoice().getSalesInvoiceHeader().getOrderNumber();
-        var newOrderNumber = orderNumber + "-" + invoiceMsg.getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber();
+        var newOrderNumber = createOrderNumberInSOH(orderNumber, invoiceMsg.getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber());
 
         SalesOrder salesOrder = createSubsequentSalesOrder(orderNumber, "10");
         salesOrder.setInvoiceEvent(invoiceMsg);
         when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.of(salesOrder));
+        when(orderUtil.createOrderNumberInSOH(any(), any())).thenReturn(newOrderNumber);
 
         salesOrderRowService.handleMigrationSubsequentOrder(invoiceMsg, salesOrder);
 
@@ -212,7 +214,8 @@ class SalesOrderRowServiceTest {
         String rawEventMessage = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
         var invoiceMsg = getInvoiceMsg(rawEventMessage);
         var orderNumber = invoiceMsg.getSalesInvoice().getSalesInvoiceHeader().getOrderNumber();
-        var newOrderNumber = orderNumber + "-" + invoiceMsg.getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber();
+        var newOrderNumber = createOrderNumberInSOH(orderNumber, invoiceMsg.getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber());
+        when(orderUtil.createOrderNumberInSOH(any(), any())).thenReturn(newOrderNumber);
 
         SalesOrder salesOrder = createSubsequentSalesOrder(orderNumber, "");
         salesOrder.setInvoiceEvent(invoiceMsg);

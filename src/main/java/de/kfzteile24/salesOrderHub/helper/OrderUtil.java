@@ -46,6 +46,10 @@ public class OrderUtil {
         return originalOrder.getOrderRows().stream().map(OrderRows::getRowKey).filter(Objects::nonNull).reduce(0, Integer::max);
     }
 
+    public String createOrderNumberInSOH(String orderNumber, String reference) {
+        return orderNumber + "-" + reference;
+    }
+
     public void updateOrderRowValues(OrderRows orderRow, OrderItem item) {
 
         if (orderRow != null) {

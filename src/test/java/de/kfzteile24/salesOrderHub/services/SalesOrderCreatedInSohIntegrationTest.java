@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Objects;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.MSG_ORDER_PAYMENT_SECURED;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createOrderNumberInSOH;
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -87,7 +88,7 @@ class SalesOrderCreatedInSohIntegrationTest {
 
         sqsReceiveService.queueListenerCoreSalesInvoiceCreated(invoiceEvent, senderId, receiveCount);
 
-        String newOrderNumberCreatedInSoh = originalOrderNumber + "-" + invoiceNumber;
+        String newOrderNumberCreatedInSoh = createOrderNumberInSOH(originalOrderNumber, invoiceNumber);
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku)));
         checkTotalsValues(newOrderNumberCreatedInSoh,
@@ -123,7 +124,7 @@ class SalesOrderCreatedInSohIntegrationTest {
 
         sqsReceiveService.queueListenerCoreSalesInvoiceCreated(invoiceEvent, senderId, receiveCount);
 
-        String newOrderNumberCreatedInSoh = originalOrderNumber + "-" + invoiceNumber;
+        String newOrderNumberCreatedInSoh = createOrderNumberInSOH(originalOrderNumber, invoiceNumber);
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku1)));
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku2)));
@@ -133,11 +134,11 @@ class SalesOrderCreatedInSohIntegrationTest {
                 "360.64",
                 "0",
                 "0",
-                "444.42",
-                "370.64",
-                "444.42",
-                "11.9",
-                "10.0");
+                "445.60",
+                "371.63",
+                "445.60",
+                "13.08",
+                "10.99");
         checkOrderRows(newOrderNumberCreatedInSoh, rowSku1, rowSku2, rowSku3);
     }
 

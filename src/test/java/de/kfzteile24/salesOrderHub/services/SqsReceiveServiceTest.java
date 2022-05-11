@@ -18,7 +18,6 @@ import lombok.SneakyThrows;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -41,6 +40,7 @@ import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getCreditNoteMsg;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrderReturn;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrderFromOrder;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createOrderNumberInSOH;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.any;
@@ -85,7 +85,6 @@ class SqsReceiveServiceTest {
     @InjectMocks
     private SqsReceiveService sqsReceiveService;
 
-
     @Test
     void testQueueListenerEcpShopOrders() {
         String rawMessage = readResource("examples/ecpOrderMessage.json");
@@ -102,7 +101,7 @@ class SqsReceiveServiceTest {
     }
 
     @Test
-    public void testQueueListenerCoreDuplicateShopOrders() {
+    void testQueueListenerCoreDuplicateShopOrders() {
         //This test case can be removed if no more duplicate items are expected from core publisher.
         var senderId = "Core";
         String rawMessage = readResource("examples/coreOrderMessage.json");
@@ -125,6 +124,7 @@ class SqsReceiveServiceTest {
         when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.of(salesOrder));
         when(salesOrderService.createSalesOrderForInvoice(any(), any(), any())).thenReturn(salesOrder);
         when(featureFlagConfig.getIgnoreCoreSalesInvoice()).thenReturn(false);
+        when(salesOrderService.createOrderNumberInSOH(any(), any())).thenReturn(salesOrder.getOrderNumber(), "10");
 
         String coreSalesInvoiceCreatedMessage = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
         sqsReceiveService.queueListenerCoreSalesInvoiceCreated(coreSalesInvoiceCreatedMessage, ANY_SENDER_ID,
@@ -266,7 +266,6 @@ class SqsReceiveServiceTest {
         String rawMessage = readResource("examples/ecpOrderMessage.json");
         SalesOrder salesOrder = getSalesOrder(rawMessage);
         when(salesOrderService.getOrderByOrderNumber(eq(salesOrder.getOrderNumber()))).thenReturn(Optional.of(salesOrder));
-        when(featureFlagConfig.getIgnoreMigrationCoreSalesOrder()).thenReturn(false);
 
         sqsReceiveService.queueListenerMigrationCoreSalesOrderCreated(rawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
@@ -281,7 +280,6 @@ class SqsReceiveServiceTest {
 
         when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.empty());
         when(salesOrderService.createSalesOrder(any())).thenReturn(salesOrder);
-        when(featureFlagConfig.getIgnoreMigrationCoreSalesOrder()).thenReturn(false);
 
         sqsReceiveService.queueListenerMigrationCoreSalesOrderCreated(rawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
@@ -294,11 +292,12 @@ class SqsReceiveServiceTest {
         String rawEventMessage = readResource("examples/coreSalesCreditNoteCreated.json");
         var creditNoteMsg = getCreditNoteMsg(rawEventMessage);
         var orderNumber = creditNoteMsg.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber();
+        var creditNoteNumber = creditNoteMsg.getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteNumber();
 
         SalesOrder salesOrder = createSalesOrder(orderNumber);
-        SalesOrderReturn salesOrderReturn = getSalesOrderReturn(salesOrder);
-        when(salesOrderReturnService.getByOrderGroupId(eq(salesOrderReturn.getOrderGroupId()))).thenReturn(Optional.of(salesOrderReturn));
-        when(featureFlagConfig.getIgnoreMigrationCoreSalesCreditNote()).thenReturn(false);
+        SalesOrderReturn salesOrderReturn = getSalesOrderReturn(salesOrder, creditNoteNumber);
+        when(salesOrderReturnService.getByOrderNumber(eq(salesOrderReturn.getOrderNumber()))).thenReturn(salesOrderReturn);
+        when(salesOrderService.createOrderNumberInSOH(eq(orderNumber), eq(creditNoteNumber))).thenReturn(createOrderNumberInSOH(orderNumber, creditNoteNumber));
 
         sqsReceiveService.queueListenerMigrationCoreSalesCreditNoteCreated(rawEventMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
@@ -311,9 +310,10 @@ class SqsReceiveServiceTest {
         String rawEventMessage = readResource("examples/coreSalesCreditNoteCreated.json");
         var creditNoteMsg = getCreditNoteMsg(rawEventMessage);
         var orderNumber = creditNoteMsg.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber();
+        var creditNoteNumber = creditNoteMsg.getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteNumber();
 
-        when(salesOrderReturnService.getByOrderGroupId(any())).thenReturn(Optional.empty());
-        when(featureFlagConfig.getIgnoreMigrationCoreSalesCreditNote()).thenReturn(false);
+        when(salesOrderReturnService.getByOrderNumber(any())).thenReturn(null);
+        when(salesOrderService.createOrderNumberInSOH(eq(orderNumber), eq(creditNoteNumber))).thenReturn(createOrderNumberInSOH(orderNumber, creditNoteNumber));
 
         sqsReceiveService.queueListenerMigrationCoreSalesCreditNoteCreated(rawEventMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 

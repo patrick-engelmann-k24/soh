@@ -60,6 +60,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVar
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrderFromOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getOrder;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createOrderNumberInSOH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.reset;
@@ -420,8 +421,8 @@ class SqsReceiveServiceIntegrationTest {
         sqsReceiveService.queueListenerCoreSalesCreditNoteCreated(coreReturnDeliveryNotePrinted, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
         SalesCreditNoteHeader salesCreditNoteHeader = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader();
-        String creditNoteNumber = salesCreditNoteHeader.getCreditNoteNumber();
-        SalesOrderReturn returnSalesOrder = salesOrderReturnService.getByOrderNumber(creditNoteNumber);
+        String returnOrderNumber = createOrderNumberInSOH(salesCreditNoteHeader.getOrderNumber(), salesCreditNoteHeader.getCreditNoteNumber());
+        SalesOrderReturn returnSalesOrder = salesOrderReturnService.getByOrderNumber(returnOrderNumber);
         Order returnOrder = returnSalesOrder.getReturnOrderJson();
 
         checkOrderRowValues(returnOrder.getOrderRows());
@@ -498,7 +499,7 @@ class SqsReceiveServiceIntegrationTest {
         verify(salesOrderRowService).handleSalesOrderReturn(eq("580309129"), eq(salesCreditNoteCreatedMessage));
         verify(snsPublishService).publishReturnOrderCreatedEvent(argThat(
                 salesOrderReturn -> {
-                    assertThat(salesOrderReturn.getOrderNumber()).isEqualTo("876130");
+                    assertThat(salesOrderReturn.getOrderNumber()).isEqualTo("580309129-876130");
                     assertThat(salesOrderReturn.getOrderGroupId()).isEqualTo("580309129");
                     return true;
                 }
@@ -564,7 +565,7 @@ class SqsReceiveServiceIntegrationTest {
 
         sqsReceiveService.queueListenerMigrationCoreSalesInvoiceCreated(migrationInvoiceMsg, senderId, receiveCount);
 
-        String newOrderNumberCreatedInSoh = originalOrderNumber + "-" + invoiceNumber;
+        String newOrderNumberCreatedInSoh = createOrderNumberInSOH(originalOrderNumber, invoiceNumber);
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku1)));
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku2)));
@@ -588,7 +589,7 @@ class SqsReceiveServiceIntegrationTest {
 
         sqsReceiveService.queueListenerCoreSalesInvoiceCreated(invoiceMsg, senderId, receiveCount);
 
-        String newOrderNumberCreatedInSoh = originalOrderNumber + "-" + invoiceNumber;
+        String newOrderNumberCreatedInSoh = createOrderNumberInSOH(originalOrderNumber, invoiceNumber);
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
 
         sqsReceiveService.queueListenerMigrationCoreSalesInvoiceCreated(invoiceMsg, "Migration Delivery", 1);
@@ -614,7 +615,7 @@ class SqsReceiveServiceIntegrationTest {
 
         verify(snsPublishService).publishReturnOrderCreatedEvent(argThat(
                 salesOrderReturn -> {
-                    assertThat(salesOrderReturn.getOrderNumber()).isEqualTo(creditNumber);
+                    assertThat(salesOrderReturn.getOrderNumber()).isEqualTo(createOrderNumberInSOH(orderNumber, creditNumber));
                     assertThat(salesOrderReturn.getOrderGroupId()).isEqualTo(orderNumber);
                     return true;
                 }
@@ -638,7 +639,7 @@ class SqsReceiveServiceIntegrationTest {
 
         verify(snsPublishService).publishMigrationReturnOrderCreatedEvent(argThat(
                 salesOrderReturn -> {
-                    assertThat(salesOrderReturn.getOrderNumber()).isEqualTo(creditNumber);
+                    assertThat(salesOrderReturn.getOrderNumber()).isEqualTo(createOrderNumberInSOH(orderNumber, creditNumber));
                     assertThat(salesOrderReturn.getOrderGroupId()).isEqualTo(orderNumber);
                     return true;
                 }

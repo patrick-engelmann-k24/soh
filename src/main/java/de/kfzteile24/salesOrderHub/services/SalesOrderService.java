@@ -329,4 +329,8 @@ public class SalesOrderService {
                 .value(BigDecimal.ZERO)
                 .build();
     }
+
+    public String createOrderNumberInSOH(String orderNumber, String reference) {
+        return orderUtil.createOrderNumberInSOH(orderNumber, reference);
+    }
 }
