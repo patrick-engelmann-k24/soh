@@ -65,3 +65,15 @@ variable "ignore_core_sales_invoice" {
 variable "ignore_core_credit_note" {
   type = bool
 }
+
+variable "ignore_migration_core_sales_invoice" {
+  type = bool
+}
+
+variable "ignore_migration_core_sales_credit_note" {
+  type = bool
+}
+
+variable "ignore_migration_core_sales_order" {
+  type = bool
+}

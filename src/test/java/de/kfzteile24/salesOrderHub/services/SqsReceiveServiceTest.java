@@ -266,6 +266,7 @@ class SqsReceiveServiceTest {
         String rawMessage = readResource("examples/ecpOrderMessage.json");
         SalesOrder salesOrder = getSalesOrder(rawMessage);
         when(salesOrderService.getOrderByOrderNumber(eq(salesOrder.getOrderNumber()))).thenReturn(Optional.of(salesOrder));
+        when(featureFlagConfig.getIgnoreMigrationCoreSalesOrder()).thenReturn(false);
 
         sqsReceiveService.queueListenerMigrationCoreSalesOrderCreated(rawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
@@ -280,6 +281,7 @@ class SqsReceiveServiceTest {
 
         when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.empty());
         when(salesOrderService.createSalesOrder(any())).thenReturn(salesOrder);
+        when(featureFlagConfig.getIgnoreMigrationCoreSalesOrder()).thenReturn(false);
 
         sqsReceiveService.queueListenerMigrationCoreSalesOrderCreated(rawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
@@ -298,6 +300,7 @@ class SqsReceiveServiceTest {
         SalesOrderReturn salesOrderReturn = getSalesOrderReturn(salesOrder, creditNoteNumber);
         when(salesOrderReturnService.getByOrderNumber(eq(salesOrderReturn.getOrderNumber()))).thenReturn(salesOrderReturn);
         when(salesOrderService.createOrderNumberInSOH(eq(orderNumber), eq(creditNoteNumber))).thenReturn(createOrderNumberInSOH(orderNumber, creditNoteNumber));
+        when(featureFlagConfig.getIgnoreMigrationCoreSalesCreditNote()).thenReturn(false);
 
         sqsReceiveService.queueListenerMigrationCoreSalesCreditNoteCreated(rawEventMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
@@ -314,6 +317,7 @@ class SqsReceiveServiceTest {
 
         when(salesOrderReturnService.getByOrderNumber(any())).thenReturn(null);
         when(salesOrderService.createOrderNumberInSOH(eq(orderNumber), eq(creditNoteNumber))).thenReturn(createOrderNumberInSOH(orderNumber, creditNoteNumber));
+        when(featureFlagConfig.getIgnoreMigrationCoreSalesCreditNote()).thenReturn(false);
 
         sqsReceiveService.queueListenerMigrationCoreSalesCreditNoteCreated(rawEventMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
