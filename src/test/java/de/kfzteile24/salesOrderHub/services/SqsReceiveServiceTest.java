@@ -313,9 +313,9 @@ class SqsReceiveServiceTest {
         var orderNumber = creditNoteMsg.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber();
 
         when(salesOrderReturnService.getByOrderGroupId(any())).thenReturn(Optional.empty());
+        when(featureFlagConfig.getIgnoreMigrationCoreSalesCreditNote()).thenReturn(false);
 
         sqsReceiveService.queueListenerMigrationCoreSalesCreditNoteCreated(rawEventMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
-        when(featureFlagConfig.getIgnoreMigrationCoreSalesCreditNote()).thenReturn(false);
 
         verify(salesOrderRowService).handleSalesOrderReturn(eq(orderNumber), eq(creditNoteMsg));
     }
