@@ -46,9 +46,9 @@ public class OrderUtil {
         return originalOrder.getOrderRows().stream().map(OrderRows::getRowKey).filter(Objects::nonNull).reduce(0, Integer::max);
     }
 
-    public Integer updateLastRowKey(SalesOrder salesOrder, Integer lastRowKey) {
+    public Integer updateLastRowKey(SalesOrder salesOrder, String itemSku, Integer lastRowKey) {
         if (salesOrder.getLatestJson().getOrderRows().stream()
-                .noneMatch(r -> Objects.equals(lastRowKey, r.getRowKey()))) {
+                .noneMatch(r -> StringUtils.pathEquals(r.getSku(), itemSku))) {
             return lastRowKey + 1;
         }
         return lastRowKey;
@@ -93,7 +93,7 @@ public class OrderUtil {
         var sumOfGoodsPriceNet = getMultipliedValue(unitPriceNet, item.getQuantity());
 
         OrderRows orderRow = OrderRows.builder()
-                .rowKey(lastRowKey + 1)
+                .rowKey(originalOrderRow.getRowKey() != null ? originalOrderRow.getRowKey() : lastRowKey + 1)
                 .isCancelled(false)
                 .isPriceHammer(originalOrderRow.getIsPriceHammer())
                 .sku(item.getItemNumber())

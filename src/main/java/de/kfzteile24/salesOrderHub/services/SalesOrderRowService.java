@@ -265,7 +265,7 @@ public class SalesOrderRowService {
             var orderRow = orderUtil.createNewOrderRow(item, salesOrder, lastRowKey);
             orderUtil.updateOrderRowValues(orderRow, item);
             returnLatestJson.getOrderRows().add(orderRow);
-            lastRowKey = orderUtil.updateLastRowKey(salesOrder, lastRowKey);
+            lastRowKey = orderUtil.updateLastRowKey(salesOrder, item.getItemNumber(), lastRowKey);
         }
 
         totals.setGoodsTotalGross(BigDecimal.ZERO);

@@ -159,7 +159,7 @@ public class SalesOrderService {
         for (CoreSalesFinancialDocumentLine item : items) {
             if (!item.getIsShippingCost()) {
                 orderRows.add(orderUtil.createNewOrderRow(item, originalSalesOrder, lastRowKey));
-                lastRowKey = orderUtil.updateLastRowKey(originalSalesOrder, lastRowKey);
+                lastRowKey = orderUtil.updateLastRowKey(originalSalesOrder, item.getItemNumber(), lastRowKey);
             }
         }
         orderRows = orderRows.stream()
