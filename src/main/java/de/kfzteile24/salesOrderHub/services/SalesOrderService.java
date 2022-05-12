@@ -155,9 +155,11 @@ public class SalesOrderService {
         CoreSalesInvoiceHeader salesInvoiceHeader = coreSalesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
         var items = salesInvoiceHeader.getInvoiceLines();
         List<OrderRows> orderRows = new ArrayList<>();
+        var lastRowKey = orderUtil.getLastRowKey(originalSalesOrder);
         for (CoreSalesFinancialDocumentLine item : items) {
             if (!item.getIsShippingCost()) {
-                orderRows.add(orderUtil.createNewOrderRow(item, originalSalesOrder));
+                orderRows.add(orderUtil.createNewOrderRow(item, originalSalesOrder, lastRowKey));
+                lastRowKey = orderUtil.updateLastRowKey(originalSalesOrder, item.getItemNumber(), lastRowKey);
             }
         }
         orderRows = orderRows.stream()
