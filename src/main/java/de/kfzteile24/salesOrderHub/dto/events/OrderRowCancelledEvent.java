@@ -15,5 +15,5 @@ public class OrderRowCancelledEvent {
 
     private String orderNumber;
 
-    private String orderRowNumber;
+    private String sku;
 }

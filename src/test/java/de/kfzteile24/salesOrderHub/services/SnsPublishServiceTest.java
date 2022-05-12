@@ -156,7 +156,7 @@ class SnsPublishServiceTest {
 
         var expectedEvent = OrderRowCancelledEvent.builder()
                 .orderNumber(latestOrderJson.getOrderHeader().getOrderNumber())
-                .orderRowNumber(canceledOrderRow.getSku())
+                .sku(canceledOrderRow.getSku())
                 .build();
 
         verify(notificationMessagingTemplate).sendNotification(
@@ -166,7 +166,7 @@ class SnsPublishServiceTest {
                         final var publishedEvent = objectMapper.readValue(((String) json), OrderRowCancelledEvent.class);
 
                         assertEquals(expectedEvent.getOrderNumber(), publishedEvent.getOrderNumber());
-                        assertEquals(expectedEvent.getOrderRowNumber(), publishedEvent.getOrderRowNumber());
+                        assertEquals(expectedEvent.getSku(), publishedEvent.getSku());
                     } catch (JsonProcessingException e) {
                         throw new IllegalArgumentException(e);
                     }
@@ -345,7 +345,7 @@ class SnsPublishServiceTest {
 
         var expectedEvent = OrderRowCancelledEvent.builder()
                 .orderNumber(latestOrderJson.getOrderHeader().getOrderNumber())
-                .orderRowNumber(canceledOrderRow.getSku())
+                .sku(canceledOrderRow.getSku())
                 .build();
 
         verify(notificationMessagingTemplate).sendNotification(
@@ -355,7 +355,7 @@ class SnsPublishServiceTest {
                         final var publishedEvent = objectMapper.readValue(((String) json), OrderRowCancelledEvent.class);
 
                         assertEquals(expectedEvent.getOrderNumber(), publishedEvent.getOrderNumber());
-                        assertEquals(expectedEvent.getOrderRowNumber(), publishedEvent.getOrderRowNumber());
+                        assertEquals(expectedEvent.getSku(), publishedEvent.getSku());
                     } catch (JsonProcessingException e) {
                         throw new IllegalArgumentException(e);
                     }
