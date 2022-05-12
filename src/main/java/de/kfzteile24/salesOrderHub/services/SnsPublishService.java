@@ -55,7 +55,7 @@ public class SnsPublishService {
     public void publishOrderRowCancelled(String orderNumber, String orderRowId) {
         final var orderRowCancelled = OrderRowCancelledEvent.builder()
                 .orderNumber(orderNumber)
-                .orderRowNumber(orderRowId)
+                .sku(orderRowId)
                 .build();
 
         publishEvent(config.getSnsSalesOrderRowCancelled(), "Sales order row cancelled",
@@ -131,7 +131,7 @@ public class SnsPublishService {
     public void publishMigrationOrderRowCancelled(String orderNumber, String orderRowId) {
         final var orderRowCancelled = OrderRowCancelledEvent.builder()
                 .orderNumber(orderNumber)
-                .orderRowNumber(orderRowId)
+                .sku(orderRowId)
                 .build();
 
         publishEvent(config.getSnsMigrationSalesOrderRowCancelledV1(), "Sales order row cancelled",
