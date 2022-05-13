@@ -311,15 +311,15 @@ public class SalesOrderService {
         for (OrderRows orderRow : order.getOrderRows()) {
             BigDecimal taxValue = orderRow.getSumValues().getGoodsValueGross()
                     .subtract(orderRow.getSumValues().getGoodsValueNet());
-            String taxType = oldGrandTotalTaxesList.stream()
+            var grandTotalTax = oldGrandTotalTaxesList.stream()
                     .filter(tax -> tax.getRate().equals(orderRow.getTaxRate()))
-                    .map(GrandTotalTaxes::getType).findFirst().orElse(null);
+                    .findFirst().orElse(null);
 
             grandTotalTaxesList.stream()
                     .filter(tax -> tax.getRate().equals(orderRow.getTaxRate())).findFirst()
                     .ifPresent(grandTotalTaxes -> {
                         grandTotalTaxes.setValue(grandTotalTaxes.getValue().add(taxValue));
-                        grandTotalTaxes.setType(taxType);
+                        grandTotalTaxes.setType(grandTotalTax != null ? grandTotalTax.getType() : null);
                     });
         }
         return grandTotalTaxesList;
