@@ -123,6 +123,7 @@ public class SalesOrderService {
         order.getOrderHeader().setPlatform(Platform.SOH);
         order.getOrderHeader().setOrderNumber(newOrderNumber);
         order.getOrderHeader().setDocumentRefNumber(salesInvoiceHeader.getInvoiceNumber());
+        salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader().setOrderNumber(newOrderNumber);
         var shippingCostDocumentLine =  salesInvoiceHeader.getInvoiceLines().stream()
                 .filter(CoreSalesFinancialDocumentLine::getIsShippingCost).findFirst().orElse(null);
         recalculateTotals(order, shippingCostDocumentLine);

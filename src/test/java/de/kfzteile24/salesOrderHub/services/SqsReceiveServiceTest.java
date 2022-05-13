@@ -132,6 +132,7 @@ class SqsReceiveServiceTest {
 
         verify(salesOrderService).createSalesOrderForInvoice(any(CoreSalesInvoiceCreatedMessage.class), any(SalesOrder.class),any(String.class));
         verify(camundaHelper).createOrderProcess(any(SalesOrder.class), any(Messages.class));
+        verify(camundaHelper).startInvoiceCreatedReceivedProcess(salesOrder);
     }
 
     @Test
