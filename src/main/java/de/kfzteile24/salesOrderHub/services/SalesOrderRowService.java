@@ -7,7 +7,8 @@ import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
-import de.kfzteile24.salesOrderHub.dto.mapper.CreditNoteEventMapper;
+import de.kfzteile24.salesOrderHub.dto.shared.creditnote.SalesCreditNote;
+import de.kfzteile24.salesOrderHub.dto.shared.creditnote.SalesCreditNoteHeader;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
@@ -32,7 +33,6 @@ import org.apache.commons.compress.utils.Lists;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -80,9 +80,6 @@ public class SalesOrderRowService {
 
     @NonNull
     private final InvoiceService invoiceService;
-
-    @Autowired
-    private CreditNoteEventMapper creditNoteEventMapper;
 
     public boolean cancelOrderProcessIfFullyCancelled(SalesOrder salesOrder) {
 
@@ -193,14 +190,13 @@ public class SalesOrderRowService {
 
         String newOrderNumber = orderUtil.createOrderNumberInSOH(orderNumber, salesCreditNoteHeader.getCreditNoteNumber());
         returnOrderJson.getOrderHeader().setOrderNumber(newOrderNumber);
-        var creditNoteMsg = creditNoteEventMapper.updateByOrderNumber(salesCreditNoteCreatedMessage, newOrderNumber);
 
         var salesOrderReturn = SalesOrderReturn.builder()
                 .orderGroupId(orderNumber)
                 .orderNumber(newOrderNumber)
                 .returnOrderJson(returnOrderJson)
                 .salesOrder(salesOrder)
-                .salesCreditNoteCreatedMessage(creditNoteMsg)
+                .salesCreditNoteCreatedMessage(updateByOrderNumber(salesCreditNoteCreatedMessage, newOrderNumber))
                 .build();
 
         SalesOrderReturn savedSalesOrderReturn = salesOrderReturnService.save(salesOrderReturn);
@@ -209,6 +205,26 @@ public class SalesOrderRowService {
             log.info("New return order process started for order number: {}. Process-Instance-ID: {} ",
                     orderNumber, result.getProcessInstanceId());
         }
+    }
+
+    private SalesCreditNoteCreatedMessage updateByOrderNumber(SalesCreditNoteCreatedMessage message,
+                                                              String newOrderNumber) {
+        return SalesCreditNoteCreatedMessage.builder()
+                .salesCreditNote(SalesCreditNote.builder()
+                        .salesCreditNoteHeader(SalesCreditNoteHeader.builder()
+                                .orderNumber(newOrderNumber)
+                                .orderGroupId(message.getSalesCreditNote().getSalesCreditNoteHeader().getOrderGroupId())
+                                .creditNoteNumber(message.getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteNumber())
+                                .creditNoteDate(message.getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteDate())
+                                .currencyCode(message.getSalesCreditNote().getSalesCreditNoteHeader().getCurrencyCode())
+                                .netAmount(message.getSalesCreditNote().getSalesCreditNoteHeader().getNetAmount())
+                                .grossAmount(message.getSalesCreditNote().getSalesCreditNoteHeader().getGrossAmount())
+                                .billingAddress(message.getSalesCreditNote().getSalesCreditNoteHeader().getBillingAddress())
+                                .creditNoteLines(message.getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteLines())
+                                .build())
+                        .deliveryNotes(message.getSalesCreditNote().getDeliveryNotes())
+                        .build())
+                .build();
     }
 
     @Transactional
