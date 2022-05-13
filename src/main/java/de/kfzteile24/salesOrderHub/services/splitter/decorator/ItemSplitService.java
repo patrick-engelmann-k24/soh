@@ -15,9 +15,11 @@ import java.util.ArrayList;
 public class ItemSplitService extends AbstractSplitDecorator {
 
     @Override
-    //TODO: implement in a different story
+    /**
+     * This method splits up set items into single items
+     */
     public void processOrderList(ArrayList<Order> orderList) {
-
+        //TODO: implement in a different story
     }
 
 }

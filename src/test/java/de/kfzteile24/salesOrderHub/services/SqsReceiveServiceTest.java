@@ -18,7 +18,6 @@ import lombok.SneakyThrows;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -37,23 +36,10 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerTy
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.PAYPAL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getOrder;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getCreditNoteMsg;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrderReturn;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrderFromOrder;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createOrderNumberInSOH;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.argThat;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * @author vinaya
