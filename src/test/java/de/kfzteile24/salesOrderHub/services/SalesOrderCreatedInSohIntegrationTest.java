@@ -271,6 +271,7 @@ class SalesOrderCreatedInSohIntegrationTest {
         assertEquals(sku, row.getSku());
         assertEquals(new BigDecimal(quantity), row.getQuantity());
         assertEquals(new BigDecimal(taxRate), row.getTaxRate());
+        assertEquals("shipment_regular", row.getShippingType());
         assertEquals(expectedUnitValues.getGoodsValueGross(), row.getUnitValues().getGoodsValueGross());
         assertEquals(expectedUnitValues.getGoodsValueNet(), row.getUnitValues().getGoodsValueNet());
         assertEquals(expectedUnitValues.getDiscountGross(), row.getUnitValues().getDiscountGross());
