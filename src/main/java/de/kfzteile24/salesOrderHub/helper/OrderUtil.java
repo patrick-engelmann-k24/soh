@@ -1,5 +1,6 @@
 package de.kfzteile24.salesOrderHub.helper;
 
+import de.kfzteile24.salesOrderHub.configuration.DropShipmentConfig;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesFinancialDocumentLine;
 import de.kfzteile24.salesOrderHub.dto.sns.shared.OrderItem;
@@ -9,6 +10,8 @@ import de.kfzteile24.soh.order.dto.SumValues;
 import de.kfzteile24.soh.order.dto.UnitValues;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -34,6 +37,8 @@ import static java.math.RoundingMode.HALF_UP;
 @Slf4j
 @RequiredArgsConstructor
 public class OrderUtil {
+
+    private final DropShipmentConfig config;
 
     private final ObjectUtil objectUtil;
 
@@ -130,6 +135,35 @@ public class OrderUtil {
                 .build();
         updateOrderRowValues(orderRow, item);
         return orderRow;
+    }
+
+    public boolean containsDropShipmentItems(Order order) {
+        for (final var rows : order.getOrderRows()) {
+            if (isDropShipmentItem(rows)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean containsOnlyDropShipmentItems(Order order) {
+        if (CollectionUtils.isEmpty(order.getOrderRows())) {
+            return false;
+        }
+        for (final var rows : order.getOrderRows()) {
+            if (!isDropShipmentItem(rows)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public boolean containsOnlyRegularItems(Order order) {
+        return !containsDropShipmentItems(order);
+    }
+
+    public boolean isDropShipmentItem(OrderRows rows) {
+        return config.getDropShipmentSplitGenarts().contains(rows.getGenart());
     }
 
     protected OrderRows updateOrderRowByNewItemValues(OrderRows row, CoreSalesFinancialDocumentLine item) {
