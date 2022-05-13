@@ -5,9 +5,7 @@ import de.kfzteile24.salesOrderHub.services.splitter.decorator.ItemSplitService;
 import de.kfzteile24.salesOrderHub.services.splitter.decorator.OrderSplitService;
 import de.kfzteile24.salesOrderHub.services.splitter.decorator.SplitOrderRecalculationService;
 import de.kfzteile24.soh.order.dto.Order;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -17,14 +15,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SplitterService {
 
-    @NonNull
-    ItemSplitService itemSplitService;
+    private final ItemSplitService itemSplitService;
 
-    @NonNull
-    OrderSplitService orderSplitService;
+    private final OrderSplitService orderSplitService;
 
-    @NonNull
-    SplitOrderRecalculationService splitOrderRecalculationService;
+    private final SplitOrderRecalculationService splitOrderRecalculationService;
 
     /**
      * Split up the order and set items. Recalculates also the partial orders and starts the business process(es)

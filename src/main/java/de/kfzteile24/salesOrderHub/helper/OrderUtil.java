@@ -11,7 +11,6 @@ import de.kfzteile24.soh.order.dto.UnitValues;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -21,11 +20,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getGrossValue;
-import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getMultipliedValue;
-import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getValueOrDefault;
-import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.isNotNullAndNotEqual;
-import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.round;
+import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.*;
 import static java.math.RoundingMode.HALF_UP;
 
 /**

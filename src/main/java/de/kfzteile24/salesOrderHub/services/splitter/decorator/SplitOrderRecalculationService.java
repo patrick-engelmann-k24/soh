@@ -21,6 +21,7 @@ public class SplitOrderRecalculationService extends AbstractSplitDecorator {
     public void processOrderList(ArrayList<Order> orderList) {
         if (onlyRegularItemsInOriginalOrder(orderList) || onlyDropShipmentItemsInOriginalOrder(orderList)) {
             // no recalculation totals is needed
+            return;
         } else if (orderList.size() == 2) {
             Order originalOrder = orderList.get(0);
             Order splittedOrder = orderList.get(1);

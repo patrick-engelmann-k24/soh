@@ -1,7 +1,6 @@
 package de.kfzteile24.salesOrderHub.configuration;
 
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 

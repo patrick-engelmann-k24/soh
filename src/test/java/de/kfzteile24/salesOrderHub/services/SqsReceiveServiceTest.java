@@ -18,6 +18,7 @@ import lombok.SneakyThrows;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -28,6 +29,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -69,6 +71,8 @@ class SqsReceiveServiceTest {
     @Mock
     private SalesOrderService salesOrderService;
     @Mock
+    private SplitterService splitterService;
+    @Mock
     private SalesOrderReturnService salesOrderReturnService;
     @Mock
     private SalesOrderRowService salesOrderRowService;
@@ -85,6 +89,7 @@ class SqsReceiveServiceTest {
     @InjectMocks
     private SqsReceiveService sqsReceiveService;
 
+
     @Test
     void testQueueListenerEcpShopOrders() {
         String rawMessage = readResource("examples/ecpOrderMessage.json");
@@ -92,6 +97,7 @@ class SqsReceiveServiceTest {
         salesOrder.setRecurringOrder(false);
 
         when(salesOrderService.createSalesOrder(any())).thenReturn(salesOrder);
+        when(splitterService.splitSalesOrder(any())).thenReturn(Collections.singletonList(salesOrder));
 
         sqsReceiveService.queueListenerEcpShopOrders(rawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
@@ -109,6 +115,7 @@ class SqsReceiveServiceTest {
         salesOrder.setRecurringOrder(false);
 
         when(salesOrderService.getOrderByOrderNumber("524001240")).thenReturn(Optional.of(salesOrder));
+        when(splitterService.splitSalesOrder(any())).thenReturn(Collections.singletonList(salesOrder));
 
         sqsReceiveService.queueListenerEcpShopOrders(rawMessage, senderId, ANY_RECEIVE_COUNT);
 
@@ -283,6 +290,7 @@ class SqsReceiveServiceTest {
         when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.empty());
         when(salesOrderService.createSalesOrder(any())).thenReturn(salesOrder);
         when(featureFlagConfig.getIgnoreMigrationCoreSalesOrder()).thenReturn(false);
+        when(splitterService.splitSalesOrder(any())).thenReturn(Collections.singletonList(salesOrder));
 
         sqsReceiveService.queueListenerMigrationCoreSalesOrderCreated(rawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
