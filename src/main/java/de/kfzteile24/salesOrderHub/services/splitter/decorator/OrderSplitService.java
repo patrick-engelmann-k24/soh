@@ -1,16 +1,15 @@
 package de.kfzteile24.salesOrderHub.services.splitter.decorator;
 
-import de.kfzteile24.salesOrderHub.configuration.DropShipmentConfig;
 import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.collections.CollectionUtils;towired;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 /**
  * This class splits single orders into multiple orders (
@@ -71,5 +70,6 @@ public class OrderSplitService extends AbstractSplitDecorator {
 
     private Order updateExistingOrder(Order originalOrder) {
         originalOrder.getOrderHeader().setOrderFulfillment(ORDER_FULFILLMENT_DELTICOM);
+        return originalOrder;
     }
 }

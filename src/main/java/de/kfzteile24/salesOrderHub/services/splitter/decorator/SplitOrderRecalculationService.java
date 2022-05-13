@@ -2,12 +2,11 @@ package de.kfzteile24.salesOrderHub.services.splitter.decorator;
 
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
+import de.kfzteile24.salesOrderHub.services.splitter.SplitterException;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 
 @Service
@@ -28,9 +27,9 @@ public class SplitOrderRecalculationService extends AbstractSplitDecorator {
             salesOrderService.recalculateTotals(originalOrder);
             salesOrderService.recalculateTotalsForSplittedOrder(splittedOrder);
         } else {
-            throw new IllegalArgumentException("The order, which contains both regular and dropshipment items " +
+            throw new SplitterException(new IllegalArgumentException("The order, which contains both regular and dropshipment items " +
                     "must be splitted in exactly two orders. Please, review the code, the implemenation has been changed by someone and" +
-                    "this code doesn't work correctly anymore!!!");
+                    "this code doesn't work correctly anymore!!!"));
         }
     }
 
