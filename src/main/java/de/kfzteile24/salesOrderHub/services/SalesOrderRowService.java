@@ -365,18 +365,22 @@ public class SalesOrderRowService {
     public void cancelOrderRow(String orderRowId, String orderNumber) {
 
         markOrderRowAsCancelled(orderNumber, orderRowId);
+
+        if (helper.checkIfActiveProcessExists(orderNumber)) {
+            removeCancelledOrderRowFromProcessVariables(orderNumber, orderRowId);
+        } else {
+            log.debug("Sales order process does not exist for order number {}", orderNumber);
+        }
+
         if (helper.checkIfOrderRowProcessExists(orderNumber, orderRowId)) {
             correlateMessageForOrderRowCancelCancellation(orderNumber, orderRowId);
 
         } else {
             log.debug("Sales order row process does not exist for order number {} and order row: {}",
                     orderNumber, orderRowId);
-        }
 
-        if (helper.checkIfActiveProcessExists(orderNumber)) {
-            removeCancelledOrderRowFromProcessVariables(orderNumber, orderRowId);
-        } else {
-            log.debug("Sales order process does not exist for order number {}", orderNumber);
+            snsPublishService.publishOrderRowCancelled(orderNumber, orderRowId);
+            log.debug("Published Order row cancelled for order number: {} and order row: {}", orderNumber, orderRowId);
         }
         log.info("Order row cancelled for order number: {} and order row: {}", orderNumber, orderRowId);
     }
