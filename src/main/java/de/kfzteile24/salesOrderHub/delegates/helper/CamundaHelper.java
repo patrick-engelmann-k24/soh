@@ -2,8 +2,8 @@ package de.kfzteile24.salesOrderHub.delegates.helper;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
@@ -210,14 +210,19 @@ public class CamundaHelper {
     /**
      * Send message to bpmn engine
      */
-    public MessageCorrelationResult createOrderRowProcess(RowMessages itemMessages,
-                                                          String orderNumber,
-                                                          String orderGroupId,
-                                                          String orderItemSku) {
+    public MessageCorrelationResult correlateMessageForOrderRowProcess(
+            RowMessages itemMessages, String orderNumber, RowEvents rowEvent, String orderItemSku) {
+
+        List<Execution> processList = runtimeService.createExecutionQuery().
+                processDefinitionKey(SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName())
+                .processInstanceBusinessKey(orderNumber + "#" + orderItemSku)
+                .activityId(rowEvent.getName())
+                .list();
+        var processInstanceId = processList.stream().findFirst().orElseThrow().getProcessInstanceId();
+
         return runtimeService.createMessageCorrelation(itemMessages.getName())
                 .processInstanceBusinessKey(orderNumber + "#" + orderItemSku)
-                .setVariable(ORDER_GROUP_ID.getName(), orderGroupId)
-                .setVariable(RowVariables.ORDER_ROW_ID.getName(), orderItemSku)
+                .processInstanceId(processInstanceId)
                 .correlateWithResult();
     }
 }
