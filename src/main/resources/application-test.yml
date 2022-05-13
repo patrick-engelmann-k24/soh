@@ -97,3 +97,6 @@ camunda:
 
 ignoreCoreSalesInvoice: false
 ignoreCoreCreditNote: false
+ignoreMigrationCoreSalesInvoice: false
+ignoreMigrationCoreSalesCreditNote: false
+ignoreMigrationCoreSalesOrder: false

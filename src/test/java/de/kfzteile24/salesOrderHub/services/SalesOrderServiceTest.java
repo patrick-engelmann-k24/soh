@@ -187,6 +187,8 @@ class SalesOrderServiceTest {
                         .value(new BigDecimal("33.50"))
                         .build())
         );
+        invoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader().setOrderNumber(newOrderNumber);
+        assertThat(createdSalesOrder.getInvoiceEvent()).isEqualTo(invoiceCreatedMessage);
     }
 
     private CoreSalesInvoiceCreatedMessage createCoreSalesInvoiceCreatedMessage(String orderNumber, String sku) {

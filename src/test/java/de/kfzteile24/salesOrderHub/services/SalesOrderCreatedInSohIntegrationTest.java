@@ -13,6 +13,7 @@ import de.kfzteile24.soh.order.dto.Totals;
 import de.kfzteile24.soh.order.dto.UnitValues;
 import lombok.SneakyThrows;
 import org.camunda.bpm.engine.ProcessEngine;
+import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,6 +30,8 @@ import java.util.List;
 import java.util.Objects;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.MSG_ORDER_PAYMENT_SECURED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_GROUP_ID;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createOrderNumberInSOH;
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -56,6 +59,8 @@ class SalesOrderCreatedInSohIntegrationTest {
     private AuditLogRepository auditLogRepository;
     @Autowired
     private ProcessEngine processEngine;
+    @Autowired
+    private RuntimeService runtimeService;
     @Autowired
     private SalesOrderUtil salesOrderUtil;
     @Autowired
@@ -129,6 +134,7 @@ class SalesOrderCreatedInSohIntegrationTest {
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku1)));
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku2)));
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku3)));
+        assertTrue(timerService.pollWithDefaultTiming(() -> checkIfInvoiceCreatedReceivedProcessExists(newOrderNumberCreatedInSoh)));
         checkTotalsValues(newOrderNumberCreatedInSoh,
                 "432.52",
                 "360.64",
@@ -140,6 +146,17 @@ class SalesOrderCreatedInSohIntegrationTest {
                 "13.08",
                 "10.99");
         checkOrderRows(newOrderNumberCreatedInSoh, rowSku1, rowSku2, rowSku3);
+    }
+
+    private boolean checkIfInvoiceCreatedReceivedProcessExists(String newOrderNumberCreatedInSoh) {
+        SalesOrder updatedOrder = salesOrderService.getOrderByOrderNumber(newOrderNumberCreatedInSoh).orElse(null);
+        if (updatedOrder == null || updatedOrder.getId() == null)
+            return false;
+        return !runtimeService.createProcessInstanceQuery()
+                .processInstanceBusinessKey(updatedOrder.getId().toString())
+                .variableValueEquals(ORDER_NUMBER.getName(), updatedOrder.getOrderNumber())
+                .variableValueEquals(ORDER_GROUP_ID.getName(), updatedOrder.getOrderGroupId())
+                .list().isEmpty();
     }
 
     private void checkTotalsValues(String orderNumber,
@@ -254,6 +271,7 @@ class SalesOrderCreatedInSohIntegrationTest {
         assertEquals(sku, row.getSku());
         assertEquals(new BigDecimal(quantity), row.getQuantity());
         assertEquals(new BigDecimal(taxRate), row.getTaxRate());
+        assertEquals("shipment_regular", row.getShippingType());
         assertEquals(expectedUnitValues.getGoodsValueGross(), row.getUnitValues().getGoodsValueGross());
         assertEquals(expectedUnitValues.getGoodsValueNet(), row.getUnitValues().getGoodsValueNet());
         assertEquals(expectedUnitValues.getDiscountGross(), row.getUnitValues().getDiscountGross());

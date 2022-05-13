@@ -461,6 +461,7 @@ class SqsReceiveServiceIntegrationTest {
         assertNotNull(orderRows);
         assertEquals(quantity, orderRows.getQuantity());
         assertEquals(taxRate, orderRows.getTaxRate());
+        assertEquals("shipment_regular", orderRows.getShippingType());
 
         assertEquals(unitNetValue, orderRows.getUnitValues().getGoodsValueNet());
         assertEquals(unitGrossValue, orderRows.getUnitValues().getGoodsValueGross());
