@@ -1,8 +1,8 @@
 package de.kfzteile24.salesOrderHub.services;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
@@ -31,6 +31,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.utils.Lists;
 import org.camunda.bpm.engine.RuntimeService;
+import org.camunda.bpm.engine.runtime.Execution;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Service;
@@ -46,6 +47,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_CREDIT_NOTE_CREATED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_BOOKED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ITEM_SHIPPED;
@@ -405,6 +407,7 @@ public class SalesOrderRowService {
 
         final var latestJson = salesOrder.getLatestJson();
         OrderRows cancelledOrderRow = latestJson.getOrderRows().stream()
+                .filter(row -> !row.getIsCancelled())
                 .filter(row -> orderRowId.equals(row.getSku())).findFirst()
                 .orElseThrow(() -> new NotFoundException(
                         MessageFormat.format("Could not find order row with SKU {0} for order {1}",
@@ -462,20 +465,30 @@ public class SalesOrderRowService {
 
     private void correlateMessageForOrderRowCancelCancellation(String orderNumber, String orderRowId) {
         log.info("Starting cancelling order row process for order number: {} and order row: {}", orderNumber, orderRowId);
-        runtimeService.createMessageCorrelation(RowMessages.ORDER_ROW_CANCELLATION_RECEIVED.getName())
-                .processInstanceVariableEquals(Variables.ORDER_NUMBER.getName(), orderNumber)
-                .processInstanceVariableEquals(RowVariables.ORDER_ROW_ID.getName(), orderRowId)
-                .correlateWithResultAndVariables(true);
+        List<Execution> processList = runtimeService.createExecutionQuery().
+                processDefinitionKey(SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName())
+                .processInstanceBusinessKey(orderNumber + "#" + orderRowId)
+                .list();
+        if (!processList.isEmpty()) {
+            var processInstanceId = processList.stream().findFirst().orElseThrow().getProcessInstanceId();
+            runtimeService.createMessageCorrelation(RowMessages.ORDER_ROW_CANCELLATION_RECEIVED.getName())
+                    .processInstanceBusinessKey(orderNumber + "#" + orderRowId)
+                    .processInstanceId(processInstanceId)
+                    .correlateWithResult();
+        } else {
+            log.info("Could not find Order Row process for order number: {} and sku: {}", orderNumber, orderRowId);
+        }
     }
 
     public void publishOrderRowMsg(RowMessages rowMessage,
                                    String orderGroupId,
                                    String orderItemSku,
                                    String logMessage,
-                                   String rawMessage) {
+                                   String rawMessage,
+                                   RowEvents rowEvents) {
         salesOrderService.getOrderNumberListByOrderGroupIdAndFilterNotCancelled(orderGroupId, orderItemSku).forEach(orderNumber -> {
             try {
-                MessageCorrelationResult result = helper.createOrderRowProcess(rowMessage, orderNumber, orderGroupId, orderItemSku);
+                MessageCorrelationResult result = helper.correlateMessageForOrderRowProcess(rowMessage, orderNumber, rowEvents, orderItemSku);
 
                 if (!result.getExecution().getProcessInstanceId().isEmpty()) {
                     log.info("{} message for order-number {} and sku {} successfully received",

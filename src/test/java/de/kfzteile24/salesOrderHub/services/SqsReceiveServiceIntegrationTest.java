@@ -52,11 +52,9 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_ECP;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_PAYMENT_SECURED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_GROUP_ID;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SHIPMENT_METHOD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.ORDER_ROW_ID;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrderFromOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getOrder;
@@ -135,8 +133,6 @@ class SqsReceiveServiceIntegrationTest {
         var processInstanceList = runtimeService.createProcessInstanceQuery()
                 .processDefinitionKey(SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName())
                 .variableValueEquals(ORDER_NUMBER.getName(), salesOrder.getOrderNumber())
-                .variableValueEquals(ORDER_GROUP_ID.getName(), salesOrder.getOrderGroupId())
-                .variableValueEquals(ORDER_ROW_ID.getName(), orderRowId)
                 .list();
 
         assertThat(processInstanceList).hasSize(1);
@@ -169,8 +165,6 @@ class SqsReceiveServiceIntegrationTest {
         var processInstanceList1 = runtimeService.createProcessInstanceQuery()
                 .processDefinitionKey(SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName())
                 .variableValueEquals(ORDER_NUMBER.getName(), salesOrder1.getOrderNumber())
-                .variableValueEquals(ORDER_GROUP_ID.getName(), salesOrder1.getOrderGroupId())
-                .variableValueEquals(ORDER_ROW_ID.getName(), orderRowId)
                 .list();
 
         assertThat(processInstanceList1).hasSize(1);
@@ -178,8 +172,6 @@ class SqsReceiveServiceIntegrationTest {
         var processInstanceList2 = runtimeService.createProcessInstanceQuery()
                 .processDefinitionKey(SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName())
                 .variableValueEquals(ORDER_NUMBER.getName(), salesOrder2.getOrderNumber())
-                .variableValueEquals(ORDER_GROUP_ID.getName(), salesOrder1.getOrderGroupId())
-                .variableValueEquals(ORDER_ROW_ID.getName(), orderRowId)
                 .list();
 
         assertThat(processInstanceList2).hasSize(1);
@@ -379,12 +371,10 @@ class SqsReceiveServiceIntegrationTest {
         );
 
         String message = readResource("examples/dropshipmentOrderPurchasedBookedFalse.json");
-        message =message.replace("123",salesOrder.getOrderNumber());
-            sqsReceiveService.queueListenerDropshipmentPurchaseOrderBooked(message,ANY_SENDER_ID,ANY_RECEIVE_COUNT);
+        message = message.replace("123", salesOrder.getOrderNumber());
+        sqsReceiveService.queueListenerDropshipmentPurchaseOrderBooked(message, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
-        assertFalse(timerService.poll(Duration.ofSeconds(7),Duration.
-
-        ofSeconds(2), ()->
+        assertFalse(timerService.poll(Duration.ofSeconds(7),Duration.ofSeconds(2), ()->
                 camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(),"2270-13012")&&
                 camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(),"2270-13013")&&
                 camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())
