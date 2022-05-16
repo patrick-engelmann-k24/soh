@@ -5,6 +5,7 @@ import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ import java.util.UUID;
  * This class splits single orders into multiple orders (
  */
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class OrderSplitService extends AbstractSplitDecorator {
     public static final String ORDER_FULFILLMENT_DELTICOM = "delticom";
@@ -25,12 +27,19 @@ public class OrderSplitService extends AbstractSplitDecorator {
 
     @Override
     public void processOrderList(ArrayList<Order> orderList) {
+        List<Order> splittedOrders = new ArrayList<>();
         for (Order order: orderList) {
-            splitOrderIfNecessary(orderList, order);
+           Order dsOrder = splitOrderIfNecessary(order);
+           if (dsOrder != null){
+               splittedOrders.add((dsOrder));
+           }
+        }
+        for (Order order: splittedOrders) {
+            orderList.add(order);
         }
     }
 
-    public void splitOrderIfNecessary(final List<Order> orderList, final Order currentOrder) {
+    public Order splitOrderIfNecessary(final Order currentOrder) {
 
         // Scenario 1: There are only dropshipment items (no split is needed, change fulfillment to delticom)
         // Scenario 2: There are some dropshipment items (split as usual)
@@ -50,8 +59,10 @@ public class OrderSplitService extends AbstractSplitDecorator {
 
             currentOrder.getOrderRows().removeAll(toRemove);
 
-            orderList.add(dsOrder);
+            return dsOrder;
         }
+
+        return null;
     }
 
     /**

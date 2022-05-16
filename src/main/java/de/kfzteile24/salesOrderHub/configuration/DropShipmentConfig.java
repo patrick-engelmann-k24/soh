@@ -10,15 +10,11 @@ import javax.validation.constraints.NotNull;
 import java.util.List;
 
 @Configuration
-@ConfigurationProperties(prefix = "kfzteile")
+@ConfigurationProperties(prefix = "kfzteile.dropshipment")
 @Data
 public class DropShipmentConfig {
 
     @NotNull
     @NotEmpty
-    private Boolean deleteUnusedProcesses;
-
-    @NotNull
-    @NotEmpty
-    private List<@NotBlank String> dropShipmentSplitGenarts;
+    private List<@NotBlank String> splitGenarts;
 }

@@ -13,9 +13,9 @@ import java.util.ArrayList;
 @RequiredArgsConstructor
 public class SplitOrderRecalculationService extends AbstractSplitDecorator {
 
-    private SalesOrderService salesOrderService;
+    private final SalesOrderService salesOrderService;
 
-    private OrderUtil orderUtil;
+    private final OrderUtil orderUtil;
 
     @Override
     public void processOrderList(ArrayList<Order> orderList) {

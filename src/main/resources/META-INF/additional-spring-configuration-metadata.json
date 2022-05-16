@@ -4,5 +4,10 @@
       "name": "spring.datasource.jdbcUrl",
       "type": "java.lang.String",
       "description": "Description for spring.datasource.jdbcUrl."
+  },
+  {
+    "name": "dropshipment.splitGenarts",
+    "type": "java.util.List<java.lang.String>",
+    "description": "Description for dropshipment.splitGenarts."
   }
 ] }

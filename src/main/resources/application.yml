@@ -138,6 +138,11 @@ kfzteile:
       publish-delay: PT10S
   orderReturnProcess:
     publishDelay: PT10S
+  dropShipment:
+    splitGenarts:
+      - 10033
+      - 10034
+      - 10035
 
 ignoreCoreSalesInvoice: ${ignore_core_sales_invoice}
 ignoreCoreCreditNote: ${ignore_core_credit_note}

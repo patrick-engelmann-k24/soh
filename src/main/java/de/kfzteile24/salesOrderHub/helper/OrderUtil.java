@@ -159,7 +159,7 @@ public class OrderUtil {
     }
 
     public boolean isDropShipmentItem(OrderRows rows) {
-        return config.getDropShipmentSplitGenarts().contains(rows.getGenart());
+        return config.getSplitGenarts().contains(rows.getGenart());
     }
 
     protected OrderRows updateOrderRowByNewItemValues(OrderRows row, CoreSalesFinancialDocumentLine item) {
