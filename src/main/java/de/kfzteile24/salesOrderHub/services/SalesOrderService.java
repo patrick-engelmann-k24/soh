@@ -293,18 +293,9 @@ public class SalesOrderService {
                 .build();
 
         if (shippingCostLine) {
-            //full tax value that includes the shipping and discount
-            BigDecimal fullTaxValue = grandTotalGross.subtract(grandTotalNet);
-
-            //tax value only for the product
-            BigDecimal sumTaxValues = totals.getGrandTotalTaxes().stream()
-                    .map(GrandTotalTaxes::getValue).reduce(BigDecimal.ZERO, BigDecimal::add);
-
-            //tax value for the shipping and discount
-            BigDecimal taxValueToAdd = fullTaxValue.subtract(sumTaxValues);
-
+            BigDecimal shippingTaxToAdd = shippingCostGross.subtract(shippingCostNet);
             totals.getGrandTotalTaxes().stream().findFirst().
-                    ifPresent(tax -> tax.setValue(tax.getValue().add(taxValueToAdd)));
+                    ifPresent(tax -> tax.setValue(tax.getValue().add(shippingTaxToAdd)));
         }
 
         order.getOrderHeader().setTotals(totals);
@@ -317,8 +308,8 @@ public class SalesOrderService {
                 .map(this::createGrandTotalTaxesFromOrderRow).distinct().collect(Collectors.toList());
 
         for (OrderRows orderRow : order.getOrderRows()) {
-            BigDecimal taxValue = orderRow.getSumValues().getGoodsValueGross()
-                    .subtract(orderRow.getSumValues().getGoodsValueNet());
+            BigDecimal taxValue = orderRow.getSumValues().getTotalDiscountedGross()
+                    .subtract(orderRow.getSumValues().getTotalDiscountedNet());
             var grandTotalTax = oldGrandTotalTaxesList.stream()
                     .filter(tax -> tax.getRate().equals(orderRow.getTaxRate()))
                     .findFirst().orElse(null);
