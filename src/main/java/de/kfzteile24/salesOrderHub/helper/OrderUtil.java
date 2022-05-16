@@ -20,7 +20,11 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.*;
+import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getGrossValue;
+import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getMultipliedValue;
+import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getValueOrDefault;
+import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.isNotNullAndNotEqual;
+import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.round;
 import static java.math.RoundingMode.HALF_UP;
 
 /**
