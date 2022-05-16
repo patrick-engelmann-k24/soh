@@ -30,6 +30,20 @@ spring:
       web:
         exposure:
           include: info, health,configprops
+  security:
+    oauth2:
+      client:
+        registration:
+          pdh:
+            authorizationGrantType: client_credentials
+            clientId:  ${pdh_client_id:client_id}
+            clientSecret: ${pdh_client_secret:client_secret}
+            scopes: https://bop-product-data-hub.${environment:stage}.kfzteile24.io/ProductDataHub.Read
+        provider:
+          pdh:
+            authorizationUri: https://kfzteile24-${environment:stage}.auth.eu-central-1.amazoncognito.com/oauth2/authorize
+            tokenUri: https://kfzteile24-${environment:stage}.auth.eu-central-1.amazoncognito.com/oauth2/token
+
 #  Override the path for camunda rest engine if needed.
 #  jersey:
 #    application-path:
@@ -128,6 +142,8 @@ swagger:
       basepackage: de.kfzteile24.salesOrderHub
 
 kfzteile:
+  pdh:
+    apiEndpoint: pdh-dashboard-api.${environment:stage}.kfzteile24.io
   #
   # Delete processes that are not used?
   # KEEP OFF ON PRODUCTION

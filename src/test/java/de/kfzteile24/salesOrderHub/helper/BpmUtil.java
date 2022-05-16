@@ -119,7 +119,10 @@ public class BpmUtil {
         sendMessage(TRACKING_ID_RECEIVED, orderNumber);
         sendMessage(ROW_SHIPPED, orderNumber);
 
-        assertThat(orderProcess).isEnded().hasPassed(Events.END_MSG_ORDER_COMPLETED.getName());
+        pollingService.pollWithDefaultTiming(() -> {
+            assertThat(orderProcess).isEnded().hasPassed(Events.END_MSG_ORDER_COMPLETED.getName());
+            return true;
+        });
     }
 
     public boolean isProcessWaitingAtExpectedToken(final ProcessInstance processInstance, final String activityId) {
