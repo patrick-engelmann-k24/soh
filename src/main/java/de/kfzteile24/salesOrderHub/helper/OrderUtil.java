@@ -86,6 +86,7 @@ public class OrderUtil {
         OrderRows originalOrderRow = salesOrder.getLatestJson().getOrderRows().stream()
                 .filter(r -> StringUtils.pathEquals(r.getSku(), item.getItemNumber()))
                 .findFirst().orElse(OrderRows.builder().build());
+        var shippingType = salesOrder.getLatestJson().getOrderRows().get(0).getShippingType();
 
         var unitPriceGross = getGrossValue(item.getUnitNetAmount(), item.getTaxRate());
         var unitPriceNet = item.getUnitNetAmount();
@@ -109,7 +110,7 @@ public class OrderUtil {
                 .taxRate(Optional.ofNullable(item.getTaxRate()).orElse(BigDecimal.ZERO))
                 .partIdentificationProperties(originalOrderRow.getPartIdentificationProperties())
                 .estimatedDeliveryDate(originalOrderRow.getEstimatedDeliveryDate())
-                .shippingType(originalOrderRow.getShippingType())
+                .shippingType(originalOrderRow.getShippingType() != null ? originalOrderRow.getShippingType() : shippingType)
                 .clickCollectBranchId(originalOrderRow.getClickCollectBranchId())
                 .shippingAddressKey(originalOrderRow.getShippingAddressKey())
                 .shippingProvider(originalOrderRow.getShippingProvider())

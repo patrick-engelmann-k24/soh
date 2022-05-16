@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.newrelic.api.agent.Trace;
 import de.kfzteile24.salesOrderHub.configuration.FeatureFlagConfig;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
@@ -33,6 +34,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -135,7 +137,8 @@ public class SqsReceiveService {
                 fulfillmentMessage.getOrderNumber(),
                 fulfillmentMessage.getOrderItemSku(),
                 "Order item shipped",
-                rawMessage);
+                rawMessage,
+                RowEvents.ROW_SHIPPED);
     }
 
     /**
@@ -180,7 +183,8 @@ public class SqsReceiveService {
                 fulfillmentMessage.getOrderNumber(),
                 fulfillmentMessage.getOrderItemSku(),
                 "Order item transmitted to logistic",
-                rawMessage);
+                rawMessage,
+                RowEvents.ROW_TRANSMITTED_TO_LOGISTICS);
     }
 
     /**
@@ -203,7 +207,8 @@ public class SqsReceiveService {
                 fulfillmentMessage.getOrderNumber(),
                 fulfillmentMessage.getOrderItemSku(),
                 "Order item packing started",
-                rawMessage);
+                rawMessage,
+                RowEvents.PACKING_STARTED);
     }
 
     /**
@@ -226,7 +231,8 @@ public class SqsReceiveService {
                 fulfillmentMessage.getOrderNumber(),
                 fulfillmentMessage.getOrderItemSku(),
                 "Order item tracking id received",
-                rawMessage);
+                rawMessage,
+                RowEvents.TRACKING_ID_RECEIVED);
     }
 
     /**
@@ -249,7 +255,8 @@ public class SqsReceiveService {
                 fulfillmentMessage.getOrderNumber(),
                 fulfillmentMessage.getOrderItemSku(),
                 "Order item tour started",
-                rawMessage);
+                rawMessage,
+                RowEvents.TOUR_STARTED);
     }
 
     /**
@@ -416,7 +423,6 @@ public class SqsReceiveService {
             var orderNumber = salesInvoiceHeader.getOrderNumber();
             var invoiceNumber = salesInvoiceHeader.getInvoiceNumber();
             var newOrderNumber = salesOrderService.createOrderNumberInSOH(orderNumber, invoiceNumber);
-            SalesOrder salesOrderForOrderProcess;
             log.info("Received core sales invoice created message with order number: {} and invoice number: {}",
                     orderNumber, invoiceNumber);
 
@@ -427,7 +433,7 @@ public class SqsReceiveService {
 
                 if (salesOrderService.isFullyMatchedWithOriginalOrder(originalSalesOrder, itemList)) {
                     updateOriginalSalesOrder(salesInvoiceCreatedMessage, originalSalesOrder);
-                    salesOrderForOrderProcess = originalSalesOrder;
+                    publishInvoiceEvent(originalSalesOrder);
                 } else {
                     SalesOrder subsequentOrder = salesOrderService.createSalesOrderForInvoice(
                             salesInvoiceCreatedMessage,
@@ -442,10 +448,9 @@ public class SqsReceiveService {
                                 invoiceNumber,
                                 result.getProcessInstanceId());
                     }
-                    salesOrderForOrderProcess = subsequentOrder;
+                    publishInvoiceEvent(subsequentOrder);
                 }
 
-                publishInvoiceEvent(salesOrderForOrderProcess);
             } catch (Exception e) {
                 log.error("Core sales invoice created received message error:\r\nOrderNumber: {}\r\nInvoiceNumber: {}\r\nError-Message: {}",
                         orderNumber,
@@ -495,13 +500,29 @@ public class SqsReceiveService {
         }
     }
 
-    protected void handleCancellationForOrderRows(SalesOrder salesOrder, List<OrderRows> orderRows) {
-        var originalOrderRowSkuList = salesOrder.getLatestJson().getOrderRows().stream()
-                .filter(row -> !row.getIsCancelled())
-                .map(OrderRows::getSku).collect(Collectors.toSet());
-        orderRows.stream()
-                .filter(row -> originalOrderRowSkuList.contains(row.getSku()))
-                .forEach(row -> salesOrderRowService.cancelOrderRow(row.getSku(), salesOrder.getOrderNumber()));
+    protected void handleCancellationForOrderRows(SalesOrder originalSalesOrder, List<OrderRows> orderRows) {
+
+        var originalOrderRowsNotCancelled = originalSalesOrder.getLatestJson().getOrderRows().stream()
+                .filter(row -> !row.getIsCancelled()).collect(Collectors.toSet());
+
+        for (OrderRows orderRow : orderRows) {
+
+            var originalSkusToCancel = originalOrderRowsNotCancelled.stream()
+                    .filter(row -> row.getSku().equals(orderRow.getSku())).collect(Collectors.toList());
+
+            if (!originalSkusToCancel.isEmpty()) {
+                BigDecimal sumQuantity = originalSkusToCancel.stream().map(OrderRows::getQuantity)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                if (orderRow.getQuantity().equals(sumQuantity)) {
+                    originalSkusToCancel.forEach(row ->
+                            salesOrderRowService.cancelOrderRow(row.getSku(), originalSalesOrder.getOrderNumber()));
+                } else {
+                    salesOrderRowService.cancelOrderRow(originalSkusToCancel.get(0).getSku(), originalSalesOrder.getOrderNumber());
+                }
+            }
+
+        }
     }
 
     /**
