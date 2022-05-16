@@ -42,7 +42,10 @@ class SplitOrderRecalculationServiceTest {
     public void recalculateOrder() {
         final var order = getOrder(readResource("examples/splitterSalesOrderMessageWithTwoRows.json"));
 
-        salesOrderService.recalculateTotals(order);
+        salesOrderService.recalculateTotals(order,
+                order.getOrderHeader().getTotals().getShippingCostNet(),
+                order.getOrderHeader().getTotals().getShippingCostGross(),
+                true);
 
         final var totals = order.getOrderHeader().getTotals();
         assertThat(totals.getGoodsTotalGross()).isEqualTo(BigDecimal.valueOf(101.62));
@@ -51,9 +54,30 @@ class SplitOrderRecalculationServiceTest {
         assertThat(totals.getShippingCostGross()).isEqualTo(BigDecimal.valueOf(5.95));
         assertThat(totals.getShippingCostNet()).isEqualTo(BigDecimal.valueOf(5));
 
+        assertThat(totals.getSurcharges().getDepositGross()).isNull();
+        assertThat(totals.getSurcharges().getDepositNet()).isNull();
+
+        assertThat(totals.getSurcharges().getBulkyGoodsGross()).isNull();
+        assertThat(totals.getSurcharges().getBulkyGoodsNet()).isNull();
+
+        assertThat(totals.getSurcharges().getRiskyGoodsGross()).isNull();
+        assertThat(totals.getSurcharges().getRiskyGoodsNet()).isNull();
+
+        assertThat(totals.getSurcharges().getPaymentGross()).isNull();
+        assertThat(totals.getSurcharges().getPaymentNet()).isNull();
+
         assertThat(totals.getTotalDiscountGross()).isEqualTo(BigDecimal.valueOf(12.2));
         assertThat(totals.getTotalDiscountNet()).isEqualTo(BigDecimal.valueOf(10.26));
 
+        assertThat(totals.getGrandTotalGross()).isEqualTo(BigDecimal.valueOf(95.37));
+        assertThat(totals.getGrandTotalNet()).isEqualTo(BigDecimal.valueOf(77.13));
+
+        assertThat(totals.getGrandTotalTaxes().size()).isEqualTo(1);
+
+        assertThat(totals.getPaymentTotal()).isEqualTo(BigDecimal.valueOf(95.37));
+
         assertThat(order.getOrderHeader().getDiscounts().size()).isEqualTo(1);
+
+        assertThat(order.getOrderHeader().getDiscounts().get(0).getDiscountValueGross()).isEqualTo(BigDecimal.valueOf(0.4));
     }
 }

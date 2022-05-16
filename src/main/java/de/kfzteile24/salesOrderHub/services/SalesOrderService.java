@@ -28,6 +28,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.ArrayList;
@@ -257,27 +260,14 @@ public class SalesOrderService {
         return foundSalesOrders.stream().map(SalesOrder::getOrderNumber).distinct().collect(Collectors.toList());
     }
 
-    public void recalculateTotals(Order order) {
-        BigDecimal shippingCostNet = order.getOrderHeader().getTotals().getShippingCostNet();
-        BigDecimal shippingCostGross = order.getOrderHeader().getTotals().getShippingCostGross();
-        recalculateTotals(order, shippingCostNet, shippingCostGross, false);
-
-    }
-
-    public void recalculateTotalsForSplittedOrder(Order order) {
-        recalculateTotals(order, BigDecimal.ZERO, BigDecimal.ZERO, false);
-
-    }
-
     private void recalculateTotals(Order order, CoreSalesFinancialDocumentLine shippingCostLine) {
         BigDecimal shippingCostNet = shippingCostLine != null ? shippingCostLine.getUnitNetAmount() : BigDecimal.ZERO;
         BigDecimal shippingCostGross = shippingCostLine != null ?
                 getGrossValue(shippingCostLine.getUnitNetAmount(), shippingCostLine.getTaxRate()) : BigDecimal.ZERO;
         recalculateTotals(order, shippingCostNet, shippingCostGross, shippingCostLine != null);
-
     }
 
-    private void recalculateTotals(Order order, BigDecimal shippingCostNet, BigDecimal shippingCostGross, boolean shippingCostLine) {
+    public void recalculateTotals(Order order, BigDecimal shippingCostNet, BigDecimal shippingCostGross, boolean shippingCostLine) {
 
         List<OrderRows> orderRows = order.getOrderRows();
         List<SumValues> sumValues = orderRows.stream().map(OrderRows::getSumValues).collect(Collectors.toList());
@@ -286,7 +276,7 @@ public class SalesOrderService {
         BigDecimal totalDiscountGross = getSumValue(SumValues::getDiscountGross, sumValues);
         BigDecimal totalDiscountNet = getSumValue(SumValues::getDiscountNet, sumValues);
         BigDecimal grandTotalGross = goodsTotalGross.subtract(totalDiscountGross).add(shippingCostGross);
-        BigDecimal grantTotalNet = goodsTotalNet.subtract(totalDiscountNet).add(shippingCostNet);
+        BigDecimal grandTotalNet = goodsTotalNet.subtract(totalDiscountNet).add(shippingCostNet);
 
         Totals totals = Totals.builder()
                 .goodsTotalGross(goodsTotalGross)
@@ -294,7 +284,7 @@ public class SalesOrderService {
                 .totalDiscountGross(totalDiscountGross)
                 .totalDiscountNet(totalDiscountNet)
                 .grandTotalGross(grandTotalGross)
-                .grandTotalNet(grantTotalNet)
+                .grandTotalNet(grandTotalNet)
                 .paymentTotal(grandTotalGross)
                 .grandTotalTaxes(calculateGrandTotalTaxes(order))
                 .surcharges(Surcharges.builder().build())
@@ -303,10 +293,16 @@ public class SalesOrderService {
                 .build();
 
         if (shippingCostLine) {
-            BigDecimal fullTaxValue = grandTotalGross.subtract(grantTotalNet);
+            //full tax value that includes the shipping and discount
+            BigDecimal fullTaxValue = grandTotalGross.subtract(grandTotalNet);
+
+            //tax value only for the product
             BigDecimal sumTaxValues = totals.getGrandTotalTaxes().stream()
                     .map(GrandTotalTaxes::getValue).reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            //tax value for the shipping and discount
             BigDecimal taxValueToAdd = fullTaxValue.subtract(sumTaxValues);
+
             totals.getGrandTotalTaxes().stream().findFirst().
                     ifPresent(tax -> tax.setValue(tax.getValue().add(taxValueToAdd)));
         }

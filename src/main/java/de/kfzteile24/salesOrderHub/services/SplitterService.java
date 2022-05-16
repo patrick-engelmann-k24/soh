@@ -37,7 +37,10 @@ public class SplitterService {
         itemSplitService.processOrderList(orderList);
         orderSplitService.processOrderList(orderList);
 
-        splitOrderRecalculationService.processOrderList(orderList);
+        if (orderList.size() > 1) {
+            //recalculate totals only if we added splitted order, which means we also changed original order
+            splitOrderRecalculationService.processOrderList(orderList);
+        }
 
         return convert2SalesOrderList(originOrder, orderList);
     }

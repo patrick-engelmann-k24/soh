@@ -7,6 +7,7 @@ import de.kfzteile24.soh.order.dto.Order;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 
 @Service
@@ -19,27 +20,17 @@ public class SplitOrderRecalculationService extends AbstractSplitDecorator {
 
     @Override
     public void processOrderList(ArrayList<Order> orderList) {
-        if (onlyRegularItemsInOriginalOrder(orderList) || onlyDropShipmentItemsInOriginalOrder(orderList)) {
-            // no recalculation totals is needed
-            return;
-        } else if (orderList.size() == 2) {
-            Order originalOrder = orderList.get(0);
-            Order splittedOrder = orderList.get(1);
-            salesOrderService.recalculateTotals(originalOrder);
-            salesOrderService.recalculateTotalsForSplittedOrder(splittedOrder);
-        } else {
-            throw new SplitterException(new IllegalArgumentException("The order, which contains both regular and dropshipment items " +
-                    "must be splitted in exactly two orders. Please, review the code, the implemenation has been changed by someone and" +
-                    "this code doesn't work correctly anymore!!!"));
+        for (Order order: orderList) {
+            if (orderUtil.containsDropShipmentItems(order)) {
+                //splitted order
+                salesOrderService.recalculateTotals(order, BigDecimal.ZERO, BigDecimal.ZERO, true);
+            } else {
+                //original order
+                BigDecimal shippingCostNet = order.getOrderHeader().getTotals().getShippingCostNet();
+                BigDecimal shippingCostGross = order.getOrderHeader().getTotals().getShippingCostGross();
+                salesOrderService.recalculateTotals(order, shippingCostNet, shippingCostGross, true);
+            }
         }
-    }
-
-    private boolean onlyRegularItemsInOriginalOrder(ArrayList<Order> orderList) {
-        return orderList.size() == 1 && orderUtil.containsOnlyRegularItems(orderList.get(0));
-    }
-
-    private boolean onlyDropShipmentItemsInOriginalOrder(ArrayList<Order> orderList) {
-        return orderList.size() == 1 && orderUtil.containsOnlyDropShipmentItems(orderList.get(0));
     }
 
 }
