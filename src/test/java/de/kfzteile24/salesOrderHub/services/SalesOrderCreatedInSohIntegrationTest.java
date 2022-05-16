@@ -4,6 +4,7 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
+import de.kfzteile24.salesOrderHub.helper.ObjectUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
@@ -16,6 +17,7 @@ import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +34,7 @@ import java.util.Objects;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.MSG_ORDER_PAYMENT_SECURED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_GROUP_ID;
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createOrderNumberInSOH;
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -67,6 +70,8 @@ class SalesOrderCreatedInSohIntegrationTest {
     private TimedPollingService timerService;
     @Autowired
     private BpmUtil util;
+    @Autowired
+    private ObjectUtil objectUtil;
 
     @BeforeEach
     public void setup() {
@@ -146,6 +151,104 @@ class SalesOrderCreatedInSohIntegrationTest {
                 "13.08",
                 "10.99");
         checkOrderRows(newOrderNumberCreatedInSoh, rowSku1, rowSku2, rowSku3);
+    }
+
+    @Test
+    public void testQueueListenerCoreSalesInvoiceCreatedWithNotConsolidatedDuplicateItems() {
+
+        var senderId = "Delivery";
+        var receiveCount = 1;
+        var salesOrder = salesOrderUtil.createNewSalesOrder();
+        String originalOrderNumber = salesOrder.getOrderNumber();
+        OrderRows duplicatedOrderRow = objectUtil.deepCopyOf(salesOrder.getLatestJson().getOrderRows().get(0), OrderRows.class);
+        salesOrder.getLatestJson().getOrderRows().get(0).setQuantity(new BigDecimal("2"));
+        duplicatedOrderRow.setRowKey(3);
+        duplicatedOrderRow.setQuantity(new BigDecimal("3"));
+        salesOrder.getLatestJson().getOrderRows().add(duplicatedOrderRow);
+        salesOrderService.save(salesOrder, ORDER_CREATED);
+
+        final ProcessInstance orderProcess = camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
+        assertTrue(util.isProcessWaitingAtExpectedToken(orderProcess, MSG_ORDER_PAYMENT_SECURED.getName()));
+
+        String invoiceNumber = "10";
+        String rowSku1 = "1440-47378";
+        String rowSku2 = "2010-10183";
+        String rowSku3 = "2022-KBA";
+        String invoiceEvent = readResource("examples/coreSalesInvoiceCreatedMultipleItems.json");
+
+        //Replace order number with randomly created order number as expected
+        invoiceEvent = invoiceEvent.replace("524001248", originalOrderNumber);
+
+        sqsReceiveService.queueListenerCoreSalesInvoiceCreated(invoiceEvent, senderId, receiveCount);
+
+        String newOrderNumberCreatedInSoh = createOrderNumberInSOH(originalOrderNumber, invoiceNumber);
+        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
+        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku1)));
+        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku2)));
+        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku3)));
+        checkTotalsValues(newOrderNumberCreatedInSoh,
+                "432.52",
+                "360.64",
+                "0",
+                "0",
+                "445.60",
+                "371.63",
+                "445.60",
+                "13.08",
+                "10.99");
+        checkOrderRows(newOrderNumberCreatedInSoh, rowSku1, rowSku2, rowSku3);
+
+        SalesOrder originalSalesOrder = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber()).orElseThrow();
+        List<OrderRows> orderRows = originalSalesOrder.getLatestJson().getOrderRows();
+        assertEquals(3, orderRows.size());
+        assertEquals(2, orderRows.stream().filter(OrderRows::getIsCancelled).count());
+    }
+
+    @Test
+    public void testQueueListenerCoreSalesInvoiceCreatedWithConsolidatedItems() {
+
+        var senderId = "Delivery";
+        var receiveCount = 1;
+        var salesOrder = salesOrderUtil.createNewSalesOrder();
+        String originalOrderNumber = salesOrder.getOrderNumber();
+        OrderRows duplicatedOrderRow = objectUtil.deepCopyOf(salesOrder.getLatestJson().getOrderRows().get(0), OrderRows.class);
+        duplicatedOrderRow.setRowKey(3);
+        salesOrder.getLatestJson().getOrderRows().add(duplicatedOrderRow);
+        salesOrderService.save(salesOrder, ORDER_CREATED);
+
+        final ProcessInstance orderProcess = camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
+        assertTrue(util.isProcessWaitingAtExpectedToken(orderProcess, MSG_ORDER_PAYMENT_SECURED.getName()));
+
+        String invoiceNumber = "10";
+        String rowSku1 = "1440-47378";
+        String rowSku2 = "2010-10183";
+        String rowSku3 = "2022-KBA";
+        String invoiceEvent = readResource("examples/coreSalesInvoiceCreatedMultipleItems.json");
+
+        //Replace order number with randomly created order number as expected
+        invoiceEvent = invoiceEvent.replace("524001248", originalOrderNumber);
+
+        sqsReceiveService.queueListenerCoreSalesInvoiceCreated(invoiceEvent, senderId, receiveCount);
+
+        String newOrderNumberCreatedInSoh = createOrderNumberInSOH(originalOrderNumber, invoiceNumber);
+        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
+        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku1)));
+        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku2)));
+        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku3)));
+        checkTotalsValues(newOrderNumberCreatedInSoh,
+                "432.52",
+                "360.64",
+                "0",
+                "0",
+                "445.60",
+                "371.63",
+                "445.60",
+                "13.08",
+                "10.99");
+        checkOrderRows(newOrderNumberCreatedInSoh, rowSku1, rowSku2, rowSku3);
+
+        SalesOrder originalSalesOrder = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber()).orElseThrow();
+        originalSalesOrder.getLatestJson().getOrderRows().stream().map(OrderRows::getIsCancelled).forEach(Assertions::assertTrue);
     }
 
     private boolean checkIfInvoiceCreatedReceivedProcessExists(String newOrderNumberCreatedInSoh) {

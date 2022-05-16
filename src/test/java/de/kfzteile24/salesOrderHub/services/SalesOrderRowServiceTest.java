@@ -102,7 +102,7 @@ class SalesOrderRowServiceTest {
 
         verify(runtimeService).getVariable(processId, ORDER_ROWS.getName());
         verify(runtimeService).setVariable(processId, ORDER_ROWS.getName(), orderRowIds);
-        verifyNoInteractions(snsPublishService);
+        verify(snsPublishService).publishOrderRowCancelled(any(),any());
     }
 
     @Test
@@ -160,7 +160,7 @@ class SalesOrderRowServiceTest {
 
         verify(salesOrderService, times(3)).getOrderNumberListByOrderGroupId(eq(salesOrder.getOrderGroupId()), any());
         verify(salesOrderService, times(3)).save(any(), eq(ORDER_ROW_CANCELLED));
-        verifyNoInteractions(snsPublishService);
+        verify(snsPublishService, times(3)).publishOrderRowCancelled(any(),any());
     }
 
     private void checkTotalsValues(Totals totals) {

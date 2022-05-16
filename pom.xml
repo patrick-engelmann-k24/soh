@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>de.kfzteile24.soh</groupId>
   <artifactId>sales-order-hub-bpmn</artifactId>
-  <version>1.4.0</version>
+  <version>1.5.0</version>
   <name>soh-order-hub-bpmn</name>
   <description>Run the core sales order hub BPMN processes</description>
 
