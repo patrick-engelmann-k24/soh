@@ -12,7 +12,13 @@ import de.kfzteile24.salesOrderHub.helper.OrderMapper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
-import de.kfzteile24.soh.order.dto.*;
+import de.kfzteile24.soh.order.dto.GrandTotalTaxes;
+import de.kfzteile24.soh.order.dto.Order;
+import de.kfzteile24.soh.order.dto.OrderRows;
+import de.kfzteile24.soh.order.dto.Platform;
+import de.kfzteile24.soh.order.dto.SumValues;
+import de.kfzteile24.soh.order.dto.Surcharges;
+import de.kfzteile24.soh.order.dto.Totals;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +28,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Set;
+import java.util.UUID;
+import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.INVOICE_RECEIVED;

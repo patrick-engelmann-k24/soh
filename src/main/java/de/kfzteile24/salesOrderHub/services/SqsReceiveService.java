@@ -116,37 +116,6 @@ public class SqsReceiveService {
     }
 
     /**
-     * Consume sqs for new orders from ecp shop
-     */
-    @SqsListener("${soh.sqs.queue.ecpShopOrders}")
-    @SneakyThrows(JsonProcessingException.class)
-    @Transactional
-    @Trace(metricName = "Handling shop order message", dispatcher = true)
-    public void queueListenerEcpShopOrders(String rawMessage, @Header("SenderId") String senderId) {
-
-        final String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-        final Order order = objectMapper.readValue(body, Order.class);
-
-        for (final SalesOrder salesOrder : splitterService.splitSalesOrder(order)) {
-            try {
-                log.info("Received message from ecp shop with sender id : {}, order number: {}, Platform: {} ", senderId, order.getOrderHeader().getOrderNumber(), order.getOrderHeader().getPlatform());
-
-                ProcessInstance result = camundaHelper.createOrderProcess(
-                        salesOrderService.createSalesOrder(salesOrder), ORDER_RECEIVED_ECP);
-
-                if (result != null) {
-                    log.info("New ecp order process started for order number: {}. Process-Instance-ID: {} ", order.getOrderHeader().getOrderNumber(), result.getProcessInstanceId());
-                }
-            } catch (Exception e) {
-                log.error("New ecp order process is failed by message error:\r\nError-Message: {}, Message Body: {}", e.getMessage(), body);
-                throw e;
-            }
-        }
-
-
-    }
-
-    /**
      * Consume messages from sqs for event order item shipped
      */
     @SqsListener(value = "${soh.sqs.queue.orderItemShipped}", deletionPolicy = ON_SUCCESS)

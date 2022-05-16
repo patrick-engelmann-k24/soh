@@ -34,10 +34,6 @@ public class SplitOrderRecalculationService extends AbstractSplitDecorator {
         }
     }
 
-    public void recalculateOrder(Order order) {
-        salesOrderService.recalculateTotals(order);
-    }
-
     private boolean onlyRegularItemsInOriginalOrder(ArrayList<Order> orderList) {
         return orderList.size() == 1 && orderUtil.containsOnlyRegularItems(orderList.get(0));
     }
