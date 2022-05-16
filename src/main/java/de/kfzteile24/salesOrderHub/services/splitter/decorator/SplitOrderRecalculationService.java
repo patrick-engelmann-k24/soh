@@ -2,7 +2,6 @@ package de.kfzteile24.salesOrderHub.services.splitter.decorator;
 
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
-import de.kfzteile24.salesOrderHub.services.splitter.SplitterException;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
