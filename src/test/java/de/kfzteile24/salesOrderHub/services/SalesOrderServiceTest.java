@@ -184,7 +184,7 @@ class SalesOrderServiceTest {
         assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getTotals().getGrandTotalTaxes()).isEqualTo(
                 List.of(GrandTotalTaxes.builder()
                         .rate(orderRow.getTaxRate())
-                        .value(new BigDecimal("33.50"))
+                        .value(new BigDecimal("28.48"))
                         .build())
         );
         invoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader().setOrderNumber(newOrderNumber);

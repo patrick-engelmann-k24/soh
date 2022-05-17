@@ -17,3 +17,4 @@ ignore_core_credit_note        = true
 ignore_migration_core_sales_invoice      = true
 ignore_migration_core_sales_credit_note  = true
 ignore_migration_core_sales_order        = true
+ignore_sales_order_splitter              = true

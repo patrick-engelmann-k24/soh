@@ -77,3 +77,7 @@ variable "ignore_migration_core_sales_credit_note" {
 variable "ignore_migration_core_sales_order" {
   type = bool
 }
+
+variable "ignore_sales_order_splitter" {
+  type = bool
+}

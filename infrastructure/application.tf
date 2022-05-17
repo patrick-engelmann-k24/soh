@@ -77,6 +77,7 @@ module "application_module" {
     ignore_migration_core_sales_invoice        = var.ignore_migration_core_sales_invoice
     ignore_migration_core_sales_credit_note    = var.ignore_migration_core_sales_credit_note
     ignore_migration_core_sales_order          = var.ignore_migration_core_sales_order
+    ignore_sales_order_splitter                = var.ignore_sales_order_splitter
   }
 
   ssm_secrets_count = 7
