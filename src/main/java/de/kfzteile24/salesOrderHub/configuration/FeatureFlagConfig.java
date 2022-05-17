@@ -22,4 +22,7 @@ public class FeatureFlagConfig {
 
     @Value("${ignoreMigrationCoreSalesOrder}")
     private Boolean ignoreMigrationCoreSalesOrder;
+
+    @Value("${ignoreSalesOrderSplitter}")
+    private Boolean ignoreSalesOrderSplitter;
 }

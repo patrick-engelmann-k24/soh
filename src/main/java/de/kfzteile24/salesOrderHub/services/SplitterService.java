@@ -1,17 +1,20 @@
 package de.kfzteile24.salesOrderHub.services;
 
+import de.kfzteile24.salesOrderHub.configuration.FeatureFlagConfig;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.services.splitter.decorator.ItemSplitService;
 import de.kfzteile24.salesOrderHub.services.splitter.decorator.OrderSplitService;
 import de.kfzteile24.salesOrderHub.services.splitter.decorator.SplitOrderRecalculationService;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class SplitterService {
 
@@ -20,6 +23,8 @@ public class SplitterService {
     private final OrderSplitService orderSplitService;
 
     private final SplitOrderRecalculationService splitOrderRecalculationService;
+
+    private final FeatureFlagConfig featureFlagConfig;
 
     /**
      * Split up the order and set items. Recalculates also the partial orders and starts the business process(es)
@@ -32,14 +37,17 @@ public class SplitterService {
     public List<SalesOrder> splitSalesOrder(final Order originOrder) {
         final var orderList = new ArrayList<Order>();
         orderList.add(originOrder);
+        if (featureFlagConfig.getIgnoreSalesOrderSplitter()) {
+            log.info("Sales Order Splitter is ignored");
+        } else {
+            // add further splitters here (all operations happening on the list object)
+            itemSplitService.processOrderList(orderList);
+            orderSplitService.processOrderList(orderList);
 
-        // add further splitters here (all operations happening on the list object)
-        itemSplitService.processOrderList(orderList);
-        orderSplitService.processOrderList(orderList);
-
-        if (orderList.size() > 1) {
-            //recalculate totals only if we added splitted order, which means we also changed original order
-            splitOrderRecalculationService.processOrderList(orderList);
+            if (orderList.size() > 1) {
+                //recalculate totals only if we added splitted order, which means we also changed original order
+                splitOrderRecalculationService.processOrderList(orderList);
+            }
         }
 
         return convert2SalesOrderList(originOrder, orderList);

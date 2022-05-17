@@ -149,3 +149,4 @@ ignoreCoreCreditNote: ${ignore_core_credit_note}
 ignoreMigrationCoreSalesInvoice: ${ignore_migration_core_sales_invoice}
 ignoreMigrationCoreSalesCreditNote: ${ignore_migration_core_sales_credit_note}
 ignoreMigrationCoreSalesOrder: ${ignore_migration_core_sales_order}
+ignoreSalesOrderSplitter: ${ignore_sales_order_splitter}
