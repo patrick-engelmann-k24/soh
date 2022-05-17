@@ -292,6 +292,8 @@ public class SalesOrderRowService {
             lastRowKey = orderUtil.updateLastRowKey(salesOrder, item.getItemNumber(), lastRowKey);
         }
 
+        totals.setShippingCostGross(BigDecimal.ZERO);
+        totals.setShippingCostNet(BigDecimal.ZERO);
         totals.setGoodsTotalGross(BigDecimal.ZERO);
         totals.setGoodsTotalNet(BigDecimal.ZERO);
         totals.setTotalDiscountGross(BigDecimal.ZERO);
@@ -337,7 +339,7 @@ public class SalesOrderRowService {
                 .findFirst()
                 .ifPresent(creditNoteLine -> {
                     totals.setShippingCostNet(creditNoteLine.getLineNetAmount());
-                    totals.setShippingCostGross(getGrossValue(creditNoteLine));
+                    totals.setShippingCostGross(getGrossValue(creditNoteLine, creditNoteLine.getLineNetAmount()));
                     totals.setGrandTotalNet(totals.getGrandTotalNet().add(totals.getShippingCostNet()));
                     totals.setGrandTotalGross(totals.getGrandTotalGross().add(totals.getShippingCostGross()));
                     totals.setPaymentTotal(totals.getGrandTotalGross());
@@ -350,10 +352,16 @@ public class SalesOrderRowService {
                 });
     }
 
-    private BigDecimal getGrossValue(CreditNoteLine creditNoteLine) {
+    private BigDecimal getGrossValue(CreditNoteLine creditNoteLine, BigDecimal lineNetAmount) {
         var taxRate = creditNoteLine.getTaxRate().abs();
         var netValue = creditNoteLine.getUnitNetAmount();
-        return CalculationUtil.getGrossValue(netValue, taxRate);
+        var grossValue = CalculationUtil.getGrossValue(netValue, taxRate);
+
+        if (lineNetAmount.compareTo(BigDecimal.ZERO ) < 0 && grossValue.compareTo(BigDecimal.ZERO) > 0) {
+            return grossValue.negate();
+        }
+
+        return grossValue;
     }
 
     private void cancelOrderRowsOfOrderGroup(String orderGroupId, String orderRowId) {
