@@ -38,9 +38,7 @@ import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.INVOICE_RECEIVED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
-import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getGrossValue;
-import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getSumValue;
-import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.isNotNullAndEqual;
+import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.*;
 import static java.text.MessageFormat.format;
 
 @Service
@@ -263,6 +261,13 @@ public class SalesOrderService {
     }
 
     private void recalculateTotals(Order order, CoreSalesFinancialDocumentLine shippingCostLine) {
+        BigDecimal shippingCostNet = shippingCostLine != null ? shippingCostLine.getUnitNetAmount() : BigDecimal.ZERO;
+        BigDecimal shippingCostGross = shippingCostLine != null ?
+                getGrossValue(shippingCostLine.getUnitNetAmount(), shippingCostLine.getTaxRate()) : BigDecimal.ZERO;
+        recalculateTotals(order, shippingCostNet, shippingCostGross, shippingCostLine != null);
+    }
+
+    public void recalculateTotals(Order order, BigDecimal shippingCostNet, BigDecimal shippingCostGross, boolean shippingCostLine) {
 
         List<OrderRows> orderRows = order.getOrderRows();
         List<SumValues> sumValues = orderRows.stream().map(OrderRows::getSumValues).collect(Collectors.toList());
@@ -270,11 +275,8 @@ public class SalesOrderService {
         BigDecimal goodsTotalNet = getSumValue(SumValues::getGoodsValueNet, sumValues);
         BigDecimal totalDiscountGross = getSumValue(SumValues::getDiscountGross, sumValues);
         BigDecimal totalDiscountNet = getSumValue(SumValues::getDiscountNet, sumValues);
-        BigDecimal shippingCostNet = shippingCostLine != null ? shippingCostLine.getUnitNetAmount() : BigDecimal.ZERO;
-        BigDecimal shippingCostGross = shippingCostLine != null ?
-                getGrossValue(shippingCostLine.getUnitNetAmount(), shippingCostLine.getTaxRate()) : BigDecimal.ZERO;
         BigDecimal grandTotalGross = goodsTotalGross.subtract(totalDiscountGross).add(shippingCostGross);
-        BigDecimal grantTotalNet = goodsTotalNet.subtract(totalDiscountNet).add(shippingCostNet);
+        BigDecimal grandTotalNet = goodsTotalNet.subtract(totalDiscountNet).add(shippingCostNet);
 
         Totals totals = Totals.builder()
                 .goodsTotalGross(goodsTotalGross)
@@ -282,7 +284,7 @@ public class SalesOrderService {
                 .totalDiscountGross(totalDiscountGross)
                 .totalDiscountNet(totalDiscountNet)
                 .grandTotalGross(grandTotalGross)
-                .grandTotalNet(grantTotalNet)
+                .grandTotalNet(grandTotalNet)
                 .paymentTotal(grandTotalGross)
                 .grandTotalTaxes(calculateGrandTotalTaxes(order))
                 .surcharges(Surcharges.builder().build())
@@ -290,13 +292,10 @@ public class SalesOrderService {
                 .shippingCostNet(shippingCostNet)
                 .build();
 
-        if (shippingCostLine != null) {
-            BigDecimal fullTaxValue = grandTotalGross.subtract(grantTotalNet);
-            BigDecimal sumTaxValues = totals.getGrandTotalTaxes().stream()
-                    .map(GrandTotalTaxes::getValue).reduce(BigDecimal.ZERO, BigDecimal::add);
-            BigDecimal taxValueToAdd = fullTaxValue.subtract(sumTaxValues);
+        if (shippingCostLine) {
+            BigDecimal shippingTaxToAdd = shippingCostGross.subtract(shippingCostNet);
             totals.getGrandTotalTaxes().stream().findFirst().
-                    ifPresent(tax -> tax.setValue(tax.getValue().add(taxValueToAdd)));
+                    ifPresent(tax -> tax.setValue(tax.getValue().add(shippingTaxToAdd)));
         }
 
         order.getOrderHeader().setTotals(totals);
@@ -309,8 +308,8 @@ public class SalesOrderService {
                 .map(this::createGrandTotalTaxesFromOrderRow).distinct().collect(Collectors.toList());
 
         for (OrderRows orderRow : order.getOrderRows()) {
-            BigDecimal taxValue = orderRow.getSumValues().getGoodsValueGross()
-                    .subtract(orderRow.getSumValues().getGoodsValueNet());
+            BigDecimal taxValue = orderRow.getSumValues().getTotalDiscountedGross()
+                    .subtract(orderRow.getSumValues().getTotalDiscountedNet());
             var grandTotalTax = oldGrandTotalTaxesList.stream()
                     .filter(tax -> tax.getRate().equals(orderRow.getTaxRate()))
                     .findFirst().orElse(null);

@@ -28,6 +28,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -35,23 +36,10 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerTy
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.PAYPAL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getOrder;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getCreditNoteMsg;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrderReturn;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrderFromOrder;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createOrderNumberInSOH;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.argThat;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * @author vinaya
@@ -69,6 +57,8 @@ class SqsReceiveServiceTest {
     @Mock
     private SalesOrderService salesOrderService;
     @Mock
+    private SplitterService splitterService;
+    @Mock
     private SalesOrderReturnService salesOrderReturnService;
     @Mock
     private SalesOrderRowService salesOrderRowService;
@@ -85,6 +75,7 @@ class SqsReceiveServiceTest {
     @InjectMocks
     private SqsReceiveService sqsReceiveService;
 
+
     @Test
     void testQueueListenerEcpShopOrders() {
         String rawMessage = readResource("examples/ecpOrderMessage.json");
@@ -92,6 +83,7 @@ class SqsReceiveServiceTest {
         salesOrder.setRecurringOrder(false);
 
         when(salesOrderService.createSalesOrder(any())).thenReturn(salesOrder);
+        when(splitterService.splitSalesOrder(any())).thenReturn(Collections.singletonList(salesOrder));
 
         sqsReceiveService.queueListenerEcpShopOrders(rawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
@@ -109,6 +101,7 @@ class SqsReceiveServiceTest {
         salesOrder.setRecurringOrder(false);
 
         when(salesOrderService.getOrderByOrderNumber("524001240")).thenReturn(Optional.of(salesOrder));
+        when(splitterService.splitSalesOrder(any())).thenReturn(Collections.singletonList(salesOrder));
 
         sqsReceiveService.queueListenerEcpShopOrders(rawMessage, senderId, ANY_RECEIVE_COUNT);
 
@@ -283,6 +276,7 @@ class SqsReceiveServiceTest {
         when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.empty());
         when(salesOrderService.createSalesOrder(any())).thenReturn(salesOrder);
         when(featureFlagConfig.getIgnoreMigrationCoreSalesOrder()).thenReturn(false);
+        when(splitterService.splitSalesOrder(any())).thenReturn(Collections.singletonList(salesOrder));
 
         sqsReceiveService.queueListenerMigrationCoreSalesOrderCreated(rawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 

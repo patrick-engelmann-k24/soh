@@ -26,13 +26,13 @@ import de.kfzteile24.soh.order.dto.Platform;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.springframework.cloud.aws.messaging.listener.annotation.SqsListener;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -62,6 +62,7 @@ public class SqsReceiveService {
     private final FeatureFlagConfig featureFlagConfig;
     private final SnsPublishService snsPublishService;
     private final CreditNoteEventMapper creditNoteEventMapper;
+    private final SplitterService splitterService;
 
     /**
      * Consume sqs for new orders from ecp shop
@@ -78,42 +79,39 @@ public class SqsReceiveService {
         @Header("ApproximateReceiveCount") Integer receiveCount) {
 
         String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-        SalesOrder salesOrder;
         Order order = objectMapper.readValue(body, Order.class);
 
-        try {
-            String orderNumber = order.getOrderHeader().getOrderNumber();
-            if (StringUtils.isEmpty(order.getOrderHeader().getOrderGroupId())) {
-                order.getOrderHeader().setOrderGroupId(orderNumber);
-            }
-            salesOrder = SalesOrder.builder()
-                    .orderNumber(order.getOrderHeader().getOrderNumber())
-                    .orderGroupId(order.getOrderHeader().getOrderGroupId())
-                    .salesChannel(order.getOrderHeader().getSalesChannel())
-                    .customerEmail(order.getOrderHeader().getCustomer().getCustomerEmail())
-                    .originalOrder(order)
-                    .latestJson(order)
-                    .build();
+        String orderNumber = order.getOrderHeader().getOrderNumber();
+        if (StringUtils.isBlank(order.getOrderHeader().getOrderGroupId())) {
+            order.getOrderHeader().setOrderGroupId(orderNumber);
+        }
 
-            log.info("Received message from ecp shop with sender id : {}, order number: {}, Platform: {} ", senderId, order.getOrderHeader().getOrderNumber(), order.getOrderHeader().getPlatform());
+        for (final SalesOrder salesOrder : splitterService.splitSalesOrder(order)) {
 
-            //This condition is introduced temporarily because the self pick-up items created in BC are coming back from core orders which raises duplicate issue.
-            if(Platform.CORE.equals(order.getOrderHeader().getPlatform())
-                &&  salesOrderService.getOrderByOrderNumber(order.getOrderHeader().getOrderNumber()).isPresent()) {
+
+            try {
+
+                log.info("Received message from ecp shop with sender id : {}, order number: {}, Platform: {} ", senderId, order.getOrderHeader().getOrderNumber(), order.getOrderHeader().getPlatform());
+
+                //This condition is introduced temporarily because the self pick-up items created in BC are coming back from core orders which raises duplicate issue.
+                if (Platform.CORE.equals(order.getOrderHeader().getPlatform())
+                        && salesOrderService.getOrderByOrderNumber(order.getOrderHeader().getOrderNumber()).isPresent()) {
                     log.error("The following order won't be processed because it exists in SOH system already from another source. " +
                             "Platform: {}, Order Number: {}", order.getOrderHeader().getPlatform(), order.getOrderHeader().getOrderNumber());
                     return;
+                }
+
+                ProcessInstance result = camundaHelper.createOrderProcess(
+                        salesOrderService.createSalesOrder(salesOrder), ORDER_RECEIVED_ECP);
+
+                if (result != null) {
+                    log.info("New ecp order process started for order number: {}. Process-Instance-ID: {} ", order.getOrderHeader().getOrderNumber(), result.getProcessInstanceId());
+                }
+            } catch (Exception e) {
+                log.error("New ecp order process is failed by message error:\r\nError-Message: {}, Message Body: {}", e.getMessage(), body);
+                throw e;
             }
 
-            ProcessInstance result = camundaHelper.createOrderProcess(
-                    salesOrderService.createSalesOrder(salesOrder), ORDER_RECEIVED_ECP);
-
-            if (result != null) {
-                log.info("New ecp order process started for order number: {}. Process-Instance-ID: {} ", order.getOrderHeader().getOrderNumber(), result.getProcessInstanceId());
-            }
-        } catch (Exception e) {
-            log.error("New ecp order process is failed by message error:\r\nError-Message: {}, Message Body: {}", e.getMessage(), body);
-            throw e;
         }
     }
 
