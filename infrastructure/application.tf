@@ -80,7 +80,7 @@ module "application_module" {
     ignore_migration_core_sales_order          = var.ignore_migration_core_sales_order
   }
 
-  ssm_secrets_count = 7
+  ssm_secrets_count = 9
 
   ssm_secrets = {
 
