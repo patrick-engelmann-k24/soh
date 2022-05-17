@@ -100,3 +100,4 @@ ignoreCoreCreditNote: false
 ignoreMigrationCoreSalesInvoice: false
 ignoreMigrationCoreSalesCreditNote: false
 ignoreMigrationCoreSalesOrder: false
+ignoreSalesOrderSplitter: false
