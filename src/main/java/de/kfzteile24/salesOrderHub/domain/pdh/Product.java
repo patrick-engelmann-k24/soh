@@ -1,6 +1,8 @@
 package de.kfzteile24.salesOrderHub.domain.pdh;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import de.kfzteile24.salesOrderHub.domain.pdh.product.Country;
+import de.kfzteile24.salesOrderHub.domain.pdh.product.Localization;
 import de.kfzteile24.salesOrderHub.domain.pdh.product.ProductPartNumbers;
 import de.kfzteile24.salesOrderHub.domain.pdh.product.ProductSet;
 import lombok.Data;
@@ -11,29 +13,23 @@ import java.util.Map;
 @Data
 public class Product {
 
-    @JsonProperty(value = "pdm_product_id")
-    String productId;
-
     @JsonProperty("k24_sku")
-    String sku;
-
-    @JsonProperty("genart_numbers")
-    List<String> genartNumberList;
+    private String sku;
 
     @JsonProperty("set_products")
-    List<ProductSet> setProductCollection;
+    private List<ProductSet> setProductCollection;
 
-    // todo: what is the right name field?
-    String name = "foo";
+    @JsonProperty("localizations")
+    private Map<String, Localization> localizations;
 
-    @JsonProperty("ean")
-    Map<String, List<String>> eanMap;
+    @JsonProperty("countries")
+    private Map<String, Country> countries;
 
     @JsonProperty("original_part_numbers")
-    List<ProductPartNumbers> partNumbers;
+    private List<ProductPartNumbers> partNumbers;
 
     public boolean isSetItem() {
-        if(setProductCollection == null) {
+        if (setProductCollection == null) {
             return false;
         }
 

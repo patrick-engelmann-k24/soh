@@ -5,8 +5,7 @@ import lombok.Data;
 
 @Data
 public class ProductPartNumbers {
-    String manufacturer;
 
     @JsonProperty("original_car_part_number")
-    String partNumber;
+    private String partNumber;
 }

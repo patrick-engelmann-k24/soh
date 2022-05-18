@@ -1,6 +1,8 @@
 package de.kfzteile24.salesOrderHub.services.splitter.decorator;
 
 import de.kfzteile24.salesOrderHub.domain.pdh.Product;
+import de.kfzteile24.salesOrderHub.domain.pdh.product.Country;
+import de.kfzteile24.salesOrderHub.domain.pdh.product.Localization;
 import de.kfzteile24.salesOrderHub.services.ProductService;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
@@ -10,7 +12,6 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.List;
 
 /**
  * This class splits up set items into single items
@@ -75,14 +76,16 @@ public class ItemSplitService extends AbstractSplitDecorator {
             final Product product, final OrderRows originItem, BigDecimal quantity, String locale) {
 
         final var localeStr = locale.substring(0, locale.indexOf('_')).toUpperCase();
-        final var firstEan = product.getEanMap().getOrDefault(localeStr, List.of("0000000000000")).get(0);
+        Country country = product.getCountries().getOrDefault(localeStr, Country.builder().build());
+        Localization localization = product.getLocalizations().getOrDefault(localeStr, Localization.builder().build());
+
         return OrderRows.builder()
                 .isCancelled(originItem.getIsCancelled())
                 .isPriceHammer(originItem.getIsPriceHammer())
                 .sku(product.getSku())
-                .name(product.getName())
-                .ean(firstEan)
-                .genart(product.getGenartNumberList().get(0))
+                .name(localization.getName())
+                .ean(country.getEan().get(0))
+                .genart(country.getGenart().get(0))
                 .setReferenceId(originItem.getSku())
                 .setReferenceName(originItem.getName())
                 .customerNote(originItem.getCustomerNote())

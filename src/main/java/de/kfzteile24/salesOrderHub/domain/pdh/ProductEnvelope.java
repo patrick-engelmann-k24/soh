@@ -7,8 +7,8 @@ import lombok.Data;
 @JsonRootName("product")
 public class ProductEnvelope {
 
-    String version;
+    private String version;
 
-    Product product;
+    private Product product;
 
 }

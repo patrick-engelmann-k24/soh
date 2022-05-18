@@ -9,8 +9,8 @@ import java.math.BigDecimal;
 public class ProductSet {
 
     @JsonProperty("k24_sku")
-    String sku;
+    private String sku;
 
     @JsonProperty("amount")
-    BigDecimal quantity;
+    private BigDecimal quantity;
 }
