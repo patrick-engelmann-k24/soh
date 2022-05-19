@@ -28,17 +28,19 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.INVOICE_RECEIVED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
-import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.*;
+import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getGrossValue;
+import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getSumValue;
+import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.isNotNullAndEqual;
 import static java.text.MessageFormat.format;
 
 @Service
@@ -176,6 +178,7 @@ public class SalesOrderService {
 
     public boolean isFullyMatchedWithOriginalOrder(SalesOrder originalSalesOrder,
                                                    List<CoreSalesFinancialDocumentLine> items) {
+
         // Check if there is no other sales order namely subsequent order
         var ordersByOrderGroupId = getOrderByOrderGroupId(originalSalesOrder.getOrderGroupId());
         if (ordersByOrderGroupId.size() > 1) {
@@ -185,13 +188,15 @@ public class SalesOrderService {
         // Check if all sku names are matching with original sales order
         var orderRows = originalSalesOrder.getLatestJson().getOrderRows();
         var skuList = orderRows.stream().map(OrderRows::getSku).collect(Collectors.toSet());
-        if (!items.stream().allMatch(row -> skuList.contains(row.getItemNumber()))) {
+        if (!items.stream().filter(item -> !item.getIsShippingCost()).allMatch(row -> skuList.contains(row.getItemNumber()))) {
             return false;
         }
 
         // Check if all order rows have same values within the invoice event
         for (OrderRows row : orderRows) {
-            var item = items.stream().filter(each -> row.getSku().equals(each.getItemNumber())).findFirst().orElse(null);
+            var item = items.stream()
+                    .filter(each -> !each.getIsShippingCost())
+                    .filter(each -> row.getSku().equals(each.getItemNumber())).findFirst().orElse(null);
             if (item == null)
                 return false;
             if (!isNotNullAndEqual(item.getQuantity(), row.getQuantity()))
@@ -201,7 +206,25 @@ public class SalesOrderService {
             if (!isNotNullAndEqual(item.getUnitNetAmount(), row.getUnitValues().getGoodsValueNet()))
                 return false;
         }
-        return true;
+
+        var shippingCostDocumentLine = items.stream().filter(item -> item.getIsShippingCost()).findFirst().orElse(null);
+
+        return isShippingCostNetMatch(originalSalesOrder, shippingCostDocumentLine)
+                && isShippingCostGrossMatch(originalSalesOrder, shippingCostDocumentLine);
+    }
+
+    private boolean isShippingCostNetMatch(SalesOrder originalSalesOrder, CoreSalesFinancialDocumentLine shippingCostDocumentLine) {
+        var shippingCostNet = shippingCostDocumentLine != null
+                ? shippingCostDocumentLine.getUnitNetAmount() : BigDecimal.ZERO;
+        var orderHeaderShippingCostNet = originalSalesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostNet();
+        return isNotNullAndEqual(shippingCostNet != null ? shippingCostNet : BigDecimal.ZERO, orderHeaderShippingCostNet);
+    }
+
+    private boolean isShippingCostGrossMatch(SalesOrder originalSalesOrder, CoreSalesFinancialDocumentLine shippingCostDocumentLine) {
+        var shippingCostGross = shippingCostDocumentLine != null
+                ? getGrossValue(shippingCostDocumentLine.getUnitNetAmount(), shippingCostDocumentLine.getTaxRate()) : BigDecimal.ZERO;
+        var orderHeaderShippingCostGross = originalSalesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostGross();
+        return isNotNullAndEqual(shippingCostGross != null ? shippingCostGross : BigDecimal.ZERO, orderHeaderShippingCostGross);
     }
 
     public List<String> getOrderNumberListByOrderGroupId(String orderGroupId, String orderItemSku) {

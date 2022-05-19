@@ -14,6 +14,7 @@ import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.soh.order.dto.GrandTotalTaxes;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Platform;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -36,6 +37,9 @@ import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.readResource;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -191,6 +195,92 @@ class SalesOrderServiceTest {
         assertThat(createdSalesOrder.getInvoiceEvent()).isEqualTo(invoiceCreatedMessage);
     }
 
+
+    @Test
+    @DisplayName("Test That Invoice is Fully Matched With Original Order for No Shipping Cost LInes")
+    void testFullyMatchedWithOriginalOrderNoShippingCostLines() {
+        // Prepare sales order
+        String rawMessage =  readResource("examples/testmessage.json");
+        var salesOrder = getSalesOrder(rawMessage);
+        assertEquals(2, salesOrder.getLatestJson().getOrderRows().size());
+
+        // Prepare sub-sequent delivery note obj
+        var invoiceCreatedMessage = createFullyMatchedItemsMessage(salesOrder, null, null);
+
+        CoreSalesInvoiceHeader salesInvoiceHeader = invoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
+        assertTrue(salesOrderService.isFullyMatchedWithOriginalOrder(salesOrder, salesInvoiceHeader.getInvoiceLines()));
+    }
+
+    @Test
+    @DisplayName("Test That Invoice is Fully Matched With Original Order for Unknown Sku Shipping Cost LIne")
+    void testFullyMatchedWithOriginalOrderUnknowSkuShippingCostLine() {
+        // Prepare sales order
+        String rawMessage =  readResource("examples/testmessage.json");
+        var salesOrder = getSalesOrder(rawMessage);
+        assertEquals(2, salesOrder.getLatestJson().getOrderRows().size());
+
+        // Prepare sub-sequent delivery note obj
+        var invoiceCreatedMessage = createFullyMatchedItemsMessage(salesOrder, "test", null);
+
+        CoreSalesInvoiceHeader salesInvoiceHeader = invoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
+        assertTrue(salesOrderService.isFullyMatchedWithOriginalOrder(salesOrder, salesInvoiceHeader.getInvoiceLines()));
+    }
+
+
+    @Test
+    @DisplayName("Test That Invoice is Fully Matched With Original Order for Existing Sku Shipping Cost LIne")
+    void testFullyMatchedWithOriginalOrderExistingSkuShippingCostLine() {
+        // Prepare sales order
+        String rawMessage =  readResource("examples/testmessage.json");
+        var salesOrder = getSalesOrder(rawMessage);
+        assertEquals(2, salesOrder.getLatestJson().getOrderRows().size());
+        OrderRows orderRow = salesOrder.getLatestJson().getOrderRows().get(0);
+
+        // Prepare sub-sequent delivery note obj
+        var invoiceCreatedMessage = createFullyMatchedItemsMessage(salesOrder,
+                orderRow.getSku(), null);
+
+        CoreSalesInvoiceHeader salesInvoiceHeader = invoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
+        assertTrue(salesOrderService.isFullyMatchedWithOriginalOrder(salesOrder, salesInvoiceHeader.getInvoiceLines()));
+    }
+
+    @Test
+    @DisplayName("Test That Invoice is NOT Fully Matched With Original Order for NOT NULL And NULL ShippingCostNet")
+    void testNotFullyMatchedWithOriginalOrderExistingSkuShippingCostLine() {
+        // Prepare sales order
+        String rawMessage =  readResource("examples/testmessage.json");
+        var salesOrder = getSalesOrder(rawMessage);
+        assertEquals(2, salesOrder.getLatestJson().getOrderRows().size());
+        OrderRows orderRow = salesOrder.getLatestJson().getOrderRows().get(0);
+        salesOrder.getLatestJson().getOrderHeader().getTotals().setShippingCostNet(BigDecimal.valueOf(0.1));
+
+        // Prepare sub-sequent delivery note obj
+        var invoiceCreatedMessage = createFullyMatchedItemsMessage(salesOrder,
+                orderRow.getSku(), null);
+
+        CoreSalesInvoiceHeader salesInvoiceHeader = invoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
+        assertFalse(salesOrderService.isFullyMatchedWithOriginalOrder(salesOrder, salesInvoiceHeader.getInvoiceLines()));
+    }
+
+    @Test
+    @DisplayName("Test That Invoice is Fully Matched With Original Order for NOT NULL Matching ShippingCostNet")
+    void testFullyMatchedWithOriginalOrderNotNullShippingCostNet() {
+        // Prepare sales order
+        String rawMessage =  readResource("examples/testmessage.json");
+        var salesOrder = getSalesOrder(rawMessage);
+        assertEquals(2, salesOrder.getLatestJson().getOrderRows().size());
+        OrderRows orderRow = salesOrder.getLatestJson().getOrderRows().get(0);
+        salesOrder.getLatestJson().getOrderHeader().getTotals().setShippingCostNet(BigDecimal.valueOf(0.1));
+
+        // Prepare sub-sequent delivery note obj
+        var invoiceCreatedMessage = createFullyMatchedItemsMessage(salesOrder,
+                orderRow.getSku(), BigDecimal.valueOf(0.1));
+
+        CoreSalesInvoiceHeader salesInvoiceHeader = invoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
+        assertFalse(salesOrderService.isFullyMatchedWithOriginalOrder(salesOrder, salesInvoiceHeader.getInvoiceLines()));
+    }
+
+
     private CoreSalesInvoiceCreatedMessage createCoreSalesInvoiceCreatedMessage(String orderNumber, String sku) {
         BigDecimal quantity = BigDecimal.valueOf(1L);
         CoreSalesFinancialDocumentLine item = CoreSalesFinancialDocumentLine.builder()
@@ -209,6 +299,40 @@ class SalesOrderServiceTest {
 
         CoreSalesInvoice coreSalesInvoice = new CoreSalesInvoice();
         coreSalesInvoice.setSalesInvoiceHeader(coreSalesInvoiceHeader);
+
+        CoreSalesInvoiceCreatedMessage salesInvoiceCreatedMessage = new CoreSalesInvoiceCreatedMessage();
+        salesInvoiceCreatedMessage.setSalesInvoice(coreSalesInvoice);
+        return salesInvoiceCreatedMessage;
+    }
+
+    private CoreSalesInvoiceCreatedMessage createFullyMatchedItemsMessage(SalesOrder order, String shippingCostLineSku, BigDecimal shippingCostLineNetAmount) {
+        CoreSalesInvoiceHeader coreSalesInvoiceHeader = new CoreSalesInvoiceHeader();
+        coreSalesInvoiceHeader.setOrderNumber(order.getOrderNumber());
+        CoreSalesInvoice coreSalesInvoice = new CoreSalesInvoice();
+        coreSalesInvoice.setSalesInvoiceHeader(coreSalesInvoiceHeader);
+        var invoiceLines = new ArrayList<CoreSalesFinancialDocumentLine>();
+        for (OrderRows orderRow: order.getLatestJson().getOrderRows()) {
+            CoreSalesFinancialDocumentLine item = CoreSalesFinancialDocumentLine.builder()
+                    .itemNumber(orderRow.getSku())
+                    .quantity(orderRow.getQuantity())
+                    .taxRate(orderRow.getTaxRate())
+                    .unitNetAmount(orderRow.getUnitValues().getGoodsValueNet())
+                    .isShippingCost(false)
+                    .build();
+            invoiceLines.add(item);
+        }
+
+        if (shippingCostLineSku != null) {
+            CoreSalesFinancialDocumentLine item = CoreSalesFinancialDocumentLine.builder()
+                    .itemNumber(shippingCostLineSku)
+                    .unitNetAmount(shippingCostLineNetAmount)
+                    .quantity(null)
+                    .isShippingCost(true)
+                    .build();
+            invoiceLines.add(item);
+        }
+
+        coreSalesInvoiceHeader.setInvoiceLines(invoiceLines);
 
         CoreSalesInvoiceCreatedMessage salesInvoiceCreatedMessage = new CoreSalesInvoiceCreatedMessage();
         salesInvoiceCreatedMessage.setSalesInvoice(coreSalesInvoice);
