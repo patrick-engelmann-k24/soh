@@ -1,5 +1,6 @@
 package de.kfzteile24.salesOrderHub.services;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.FeatureFlagConfig;
 import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
@@ -18,6 +19,7 @@ import lombok.SneakyThrows;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -125,6 +127,46 @@ class SqsReceiveServiceTest {
 
         verify(salesOrderService).createSalesOrderForInvoice(any(CoreSalesInvoiceCreatedMessage.class), any(SalesOrder.class),any(String.class));
         verify(camundaHelper).createOrderProcess(any(SalesOrder.class), any(Messages.class));
+        verify(camundaHelper).startInvoiceCreatedReceivedProcess(salesOrder);
+    }
+
+    @Test
+    @DisplayName("Test That Subsequent Order should be created, even if Invoice is Fully Matched With Original Order, but sales invoice event was already published for the Original Order")
+    void testQueueListenerSubsequentOrderCreatedIfSalesInvoicePublished() {
+        String rawMessage = readResource("examples/ecpOrderMessage.json");
+        SalesOrder salesOrder = getSalesOrder(rawMessage);
+        salesOrder.getLatestJson().getOrderHeader().setDocumentRefNumber("not null");
+        salesOrder.setInvoiceEvent(new CoreSalesInvoiceCreatedMessage());
+
+        when(featureFlagConfig.getIgnoreCoreSalesInvoice()).thenReturn(false);
+        when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.of(salesOrder));
+        when(salesOrderService.createSalesOrderForInvoice(any(), any(), any())).thenReturn(salesOrder);
+        when(salesOrderService.createOrderNumberInSOH(any(), any())).thenReturn(salesOrder.getOrderNumber(), "10");
+
+        String coreSalesInvoiceCreatedMessage = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
+        sqsReceiveService.queueListenerCoreSalesInvoiceCreated(coreSalesInvoiceCreatedMessage, ANY_SENDER_ID,
+                ANY_RECEIVE_COUNT);
+
+        verify(salesOrderService).createSalesOrderForInvoice(any(CoreSalesInvoiceCreatedMessage.class), any(SalesOrder.class), any(String.class));
+        verify(camundaHelper).createOrderProcess(any(SalesOrder.class), eq(Messages.ORDER_CREATED_IN_SOH));
+        verify(camundaHelper).startInvoiceCreatedReceivedProcess(salesOrder);
+    }
+
+    @Test
+    @DisplayName("Test That Original Order should be updated, if Invoice is Fully Matched With Original Order and sales invoice event was not published for the Original Order")
+    void testQueueListenerOriginalOrderUpdateIfSalesInvoiceNotPublished() throws JsonProcessingException {
+        String rawMessage = readResource("examples/ecpOrderMessage.json");
+        SalesOrder salesOrder = getSalesOrder(rawMessage);
+        String invoiceRawMessage = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
+
+        when(featureFlagConfig.getIgnoreCoreSalesInvoice()).thenReturn(false);
+        when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.of(salesOrder));
+        when(salesOrderService.isFullyMatchedWithOriginalOrder(eq(salesOrder), any())).thenReturn(true);
+
+        sqsReceiveService.queueListenerCoreSalesInvoiceCreated(invoiceRawMessage, ANY_SENDER_ID,
+                ANY_RECEIVE_COUNT);
+
+        verify(salesOrderService).updateOrder(eq(salesOrder));
         verify(camundaHelper).startInvoiceCreatedReceivedProcess(salesOrder);
     }
 

@@ -429,7 +429,7 @@ public class SqsReceiveService {
                 var originalSalesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                         .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
 
-                if (salesOrderService.isFullyMatchedWithOriginalOrder(originalSalesOrder, itemList)) {
+                if (!isInvoicePublished(originalSalesOrder) && salesOrderService.isFullyMatchedWithOriginalOrder(originalSalesOrder, itemList)) {
                     updateOriginalSalesOrder(salesInvoiceCreatedMessage, originalSalesOrder);
                     publishInvoiceEvent(originalSalesOrder);
                 } else {
@@ -457,6 +457,11 @@ public class SqsReceiveService {
                 throw e;
             }
         }
+    }
+
+    private boolean isInvoicePublished(SalesOrder originalSalesOrder) {
+        return StringUtils.isNotBlank(originalSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber())
+                && originalSalesOrder.getInvoiceEvent() != null;
     }
 
     private void publishInvoiceEvent(SalesOrder salesOrder) {
