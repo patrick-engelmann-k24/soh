@@ -620,6 +620,7 @@ class SqsReceiveServiceIntegrationTest {
     }
 
     @AfterEach
+    @SneakyThrows
     public void cleanup() {
         salesOrderRepository.deleteAll();
         auditLogRepository.deleteAll();
