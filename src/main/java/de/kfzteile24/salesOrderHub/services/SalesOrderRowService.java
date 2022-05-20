@@ -74,9 +74,6 @@ public class SalesOrderRowService {
     @NonNull
     private final SnsPublishService snsPublishService;
 
-    @NonNull
-    private final InvoiceService invoiceService;
-
     public boolean cancelOrderProcessIfFullyCancelled(SalesOrder salesOrder) {
 
         if (salesOrder.getLatestJson().getOrderRows().stream().allMatch(OrderRows::getIsCancelled)) {
@@ -235,7 +232,6 @@ public class SalesOrderRowService {
 
         for (CreditNoteLine item : items) {
             var orderRow = orderUtil.createNewOrderRow(item, salesOrder, lastRowKey);
-            orderUtil.updateOrderRowValues(orderRow, item);
             returnLatestJson.getOrderRows().add(orderRow);
             lastRowKey = orderUtil.updateLastRowKey(salesOrder, item.getItemNumber(), lastRowKey);
         }
