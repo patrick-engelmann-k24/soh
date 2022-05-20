@@ -21,8 +21,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getGrossValue;
-import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getMultipliedValue;
-import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getValueOrDefault;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.isNotNullAndNotEqual;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.round;
 import static java.math.RoundingMode.HALF_UP;
@@ -62,13 +60,6 @@ public class OrderUtil {
         return orderNumber + "-" + reference;
     }
 
-    public void updateOrderRowValues(OrderRows orderRow, OrderItem item) {
-
-        if (orderRow != null) {
-            updateOrderRowByUnitPriceNet(orderRow, getValueOrDefault(item.getUnitNetAmount(), BigDecimal.ZERO));
-        }
-    }
-
     private List<OrderRows> createRowFromLatestJson(SalesOrder salesOrder, CoreSalesFinancialDocumentLine item) {
         return salesOrder.getLatestJson().getOrderRows().stream()
                 .filter(row -> row.getSku().equals(item.getItemNumber()))
@@ -94,10 +85,10 @@ public class OrderUtil {
 
         var unitPriceGross = getGrossValue(item.getUnitNetAmount(), item.getTaxRate());
         var unitPriceNet = item.getUnitNetAmount();
-        var sumOfGoodsPriceGross = getMultipliedValue(unitPriceGross, item.getQuantity());
-        var sumOfGoodsPriceNet = getMultipliedValue(unitPriceNet, item.getQuantity());
+        var sumOfGoodsPriceGross = getGrossValue(item.getLineNetAmount(), item.getTaxRate());
+        var sumOfGoodsPriceNet = item.getLineNetAmount();
 
-        OrderRows orderRow = OrderRows.builder()
+        return OrderRows.builder()
                 .rowKey(originalOrderRow.getRowKey() != null ? originalOrderRow.getRowKey() : lastRowKey + 1)
                 .isCancelled(false)
                 .isPriceHammer(originalOrderRow.getIsPriceHammer())
@@ -133,8 +124,6 @@ public class OrderUtil {
                         .totalDiscountedNet(sumOfGoodsPriceNet)
                         .build()))
                 .build();
-        updateOrderRowValues(orderRow, item);
-        return orderRow;
     }
 
     public boolean containsDropShipmentItems(Order order) {

@@ -4,16 +4,15 @@ import java.math.BigDecimal;
 
 public interface OrderItem {
 
-    public String getItemNumber();
+    String getItemNumber();
 
-    public BigDecimal getQuantity();
+    BigDecimal getQuantity();
 
-    public BigDecimal getUnitNetAmount();
+    BigDecimal getUnitNetAmount();
 
-    public BigDecimal getTaxRate();
+    BigDecimal getLineNetAmount();
 
+    BigDecimal getTaxRate();
 
-
-
-
+    Boolean getIsShippingCost();
 }
