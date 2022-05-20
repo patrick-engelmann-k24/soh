@@ -7,14 +7,12 @@ import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
+import de.kfzteile24.salesOrderHub.dto.shared.creditnote.CreditNoteLine;
 import de.kfzteile24.salesOrderHub.dto.shared.creditnote.SalesCreditNote;
 import de.kfzteile24.salesOrderHub.dto.shared.creditnote.SalesCreditNoteHeader;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
-import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
-import de.kfzteile24.salesOrderHub.dto.shared.creditnote.CreditNoteLine;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
-import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.CalculationUtil;
@@ -35,7 +33,6 @@ import org.camunda.bpm.engine.runtime.Execution;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 import javax.transaction.Transactional;
 import java.math.BigDecimal;
@@ -50,9 +47,6 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_CREDIT_NOTE_CREATED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_BOOKED;
-import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ITEM_SHIPPED;
-import static java.text.MessageFormat.format;
-import static java.util.stream.Collectors.toUnmodifiableSet;
 
 @Service
 @Slf4j
@@ -108,6 +102,8 @@ public class SalesOrderRowService {
         salesOrder.getLatestJson().getOrderHeader().setOrderNumberExternal(message.getExternalOrderNumber());
         salesOrder = salesOrderService.save(salesOrder, DROPSHIPMENT_PURCHASE_ORDER_BOOKED);
         if (!message.getBooked()) {
+
+            // This block goes later to the java delegate (eventEndMsgDropShipmentOrderCancelled activity)
             for (OrderRows orderRows : ((Order) salesOrder.getOriginalOrder()).getOrderRows()) {
                 cancelOrderRowsOfOrderGroup(orderNumber, orderRows.getSku());
             }
@@ -115,54 +111,6 @@ public class SalesOrderRowService {
                 cancelOrderProcessIfFullyCancelled(salesOrder);
             }
         }
-    }
-
-    public void handleDropshipmentShipmentConfirmed(DropshipmentShipmentConfirmedMessage message) {
-
-        var orderNumber = message.getSalesOrderNumber();
-        SalesOrder salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
-                .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
-
-        var orderRows = salesOrder.getLatestJson().getOrderRows();
-        var shippedItems = message.getItems();
-
-        shippedItems.forEach(item ->
-                orderRows.stream()
-                        .filter(row -> StringUtils.pathEquals(row.getSku(), item.getProductNumber()))
-                        .findFirst()
-                        .ifPresentOrElse(row -> {
-                            addParcelNumber(item, row);
-                            addServiceProviderName(item, row);
-                        }, () -> {
-                            throw new NotFoundException(
-                                    format("Could not find order row with SKU {0} for order {1}",
-                                            item.getProductNumber(), orderNumber));
-                        })
-        );
-
-        setDocumentRefNumber(salesOrder);
-        var persistedSalesOrder = salesOrderService.save(salesOrder, ORDER_ITEM_SHIPPED);
-
-        var trackingLinks = shippedItems.stream()
-                .map(ShipmentItem::getTrackingLink)
-                .collect(toUnmodifiableSet());
-
-        snsPublishService.publishSalesOrderShipmentConfirmedEvent(persistedSalesOrder, trackingLinks);
-    }
-
-    private void addParcelNumber(ShipmentItem item, OrderRows row) {
-        var parcelNumber = item.getParcelNumber();
-        Optional.ofNullable(row.getTrackingNumbers())
-                .ifPresentOrElse(trackingNumbers -> trackingNumbers.add(parcelNumber),
-                        () -> row.setTrackingNumbers(List.of(parcelNumber)));
-    }
-
-    private void addServiceProviderName(ShipmentItem item, OrderRows row) {
-        row.setShippingProvider(item.getServiceProviderName());
-    }
-
-    private void setDocumentRefNumber(SalesOrder salesOrder) {
-        salesOrder.getLatestJson().getOrderHeader().setDocumentRefNumber(invoiceService.createInvoiceNumber());
     }
 
     @SneakyThrows

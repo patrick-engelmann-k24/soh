@@ -3,6 +3,7 @@ package de.kfzteile24.salesOrderHub.services;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
@@ -14,6 +15,7 @@ import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
+import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.soh.order.dto.GrandTotalTaxes;
 import de.kfzteile24.soh.order.dto.Order;
@@ -23,7 +25,6 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
-import org.assertj.core.api.AutoCloseableSoftAssertions;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
@@ -48,17 +49,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_END_MSG_DROPSHIPMENT_ORDER_CANCELLED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_ORDER_CREATED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_PURCHASE_ORDER_SUCCESSFUL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_ECP;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_PAYMENT_SECURED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_DROPSHIPMENT_ORDER_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SHIPMENT_METHOD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.NONE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createOrderNumberInSOH;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createOrderRow;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrderFromOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getOrder;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createOrderNumberInSOH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.reset;
@@ -82,7 +92,7 @@ class SqsReceiveServiceIntegrationTest {
     private static final String ANY_SENDER_ID = RandomStringUtils.randomAlphabetic(10);
     private static final int ANY_RECEIVE_COUNT = RandomUtils.nextInt();
 
-    @Autowired
+    @SpyBean
     private CamundaHelper camundaHelper;
     @Autowired
     private SqsReceiveService sqsReceiveService;
@@ -94,6 +104,8 @@ class SqsReceiveServiceIntegrationTest {
     private SalesOrderRepository salesOrderRepository;
     @Autowired
     private AuditLogRepository auditLogRepository;
+    @Autowired
+    private SalesOrderInvoiceRepository salesOrderInvoiceRepository;
     @Autowired
     private RuntimeService runtimeService;
     @Autowired
@@ -289,47 +301,36 @@ class SqsReceiveServiceIntegrationTest {
 
         log.info(testInfo.getDisplayName());
 
-        var salesOrder = SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
-        salesOrder.setOrderNumber("580309129");
+        String orderRawMessage = readResource("examples/ecpOrderMessageWithTwoRows.json");
+        Order order = getOrder(orderRawMessage);
+        var orderRows = List.of(
+                createOrderRow("sku-1", NONE),
+                createOrderRow("sku-2", NONE),
+                createOrderRow("sku-3", NONE)
+        );
+        order.setOrderRows(orderRows);
+        order.getOrderHeader().setOrderFulfillment(DELTICOM.getName());
+        SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(order));
+        camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
 
-        salesOrderService.save(salesOrder, Action.ORDER_CREATED);
+        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+                camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
+
+        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+                camundaHelper.hasPassed(salesOrder.getProcessId(), EVENT_THROW_MSG_ORDER_CREATED.getName())));
+
+        bpmUtil.sendMessage(Messages.DROPSHIPMENT_ORDER_CONFIRMED, salesOrder.getOrderNumber(),
+                Map.of(IS_DROPSHIPMENT_ORDER_CONFIRMED.getName(), true));
 
         var dropshipmentShipmentConfirmed = readResource("examples/dropshipmentShipmentConfirmed.json");
+        dropshipmentShipmentConfirmed = dropshipmentShipmentConfirmed.replace("580309129", salesOrder.getOrderNumber());
         sqsReceiveService.queueListenerDropshipmentShipmentConfirmed(dropshipmentShipmentConfirmed, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
-        var optUpdatedSalesOrder = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber());
-        assertThat(optUpdatedSalesOrder).isNotEmpty();
-        var updatedSalesOrder = optUpdatedSalesOrder.get();
-        var updatedOrderRows = updatedSalesOrder.getLatestJson().getOrderRows();
-        assertThat(updatedOrderRows).hasSize(3);
+        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+                camundaHelper.hasPassed(salesOrder.getProcessId(), EVENT_THROW_MSG_PURCHASE_ORDER_SUCCESSFUL.getName())));
 
-        var sku1Row = updatedOrderRows.get(0);
-        var sku2Row = updatedOrderRows.get(1);
-        var sku3Row = updatedOrderRows.get(2);
-
-        try (AutoCloseableSoftAssertions softly = new AutoCloseableSoftAssertions()) {
-            softly.assertThat(sku1Row.getSku()).as("sku-1").isEqualTo("sku-1");
-            softly.assertThat(sku1Row.getShippingProvider()).as("Service provider name").isEqualTo("abc1");
-            softly.assertThat(sku1Row.getTrackingNumbers()).as("Size of tracking numbers sku-1").hasSize(1);
-            softly.assertThat(sku1Row.getTrackingNumbers().get(0)).as("sku-1 tracking number").isEqualTo("00F8F0LT");
-
-            softly.assertThat(sku2Row.getSku()).as("sku-2").isEqualTo("sku-2");
-            softly.assertThat(sku2Row.getTrackingNumbers()).as("Size of tracking numbers sku-2").isNull();
-
-            softly.assertThat(sku3Row.getSku()).as("sku-3").isEqualTo("sku-3");
-            softly.assertThat(sku3Row.getShippingProvider()).as("Service provider name").isEqualTo("abc2");
-            softly.assertThat(sku3Row.getTrackingNumbers()).as("Size of tracking numbers sku-3").hasSize(1);
-            softly.assertThat(sku3Row.getTrackingNumbers().get(0)).as("sku-3 tracking number").isEqualTo("00F8F0LT2");
-        }
-        assertThat(updatedSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber()).hasSize(18);
-
-        verify(snsPublishService).publishSalesOrderShipmentConfirmedEvent(eq(updatedSalesOrder), argThat(
-                trackingNumbers -> {
-                    assertThat(trackingNumbers).hasSize(2);
-                    assertThat(trackingNumbers).containsExactlyInAnyOrder("http://abc1", "http://abc2");
-                    return true;
-                }
-        ));
+        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+                camundaHelper.hasPassed(salesOrder.getProcessId(), EVENT_MSG_DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED.getName())));
     }
 
     @Test
@@ -337,22 +338,22 @@ class SqsReceiveServiceIntegrationTest {
 
         String orderRawMessage = readResource("examples/ecpOrderMessageWithTwoRows.json");
         Order order = getOrder(orderRawMessage);
+        order.getOrderHeader().setOrderFulfillment(DELTICOM.getName());
         SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(order));
         camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
-        bpmUtil.sendMessage(ORDER_RECEIVED_PAYMENT_SECURED, salesOrder.getOrderNumber());
 
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
+        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+                camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
 
         String message = readResource("examples/dropshipmentOrderPurchasedBooked.json");
         message = message.replace("123", salesOrder.getOrderNumber());
         sqsReceiveService.queueListenerDropshipmentPurchaseOrderBooked(message, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
         assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
-                camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
+                camundaHelper.hasPassed(salesOrder.getProcessId(), EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED.getName())));
 
-        SalesOrder updatedOrder = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber()).orElse(null);
-        assertNotNull(updatedOrder);
-        assertEquals("13.2", updatedOrder.getLatestJson().getOrderHeader().getOrderNumberExternal());
+        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+                camundaHelper.hasPassed(salesOrder.getProcessId(), EVENT_THROW_MSG_PURCHASE_ORDER_SUCCESSFUL.getName())));
     }
 
     @Test
@@ -360,31 +361,22 @@ class SqsReceiveServiceIntegrationTest {
 
         String orderRawMessage = readResource("examples/ecpOrderMessageWithTwoRows.json");
         Order order = getOrder(orderRawMessage);
+        order.getOrderHeader().setOrderFulfillment(DELTICOM.getName());
         SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(order));
         camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
-        bpmUtil.sendMessage(ORDER_RECEIVED_PAYMENT_SECURED, salesOrder.getOrderNumber());
 
         assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
-                camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())) &&
-                camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), "2270-13012") &&
-                camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), "2270-13013")
-        );
+                camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
 
         String message = readResource("examples/dropshipmentOrderPurchasedBookedFalse.json");
         message = message.replace("123", salesOrder.getOrderNumber());
         sqsReceiveService.queueListenerDropshipmentPurchaseOrderBooked(message, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
-        assertFalse(timerService.poll(Duration.ofSeconds(7),Duration.ofSeconds(2), ()->
-                camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(),"2270-13012")&&
-                camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(),"2270-13013")&&
-                camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())
-                ));
+        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+                camundaHelper.hasPassed(salesOrder.getProcessId(), EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED.getName())));
 
-        SalesOrder updated = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber()).orElse(null);
-
-        assertNotNull(updated);
-
-        assertEquals("13.2",updated.getLatestJson().getOrderHeader().getOrderNumberExternal());
+        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+                camundaHelper.hasPassed(salesOrder.getProcessId(), EVENT_END_MSG_DROPSHIPMENT_ORDER_CANCELLED.getName())));
     }
 
     @SneakyThrows
@@ -495,23 +487,6 @@ class SqsReceiveServiceIntegrationTest {
                     return true;
                 }
         ));
-    }
-
-    @Test
-    void testQueueListenerMigrationCoreSalesOrderCreated() {
-
-        String orderRawMessage = readResource("examples/ecpOrderMessage.json");
-        Order order = getOrder(orderRawMessage);
-
-        sqsReceiveService.queueListenerMigrationCoreSalesOrderCreated(orderRawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
-
-        assertTrue(timerService.pollWithDefaultTiming(
-                () -> camundaHelper.checkIfActiveProcessExists(order.getOrderHeader().getOrderNumber())));
-
-        SalesOrder updated = salesOrderService.getOrderByOrderNumber(order.getOrderHeader().getOrderNumber()).orElse(null);
-        assertNotNull(updated);
-        assertEquals(order, updated.getLatestJson());
-        assertEquals(order, updated.getOriginalOrder());
     }
 
     @Test
@@ -645,9 +620,11 @@ class SqsReceiveServiceIntegrationTest {
     }
 
     @AfterEach
+    @SneakyThrows
     public void cleanup() {
         salesOrderRepository.deleteAll();
         auditLogRepository.deleteAll();
+        salesOrderInvoiceRepository.deleteAll();
         bpmUtil.cleanUp();
     }
 }

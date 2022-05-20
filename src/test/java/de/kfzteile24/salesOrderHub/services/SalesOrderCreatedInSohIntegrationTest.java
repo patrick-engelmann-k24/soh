@@ -249,6 +249,15 @@ class SalesOrderCreatedInSohIntegrationTest {
 
         SalesOrder originalSalesOrder = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber()).orElseThrow();
         originalSalesOrder.getLatestJson().getOrderRows().stream().map(OrderRows::getIsCancelled).forEach(Assertions::assertTrue);
+
+        SalesOrder subsequentSalesOrder = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber() + "-" + invoiceNumber).orElseThrow();
+        assertNotNull(subsequentSalesOrder.getInvoiceEvent());
+        assertNotNull(subsequentSalesOrder.getLatestJson().getOrderHeader().getOrderGroupId());
+        assertNotNull(subsequentSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber());
+        assertEquals(subsequentSalesOrder.getLatestJson().getOrderHeader().getOrderGroupId(),
+                subsequentSalesOrder.getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getOrderGroupId());
+        assertEquals(subsequentSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber(),
+                subsequentSalesOrder.getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber());
     }
 
     private boolean checkIfInvoiceCreatedReceivedProcessExists(String newOrderNumberCreatedInSoh) {
