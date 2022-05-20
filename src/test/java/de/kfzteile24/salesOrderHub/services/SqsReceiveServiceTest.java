@@ -74,6 +74,8 @@ class SqsReceiveServiceTest {
     private SnsPublishService snsPublishService;
     @Mock
     private CreditNoteEventMapper creditNoteEventMapper;
+    @Mock
+    private DropshipmentOrderService dropshipmentOrderService;
     @InjectMocks
     private SqsReceiveService sqsReceiveService;
 
@@ -293,7 +295,7 @@ class SqsReceiveServiceTest {
         String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
         DropshipmentPurchaseOrderBookedMessage message =
                 objectMapper.readValue(body, DropshipmentPurchaseOrderBookedMessage.class);
-        verify(salesOrderRowService).handleDropshipmentPurchaseOrderBooked(message);
+        verify(dropshipmentOrderService).handleDropShipmentOrderConfirmed(message);
     }
 
     @Test

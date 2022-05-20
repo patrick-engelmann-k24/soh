@@ -60,6 +60,7 @@ public class SalesOrderService {
     @NonNull
     private final OrderUtil orderUtil;
 
+    @Transactional
     public SalesOrder updateOrder(final SalesOrder salesOrder) {
         salesOrder.setUpdatedAt(LocalDateTime.now());
         return orderRepository.save(salesOrder);

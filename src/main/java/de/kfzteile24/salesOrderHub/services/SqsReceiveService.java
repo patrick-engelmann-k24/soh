@@ -13,10 +13,10 @@ import de.kfzteile24.salesOrderHub.dto.mapper.CreditNoteEventMapper;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.FulfillmentMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.OrderPaymentSecuredMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
-import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
@@ -63,6 +63,7 @@ public class SqsReceiveService {
     private final SnsPublishService snsPublishService;
     private final CreditNoteEventMapper creditNoteEventMapper;
     private final SplitterService splitterService;
+    private final DropshipmentOrderService dropshipmentOrderService;
 
     /**
      * Consume sqs for new orders from ecp shop
@@ -351,7 +352,7 @@ public class SqsReceiveService {
         log.info("Received dropshipment shipment confirmed message with order number: {}",
                 shipmentConfirmedMessage.getSalesOrderNumber());
 
-        salesOrderRowService.handleDropshipmentShipmentConfirmed(shipmentConfirmedMessage);
+        dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(shipmentConfirmedMessage);
     }
 
     /**
@@ -372,7 +373,7 @@ public class SqsReceiveService {
         log.info("Received drop shipment order purchased booked message with Sales Order Number: {}, External Order NUmber: {}",
                 message.getSalesOrderNumber(), message.getExternalOrderNumber());
 
-        salesOrderRowService.handleDropshipmentPurchaseOrderBooked(message);
+        dropshipmentOrderService.handleDropShipmentOrderConfirmed(message);
     }
 
     /**

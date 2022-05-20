@@ -27,7 +27,10 @@ public enum Variables implements BpmItem {
     IS_SOH_ORDER("isSohOrder"),
     POSITIVE_PAYMENT_TYPE("positivePaymentType"),
     PUBLISH_DELAY("publishDelay"),
-    IS_ORDER_CANCELLED("isOrderCancelled")
+    IS_ORDER_CANCELLED("isOrderCancelled"),
+    IS_DROPSHIPMENT_ORDER("isDropshipmentOrder"),
+    IS_DROPSHIPMENT_ORDER_CONFIRMED("isDropshipmentOrderConfirmed"),
+    TRACKING_LINKS("trackingList"),
     ;
 
     private final String name;
