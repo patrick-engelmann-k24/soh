@@ -257,10 +257,10 @@
       </bpmn:dataOutputAssociation>
     </bpmn:serviceTask>
     <bpmn:sequenceFlow id="Flow_1j2esf3" sourceRef="eventThrowMsgPublishTrackingInformation" targetRef="activityDropShipmentOrderGenerateInvoice" />
-    <bpmn:intermediateThrowEvent id="eventThrowMsgPublishTrackingInformation">
+    <bpmn:intermediateThrowEvent id="eventThrowMsgPublishTrackingInformation" name="Publish tracking information">
       <bpmn:incoming>Flow_1gcdxra</bpmn:incoming>
       <bpmn:outgoing>Flow_1j2esf3</bpmn:outgoing>
-      <bpmn:messageEventDefinition id="MessageEventDefinition_1swxyey" camunda:expression="${true}" />
+      <bpmn:messageEventDefinition id="MessageEventDefinition_1swxyey" camunda:delegateExpression="${publishDropshipmentTrackingInformationDelegate}" />
     </bpmn:intermediateThrowEvent>
     <bpmn:sequenceFlow id="Flow_1yttfcs" sourceRef="activityDropShipmentOrderGenerateInvoice" targetRef="eventThrowMsgPublishInvoiceData" />
     <bpmn:intermediateThrowEvent id="eventThrowMsgPublishInvoiceData">
@@ -735,6 +735,9 @@ including purchase order booked</bpmn:text>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_1iglph0_di" bpmnElement="eventThrowMsgPublishTrackingInformation">
         <dc:Bounds x="1352" y="672" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1331" y="715" width="78" height="27" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_16tlr1d_di" bpmnElement="eventThrowMsgPublishInvoiceData">
         <dc:Bounds x="1712" y="672" width="36" height="36" />
