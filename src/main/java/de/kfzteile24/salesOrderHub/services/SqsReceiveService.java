@@ -37,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -430,7 +431,8 @@ public class SqsReceiveService {
                 var originalSalesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                         .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
 
-                if (!isInvoicePublished(originalSalesOrder) && salesOrderService.isFullyMatchedWithOriginalOrder(originalSalesOrder, itemList)) {
+                if (!isInvoicePublished(originalSalesOrder, invoiceNumber)
+                        && salesOrderService.isFullyMatchedWithOriginalOrder(originalSalesOrder, itemList)) {
                     updateOriginalSalesOrder(salesInvoiceCreatedMessage, originalSalesOrder);
                     publishInvoiceEvent(originalSalesOrder);
                 } else {
@@ -460,7 +462,13 @@ public class SqsReceiveService {
         }
     }
 
-    private boolean isInvoicePublished(SalesOrder originalSalesOrder) {
+    private boolean isInvoicePublished(SalesOrder originalSalesOrder, String invoiceNumber) {
+        if (originalSalesOrder.getInvoiceEvent() != null
+                && Objects.equals(invoiceNumber,
+                originalSalesOrder.getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber())) {
+            throw new IllegalArgumentException(String.format("New Sales Invoice Created Event has the same invoice number as the previous " +
+                    "Sales Invoice Created Event: %s", originalSalesOrder.getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber()));
+        }
         return StringUtils.isNotBlank(originalSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber())
                 && originalSalesOrder.getInvoiceEvent() != null;
     }
@@ -483,6 +491,8 @@ public class SqsReceiveService {
         var orderNumber = invoiceMsg.getSalesInvoice().getSalesInvoiceHeader().getOrderNumber();
         var invoiceNumber = invoiceMsg.getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber();
         originalSalesOrder.getLatestJson().getOrderHeader().setDocumentRefNumber(invoiceNumber);
+        invoiceMsg.getSalesInvoice().getSalesInvoiceHeader().setOrderGroupId(
+                originalSalesOrder.getLatestJson().getOrderHeader().getOrderGroupId());
         originalSalesOrder.setInvoiceEvent(invoiceMsg);
         salesOrderService.updateOrder(originalSalesOrder);
 

@@ -11,6 +11,8 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.dto.mapper.CreditNoteEventMapper;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoice;
+import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
@@ -38,10 +40,26 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerTy
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.PAYPAL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.*;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createOrderNumberInSOH;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrderFromOrder;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getCreditNoteMsg;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getOrder;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrderReturn;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.argThat;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 /**
  * @author vinaya
@@ -138,7 +156,7 @@ class SqsReceiveServiceTest {
         String rawMessage = readResource("examples/ecpOrderMessage.json");
         SalesOrder salesOrder = getSalesOrder(rawMessage);
         salesOrder.getLatestJson().getOrderHeader().setDocumentRefNumber("not null");
-        salesOrder.setInvoiceEvent(new CoreSalesInvoiceCreatedMessage());
+        salesOrder.setInvoiceEvent(new CoreSalesInvoiceCreatedMessage(new CoreSalesInvoice(new CoreSalesInvoiceHeader(), Collections.emptyList())));
 
         when(featureFlagConfig.getIgnoreCoreSalesInvoice()).thenReturn(false);
         when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.of(salesOrder));
@@ -160,6 +178,8 @@ class SqsReceiveServiceTest {
         String rawMessage = readResource("examples/ecpOrderMessage.json");
         SalesOrder salesOrder = getSalesOrder(rawMessage);
         String invoiceRawMessage = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
+        assertNotNull(salesOrder.getLatestJson().getOrderHeader().getOrderGroupId());
+        assertNull(salesOrder.getInvoiceEvent());
 
         when(featureFlagConfig.getIgnoreCoreSalesInvoice()).thenReturn(false);
         when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.of(salesOrder));
@@ -170,6 +190,9 @@ class SqsReceiveServiceTest {
 
         verify(salesOrderService).updateOrder(eq(salesOrder));
         verify(camundaHelper).startInvoiceCreatedReceivedProcess(salesOrder);
+
+        assertNotNull(salesOrder.getLatestJson().getOrderHeader().getOrderGroupId());
+        assertEquals(salesOrder.getLatestJson().getOrderHeader().getOrderGroupId(), salesOrder.getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getOrderGroupId());
     }
 
     @Test
