@@ -2,6 +2,8 @@ package de.kfzteile24.salesOrderHub.delegates.salesOrder;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
+import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
@@ -12,6 +14,7 @@ import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import de.kfzteile24.soh.order.dto.Order;
 import org.camunda.bpm.engine.ProcessEngine;
+import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,14 +24,17 @@ import org.springframework.test.annotation.DirtiesContext;
 
 import java.time.Duration;
 import java.util.Map;
+import java.util.Set;
 
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_PURCHASE_ORDER_SUCCESSFUL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.START_MSG_ORDER_RECEIVED_FROM_ECP;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_DROPSHIPMENT_ORDER_CONFIRMED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.TRACKING_LINKS;
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
 import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -79,7 +85,13 @@ class StoreDropshipmentInvoiceDelegateIntegrationTest {
         ((Order) testOrder.getOriginalOrder()).getOrderHeader().setOrderFulfillment(DELTICOM.getName());
         salesOrderService.updateOrder(testOrder);
 
+        ProcessInstance orderProcess = createAndVerifyOrderProcess(testOrder);
+        sendAndVerifyDropshipmentOrderConfirmed(orderNumber, orderProcess);
+        sendAndVerifyTrackingInfoReceived(orderNumber, orderProcess);
+        verifyIfInvoiceEventIsSaved(orderNumber, invoiceEvent);
+    }
 
+    private ProcessInstance createAndVerifyOrderProcess(SalesOrder testOrder) {
         var orderProcess = camundaHelper.createOrderProcess(testOrder, Messages.ORDER_RECEIVED_ECP);
         assertTrue(pollingService.poll(Duration.ofSeconds(5), Duration.ofSeconds(10), () -> {
             assertThat(orderProcess).hasPassedInOrder(
@@ -90,8 +102,10 @@ class StoreDropshipmentInvoiceDelegateIntegrationTest {
             );
             return true;
         }));
+        return orderProcess;
+    }
 
-
+    private void sendAndVerifyDropshipmentOrderConfirmed(String orderNumber, ProcessInstance orderProcess) {
         bpmUtil.sendMessage(Messages.DROPSHIPMENT_ORDER_CONFIRMED,
                 orderNumber,
                 Map.of(IS_DROPSHIPMENT_ORDER_CONFIRMED.getName(), true));
@@ -103,11 +117,22 @@ class StoreDropshipmentInvoiceDelegateIntegrationTest {
             );
             return true;
         }));
+    }
 
+    private void sendAndVerifyTrackingInfoReceived(String orderNumber, ProcessInstance orderProcess) {
+        util.sendMessage(DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED, orderNumber,
+                Map.of(TRACKING_LINKS.getName(), Set.of("http://abc1", "http://abc2"))
+        );
+        assertTrue(pollingService.poll(Duration.ofSeconds(5), Duration.ofSeconds(10), () -> {
+            assertThat(orderProcess).hasPassedInOrder(
+                    EVENT_MSG_DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED.getName(),
+                    "eventThrowMsgPublishInvoiceData"
+            );
+            return true;
+        }));
+    }
 
-        util.sendMessage(DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED.getName(), orderNumber).get(0)
-                .getProcessInstance();
-
+    private void verifyIfInvoiceEventIsSaved(String orderNumber, CoreSalesInvoiceCreatedMessage invoiceEvent) {
         var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
         invoiceEvent.getSalesInvoice().getSalesInvoiceHeader().setInvoiceNumber(null);
