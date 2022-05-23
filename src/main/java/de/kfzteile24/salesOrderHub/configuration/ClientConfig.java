@@ -21,6 +21,7 @@ public class ClientConfig {
         final var config = RequestConfig.custom()
                 .setConnectTimeout(connectionTimeout)
                 .setConnectionRequestTimeout(connectionTimeout)
+                .setRedirectsEnabled(false)
                 .setSocketTimeout(connectionTimeout)
                 .build();
 

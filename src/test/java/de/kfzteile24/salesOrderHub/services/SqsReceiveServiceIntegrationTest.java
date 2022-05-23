@@ -1,6 +1,9 @@
 package de.kfzteile24.salesOrderHub.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.client.WireMock;
+import com.google.common.io.Resources;
 import de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
@@ -41,7 +44,9 @@ import org.springframework.test.annotation.DirtiesContext;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.HashMap;
@@ -49,6 +54,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_END_MSG_DROPSHIPMENT_ORDER_CANCELLED;
@@ -490,7 +498,24 @@ class SqsReceiveServiceIntegrationTest {
     }
 
     @Test
-    void testQueueListenerMigrationCoreSalesOrderCreated() {
+    void testQueueListenerMigrationCoreSalesOrderCreated() throws URISyntaxException, IOException {
+
+        URI uri = Objects.requireNonNull(getClass().getClassLoader().getResource("examples/product/DZN.json")).toURI();
+        byte[] bytes = Files.readAllBytes(Paths.get(uri));
+
+        WireMockServer wireMockServer = new WireMockServer(
+                wireMockConfig().port(8080).httpsPort(8043).keystorePath(Resources.getResource("keystore").toString())
+                        .bindAddress("localhost"));
+        wireMockServer.start();
+        wireMockServer.stubFor(WireMock.post(urlEqualTo("/oauth2/token"))
+                .willReturn(aResponse().withBody("{ \"access_token\": \"fake_access_token\" }")));
+        wireMockServer.stubFor(WireMock.get(urlEqualTo("/json/15/"))
+                .withQueryParam("sku", WireMock.equalTo("1130-0713"))
+                .willReturn(aResponse().withBody(bytes)));
+        wireMockServer.stubFor(WireMock.get(urlEqualTo("/json/15"))
+                .withQueryParam("sku", WireMock.equalTo("1130-0713"))
+                .willReturn(aResponse().withBody(bytes)));
+
 
         String orderRawMessage = readResource("examples/ecpOrderMessage.json");
         Order order = getOrder(orderRawMessage);
@@ -593,7 +618,7 @@ class SqsReceiveServiceIntegrationTest {
         var orderNumber = salesOrder.getOrderNumber();
         var creditNumber = "876130";
 
-        var coreReturnDeliveryNotePrinted =  readResource("examples/coreSalesCreditNoteCreated.json");
+        var coreReturnDeliveryNotePrinted = readResource("examples/coreSalesCreditNoteCreated.json");
         sqsReceiveService.queueListenerMigrationCoreSalesCreditNoteCreated(coreReturnDeliveryNotePrinted, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
         verify(snsPublishService).publishReturnOrderCreatedEvent(argThat(
@@ -615,7 +640,7 @@ class SqsReceiveServiceIntegrationTest {
         var orderNumber = salesOrder.getOrderNumber();
         var creditNumber = "876130";
 
-        var coreReturnDeliveryNotePrinted =  readResource("examples/coreSalesCreditNoteCreated.json");
+        var coreReturnDeliveryNotePrinted = readResource("examples/coreSalesCreditNoteCreated.json");
         sqsReceiveService.queueListenerCoreSalesCreditNoteCreated(coreReturnDeliveryNotePrinted, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
         sqsReceiveService.queueListenerMigrationCoreSalesCreditNoteCreated(coreReturnDeliveryNotePrinted, ANY_SENDER_ID, ANY_RECEIVE_COUNT);

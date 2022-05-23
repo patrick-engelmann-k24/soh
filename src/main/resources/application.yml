@@ -5,7 +5,6 @@
 logging:
   level:
     com.zaxxer.hikari: DEBUG
-    org.apache.http: DEBUG
 
 spring:
   datasource:

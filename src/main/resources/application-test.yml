@@ -102,6 +102,7 @@ ignoreMigrationCoreSalesCreditNote: false
 ignoreMigrationCoreSalesOrder: false
 ignoreSalesOrderSplitter: false
 
-environment: stage
-pdh_client_id: 66m7pl596j7kem2mr39onhchp0
-pdh_client_secret: 133fkctl3sgg0tvts20nik857dk5he8mrmtbuu5amf21iehssin2
+kfzteile:
+  product-data-hub:
+    pdhUrl: https://localhost:8043
+    authUrl: http://localhost:8080/oauth2/token

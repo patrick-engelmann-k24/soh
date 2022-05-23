@@ -21,6 +21,7 @@
     <newrelic.version>7.5.0</newrelic.version>
     <mapstruct.version>1.4.2.Final</mapstruct.version>
     <lombok.version>1.18.22</lombok.version>
+    <spring-wiremock-version>2.2.8.RELEASE</spring-wiremock-version>
   </properties>
 
   <dependencyManagement>
@@ -157,6 +158,13 @@
       <groupId>org.camunda.bpm.extension.mockito</groupId>
       <artifactId>camunda-bpm-mockito</artifactId>
       <version>4.12.0</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.github.tomakehurst</groupId>
+      <artifactId>wiremock</artifactId>
+      <version>1.58</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

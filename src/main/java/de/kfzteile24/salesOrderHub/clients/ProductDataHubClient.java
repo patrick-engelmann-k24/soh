@@ -1,8 +1,11 @@
 package de.kfzteile24.salesOrderHub.clients;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.ProductDataHubConfig;
 import de.kfzteile24.salesOrderHub.domain.pdh.Product;
+import de.kfzteile24.salesOrderHub.domain.pdh.ProductEnvelope;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -16,7 +19,9 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriTemplate;
 
+import java.net.URI;
 import java.util.Base64;
+import java.util.Objects;
 import java.util.function.Function;
 
 import static org.springframework.http.HttpMethod.GET;
@@ -28,10 +33,11 @@ import static org.springframework.http.HttpMethod.POST;
 public class ProductDataHubClient {
 
     private static final String AUTHORIZATION_HEADER_NAME = "Authorization";
-    private static final String GET_PDH_ENDPOINT = "/json/v15?sku={sku}";
+    private static final String GET_PDH_ENDPOINT = "/json/v15/?sku={sku}";
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper;
     private final ProductDataHubConfig productDataHubConfig;
 
     private String accessToken;
@@ -44,9 +50,17 @@ public class ProductDataHubClient {
             final var httpEntity = new HttpEntity<>(null, authHeaders);
 
 
-            final ResponseEntity<String> response = restTemplate.exchange(endpoint, GET, httpEntity, String.class);
+            ResponseEntity<String> response = restTemplate.exchange(endpoint, GET, httpEntity, String.class);
 
-            return null;
+            if (response.getStatusCode() == HttpStatus.FOUND) {
+                URI location = response.getHeaders().getLocation();
+                ResponseEntity<ProductEnvelope> productDataResponse =
+                        restTemplate.exchange(Objects.requireNonNull(location), GET, null, ProductEnvelope.class);
+                return Objects.requireNonNull(productDataResponse.getBody()).getProduct();
+            } else {
+                log.info("Could now get product data for sku: {}", sku);
+                return null;
+            }
         });
     }
 
@@ -72,6 +86,7 @@ public class ProductDataHubClient {
         return headers;
     }
 
+    @SneakyThrows
     private String getAccessToken() {
 
         try {
@@ -87,9 +102,10 @@ public class ProductDataHubClient {
             HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(map, headers);
 
             final var response =
-                    restTemplate.exchange(productDataHubConfig.getAuthUrl(), POST, entity, CognitoAuthResponse.class);
+                    restTemplate.exchange(productDataHubConfig.getAuthUrl(), POST, entity, String.class);
             if (response.getBody() != null) {
-                return BEARER_PREFIX + response.getBody().getAccessToken();
+                CognitoAuthResponse cognitoAuthResponse = objectMapper.readValue(response.getBody(), CognitoAuthResponse.class);
+                return BEARER_PREFIX + cognitoAuthResponse.getAccessToken();
             } else {
                 throw new IllegalArgumentException("Login to product-data-hun failed, could not get access token");
             }
@@ -103,9 +119,9 @@ public class ProductDataHubClient {
     }
 
     private String getAuthorizationHeader() {
+
         String toEncode = productDataHubConfig.getClientId() + ":" + productDataHubConfig.getClientSecret();
-        String s = "Basic " + Base64.getUrlEncoder().encodeToString(toEncode.getBytes());
-        return s;
+        return "Basic " + Base64.getUrlEncoder().encodeToString(toEncode.getBytes());
     }
 
 }
