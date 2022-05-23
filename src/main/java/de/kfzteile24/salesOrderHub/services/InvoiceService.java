@@ -4,14 +4,27 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.domain.audit.AuditLog;
 import de.kfzteile24.salesOrderHub.domain.converter.InvoiceSource;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesFinancialDocumentLine;
+import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoice;
+import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
+import de.kfzteile24.salesOrderHub.dto.sns.shared.Address;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
+import de.kfzteile24.soh.order.dto.BillingAddress;
+import de.kfzteile24.soh.order.dto.OrderRows;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.INVOICE_RECEIVED;
@@ -74,5 +87,64 @@ public class InvoiceService {
         var counter = Long.getLong(salesOrderInvoice.getInvoiceNumber());
         counter++;
         return String.format("%012d", counter);
+    }
+
+    public CoreSalesInvoiceCreatedMessage generateInvoiceMessage(SalesOrder salesOrder) {
+        List<CoreSalesFinancialDocumentLine> invoiceLines = new ArrayList<>();
+        for (OrderRows row : salesOrder.getLatestJson().getOrderRows()) {
+            invoiceLines.add(CoreSalesFinancialDocumentLine.builder()
+                    .itemNumber(row.getSku())
+                    .quantity(row.getQuantity())
+                    .taxRate(row.getTaxRate())
+                    .unitNetAmount(Optional.ofNullable(row.getUnitValues().getDiscountedNet()).orElse(BigDecimal.ZERO))
+                    .lineNetAmount(Optional.ofNullable(row.getSumValues().getTotalDiscountedNet()).orElse(BigDecimal.ZERO))
+                    .lineTaxAmount(Optional.ofNullable(row.getSumValues().getTotalDiscountedGross()).orElse(BigDecimal.ZERO)
+                            .subtract(Optional.ofNullable(row.getSumValues().getTotalDiscountedNet()).orElse(BigDecimal.ZERO)))
+                    .isShippingCost(false)
+                    .build());
+        }
+
+        var orderHeader = salesOrder.getLatestJson().getOrderHeader();
+        return CoreSalesInvoiceCreatedMessage.builder()
+                .salesInvoice(new CoreSalesInvoice(
+                        new CoreSalesInvoiceHeader(
+                                orderHeader.getDocumentRefNumber(),
+                                getInvoiceDate(salesOrder),
+                                invoiceLines,
+                                salesOrder.getOrderGroupId(),
+                                salesOrder.getOrderNumber(),
+                                orderHeader.getOrderCurrency(),
+                                Optional.ofNullable(orderHeader.getTotals().getGrandTotalNet()).orElse(BigDecimal.ZERO).doubleValue(),
+                                Optional.ofNullable(orderHeader.getTotals().getGrandTotalGross()).orElse(BigDecimal.ZERO).doubleValue(),
+                                Address.builder()
+                                        .salutation(orderHeader.getBillingAddress().getSalutation())
+                                        .firstName(orderHeader.getBillingAddress().getFirstName())
+                                        .lastName(orderHeader.getBillingAddress().getLastName())
+                                        .street(getStreet(orderHeader.getBillingAddress()))
+                                        .city(orderHeader.getBillingAddress().getCity())
+                                        .zipCode(orderHeader.getBillingAddress().getZipCode())
+                                        .countryCode(orderHeader.getBillingAddress().getCountryCode())
+                                        .build()
+                        ),
+                        new ArrayList<>()))
+                .build();
+    }
+
+    private Date getInvoiceDate(SalesOrder salesOrder) {
+        SalesOrderInvoice invoice = findSalesOrderInvoice(salesOrder);
+        return invoice != null ? Date.from(invoice.getCreatedAt().atZone(ZoneId.systemDefault()).toInstant()) : null;
+    }
+
+    private SalesOrderInvoice findSalesOrderInvoice(SalesOrder salesOrder) {
+        var invoiceNumber = salesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber();
+        return getInvoicesByOrderNumber(salesOrder.getOrderNumber()).stream()
+                .filter(i -> i.getInvoiceNumber().equals(invoiceNumber))
+                .findFirst().orElse(null);
+    }
+
+    private String getStreet(BillingAddress address) {
+        return address.getStreet1() +
+                (address.getStreet2() != null ? " " + address.getStreet2() : "") +
+                (address.getStreet3() != null ? " " + address.getStreet3() : "");
     }
 }

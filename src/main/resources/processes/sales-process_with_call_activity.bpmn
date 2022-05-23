@@ -249,7 +249,7 @@
     </bpmn:intermediateCatchEvent>
     <bpmn:sequenceFlow id="Flow_1gcdxra" sourceRef="eventMsgDropShipmentOrderTrackingInformationReceived" targetRef="eventThrowMsgPublishTrackingInformation" />
     <bpmn:dataStoreReference id="DataStoreReference_1bwrw95" />
-    <bpmn:serviceTask id="activityDropShipmentOrderGenerateInvoice" name="create invoice data out of order.json data and store it" camunda:expression="${true}">
+    <bpmn:serviceTask id="activityDropShipmentOrderGenerateInvoice" name="create invoice data out of order.json data and store it" camunda:delegateExpression="${storeDropshipmentInvoiceDelegate}">
       <bpmn:incoming>Flow_1j2esf3</bpmn:incoming>
       <bpmn:outgoing>Flow_1yttfcs</bpmn:outgoing>
       <bpmn:dataOutputAssociation id="DataOutputAssociation_0xzlgxs">
