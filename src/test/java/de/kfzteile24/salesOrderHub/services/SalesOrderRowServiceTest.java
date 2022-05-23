@@ -2,7 +2,6 @@ package de.kfzteile24.salesOrderHub.services;
 
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
 import de.kfzteile24.salesOrderHub.helper.EventMapper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.soh.order.dto.Order;
@@ -26,11 +25,13 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerTy
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROWS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
-import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_BOOKED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ROW_CANCELLED;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.*;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createNewSalesOrderV3;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createOrderNumberInSOH;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getInvoiceMsg;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.readResource;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -39,9 +40,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -103,64 +102,6 @@ class SalesOrderRowServiceTest {
         verify(runtimeService).getVariable(processId, ORDER_ROWS.getName());
         verify(runtimeService).setVariable(processId, ORDER_ROWS.getName(), orderRowIds);
         verify(snsPublishService).publishOrderRowCancelled(any(),any());
-    }
-
-    @Test
-    void testHandleDropshipmentPurchaseOrderBooked() {
-
-        final var salesOrder = createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
-        final var orderNumber = salesOrder.getOrderNumber();
-
-        when(salesOrderService.getOrderByOrderNumber(orderNumber)).thenReturn(Optional.of(salesOrder));
-
-        DropshipmentPurchaseOrderBookedMessage message = DropshipmentPurchaseOrderBookedMessage.builder()
-                .salesOrderNumber(salesOrder.getOrderNumber())
-                .purchaseOrderNumber("52.3")
-                .externalOrderNumber("555")
-                .booked(true)
-                .build();
-        salesOrderRowService.handleDropshipmentPurchaseOrderBooked(message);
-
-        assertEquals("555", salesOrder.getLatestJson().getOrderHeader().getOrderNumberExternal());
-        verify(salesOrderService).save(
-                argThat(order -> order.getLatestJson().getOrderHeader().getOrderNumberExternal().equals("555")),
-                eq(DROPSHIPMENT_PURCHASE_ORDER_BOOKED)
-        );
-
-        verifyNoInteractions(snsPublishService);
-        verify(salesOrderService, never()).getOrderByOrderGroupId(any());
-    }
-
-    @Test
-    void testHandleDropshipmentPurchaseOrderBookedFalse() {
-
-        prepareOrderProcessMocks();
-        final var salesOrder = createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
-        final var orderNumber = salesOrder.getOrderNumber();
-
-        when(salesOrderService.getOrderNumberListByOrderGroupId(eq(orderNumber), any())).thenReturn(List.of(salesOrder.getOrderNumber()));
-        when(salesOrderService.getOrderByOrderNumber(orderNumber)).thenReturn(Optional.of(salesOrder));
-        when(salesOrderService.save(any(), eq(DROPSHIPMENT_PURCHASE_ORDER_BOOKED))).thenReturn(salesOrder);
-        when(camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())).thenReturn(false);
-        when(camundaHelper.checkIfOrderRowProcessExists(eq(salesOrder.getOrderNumber()), any())).thenReturn(false);
-
-        DropshipmentPurchaseOrderBookedMessage message = DropshipmentPurchaseOrderBookedMessage.builder()
-                .salesOrderNumber(salesOrder.getOrderNumber())
-                .purchaseOrderNumber("27.9")
-                .externalOrderNumber("555")
-                .booked(false)
-                .build();
-        salesOrderRowService.handleDropshipmentPurchaseOrderBooked(message);
-
-        assertEquals("555", salesOrder.getLatestJson().getOrderHeader().getOrderNumberExternal());
-        verify(salesOrderService).save(
-                eq(salesOrder),
-                eq(DROPSHIPMENT_PURCHASE_ORDER_BOOKED)
-        );
-
-        verify(salesOrderService, times(3)).getOrderNumberListByOrderGroupId(eq(salesOrder.getOrderGroupId()), any());
-        verify(salesOrderService, times(3)).save(any(), eq(ORDER_ROW_CANCELLED));
-        verify(snsPublishService, times(3)).publishOrderRowCancelled(any(),any());
     }
 
     private void checkTotalsValues(Totals totals) {

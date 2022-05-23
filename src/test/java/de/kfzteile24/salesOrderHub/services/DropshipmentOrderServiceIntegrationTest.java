@@ -1,18 +1,25 @@
 package de.kfzteile24.salesOrderHub.services;
 
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
+import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
+import org.apache.commons.codec.binary.StringUtils;
 import org.assertj.core.api.AutoCloseableSoftAssertions;
+import org.camunda.bpm.engine.RuntimeService;
+import org.camunda.bpm.engine.runtime.ProcessInstance;
+import org.camunda.bpm.engine.variable.Variables;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,20 +30,31 @@ import org.springframework.test.annotation.DirtiesContext;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.Objects;
 import java.util.Set;
 
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_END_MSG_DROPSHIPMENT_ORDER_ROW_CANCELLED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_PURCHASE_ORDER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_DROPSHIPMENT_ORDER_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.ORDER_ROW_ID;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrderFromOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getOrder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @SpringBootTest
@@ -54,6 +72,14 @@ class DropshipmentOrderServiceIntegrationTest {
     private AuditLogRepository auditLogRepository;
     @Autowired
     private SalesOrderInvoiceRepository salesOrderInvoiceRepository;
+    @Autowired
+    private SalesOrderUtil salesOrderUtil;
+    @Autowired
+    private BpmUtil bpmUtil;
+    @Autowired
+    private TimedPollingService timerService;
+    @Autowired
+    private RuntimeService runtimeService;
 
     @Test
     void testHandleDropShipmentOrderConfirmed() {
@@ -129,6 +155,98 @@ class DropshipmentOrderServiceIntegrationTest {
         assertThat(updatedSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber()).hasSize(18);
     }
 
+    @Test
+    void testHandleDropShipmentOrderRowCancellation() {
+        var salesOrder =
+                salesOrderUtil.createPersistedSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
+
+        doNothing().when(camundaHelper).correlateMessage(any(), any(), any());
+        dropshipmentOrderService.handleDropShipmentOrderRowCancellation(salesOrder.getOrderNumber(), "sku-1");
+        dropshipmentOrderService.handleDropShipmentOrderRowCancellation(salesOrder.getOrderNumber(), "sku-2");
+        dropshipmentOrderService.handleDropShipmentOrderRowCancellation(salesOrder.getOrderNumber(), "sku-3");
+
+        verify(camundaHelper).correlateMessage(
+                argThat(message -> message == DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED),
+                argThat(order -> {
+                    assertThat(order.getOrderNumber()).isEqualTo(salesOrder.getOrderNumber());
+                    var orderRows = order.getLatestJson().getOrderRows();
+                    assertThat(orderRows).hasSize(3);
+                    return true;
+                }),
+                argThat(variableMap -> variableMap.getValue(ORDER_ROW_ID.getName(), String.class).equals("sku-1"))
+        );
+
+        verify(salesOrderService, times(3)).save(
+                argThat(order -> StringUtils.equals(order.getOrderNumber(), salesOrder.getOrderNumber())),
+                argThat(action -> action == Action.ORDER_ROW_CANCELLED)
+        );
+
+        verify(camundaHelper).correlateMessage(
+                argThat(message -> message == DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED),
+                argThat(order -> {
+                    assertThat(order.getOrderNumber()).isEqualTo(salesOrder.getOrderNumber());
+                    var orderRows = order.getLatestJson().getOrderRows();
+                    assertThat(orderRows).hasSize(3);
+                    return true;
+                }),
+                argThat(variableMap -> variableMap.getValue(ORDER_ROW_ID.getName(), String.class).equals("sku-2"))
+        );
+
+        verify(camundaHelper).correlateMessage(
+                argThat(message -> message == DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED),
+                argThat(order -> {
+                    assertThat(order.getOrderNumber()).isEqualTo(salesOrder.getOrderNumber());
+                    var orderRows = order.getLatestJson().getOrderRows();
+                    assertThat(orderRows).hasSize(3);
+                    return true;
+                }),
+                argThat(variableMap -> variableMap.getValue(ORDER_ROW_ID.getName(), String.class).equals("sku-3"))
+        );
+
+        var updatedSalesOrder =
+                salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber()).orElseThrow();
+        assertThat(updatedSalesOrder.getLatestJson().getOrderRows())
+                .isNotEmpty()
+                .hasSize(3)
+                .allMatch(orderRow -> Boolean.TRUE.equals(orderRow.getIsCancelled()));
+    }
+
+    @Test
+    // Has to be removed and replaced with the corresponding model test (once model tests are integrated in soh)
+    void testModelDropShipmentOrderRowsCancellation() {
+
+        var salesOrder =
+                SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
+        ((Order) salesOrder.getOriginalOrder()).getOrderHeader().setOrderFulfillment(DELTICOM.getName());
+        salesOrderService.save(salesOrder, Action.ORDER_CREATED);
+
+        ProcessInstance processInstance = camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
+
+        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+                camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
+
+        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+                camundaHelper.hasPassed(processInstance.getId(), EVENT_THROW_MSG_PURCHASE_ORDER.getName())));
+
+        var messageCorrelationResult = bpmUtil.sendMessage(Messages.DROPSHIPMENT_ORDER_CONFIRMED, salesOrder.getOrderNumber(),
+                Variables.putValue(IS_DROPSHIPMENT_ORDER_CONFIRMED.getName(), false));
+
+        assertThat(messageCorrelationResult.getExecution().getProcessInstanceId()).isNotBlank();
+
+        salesOrder.getLatestJson().getOrderRows().forEach(orderRow -> {
+
+            assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+                    camundaHelper.hasPassed(processInstance.getId(), EVENT_MSG_DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED.getName())));
+
+            assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+                    camundaHelper.hasPassed(processInstance.getId(), EVENT_END_MSG_DROPSHIPMENT_ORDER_ROW_CANCELLED.getName())));
+        });
+
+        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+                camundaHelper.hasPassed(processInstance.getId(), Events.END_MSG_ORDER_CANCELLED.getName())));
+
+    }
+
     @SneakyThrows({URISyntaxException.class, IOException.class})
     private String readResource(String path) {
         return java.nio.file.Files.readString(Paths.get(
@@ -137,9 +255,10 @@ class DropshipmentOrderServiceIntegrationTest {
     }
 
     @AfterEach
+    @SneakyThrows
     public void cleanup() {
-        salesOrderRepository.deleteAll();
         auditLogRepository.deleteAll();
+        salesOrderRepository.deleteAll();
         salesOrderInvoiceRepository.deleteAll();
     }
 }

@@ -11,7 +11,6 @@ import de.kfzteile24.salesOrderHub.dto.shared.creditnote.CreditNoteLine;
 import de.kfzteile24.salesOrderHub.dto.shared.creditnote.SalesCreditNote;
 import de.kfzteile24.salesOrderHub.dto.shared.creditnote.SalesCreditNoteHeader;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
-import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
@@ -46,7 +45,6 @@ import java.util.stream.Collectors;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_CREDIT_NOTE_CREATED;
-import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_BOOKED;
 
 @Service
 @Slf4j
@@ -87,26 +85,6 @@ public class SalesOrderRowService {
             return true;
         } else {
             return false;
-        }
-    }
-
-    @Transactional
-    public void handleDropshipmentPurchaseOrderBooked(DropshipmentPurchaseOrderBookedMessage message) {
-
-        String orderNumber = message.getSalesOrderNumber();
-        var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
-                .orElseThrow(() -> new SalesOrderNotFoundException("Could not find order: " + orderNumber));
-        salesOrder.getLatestJson().getOrderHeader().setOrderNumberExternal(message.getExternalOrderNumber());
-        salesOrder = salesOrderService.save(salesOrder, DROPSHIPMENT_PURCHASE_ORDER_BOOKED);
-        if (!message.getBooked()) {
-
-            // This block goes later to the java delegate (eventEndMsgDropShipmentOrderCancelled activity)
-            for (OrderRows orderRows : ((Order) salesOrder.getOriginalOrder()).getOrderRows()) {
-                cancelOrderRowsOfOrderGroup(orderNumber, orderRows.getSku());
-            }
-            if (timedPollingService.pollWithDefaultTiming(() -> helper.checkIfActiveProcessExists(orderNumber))) {
-                cancelOrderProcessIfFullyCancelled(salesOrder);
-            }
         }
     }
 

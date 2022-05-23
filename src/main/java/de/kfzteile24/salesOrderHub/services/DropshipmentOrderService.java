@@ -3,23 +3,29 @@ package de.kfzteile24.salesOrderHub.services;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.domain.audit.Action;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
+import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.variable.Variables;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Optional;
 
+import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_DROPSHIPMENT_ORDER_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.TRACKING_LINKS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.ORDER_ROW_ID;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_BOOKED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ITEM_SHIPPED;
 import static java.text.MessageFormat.format;
@@ -77,6 +83,34 @@ public class DropshipmentOrderService {
 
         helper.correlateMessage(Messages.DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED, salesOrder,
                 Variables.putValue(TRACKING_LINKS.getName(), trackingLinks));
+    }
+
+    @Transactional
+    public void handleDropShipmentOrderRowCancellation(String orderNumber, String sku) {
+        var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
+                .orElseThrow(() -> new SalesOrderNotFoundException("Could not find dropshipment order: " + orderNumber));
+
+        salesOrder.getLatestJson().getOrderRows().stream()
+                .filter(orderRow -> StringUtils.pathEquals(orderRow.getSku(), sku))
+                .findFirst()
+                .ifPresentOrElse(orderRow -> {
+                    orderRow.setIsCancelled(true);
+                    salesOrderService.save(salesOrder, Action.ORDER_ROW_CANCELLED);
+                    helper.correlateMessage(DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED, salesOrder,
+                            Variables.putValue(ORDER_ROW_ID.getName(), orderRow.getSku()));
+                }, () -> {
+                    throw new NotFoundException(
+                            format("Could not find order row with SKU {0} for order {1}",
+                                    sku, orderNumber));
+                });
+    }
+
+    public boolean isDropShipmentOrder(String orderNumber) {
+        var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
+                .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
+        var originalOrder = (Order) salesOrder.getOriginalOrder();
+        var orderFulfillment = originalOrder.getOrderHeader().getOrderFulfillment();
+        return org.apache.commons.lang3.StringUtils.equalsIgnoreCase(orderFulfillment, DELTICOM.getName());
     }
 
     private void addParcelNumber(ShipmentItem item, OrderRows row) {
