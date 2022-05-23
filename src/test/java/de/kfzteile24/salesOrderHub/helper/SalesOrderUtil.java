@@ -10,6 +10,7 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.domain.converter.InvoiceSource;
+import de.kfzteile24.salesOrderHub.domain.pdh.ProductEnvelope;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
@@ -373,6 +374,12 @@ public class SalesOrderUtil {
 
     public static String createOrderNumberInSOH(String orderNumber, String reference) {
         return orderNumber + "-" + reference;
+    }
+
+    @SneakyThrows(JsonProcessingException.class)
+    public static ProductEnvelope getProductEnvelope(String rawMessage){
+        ObjectMapper mapper = new ObjectMapperConfig().objectMapper();
+        return mapper.readValue(rawMessage, ProductEnvelope.class);
     }
 
     public static SalesOrderInvoice createSalesOrderInvoice(final String orderNumber, final boolean isCorrection) {

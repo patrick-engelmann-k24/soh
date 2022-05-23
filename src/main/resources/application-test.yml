@@ -101,3 +101,7 @@ ignoreMigrationCoreSalesInvoice: false
 ignoreMigrationCoreSalesCreditNote: false
 ignoreMigrationCoreSalesOrder: false
 ignoreSalesOrderSplitter: false
+
+environment: stage
+pdh_client_id: 66m7pl596j7kem2mr39onhchp0
+pdh_client_secret: 133fkctl3sgg0tvts20nik857dk5he8mrmtbuu5amf21iehssin2
