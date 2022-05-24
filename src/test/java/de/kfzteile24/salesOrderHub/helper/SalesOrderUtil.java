@@ -14,7 +14,16 @@ import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
-import de.kfzteile24.soh.order.dto.*;
+import de.kfzteile24.soh.order.dto.GrandTotalTaxes;
+import de.kfzteile24.soh.order.dto.Order;
+import de.kfzteile24.soh.order.dto.OrderHeader;
+import de.kfzteile24.soh.order.dto.OrderRows;
+import de.kfzteile24.soh.order.dto.Payments;
+import de.kfzteile24.soh.order.dto.Platform;
+import de.kfzteile24.soh.order.dto.SumValues;
+import de.kfzteile24.soh.order.dto.Surcharges;
+import de.kfzteile24.soh.order.dto.Totals;
+import de.kfzteile24.soh.order.dto.UnitValues;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -35,6 +44,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.RECURRING;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
@@ -58,6 +68,17 @@ public class SalesOrderUtil {
 
     @SneakyThrows(JsonProcessingException.class)
     public SalesOrder createNewSalesOrder() {
+        return salesOrderService.save(createSalesOrder(), ORDER_CREATED);
+    }
+
+    @SneakyThrows(JsonProcessingException.class)
+    public SalesOrder createNewDropshipmentSalesOrder() {
+        SalesOrder salesOrder = createSalesOrder();
+        ((Order) salesOrder.getOriginalOrder()).getOrderHeader().setOrderFulfillment(DELTICOM.getName());
+        return salesOrderService.save(salesOrder, ORDER_CREATED);
+    }
+
+    private SalesOrder createSalesOrder() throws JsonProcessingException {
         InputStream testFileStream = getClass().getResourceAsStream("/examples/testmessage.json");
         assertNotNull(testFileStream);
 
@@ -77,7 +98,6 @@ public class SalesOrderUtil {
                 .build();
 
         testOrder.setSalesOrderInvoiceList(new HashSet<>());
-        salesOrderService.save(testOrder, ORDER_CREATED);
         return testOrder;
     }
 
@@ -187,6 +207,14 @@ public class SalesOrderUtil {
 
     public static OrderRows createOrderRow(String sku, ShipmentMethod shippingType) {
         return OrderRows.builder()
+                .unitValues(UnitValues.builder()
+                        .goodsValueGross(BigDecimal.valueOf(9))
+                        .goodsValueNet(BigDecimal.valueOf(3))
+                        .discountGross(BigDecimal.valueOf(3))
+                        .discountNet(BigDecimal.valueOf(1))
+                        .discountedGross(BigDecimal.valueOf(6))
+                        .discountedNet(BigDecimal.valueOf(2))
+                        .build())
                 .sumValues(SumValues.builder()
                         .goodsValueGross(BigDecimal.valueOf(9))
                         .goodsValueNet(BigDecimal.valueOf(3))
@@ -385,5 +413,20 @@ public class SalesOrderUtil {
                 .url(invoiceUrl)
                 .source(InvoiceSource.SOH)
                 .build();
+    }
+
+    @SneakyThrows(JsonProcessingException.class)
+    public CoreSalesInvoiceCreatedMessage createInvoiceCreatedMsg(String orderNumber) {
+        InputStream testFileStream = getClass().getResourceAsStream("/examples/dropshipmentInvoiceData.json");
+        assertNotNull(testFileStream);
+
+        SqsMessage sqsMessage = readTestFile(testFileStream);
+        assertNotNull(sqsMessage);
+
+        var message = objectMapper.readValue(sqsMessage.getBody(),
+                CoreSalesInvoiceCreatedMessage.class);
+        message.getSalesInvoice().getSalesInvoiceHeader().setOrderNumber(orderNumber);
+        message.getSalesInvoice().getSalesInvoiceHeader().setOrderGroupId(orderNumber);
+        return message;
     }
 }

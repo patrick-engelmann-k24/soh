@@ -13,7 +13,10 @@ public enum Messages implements BpmItem {
     INVOICE_CREATED("msgInvoiceCreated"),
     ORDER_CREATED_IN_SOH("msgOrderCreatedInSoh"),
     CORE_SALES_INVOICE_CREATED_RECEIVED("msgCoreSalesInvoiceCreatedReceived"),
-    CORE_CREDIT_NOTE_CREATED("msgCoreCreditNoteCreated")
+    CORE_CREDIT_NOTE_CREATED("msgCoreCreditNoteCreated"),
+    DROPSHIPMENT_ORDER_CONFIRMED("msgDropShipmentOrderConfirmed"),
+    DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED("msgDropShipmentOrderTrackingInformationReceived"),
+    DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED("msgDropshipmentOrderRowCancellationReceived")
     ;
 
     private final String name;

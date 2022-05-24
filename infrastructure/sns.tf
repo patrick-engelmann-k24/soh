@@ -223,7 +223,7 @@ resource "aws_sns_topic_subscription" "sns_subscription_subsequent_delivery_note
 resource "aws_sns_topic_subscription" "sns_subscription_core_invoice_created" {
   endpoint = aws_sqs_queue.soh_core_sales_invoice_created.arn
   protocol = "sqs"
-  topic_arn = data.aws_sns_topic.sns_soh_order_invoice_created_v1.arn
+  topic_arn = data.aws_sns_topic.sns_core_sales_invoice_created.arn
 }
 
 # subscription for payment secured published by ECP

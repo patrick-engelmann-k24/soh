@@ -13,10 +13,10 @@ import de.kfzteile24.salesOrderHub.dto.mapper.CreditNoteEventMapper;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.FulfillmentMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.OrderPaymentSecuredMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
-import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
@@ -37,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -63,6 +64,7 @@ public class SqsReceiveService {
     private final SnsPublishService snsPublishService;
     private final CreditNoteEventMapper creditNoteEventMapper;
     private final SplitterService splitterService;
+    private final DropshipmentOrderService dropshipmentOrderService;
 
     /**
      * Consume sqs for new orders from ecp shop
@@ -351,7 +353,7 @@ public class SqsReceiveService {
         log.info("Received dropshipment shipment confirmed message with order number: {}",
                 shipmentConfirmedMessage.getSalesOrderNumber());
 
-        salesOrderRowService.handleDropshipmentShipmentConfirmed(shipmentConfirmedMessage);
+        dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(shipmentConfirmedMessage);
     }
 
     /**
@@ -372,7 +374,7 @@ public class SqsReceiveService {
         log.info("Received drop shipment order purchased booked message with Sales Order Number: {}, External Order NUmber: {}",
                 message.getSalesOrderNumber(), message.getExternalOrderNumber());
 
-        salesOrderRowService.handleDropshipmentPurchaseOrderBooked(message);
+        dropshipmentOrderService.handleDropShipmentOrderConfirmed(message);
     }
 
     /**
@@ -429,7 +431,8 @@ public class SqsReceiveService {
                 var originalSalesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                         .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
 
-                if (salesOrderService.isFullyMatchedWithOriginalOrder(originalSalesOrder, itemList)) {
+                if (!isInvoicePublished(originalSalesOrder, invoiceNumber)
+                        && salesOrderService.isFullyMatchedWithOriginalOrder(originalSalesOrder, itemList)) {
                     updateOriginalSalesOrder(salesInvoiceCreatedMessage, originalSalesOrder);
                     publishInvoiceEvent(originalSalesOrder);
                 } else {
@@ -459,6 +462,17 @@ public class SqsReceiveService {
         }
     }
 
+    private boolean isInvoicePublished(SalesOrder originalSalesOrder, String invoiceNumber) {
+        if (originalSalesOrder.getInvoiceEvent() != null
+                && Objects.equals(invoiceNumber,
+                originalSalesOrder.getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber())) {
+            throw new IllegalArgumentException(String.format("New Sales Invoice Created Event has the same invoice number as the previous " +
+                    "Sales Invoice Created Event: %s", originalSalesOrder.getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber()));
+        }
+        return StringUtils.isNotBlank(originalSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber())
+                && originalSalesOrder.getInvoiceEvent() != null;
+    }
+
     private void publishInvoiceEvent(SalesOrder salesOrder) {
 
         ProcessInstance result = camundaHelper.startInvoiceCreatedReceivedProcess(salesOrder);
@@ -477,6 +491,8 @@ public class SqsReceiveService {
         var orderNumber = invoiceMsg.getSalesInvoice().getSalesInvoiceHeader().getOrderNumber();
         var invoiceNumber = invoiceMsg.getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber();
         originalSalesOrder.getLatestJson().getOrderHeader().setDocumentRefNumber(invoiceNumber);
+        invoiceMsg.getSalesInvoice().getSalesInvoiceHeader().setOrderGroupId(
+                originalSalesOrder.getLatestJson().getOrderHeader().getOrderGroupId());
         originalSalesOrder.setInvoiceEvent(invoiceMsg);
         salesOrderService.updateOrder(originalSalesOrder);
 

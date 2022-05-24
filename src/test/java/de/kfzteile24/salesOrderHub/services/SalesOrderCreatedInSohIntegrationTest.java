@@ -104,8 +104,8 @@ class SalesOrderCreatedInSohIntegrationTest {
         checkTotalsValues(newOrderNumberCreatedInSoh,
                 "12.95",
                 "10.79",
-                "0.0",
-                "0.0",
+                "0",
+                "0",
                 "12.95",
                 "10.79",
                 "12.95",
@@ -141,13 +141,13 @@ class SalesOrderCreatedInSohIntegrationTest {
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku3)));
         assertTrue(timerService.pollWithDefaultTiming(() -> checkIfInvoiceCreatedReceivedProcessExists(newOrderNumberCreatedInSoh)));
         checkTotalsValues(newOrderNumberCreatedInSoh,
-                "432.52",
+                "432.51",
                 "360.64",
                 "0",
                 "0",
-                "445.60",
+                "445.59",
                 "371.63",
-                "445.60",
+                "445.59",
                 "13.08",
                 "10.99");
         checkOrderRows(newOrderNumberCreatedInSoh, rowSku1, rowSku2, rowSku3);
@@ -187,13 +187,13 @@ class SalesOrderCreatedInSohIntegrationTest {
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku2)));
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku3)));
         checkTotalsValues(newOrderNumberCreatedInSoh,
-                "432.52",
+                "432.51",
                 "360.64",
                 "0",
                 "0",
-                "445.60",
+                "445.59",
                 "371.63",
-                "445.60",
+                "445.59",
                 "13.08",
                 "10.99");
         checkOrderRows(newOrderNumberCreatedInSoh, rowSku1, rowSku2, rowSku3);
@@ -236,19 +236,28 @@ class SalesOrderCreatedInSohIntegrationTest {
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku2)));
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku3)));
         checkTotalsValues(newOrderNumberCreatedInSoh,
-                "432.52",
+                "432.51",
                 "360.64",
                 "0",
                 "0",
-                "445.60",
+                "445.59",
                 "371.63",
-                "445.60",
+                "445.59",
                 "13.08",
                 "10.99");
         checkOrderRows(newOrderNumberCreatedInSoh, rowSku1, rowSku2, rowSku3);
 
         SalesOrder originalSalesOrder = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber()).orElseThrow();
         originalSalesOrder.getLatestJson().getOrderRows().stream().map(OrderRows::getIsCancelled).forEach(Assertions::assertTrue);
+
+        SalesOrder subsequentSalesOrder = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber() + "-" + invoiceNumber).orElseThrow();
+        assertNotNull(subsequentSalesOrder.getInvoiceEvent());
+        assertNotNull(subsequentSalesOrder.getLatestJson().getOrderHeader().getOrderGroupId());
+        assertNotNull(subsequentSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber());
+        assertEquals(subsequentSalesOrder.getLatestJson().getOrderHeader().getOrderGroupId(),
+                subsequentSalesOrder.getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getOrderGroupId());
+        assertEquals(subsequentSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber(),
+                subsequentSalesOrder.getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber());
     }
 
     private boolean checkIfInvoiceCreatedReceivedProcessExists(String newOrderNumberCreatedInSoh) {
@@ -335,11 +344,11 @@ class SalesOrderCreatedInSohIntegrationTest {
                         .discountedNet(new BigDecimal("8.4"))
                         .build(),
                 SumValues.builder()
-                        .goodsValueGross(new BigDecimal("20.00"))
+                        .goodsValueGross(new BigDecimal("19.99"))
                         .goodsValueNet(new BigDecimal("16.8"))
                         .discountGross(BigDecimal.ZERO)
                         .discountNet(BigDecimal.ZERO)
-                        .totalDiscountedGross(new BigDecimal("20.00"))
+                        .totalDiscountedGross(new BigDecimal("19.99"))
                         .totalDiscountedNet(new BigDecimal("16.8"))
                         .build());
         checkOrderRowValues(
@@ -377,14 +386,10 @@ class SalesOrderCreatedInSohIntegrationTest {
         assertEquals("shipment_regular", row.getShippingType());
         assertEquals(expectedUnitValues.getGoodsValueGross(), row.getUnitValues().getGoodsValueGross());
         assertEquals(expectedUnitValues.getGoodsValueNet(), row.getUnitValues().getGoodsValueNet());
-        assertEquals(expectedUnitValues.getDiscountGross(), row.getUnitValues().getDiscountGross());
-        assertEquals(expectedUnitValues.getDiscountNet(), row.getUnitValues().getDiscountNet());
         assertEquals(expectedUnitValues.getDiscountedGross(), row.getUnitValues().getDiscountedGross());
         assertEquals(expectedUnitValues.getDiscountedNet(), row.getUnitValues().getDiscountedNet());
         assertEquals(expectedSumValues.getGoodsValueGross(), row.getSumValues().getGoodsValueGross());
         assertEquals(expectedSumValues.getGoodsValueNet(), row.getSumValues().getGoodsValueNet());
-        assertEquals(expectedSumValues.getDiscountGross(), row.getSumValues().getDiscountGross());
-        assertEquals(expectedSumValues.getDiscountNet(), row.getSumValues().getDiscountNet());
         assertEquals(expectedSumValues.getTotalDiscountedGross(), row.getSumValues().getTotalDiscountedGross());
         assertEquals(expectedSumValues.getTotalDiscountedNet(), row.getSumValues().getTotalDiscountedNet());
     }

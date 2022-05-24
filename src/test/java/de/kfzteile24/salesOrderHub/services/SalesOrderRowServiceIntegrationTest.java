@@ -4,7 +4,6 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
-import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
 import de.kfzteile24.salesOrderHub.helper.AuditLogUtil;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
@@ -207,118 +206,6 @@ class SalesOrderRowServiceIntegrationTest {
                         camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), orderRowSkus.get(2)) &&
                         camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())
         ));
-    }
-
-    @Test
-    @SuppressWarnings("unchecked")
-    public void testDropshipmentPurchaseOrderBooked() {
-        final var salesOrder =
-                salesOrderUtil.createPersistedSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
-        final var orderNumber = salesOrder.getOrderNumber();
-        final var orderRowSkus = salesOrder.getLatestJson().getOrderRows().stream()
-                .map(OrderRows::getSku)
-                .collect(toList());
-
-        ProcessInstance processInstance = camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
-        assertTrue(util.isProcessWaitingAtExpectedToken(processInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName()));
-        util.sendMessage(ORDER_RECEIVED_PAYMENT_SECURED, salesOrder.getOrderNumber());
-
-        assertTrue(timerService.pollWithDefaultTiming(() ->
-                camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), orderRowSkus.get(0)) &&
-                        camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), orderRowSkus.get(1)) &&
-                        camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), orderRowSkus.get(2)) &&
-                        camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())
-        ));
-
-        DropshipmentPurchaseOrderBookedMessage message = createDropshipmentPurchaseOrderBooked(
-                "29.13", salesOrder.getOrderNumber(), true);
-        salesOrderRowService.handleDropshipmentPurchaseOrderBooked(message);
-
-        final var updatedSalesOrder = salesOrderService.getOrderByOrderNumber(orderNumber);
-        assertTrue(updatedSalesOrder.isPresent());
-
-        Order latestJson = updatedSalesOrder.get().getLatestJson();
-        assertEquals("29.13", latestJson.getOrderHeader().getOrderNumberExternal());
-        for (OrderRows orderRows : latestJson.getOrderRows()) {
-            assertFalse(orderRows.getIsCancelled());
-        }
-
-        HistoricProcessInstance historicProcessInstance = historyService.createHistoricProcessInstanceQuery()
-                .processDefinitionKey(SALES_ORDER_PROCESS.getName())
-                .variableValueEquals(Variables.ORDER_NUMBER.getName(), orderNumber)
-                .singleResult();
-
-        var updatedSkus = (List<String>) runtimeService.getVariable(historicProcessInstance.getId(),
-                Variables.ORDER_ROWS.getName());
-        assertEquals(3, updatedSkus.size());
-
-        auditLogUtil.assertAuditLogExists(salesOrder.getId(), ORDER_ROW_CANCELLED, 0);
-        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
-                camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), orderRowSkus.get(0)) &&
-                        camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), orderRowSkus.get(1)) &&
-                        camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), orderRowSkus.get(2)) &&
-                        camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())
-        ));
-    }
-
-    @Test
-    public void testDropshipmentPurchaseOrderBookedFalse() {
-        final var salesOrder =
-                salesOrderUtil.createPersistedSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
-        final var orderNumber = salesOrder.getOrderNumber();
-        final var orderRowSkus = salesOrder.getLatestJson().getOrderRows().stream()
-                .map(OrderRows::getSku)
-                .collect(toList());
-
-        ProcessInstance processInstance = camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
-        assertTrue(util.isProcessWaitingAtExpectedToken(processInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName()));
-        util.sendMessage(ORDER_RECEIVED_PAYMENT_SECURED, salesOrder.getOrderNumber());
-
-        assertTrue(timerService.pollWithDefaultTiming(() ->
-                camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), orderRowSkus.get(0)) &&
-                        camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), orderRowSkus.get(1)) &&
-                        camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), orderRowSkus.get(2)) &&
-                        camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())
-        ));
-
-
-        DropshipmentPurchaseOrderBookedMessage message = createDropshipmentPurchaseOrderBooked(
-                "13.7", salesOrder.getOrderNumber(), false);
-        salesOrderRowService.handleDropshipmentPurchaseOrderBooked(message);
-
-        final var updatedSalesOrder = salesOrderService.getOrderByOrderNumber(orderNumber);
-        assertTrue(updatedSalesOrder.isPresent());
-
-        Order latestJson = updatedSalesOrder.get().getLatestJson();
-        assertEquals("13.7", latestJson.getOrderHeader().getOrderNumberExternal());
-        for (OrderRows orderRows : latestJson.getOrderRows()) {
-            assertTrue(orderRows.getIsCancelled());
-        }
-
-        assertFalse(timerService.pollWithDefaultTiming(() ->
-                camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), orderRowSkus.get(0)) &&
-                        camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), orderRowSkus.get(1)) &&
-                        camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), orderRowSkus.get(2)) &&
-                        camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())
-        ));
-
-        auditLogUtil.assertAuditLogExists(salesOrder.getId(), ORDER_ROW_CANCELLED, 3);
-        assertFalse(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
-                camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), orderRowSkus.get(0)) &&
-                        camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), orderRowSkus.get(1)) &&
-                        camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), orderRowSkus.get(2)) &&
-                        camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())
-        ));
-    }
-
-    private DropshipmentPurchaseOrderBookedMessage createDropshipmentPurchaseOrderBooked(
-            String externalOrderNumber, String salesOrderNumber, boolean booked) {
-
-        return DropshipmentPurchaseOrderBookedMessage.builder()
-                .externalOrderNumber(externalOrderNumber)
-                .salesOrderNumber(salesOrderNumber)
-                .booked(booked)
-                .build();
     }
 
     private void checkTotalsValues(Totals totals) {
