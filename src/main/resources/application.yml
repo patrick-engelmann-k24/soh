@@ -65,6 +65,7 @@ soh:
       migrationSalesOrderRowCancelledV1: ${sns_migration_soh_sales_order_row_cancelled_v1}
       migrationSalesOrderCancelledV1: ${sns_migration_soh_sales_order_cancelled_v1}
       migrationReturnOrderCreatedV1: ${sns_migration_soh_return_order_created_v1}
+      dropshipmentOrderCreatedV1: ${sns_soh_dropshipment_order_created_v1}
   sqs:
     queue:
       ecpShopOrders: ${soh_sqs_ecp_shop_orders}

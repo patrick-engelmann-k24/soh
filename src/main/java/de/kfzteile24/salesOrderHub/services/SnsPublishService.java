@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.AwsSnsConfig;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
+import de.kfzteile24.salesOrderHub.dto.events.DropshipmentOrderCreatedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.OrderCancelledEvent;
 import de.kfzteile24.salesOrderHub.dto.events.OrderRowCancelledEvent;
 import de.kfzteile24.salesOrderHub.dto.events.ReturnOrderCreatedEvent;
@@ -105,6 +106,17 @@ public class SnsPublishService {
 
         publishEvent(config.getSnsShipmentConfirmedV1(), "Sales order shipment confirmed V1",
                 salesOrderShipmentConfirmedEvent, salesOrder.getOrderNumber());
+
+    }
+
+    public void publishDropshipmentOrderCreatedEvent(SalesOrder salesOrder) {
+
+        var dropshipmentOrderCreatedEvent = DropshipmentOrderCreatedEvent.builder()
+                .order(salesOrder.getLatestJson())
+                .build();
+
+        publishEvent(config.getSnsDropshipmentOrderCreatedV1(), "Dropshipment Order Created V1",
+                dropshipmentOrderCreatedEvent, salesOrder.getOrderNumber());
 
     }
 

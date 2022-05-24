@@ -49,6 +49,7 @@ TOPICS="
     migration-soh-sales-order-row-cancelled-v1
     migration-soh-sales-order-cancelled-v1
     migration-soh-return-order-created-v1
+    soh-dropshipment-order-created-v1
     "
 
 # Outdated topics

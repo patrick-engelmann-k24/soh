@@ -29,7 +29,8 @@ data "aws_iam_policy_document" "sns_sqs_access_policy" {
       data.aws_sns_topic.sns_migration_soh_sales_order_cancelled_v1.arn,
       data.aws_sns_topic.sns_migration_soh_return_order_created_v1.arn,
       data.aws_sns_topic.sns_migration_core_sales_invoice_created.arn,
-      data.aws_sns_topic.sns_migration_core_sales_credit_note_created.arn
+      data.aws_sns_topic.sns_migration_core_sales_credit_note_created.arn,
+      data.aws_sns_topic.sns_soh_dropshipment_order_created_v1.arn
     ]
   }
   statement {

@@ -209,10 +209,11 @@
     <bpmn:sequenceFlow id="Flow_05p9uf5" name="No" sourceRef="gwXORCheckDropShipmentOrder" targetRef="gwXORCheckPlatformType">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${not isDropshipmentOrder}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:intermediateThrowEvent id="eventThrowMsgCreatePurchaseOrder">
+    <bpmn:intermediateThrowEvent id="eventThrowMsgCreatePurchaseOrder" name="Create Dropshipment Order">
+      <bpmn:extensionElements />
       <bpmn:incoming>Flow_0qyp6wr</bpmn:incoming>
       <bpmn:outgoing>Flow_1w66l1t</bpmn:outgoing>
-      <bpmn:messageEventDefinition id="MessageEventDefinition_1v0tvl2" camunda:expression="${true}" />
+      <bpmn:messageEventDefinition id="MessageEventDefinition_1v0tvl2" camunda:delegateExpression="${publishDropshipmentOrderCreatedDelegate}" />
     </bpmn:intermediateThrowEvent>
     <bpmn:intermediateCatchEvent id="eventMsgDropShipmentOrderConfirmed">
       <bpmn:incoming>Flow_1w66l1t</bpmn:incoming>

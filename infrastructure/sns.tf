@@ -102,6 +102,10 @@ data "aws_sns_topic" "sns_core_sales_credit_note_created_v1" {
   name = "core-sales-credit-note-created-v1"
 }
 
+data "aws_sns_topic" "sns_soh_dropshipment_order_created_v1" {
+  name = "soh-dropshipment-order-created-v1"
+}
+
 data "aws_sns_topic" "sns_soh_return_order_created_v1" {
   name = "soh-return-order-created-v1"
 }
