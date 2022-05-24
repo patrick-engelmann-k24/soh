@@ -34,7 +34,7 @@ class ItemSplitServiceIntegrationTest {
     @SneakyThrows
     void processOrderList() {
 
-        WireMockServer wireMockServer = new WireMockServer(8080);
+        WireMockServer wireMockServer = new WireMockServer(18080);
         wireMockServer.start();
 
         wireMockServer.stubFor(WireMock.post(urlEqualTo("/oauth2/token"))

@@ -4,6 +4,7 @@ import de.kfzteile24.salesOrderHub.clients.ProductDataHubClient;
 import de.kfzteile24.salesOrderHub.domain.pdh.Product;
 import de.kfzteile24.salesOrderHub.domain.pdh.product.Country;
 import de.kfzteile24.salesOrderHub.domain.pdh.product.Localization;
+import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,9 @@ public class ItemSplitService extends AbstractSplitDecorator {
     @Autowired
     private ProductDataHubClient productDataHubClient;
 
+    @Autowired
+    private OrderUtil orderUtil;
+
     @Override
     public void processOrderList(ArrayList<Order> orderList) {
 
@@ -34,7 +38,7 @@ public class ItemSplitService extends AbstractSplitDecorator {
     public void processOrder(Order order) {
 
         final var locale = order.getOrderHeader().getLocale();
-        var rowKey = order.getOrderRows().stream().mapToInt(OrderRows::getRowKey).max().orElse(0) + 1;
+        var rowKey = orderUtil.getLastRowKey(order);
         final var originItemsWhichGetReplaced = new ArrayList<OrderRows>();
         final var replacementProductCollection = new ArrayList<OrderRows>();
         for (final var row : order.getOrderRows()) {

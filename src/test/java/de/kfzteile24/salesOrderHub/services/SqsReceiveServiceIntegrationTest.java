@@ -500,7 +500,7 @@ class SqsReceiveServiceIntegrationTest {
 
         URI uri = Objects.requireNonNull(getClass().getClassLoader().getResource("examples/product/DZN.json")).toURI();
         byte[] bytes = Files.readAllBytes(Paths.get(uri));
-        WireMockServer wireMockServer = new WireMockServer(8080);
+        WireMockServer wireMockServer = new WireMockServer(18080);
         wireMockServer.start();
         wireMockServer.stubFor(WireMock.post(urlEqualTo("/oauth2/token"))
                 .willReturn(aResponse().withBody("{ \"access_token\": \"fake_access_token\" }")));

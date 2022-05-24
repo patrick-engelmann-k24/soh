@@ -44,8 +44,13 @@ public class OrderUtil {
     }
 
     public Integer getLastRowKey(SalesOrder originalSalesOrder) {
-        var originalOrder = (Order) originalSalesOrder.getOriginalOrder();
-        return originalOrder.getOrderRows().stream().map(OrderRows::getRowKey).filter(Objects::nonNull).reduce(0, Integer::max);
+
+        return getLastRowKey((Order) originalSalesOrder.getOriginalOrder());
+    }
+
+    public Integer getLastRowKey(Order order) {
+
+        return order.getOrderRows().stream().map(OrderRows::getRowKey).filter(Objects::nonNull).reduce(0, Integer::max);
     }
 
     public Integer updateLastRowKey(SalesOrder salesOrder, String itemSku, Integer lastRowKey) {

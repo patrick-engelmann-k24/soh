@@ -65,8 +65,11 @@ public class ProductDataHubClient {
                         log.info("Could not get product data for sku: {}, could not parse the response from PDH: \n{}", sku, response.getBody());
                         return null;
                     }
+                } else if (response.getStatusCode() == HttpStatus.NO_CONTENT) {
+                    log.info("Could not get product data for sku: {}, PDH does not have the data.", sku);
+                    return null;
                 } else {
-                    log.info("Could not get product data for sku: {}, there was a problem with the redirect.\nresponse: {}", sku, response);
+                    log.info("Could not get product data for sku: {}, there was a problem with the redirect.", sku);
                     return null;
                 }
             } catch (Exception e) {
