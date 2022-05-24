@@ -259,10 +259,10 @@
       <bpmn:messageEventDefinition id="MessageEventDefinition_1swxyey" camunda:delegateExpression="${publishDropshipmentTrackingInformationDelegate}" />
     </bpmn:intermediateThrowEvent>
     <bpmn:sequenceFlow id="Flow_1yttfcs" sourceRef="activityDropShipmentOrderGenerateInvoice" targetRef="eventThrowMsgPublishInvoiceData" />
-    <bpmn:intermediateThrowEvent id="eventThrowMsgPublishInvoiceData">
+    <bpmn:intermediateThrowEvent id="eventThrowMsgPublishInvoiceData" name="Publish Invoice Data">
       <bpmn:incoming>Flow_1yttfcs</bpmn:incoming>
       <bpmn:outgoing>Flow_02l9065</bpmn:outgoing>
-      <bpmn:messageEventDefinition id="MessageEventDefinition_17ojcbh" camunda:expression="${true}" />
+      <bpmn:messageEventDefinition id="MessageEventDefinition_17ojcbh" camunda:delegateExpression="${publishCoreSalesInvoiceCreatedReceivedDelegate}" />
     </bpmn:intermediateThrowEvent>
     <bpmn:exclusiveGateway id="Gateway_0vfbunc">
       <bpmn:incoming>Flow_1ny64vx</bpmn:incoming>
@@ -766,6 +766,9 @@ including purchase order booked</bpmn:text>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_16tlr1d_di" bpmnElement="eventThrowMsgPublishInvoiceData">
         <dc:Bounds x="1712" y="672" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1695" y="715" width="74" height="27" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_0vfbunc_di" bpmnElement="Gateway_0vfbunc" isMarkerVisible="true">
         <dc:Bounds x="1785" y="255" width="50" height="50" />
