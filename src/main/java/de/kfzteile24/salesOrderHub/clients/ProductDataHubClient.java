@@ -62,15 +62,15 @@ public class ProductDataHubClient {
                         ProductEnvelope productEnvelope = objectMapper.readValue(response.getBody(), ProductEnvelope.class);
                         return productEnvelope.getProduct();
                     } catch (JsonProcessingException e) {
-                        log.info("Could now get product data for sku: {}", sku);
+                        log.info("Could not get product data for sku: {}, could not parse the response from PDH: \n{}", sku, response.getBody());
                         return null;
                     }
                 } else {
-                    log.info("Could now get product data for sku: {}", sku);
+                    log.info("Could not get product data for sku: {}, there was a problem with the redirect", sku);
                     return null;
                 }
             } catch (Exception e) {
-                log.info("Could now get product data for sku: {}", sku);
+                log.info("Could not get product data for sku: {}, there was a connection error", sku);
                 return null;
             }
         });
