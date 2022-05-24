@@ -145,9 +145,6 @@ public class SalesOrderService {
 
     @Transactional
     public SalesOrder addSalesOrderInvoice(SalesOrder salesOrder, SalesOrderInvoice salesOrderInvoice) {
-        salesOrder.getLatestJson()
-                .getOrderHeader()
-                .setDocumentRefNumber(salesOrder.getOrderNumber());
         salesOrderInvoice.setSalesOrder(salesOrder);
         salesOrder.getSalesOrderInvoiceList().add(salesOrderInvoice);
         return save(salesOrder, INVOICE_RECEIVED);
