@@ -50,23 +50,26 @@ public class ProductDataHubClient {
 
             final var httpEntity = new HttpEntity<>(null, authHeaders);
 
-
-            ResponseEntity<String> response = restTemplate.exchange(endpoint, GET, httpEntity, String.class);
-
-            if (response.getStatusCode() == HttpStatus.FOUND) {
-                URI location = response.getHeaders().getLocation();
-                ResponseEntity<ProductEnvelope> productDataResponse =
-                        restTemplate.exchange(Objects.requireNonNull(location), GET, null, ProductEnvelope.class);
-                return Objects.requireNonNull(productDataResponse.getBody()).getProduct();
-            } else if (response.getStatusCode() == HttpStatus.OK) {
-                try {
-                    ProductEnvelope productEnvelope = objectMapper.readValue(response.getBody(), ProductEnvelope.class);
-                    return productEnvelope.getProduct();
-                } catch (JsonProcessingException e) {
+            try {
+                ResponseEntity<String> response = restTemplate.exchange(endpoint, GET, httpEntity, String.class);
+                if (response.getStatusCode() == HttpStatus.FOUND) {
+                    URI location = response.getHeaders().getLocation();
+                    ResponseEntity<ProductEnvelope> productDataResponse =
+                            restTemplate.exchange(Objects.requireNonNull(location), GET, null, ProductEnvelope.class);
+                    return Objects.requireNonNull(productDataResponse.getBody()).getProduct();
+                } else if (response.getStatusCode() == HttpStatus.OK) {
+                    try {
+                        ProductEnvelope productEnvelope = objectMapper.readValue(response.getBody(), ProductEnvelope.class);
+                        return productEnvelope.getProduct();
+                    } catch (JsonProcessingException e) {
+                        log.info("Could now get product data for sku: {}", sku);
+                        return null;
+                    }
+                } else {
                     log.info("Could now get product data for sku: {}", sku);
                     return null;
                 }
-            } else {
+            } catch (Exception e) {
                 log.info("Could now get product data for sku: {}", sku);
                 return null;
             }
