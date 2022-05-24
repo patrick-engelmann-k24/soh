@@ -3,7 +3,6 @@ package de.kfzteile24.salesOrderHub.services;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
-import com.google.common.io.Resources;
 import de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
@@ -56,7 +55,6 @@ import java.util.Objects;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_END_MSG_DROPSHIPMENT_ORDER_CANCELLED;
@@ -502,33 +500,27 @@ class SqsReceiveServiceIntegrationTest {
 
         URI uri = Objects.requireNonNull(getClass().getClassLoader().getResource("examples/product/DZN.json")).toURI();
         byte[] bytes = Files.readAllBytes(Paths.get(uri));
-
-        WireMockServer wireMockServer = new WireMockServer(
-                wireMockConfig().port(8080).httpsPort(8043).keystorePath(Resources.getResource("keystore").toString())
-                        .bindAddress("localhost"));
+        WireMockServer wireMockServer = new WireMockServer(8080);
         wireMockServer.start();
         wireMockServer.stubFor(WireMock.post(urlEqualTo("/oauth2/token"))
                 .willReturn(aResponse().withBody("{ \"access_token\": \"fake_access_token\" }")));
-        wireMockServer.stubFor(WireMock.get(urlEqualTo("/json/15/"))
-                .withQueryParam("sku", WireMock.equalTo("1130-0713"))
+        wireMockServer.stubFor(WireMock.get(urlEqualTo("/json/v15/?sku=1130-0713"))
                 .willReturn(aResponse().withBody(bytes)));
-        wireMockServer.stubFor(WireMock.get(urlEqualTo("/json/15"))
-                .withQueryParam("sku", WireMock.equalTo("1130-0713"))
-                .willReturn(aResponse().withBody(bytes)));
-
 
         String orderRawMessage = readResource("examples/ecpOrderMessage.json");
         Order order = getOrder(orderRawMessage);
 
         sqsReceiveService.queueListenerMigrationCoreSalesOrderCreated(orderRawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
-        assertTrue(timerService.pollWithDefaultTiming(
+        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(7),
                 () -> camundaHelper.checkIfActiveProcessExists(order.getOrderHeader().getOrderNumber())));
 
         SalesOrder updated = salesOrderService.getOrderByOrderNumber(order.getOrderHeader().getOrderNumber()).orElse(null);
         assertNotNull(updated);
         assertEquals(order, updated.getLatestJson());
         assertEquals(order, updated.getOriginalOrder());
+
+        wireMockServer.stop();
     }
 
     @Test

@@ -1,5 +1,6 @@
 package de.kfzteile24.salesOrderHub.clients;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.ProductDataHubConfig;
 import de.kfzteile24.salesOrderHub.domain.pdh.Product;
@@ -57,6 +58,14 @@ public class ProductDataHubClient {
                 ResponseEntity<ProductEnvelope> productDataResponse =
                         restTemplate.exchange(Objects.requireNonNull(location), GET, null, ProductEnvelope.class);
                 return Objects.requireNonNull(productDataResponse.getBody()).getProduct();
+            } else if (response.getStatusCode() == HttpStatus.OK) {
+                try {
+                    ProductEnvelope productEnvelope = objectMapper.readValue(response.getBody(), ProductEnvelope.class);
+                    return productEnvelope.getProduct();
+                } catch (JsonProcessingException e) {
+                    log.info("Could now get product data for sku: {}", sku);
+                    return null;
+                }
             } else {
                 log.info("Could now get product data for sku: {}", sku);
                 return null;
