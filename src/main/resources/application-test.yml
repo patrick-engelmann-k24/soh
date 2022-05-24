@@ -104,5 +104,5 @@ ignoreSalesOrderSplitter: false
 
 kfzteile:
   product-data-hub:
-    pdhUrl: http://localhost:8080
-    authUrl: http://localhost:8080/oauth2/token
+    pdhUrl: http://localhost:18080
+    authUrl: http://localhost:18080/oauth2/token

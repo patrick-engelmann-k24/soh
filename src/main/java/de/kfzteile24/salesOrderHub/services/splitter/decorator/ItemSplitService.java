@@ -38,7 +38,7 @@ public class ItemSplitService extends AbstractSplitDecorator {
     public void processOrder(Order order) {
 
         final var locale = order.getOrderHeader().getLocale();
-        var rowKey = orderUtil.getLastRowKey(order);
+        var rowKey = orderUtil.getLastRowKey(order) + 1;
         final var originItemsWhichGetReplaced = new ArrayList<OrderRows>();
         final var replacementProductCollection = new ArrayList<OrderRows>();
         for (final var row : order.getOrderRows()) {
