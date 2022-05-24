@@ -1,6 +1,7 @@
 package de.kfzteile24.salesOrderHub.services.splitter.decorator;
 
 import de.kfzteile24.salesOrderHub.clients.ProductDataHubClient;
+import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import org.junit.jupiter.api.Test;
@@ -18,6 +19,7 @@ import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getProductEnvelope;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.readResource;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -28,6 +30,9 @@ class ItemSplitServiceTest {
 
     @Mock
     private ProductDataHubClient productDataHubClient;
+
+    @Mock
+    private OrderUtil orderUtil;
 
     @Test
     void processOrderList() {
@@ -52,6 +57,8 @@ class ItemSplitServiceTest {
         final var list = new ArrayList<Order>();
         list.add(order1);
         list.add(order2);
+
+        when(orderUtil.getLastRowKey(any(Order.class))).thenReturn(3);
 
         itemSplitService.processOrderList(list);
 
@@ -94,6 +101,8 @@ class ItemSplitServiceTest {
         getProductFromJson(secondSetItemSku, fakeProductJson);
 
         final var order = getOrder(readResource("examples/splitterSalesOrderMessageWithTwoRows.json"));
+
+        when(orderUtil.getLastRowKey(any(Order.class))).thenReturn(3);
         itemSplitService.processOrder(order);
 
         final var rows = order.getOrderRows();
