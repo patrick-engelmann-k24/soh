@@ -66,7 +66,7 @@ public class ProductDataHubClient {
                         return null;
                     }
                 } else {
-                    log.info("Could not get product data for sku: {}, there was a problem with the redirect", sku);
+                    log.info("Could not get product data for sku: {}, there was a problem with the redirect.\nresponse: {}", sku, response);
                     return null;
                 }
             } catch (Exception e) {
