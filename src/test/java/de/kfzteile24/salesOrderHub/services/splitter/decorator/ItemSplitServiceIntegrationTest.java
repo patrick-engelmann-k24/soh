@@ -2,6 +2,7 @@ package de.kfzteile24.salesOrderHub.services.splitter.decorator;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
+import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import lombok.SneakyThrows;
@@ -22,6 +23,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.readResource;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
@@ -89,23 +91,12 @@ class ItemSplitServiceIntegrationTest {
     @Test
     void processOrderWhenPDHIsNotAvailable() {
 
-        final var setSku = "2270-13013";
-        final var setItemSku = "DZN";
-
         final var order1 = getOrder(readResource("examples/splitterSalesOrderMessageWithOneSetRows.json"));
         final var list = new ArrayList<Order>();
         list.add(order1);
 
-        itemSplitService.processOrderList(list);
-
-        for (Order order : list) {
-            final var rows = order.getOrderRows();
-
-            // check if setItem is NOT in the list
-            assertThat(getCountForSku(rows, setSku)).isEqualTo(1);
-            assertThat(getCountForSku(rows, setItemSku)).isEqualTo(0);
-
-        }
+        assertThatThrownBy(() -> itemSplitService.processOrderList(list))
+                .isInstanceOf(NotFoundException.class);
     }
 
     protected int getCountForSku(List<OrderRows> rows, final String sku) {

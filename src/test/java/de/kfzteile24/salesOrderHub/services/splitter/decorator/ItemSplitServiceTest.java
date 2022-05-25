@@ -1,6 +1,7 @@
 package de.kfzteile24.salesOrderHub.services.splitter.decorator;
 
 import de.kfzteile24.salesOrderHub.clients.ProductDataHubClient;
+import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
@@ -19,6 +20,7 @@ import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getProductEnvelope;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.readResource;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -62,7 +64,7 @@ class ItemSplitServiceTest {
 
         itemSplitService.processOrderList(list);
 
-        for (Order order : list){
+        for (Order order : list) {
             final var rows = order.getOrderRows();
 
             // check if setItem is NOT in the list
@@ -127,19 +129,9 @@ class ItemSplitServiceTest {
     @Test
     void processOrderWhenPDHIsNotAvailable() {
 
-        final var setSku = "2270-13013";
-        final var firstSetItemSku = "1410-4610";
-        final var secondSetItemSku = "1420-4355";
-
         final var order = getOrder(readResource("examples/splitterSalesOrderMessageWithTwoRows.json"));
-        itemSplitService.processOrder(order);
-
-        final var rows = order.getOrderRows();
-
-        assertThat(getCountForSku(rows, setSku)).isEqualTo(1);
-        assertThat(getCountForSku(rows, firstSetItemSku)).isEqualTo(0);
-        assertThat(getCountForSku(rows, secondSetItemSku)).isEqualTo(0);
-
+        assertThatThrownBy(() -> itemSplitService.processOrder(order))
+                .isInstanceOf(NotFoundException.class);
     }
 
     @Test
