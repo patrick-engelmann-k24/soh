@@ -27,6 +27,7 @@ module "application_module" {
     SPRING_PROFILES_ACTIVE                     = "default,${var.stage}"
     name                                       = "backend-${var.stage}"
     java_opts                                  = "-Xms3072m -Xmx3072m"
+    environment                                = var.environment
 
     soh_db_host                                = module.aurora.this_rds_cluster_endpoint
     soh_db_port                                = module.aurora.this_rds_cluster_port
@@ -81,7 +82,7 @@ module "application_module" {
     ignore_sales_order_splitter                = var.ignore_sales_order_splitter
   }
 
-  ssm_secrets_count = 7
+  ssm_secrets_count = 9
 
   ssm_secrets = {
 
@@ -94,6 +95,9 @@ module "application_module" {
 
     soh_camunda_username       = data.aws_ssm_parameter.camunda_user.arn
     soh_camunda_password       = data.aws_ssm_parameter.camunda_password.arn
+
+    pdh_client_id              = aws_ssm_parameter.pdh_client_id.arn
+    pdh_client_secret          = aws_ssm_parameter.pdh_client_secret.arn
   }
 
   github_token = var.github_token

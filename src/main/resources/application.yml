@@ -130,6 +130,11 @@ swagger:
       basepackage: de.kfzteile24.salesOrderHub
 
 kfzteile:
+  product-data-hub:
+    pdhUrl: https://pdh-dashboard-api.${environment:stage}.kfzteile24.io
+    authUrl: https://kfzteile24-${environment:stage}.auth.eu-central-1.amazoncognito.com/oauth2/token
+    clientId:  ${pdh_client_id:client_id}
+    clientSecret: ${pdh_client_secret:client_secret}
   #
   # Delete processes that are not used?
   # KEEP OFF ON PRODUCTION
