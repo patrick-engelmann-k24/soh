@@ -124,10 +124,10 @@ public class ProductDataHubClient {
                 CognitoAuthResponse cognitoAuthResponse = objectMapper.readValue(response.getBody(), CognitoAuthResponse.class);
                 return BEARER_PREFIX + cognitoAuthResponse.getAccessToken();
             } else {
-                throw new IllegalArgumentException("Login to product-data-hun failed, could not get access token");
+                throw new IllegalArgumentException("Login to product-data-hub failed, could not get access token");
             }
         } catch (ResourceAccessException | HttpClientErrorException e) {
-            throw new NotFoundException("Login to product-data-hun failed: " + e.getMessage());
+            throw new NotFoundException("Login to product-data-hub failed: " + e.getMessage());
         }
     }
 
