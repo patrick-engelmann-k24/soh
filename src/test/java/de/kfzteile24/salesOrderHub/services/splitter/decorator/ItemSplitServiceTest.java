@@ -21,6 +21,7 @@ import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getProductEnvelo
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.readResource;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -168,6 +169,15 @@ class ItemSplitServiceTest {
         assertThat(rows.getQuantity()).isEqualTo(BigDecimal.valueOf(2));
         assertThat(rows.getTaxRate()).isEqualTo(firstRow.getTaxRate());
         assertThat(rows.getPartIdentificationProperties()).isEqualTo(firstRow.getPartIdentificationProperties());
+    }
+
+    @Test
+    public void testGetLocaleString() {
+
+        String locale = "de_DE";
+        String otherLocale = "DE";
+        assertEquals("DE", itemSplitService.getLocaleString(locale));
+        assertEquals("DE", itemSplitService.getLocaleString(otherLocale));
     }
 
     protected void getProductFromJson(final String sku, final String json) {
