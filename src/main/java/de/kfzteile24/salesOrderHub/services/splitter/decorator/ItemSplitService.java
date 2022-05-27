@@ -87,7 +87,7 @@ public class ItemSplitService extends AbstractSplitDecorator {
     protected OrderRows mapProductToOrderRows(
             final Product product, final OrderRows originItem, BigDecimal quantity, String locale) {
 
-        final var localeStr = locale.substring(0, locale.indexOf('_')).toUpperCase();
+        final var localeStr = getLocaleString(locale);
         Country country = product.getCountries().getOrDefault(localeStr, Country.builder().build());
         Localization localization = product.getLocalizations().getOrDefault(localeStr, Localization.builder().build());
         String genart = null;
@@ -136,6 +136,12 @@ public class ItemSplitService extends AbstractSplitDecorator {
         // todo recalculate prices here
         // newProduct.setUnitValues();
         // newProduct.setSumValues();
+    }
+
+    protected String getLocaleString(String locale) {
+
+        String[] split = locale.split("_");
+        return split[split.length - 1];
     }
 
 }
