@@ -4,10 +4,13 @@ import de.kfzteile24.salesOrderHub.clients.ProductDataHubClient;
 import de.kfzteile24.salesOrderHub.domain.pdh.Product;
 import de.kfzteile24.salesOrderHub.domain.pdh.product.Country;
 import de.kfzteile24.salesOrderHub.domain.pdh.product.Localization;
+import de.kfzteile24.salesOrderHub.domain.pricing.PricingItem;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
+import de.kfzteile24.soh.order.dto.SumValues;
+import de.kfzteile24.soh.order.dto.UnitValues;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +18,13 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getSumValue;
+import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.round;
 
 /**
  * This class splits up set items into single items
@@ -50,22 +60,24 @@ public class ItemSplitService extends AbstractSplitDecorator {
                 log.error("Could not get product data from PDH for sku: {}", row.getSku());
                 throw new NotFoundException("Could not get product data from PDH for sku: " + row.getSku());
             } else if (product.isSetItem()) {
-                final var setReplacementProductCollection = new ArrayList<OrderRows>();
-                for (final var includedProductPDH : product.getSetProductCollection()) {
-                    final BigDecimal qty = includedProductPDH.getQuantity();
-                    final var pdhProduct = getProduct(includedProductPDH.getSku());
+                final var setItems = new ArrayList<OrderRows>();
+                List<PricingItem> itemPrices = getSetPrices(row.getSku());
+                for (final var setItem : product.getSetProductCollection()) {
+                    final BigDecimal qty = setItem.getQuantity();
+                    final var pdhProduct = getProduct(setItem.getSku());
                     if (pdhProduct != null) {
                         final var replacementProduct = mapProductToOrderRows(pdhProduct, row, qty, locale);
                         replacementProduct.setRowKey(rowKey);
-                        setReplacementProductCollection.add(replacementProduct);
+                        setItems.add(replacementProduct);
                         ++rowKey;
                     } else {
-                        log.error("Could not get product data from PDH for sku: {}", includedProductPDH.getSku());
-                        throw new NotFoundException("Could not get product data from PDH for sku: " + includedProductPDH.getSku());
+                        String errorMessage = "Could not get product data from PDH for sku: " + setItem.getSku();
+                        log.error(errorMessage);
+                        throw new NotFoundException(errorMessage);
                     }
                 }
-                recalculatePrices(setReplacementProductCollection, row);
-                replacementProductCollection.addAll(setReplacementProductCollection);
+                recalculateSetItemPrices(setItems, row.getSumValues(), itemPrices);
+                replacementProductCollection.addAll(setItems);
                 originItemsWhichGetReplaced.add(row);
             }
         }
@@ -76,6 +88,17 @@ public class ItemSplitService extends AbstractSplitDecorator {
     protected Product getProduct(String sku) {
 
         return productDataHubClient.getProductBySku(sku);
+    }
+
+    /**
+     * call pricing service to get prices for the items in the set
+     *
+     * @param setSku - sku of the set product
+     * @return get list of the prices for the items in the set
+     */
+    protected List<PricingItem> getSetPrices(String setSku) {
+
+        return List.of();
     }
 
     /**
@@ -100,7 +123,9 @@ public class ItemSplitService extends AbstractSplitDecorator {
             ean = country.getEan().size() > 0 ? country.getEan().get(0) : null;
         }
         if (product.getPartNumbers() != null) {
-            productNumber = product.getPartNumbers().size() > 0 ? product.getPartNumbers().get(0).getPartNumber() : null;
+            if (product.getPartNumbers().size() > 0) {
+                productNumber = product.getPartNumbers().get(0).getPartNumber();
+            }
         }
 
         return OrderRows.builder()
@@ -129,13 +154,65 @@ public class ItemSplitService extends AbstractSplitDecorator {
     }
 
     /**
-     * @param replacementCollection - the items in the origin set
-     * @param row                   - the set itself
+     * @param setItems     - the items in the origin set
+     * @param setSumValues - the set sum values
+     * @param prices       - the list of prices for the items in the set
      */
-    protected void recalculatePrices(ArrayList<OrderRows> replacementCollection, final OrderRows row) {
-        // todo recalculate prices here
-        // newProduct.setUnitValues();
-        // newProduct.setSumValues();
+    protected void recalculateSetItemPrices(
+            List<OrderRows> setItems, final SumValues setSumValues, List<PricingItem> prices) {
+
+        for (OrderRows orderRow : setItems) {
+            UnitValues unitValues = orderRow.getUnitValues();
+            SumValues sumValues = orderRow.getSumValues();
+            PricingItem pricingItem = prices.stream().filter(Objects::nonNull)
+                    .filter(price -> price.getSku().equals(orderRow.getSku())).findFirst().orElseThrow();
+            BigDecimal unitGross =
+                    round(Optional.ofNullable(pricingItem.getUnitPrices().getGross()).orElse(BigDecimal.ZERO));
+            BigDecimal unitNet =
+                    round(Optional.ofNullable(pricingItem.getUnitPrices().getNet()).orElse(BigDecimal.ZERO));
+            BigDecimal sumGross = round(Optional.of(pricingItem.getValueShare()).orElse(BigDecimal.ZERO)
+                    .multiply(setSumValues.getGoodsValueGross()));
+            BigDecimal sumNet = round(Optional.of(pricingItem.getValueShare()).orElse(BigDecimal.ZERO)
+                    .multiply(setSumValues.getGoodsValueNet()));
+
+            unitValues.setGoodsValueGross(unitGross);
+            unitValues.setGoodsValueNet(unitNet);
+            unitValues.setDiscountedGross(unitGross);
+            unitValues.setDiscountedNet(unitNet);
+
+            sumValues.setGoodsValueGross(sumGross);
+            sumValues.setGoodsValueNet(sumNet);
+            sumValues.setTotalDiscountedGross(sumGross);
+            sumValues.setTotalDiscountedNet(sumNet);
+        }
+
+        BigDecimal totalSum = getSumValue(SumValues::getGoodsValueGross,
+                setItems.stream().map(OrderRows::getSumValues).collect(Collectors.toList()));
+        BigDecimal difference = setSumValues.getGoodsValueGross().subtract(totalSum);
+
+        if (difference.abs().compareTo(new BigDecimal("0.01")) == 0) {
+            BigDecimal newSumGrossPrice = setItems.get(0).getSumValues().getGoodsValueGross().add(difference);
+            setItems.get(0).getSumValues().setGoodsValueGross(newSumGrossPrice);
+            setItems.get(0).getSumValues().setTotalDiscountedGross(newSumGrossPrice);
+        } else if (difference.compareTo(BigDecimal.ZERO) != 0) {
+            String errorMessage = "Prices from Pricing Service do not add up. Set cannot be split.";
+            log.info(errorMessage);
+            throw new IllegalArgumentException(errorMessage);
+        }
+
+        totalSum = getSumValue(SumValues::getGoodsValueNet,
+                setItems.stream().map(OrderRows::getSumValues).collect(Collectors.toList()));
+        difference = setSumValues.getGoodsValueNet().subtract(totalSum);
+
+        if (difference.abs().compareTo(new BigDecimal("0.01")) == 0) {
+            BigDecimal newSumNetPrice = setItems.get(0).getSumValues().getGoodsValueNet().add(difference);
+            setItems.get(0).getSumValues().setGoodsValueNet(newSumNetPrice);
+            setItems.get(0).getSumValues().setTotalDiscountedNet(newSumNetPrice);
+        } else if (difference.compareTo(BigDecimal.ZERO) != 0) {
+            String errorMessage = "Prices from Pricing Service do not add up. Set cannot be split.";
+            log.info(errorMessage);
+            throw new IllegalArgumentException(errorMessage);
+        }
     }
 
     protected String getLocaleString(String locale) {
