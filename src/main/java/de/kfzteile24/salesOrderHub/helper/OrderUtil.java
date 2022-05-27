@@ -20,6 +20,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static de.kfzteile24.salesOrderHub.constants.SOHConstants.ORDER_NUMBER_SEPARATOR;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getGrossValue;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.isNotNullAndNotEqual;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.round;
@@ -62,7 +63,7 @@ public class OrderUtil {
     }
 
     public String createOrderNumberInSOH(String orderNumber, String reference) {
-        return orderNumber + "-" + reference;
+        return orderNumber + ORDER_NUMBER_SEPARATOR + reference;
     }
 
     private List<OrderRows> createRowFromLatestJson(SalesOrder salesOrder, CoreSalesFinancialDocumentLine item) {

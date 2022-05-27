@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+import static de.kfzteile24.salesOrderHub.constants.SOHConstants.ORDER_NUMBER_SEPARATOR;
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.RECURRING;
@@ -401,7 +402,7 @@ public class SalesOrderUtil {
     }
 
     public static String createOrderNumberInSOH(String orderNumber, String reference) {
-        return orderNumber + "-" + reference;
+        return orderNumber + ORDER_NUMBER_SEPARATOR + reference;
     }
 
     @SneakyThrows(JsonProcessingException.class)

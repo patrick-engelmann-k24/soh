@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import static de.kfzteile24.salesOrderHub.constants.SOHConstants.INVOICE_NUMBER_SEPARATOR;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.INVOICE_RECEIVED;
 
 @Service
@@ -84,9 +85,16 @@ public class InvoiceService {
     }
 
     private String createNextInvoiceNumberCounter(SalesOrderInvoice salesOrderInvoice) {
-        var counter = Long.getLong(salesOrderInvoice.getInvoiceNumber());
+        var counter = Long.valueOf(extractInvoiceCounterNumber(salesOrderInvoice));
         counter++;
         return String.format("%012d", counter);
+    }
+
+    private String extractInvoiceCounterNumber(SalesOrderInvoice salesOrderInvoice) {
+        if (!salesOrderInvoice.getInvoiceNumber().contains(INVOICE_NUMBER_SEPARATOR))
+            throw new IllegalArgumentException("Last sales order invoice in DB does not contain '-' in the invoice number");
+        String[] split = salesOrderInvoice.getInvoiceNumber().split(INVOICE_NUMBER_SEPARATOR);
+        return split[split.length - 1].substring(1);
     }
 
     public CoreSalesInvoiceCreatedMessage generateInvoiceMessage(SalesOrder salesOrder) {

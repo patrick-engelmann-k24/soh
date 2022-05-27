@@ -4,7 +4,9 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
+import de.kfzteile24.salesOrderHub.domain.converter.InvoiceSource;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
@@ -31,6 +33,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.Set;
 
@@ -73,6 +76,8 @@ class DropshipmentOrderServiceIntegrationTest {
     @Autowired
     private SalesOrderInvoiceRepository salesOrderInvoiceRepository;
     @Autowired
+    private InvoiceService invoiceService;
+    @Autowired
     private SalesOrderUtil salesOrderUtil;
     @Autowired
     private BpmUtil bpmUtil;
@@ -105,27 +110,8 @@ class DropshipmentOrderServiceIntegrationTest {
     @Test
     void testHandleDropShipmentOrderTrackingInformationReceived() {
 
-        var salesOrder = SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
-
-        salesOrderService.save(salesOrder, Action.ORDER_CREATED);
-
-        doNothing().when(camundaHelper).correlateMessage(any(), any(), any());
-
-        var message = DropshipmentShipmentConfirmedMessage.builder()
-                .salesOrderNumber(salesOrder.getOrderNumber())
-                .items(Set.of(ShipmentItem.builder()
-                        .productNumber("sku-1")
-                        .parcelNumber("00F8F0LT")
-                        .trackingLink("http://abc1")
-                        .serviceProviderName("abc1")
-                        .build(), ShipmentItem.builder()
-                        .productNumber("sku-3")
-                        .parcelNumber("00F8F0LT2")
-                        .trackingLink("http://abc2")
-                        .serviceProviderName("abc2")
-                        .build()))
-                .build();
-
+        var salesOrder = createSalesOrder();
+        var message = createShipmentConfirmedMessage(salesOrder);
         dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(message);
 
         var optUpdatedSalesOrder = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber());
@@ -153,6 +139,62 @@ class DropshipmentOrderServiceIntegrationTest {
             softly.assertThat(sku3Row.getTrackingNumbers().get(0)).as("sku-3 tracking number").isEqualTo("00F8F0LT2");
         }
         assertThat(updatedSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber()).hasSize(18);
+        assertThat(updatedSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber()).isEqualTo(LocalDateTime.now().getYear() + "-1000000000001");
+    }
+
+    @Test
+    void testHandleDropShipmentOrderTrackingInformationReceivedWhenThereIsAnotherInvoiceForSameYear() {
+
+        var salesOrder = createSalesOrder();
+        createSalesOrderInvoice(salesOrder);
+        var message = createShipmentConfirmedMessage(salesOrder);
+        dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(message);
+
+        var optUpdatedSalesOrder = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber());
+        assertThat(optUpdatedSalesOrder).isNotEmpty();
+        var updatedSalesOrder = optUpdatedSalesOrder.get();
+
+        assertThat(updatedSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber()).hasSize(18);
+        assertThat(updatedSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber()).isEqualTo(LocalDateTime.now().getYear() + "-1000000000002");
+    }
+
+    private void createSalesOrderInvoice(SalesOrder salesOrder) {
+        var currentYear = LocalDateTime.now().getYear();
+        var salesOrderInvoice = SalesOrderInvoice.builder()
+                .source(InvoiceSource.SOH)
+                .orderNumber(salesOrder.getOrderNumber())
+                .salesOrder(salesOrder)
+                .invoiceNumber(currentYear + "-1000000000001")
+                .url("http://abc1")
+                .build();
+        invoiceService.saveInvoice(salesOrderInvoice);
+    }
+
+    private DropshipmentShipmentConfirmedMessage createShipmentConfirmedMessage(SalesOrder salesOrder) {
+        var message = DropshipmentShipmentConfirmedMessage.builder()
+                .salesOrderNumber(salesOrder.getOrderNumber())
+                .items(Set.of(ShipmentItem.builder()
+                        .productNumber("sku-1")
+                        .parcelNumber("00F8F0LT")
+                        .trackingLink("http://abc1")
+                        .serviceProviderName("abc1")
+                        .build(), ShipmentItem.builder()
+                        .productNumber("sku-3")
+                        .parcelNumber("00F8F0LT2")
+                        .trackingLink("http://abc2")
+                        .serviceProviderName("abc2")
+                        .build()))
+                .build();
+        return message;
+    }
+
+    private SalesOrder createSalesOrder() {
+        var salesOrder = SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
+
+        salesOrderService.save(salesOrder, Action.ORDER_CREATED);
+
+        doNothing().when(camundaHelper).correlateMessage(any(), any(), any());
+        return salesOrder;
     }
 
     @Test
