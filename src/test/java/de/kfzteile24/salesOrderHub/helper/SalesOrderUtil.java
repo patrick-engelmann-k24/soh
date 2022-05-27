@@ -412,7 +412,7 @@ public class SalesOrderUtil {
 
     public static SalesOrderInvoice createSalesOrderInvoice(final String orderNumber, final boolean isCorrection) {
         final var sep = isCorrection ? "--" : "-";
-        final var invoiceNumber = RandomStringUtils.randomNumeric(10);
+        final var invoiceNumber = "2022-1" + RandomStringUtils.randomNumeric(12);
         final var invoiceUrl = "s3://k24-invoices/www-k24-at/2020/08/12/" + orderNumber + sep + invoiceNumber + ".pdf";
         return SalesOrderInvoice.builder()
                 .invoiceNumber(invoiceNumber)
