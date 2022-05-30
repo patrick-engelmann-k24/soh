@@ -23,6 +23,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static de.kfzteile24.salesOrderHub.constants.SOHConstants.ONE_CENT;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getSumValue;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.round;
 
@@ -197,26 +198,35 @@ public class ItemSplitService extends AbstractSplitDecorator {
         BigDecimal totalSum = getSumValue(SumValues::getGoodsValueGross,
                 setItems.stream().map(OrderRows::getSumValues).collect(Collectors.toList()));
         BigDecimal difference = setSumValues.getGoodsValueGross().subtract(totalSum);
+        SumValues firstSetItemSumValues = setItems.get(0).getSumValues();
 
-        if (difference.abs().compareTo(new BigDecimal("0.01")) == 0) {
-            BigDecimal newSumGrossPrice = setItems.get(0).getSumValues().getGoodsValueGross().add(difference);
-            setItems.get(0).getSumValues().setGoodsValueGross(newSumGrossPrice);
-            setItems.get(0).getSumValues().setTotalDiscountedGross(newSumGrossPrice);
+        /*
+         * if the difference between the set price and the sum of the set items is one cent we add it to the first item
+         * if the difference is greater we throw an exception
+         */
+        if (difference.abs().compareTo(ONE_CENT) == 0) {
+            BigDecimal newGrossPrice = firstSetItemSumValues.getGoodsValueGross().add(difference);
+            firstSetItemSumValues.setGoodsValueGross(newGrossPrice);
+            firstSetItemSumValues.setTotalDiscountedGross(newGrossPrice);
         } else if (difference.compareTo(BigDecimal.ZERO) != 0) {
             String errorMessage = "Prices from Pricing Service do not add up. Set cannot be split.";
             log.error(errorMessage);
             throw new IllegalArgumentException(errorMessage);
         }
 
-        totalSum = getSumValue(SumValues::getGoodsValueNet,
+        BigDecimal totalNetSum = getSumValue(SumValues::getGoodsValueNet,
                 setItems.stream().map(OrderRows::getSumValues).collect(Collectors.toList()));
-        difference = setSumValues.getGoodsValueNet().subtract(totalSum);
+        BigDecimal netDifference = setSumValues.getGoodsValueNet().subtract(totalNetSum);
 
-        if (difference.abs().compareTo(new BigDecimal("0.01")) == 0) {
-            BigDecimal newSumNetPrice = setItems.get(0).getSumValues().getGoodsValueNet().add(difference);
-            setItems.get(0).getSumValues().setGoodsValueNet(newSumNetPrice);
-            setItems.get(0).getSumValues().setTotalDiscountedNet(newSumNetPrice);
-        } else if (difference.compareTo(BigDecimal.ZERO) != 0) {
+        /*
+         * if the difference between the set price and the sum of the set items is one cent we add it to the first item
+         * if the difference is greater we throw an exception
+         */
+        if (netDifference.abs().compareTo(ONE_CENT) == 0) {
+            BigDecimal newNetPrice = firstSetItemSumValues.getGoodsValueNet().add(netDifference);
+            firstSetItemSumValues.setGoodsValueNet(newNetPrice);
+            firstSetItemSumValues.setTotalDiscountedNet(newNetPrice);
+        } else if (netDifference.compareTo(BigDecimal.ZERO) != 0) {
             String errorMessage = "Prices from Pricing Service do not add up. Set cannot be split.";
             log.error(errorMessage);
             throw new IllegalArgumentException(errorMessage);
