@@ -139,6 +139,52 @@ class ItemSplitServiceTest {
     }
 
     @Test
+    void processOrderWithSetQuantityMoreThanOne() {
+
+        final var setSku = "2270-13013";
+        final var fakeProductJson = "DZN.json";
+
+        final var firstSetItemSku = "1410-4610";
+        final var secondSetItemSku = "1420-4355";
+        // "real" set item
+        getProductFromJson(setSku, "2270-13013.json");
+
+        // other products in the order (no sets; no need to replace them)
+        getProductFromJson("2270-13012", fakeProductJson);
+        getProductFromJson("2270-13015", fakeProductJson);
+        // replacement products
+        getProductFromJson(firstSetItemSku, fakeProductJson);
+        getProductFromJson(secondSetItemSku, fakeProductJson);
+
+        final var order = getOrder(readResource("examples/splitterSalesOrderMessageWithTwoRows.json"));
+        OrderRows setOrderRow = order.getOrderRows().stream().filter(row -> row.getSku().equals(setSku)).findFirst().orElseThrow();
+        setOrderRow.setQuantity(new BigDecimal(2));
+
+        when(itemSplitService.getSetPrices((any()))).thenReturn(List.of(PricingItem.builder().build()));
+        doNothing().when(itemSplitService).recalculateSetItemPrices(any(), any(), any());
+        when(orderUtil.getLastRowKey(any(Order.class))).thenReturn(3);
+        itemSplitService.processOrder(order);
+
+        final var rows = order.getOrderRows();
+
+        // check if setItem is NOT in the list
+        assertThat(getCountForSku(rows, setSku)).isEqualTo(0);
+
+        assertThat(getCountForSku(rows, firstSetItemSku)).isEqualTo(1);
+        final var firstReplacementItem = findRowBySku(rows, firstSetItemSku);
+        assertThat(firstReplacementItem).isNotNull();
+        assertThat(firstReplacementItem.getQuantity()).isEqualTo(BigDecimal.valueOf(2));
+        assertThat(firstReplacementItem.getRowKey()).isEqualTo(4);
+
+        assertThat(getCountForSku(rows, secondSetItemSku)).isEqualTo(1);
+        final var secondReplacementItem = findRowBySku(rows, secondSetItemSku);
+        assertThat(secondReplacementItem).isNotNull();
+        assertThat(secondReplacementItem.getQuantity()).isEqualTo(BigDecimal.valueOf(4));
+        assertThat(secondReplacementItem.getRowKey()).isEqualTo(5);
+
+    }
+
+    @Test
     void processOrderWhenPDHIsNotAvailable() {
 
         final var order = getOrder(readResource("examples/splitterSalesOrderMessageWithTwoRows.json"));
@@ -237,12 +283,12 @@ class ItemSplitServiceTest {
         List<OrderRows> setItems = List.of(orderRow1, orderRow2);
 
         SumValues setSumValues = SumValues.builder()
-                .goodsValueGross(new BigDecimal("23.81")).goodsValueNet(new BigDecimal("21.39")).build();
+                .goodsValueGross(new BigDecimal("1.15")).goodsValueNet(new BigDecimal("1.00")).build();
 
         PricingItem pricingItem1 = createPricingItem(
-                new BigDecimal("3.50"), new BigDecimal("3.00"), new BigDecimal("0.25"), "sku-1");
+                new BigDecimal("3.50"), new BigDecimal("3.00"), new BigDecimal("0.34"), "sku-1");
         PricingItem pricingItem2 = createPricingItem(
-                new BigDecimal("13.50"), new BigDecimal("13.00"), new BigDecimal("0.75"), "sku-2");
+                new BigDecimal("13.50"), new BigDecimal("13.00"), new BigDecimal("0.66"), "sku-2");
         List<PricingItem> pricingItems = List.of(pricingItem1, pricingItem2);
 
         itemSplitService.recalculateSetItemPrices(setItems, setSumValues, pricingItems);
@@ -251,19 +297,19 @@ class ItemSplitServiceTest {
         assertEquals(new BigDecimal("3.00"), orderRow1.getUnitValues().getGoodsValueNet());
         assertEquals(new BigDecimal("3.50"), orderRow1.getUnitValues().getDiscountedGross());
         assertEquals(new BigDecimal("3.00"), orderRow1.getUnitValues().getDiscountedNet());
-        assertEquals(new BigDecimal("5.95"), orderRow1.getSumValues().getGoodsValueGross());
-        assertEquals(new BigDecimal("5.35"), orderRow1.getSumValues().getGoodsValueNet());
-        assertEquals(new BigDecimal("5.95"), orderRow1.getSumValues().getTotalDiscountedGross());
-        assertEquals(new BigDecimal("5.35"), orderRow1.getSumValues().getTotalDiscountedNet());
+        assertEquals(new BigDecimal("0.39"), orderRow1.getSumValues().getGoodsValueGross());
+        assertEquals(new BigDecimal("0.34"), orderRow1.getSumValues().getGoodsValueNet());
+        assertEquals(new BigDecimal("0.39"), orderRow1.getSumValues().getTotalDiscountedGross());
+        assertEquals(new BigDecimal("0.34"), orderRow1.getSumValues().getTotalDiscountedNet());
 
         assertEquals(new BigDecimal("13.50"), orderRow2.getUnitValues().getGoodsValueGross());
         assertEquals(new BigDecimal("13.00"), orderRow2.getUnitValues().getGoodsValueNet());
         assertEquals(new BigDecimal("13.50"), orderRow2.getUnitValues().getDiscountedGross());
         assertEquals(new BigDecimal("13.00"), orderRow2.getUnitValues().getDiscountedNet());
-        assertEquals(new BigDecimal("17.86"), orderRow2.getSumValues().getGoodsValueGross());
-        assertEquals(new BigDecimal("16.04"), orderRow2.getSumValues().getGoodsValueNet());
-        assertEquals(new BigDecimal("17.86"), orderRow2.getSumValues().getTotalDiscountedGross());
-        assertEquals(new BigDecimal("16.04"), orderRow2.getSumValues().getTotalDiscountedNet());
+        assertEquals(new BigDecimal("0.76"), orderRow2.getSumValues().getGoodsValueGross());
+        assertEquals(new BigDecimal("0.66"), orderRow2.getSumValues().getGoodsValueNet());
+        assertEquals(new BigDecimal("0.76"), orderRow2.getSumValues().getTotalDiscountedGross());
+        assertEquals(new BigDecimal("0.66"), orderRow2.getSumValues().getTotalDiscountedNet());
     }
 
     @Test

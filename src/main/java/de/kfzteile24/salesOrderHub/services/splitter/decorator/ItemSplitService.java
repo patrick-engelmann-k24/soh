@@ -63,7 +63,7 @@ public class ItemSplitService extends AbstractSplitDecorator {
                 final var setItems = new ArrayList<OrderRows>();
                 List<PricingItem> itemPrices = getSetPrices(row.getSku());
                 for (final var setItem : product.getSetProductCollection()) {
-                    final BigDecimal qty = setItem.getQuantity();
+                    final BigDecimal qty = setItem.getQuantity().multiply(row.getQuantity());
                     final var pdhProduct = getProduct(setItem.getSku());
                     if (pdhProduct != null) {
                         final var replacementProduct = mapProductToOrderRows(pdhProduct, row, qty, locale);
@@ -118,14 +118,22 @@ public class ItemSplitService extends AbstractSplitDecorator {
         String productNumber = null;
         if (country.getGenart() != null) {
             genart = country.getGenart().size() > 0 ? country.getGenart().get(0) : null;
+        } else {
+            log.info("Could not get genart from PDH for sku: {}", product.getSku());
         }
         if (country.getEan() != null) {
             ean = country.getEan().size() > 0 ? country.getEan().get(0) : null;
+        } else {
+            log.info("Could not get ean from PDH for sku: {}", product.getSku());
         }
         if (product.getPartNumbers() != null) {
             if (product.getPartNumbers().size() > 0) {
                 productNumber = product.getPartNumbers().get(0).getPartNumber();
+            } else {
+                log.info("Could not get product number  from PDH for sku: {}", product.getSku());
             }
+        } else {
+            log.info("Could not get product number  from PDH for sku: {}", product.getSku());
         }
 
         return OrderRows.builder()
@@ -196,7 +204,7 @@ public class ItemSplitService extends AbstractSplitDecorator {
             setItems.get(0).getSumValues().setTotalDiscountedGross(newSumGrossPrice);
         } else if (difference.compareTo(BigDecimal.ZERO) != 0) {
             String errorMessage = "Prices from Pricing Service do not add up. Set cannot be split.";
-            log.info(errorMessage);
+            log.error(errorMessage);
             throw new IllegalArgumentException(errorMessage);
         }
 
@@ -210,7 +218,7 @@ public class ItemSplitService extends AbstractSplitDecorator {
             setItems.get(0).getSumValues().setTotalDiscountedNet(newSumNetPrice);
         } else if (difference.compareTo(BigDecimal.ZERO) != 0) {
             String errorMessage = "Prices from Pricing Service do not add up. Set cannot be split.";
-            log.info(errorMessage);
+            log.error(errorMessage);
             throw new IllegalArgumentException(errorMessage);
         }
     }
