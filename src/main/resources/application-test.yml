@@ -43,7 +43,7 @@ soh:
       migrationSalesOrderCancelledV1: arn:aws:sns:eu-central-1:000000000000:migration-soh-sales-order-cancelled-v1
       migrationReturnOrderCreatedV1: arn:aws:sns:eu-central-1:000000000000:migration-soh-return-order-created-v1
       dropshipmentOrderCreatedV1: arn:aws:sns:eu-central-1:000000000000:soh-dropshipment-order-created-v1
-      dropshipmentOrderReturnNotifiedV1: arn:aws:ns:eu-central-1:000000000000:soh-dropshipment-order-return-notified-v1
+      dropshipmentOrderReturnNotifiedV1: arn:aws:sns:eu-central-1:000000000000:soh-dropshipment-order-return-notified-v1
   sqs:
     queue:
       ecpShopOrders:                  http://localhost:4566/000000000000/soh-ecp-shop-orders-queue
@@ -109,3 +109,7 @@ kfzteile:
   product-data-hub:
     pdhUrl: http://localhost:18080
     authUrl: http://localhost:18080/oauth2/token
+  persistent-properties:
+    - key: pauseDropshipmentProcessing
+      value: false
+      overwrite-on-startup: false

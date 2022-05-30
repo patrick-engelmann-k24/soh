@@ -2,6 +2,7 @@ package de.kfzteile24.salesOrderHub.delegates.helper;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Signals;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
@@ -276,5 +277,9 @@ public class CamundaHelper {
 
     public void correlateMessage(Messages message, SalesOrder salesOrder) {
         correlateMessage(message, salesOrder, Variables.createVariables());
+    }
+
+    public void sendSignal(Signals signal) {
+        runtimeService.signalEventReceived(signal.getName());
     }
 }

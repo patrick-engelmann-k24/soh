@@ -1,7 +1,10 @@
 package de.kfzteile24.salesOrderHub.services;
 
+import de.kfzteile24.salesOrderHub.constants.PersistentProperties;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Signals;
+import de.kfzteile24.salesOrderHub.delegates.dropshipment.PublishDropshipmentOrderCreatedDelegate;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
@@ -10,23 +13,31 @@ import de.kfzteile24.salesOrderHub.domain.converter.InvoiceSource;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
+import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
+import de.kfzteile24.salesOrderHub.helper.EventType;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
+import de.kfzteile24.salesOrderHub.services.property.KeyValuePropertyService;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.StringUtils;
 import org.assertj.core.api.AutoCloseableSoftAssertions;
-import org.camunda.bpm.engine.RuntimeService;
+import org.camunda.bpm.engine.runtime.EventSubscription;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.variable.Variables;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.verification.VerificationMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.test.annotation.Commit;
 import org.springframework.test.annotation.DirtiesContext;
 
 import java.io.IOException;
@@ -34,14 +45,19 @@ import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_END_MSG_DROPSHIPMENT_ORDER_ROW_CANCELLED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_PURCHASE_ORDER;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_SIGNAL_PAUSE_PROCESSING_DROPSHIPMENT_ORDER;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_DROPSHIPMENT_ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Gateways.XOR_CHECK_PAUSE_PROCESSING_DROPSHIPMENT_ORDER_FLAG;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_DROPSHIPMENT_ORDER_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
@@ -56,6 +72,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -83,8 +100,10 @@ class DropshipmentOrderServiceIntegrationTest {
     private BpmUtil bpmUtil;
     @Autowired
     private TimedPollingService timerService;
-    @Autowired
-    private RuntimeService runtimeService;
+    @SpyBean
+    private KeyValuePropertyService keyValuePropertyService;
+    @SpyBean
+    private PublishDropshipmentOrderCreatedDelegate publishDropshipmentOrderCreatedDelegate;
 
     @Test
     void testHandleDropShipmentOrderConfirmed() {
@@ -268,7 +287,7 @@ class DropshipmentOrderServiceIntegrationTest {
                 camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
 
         assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
-                camundaHelper.hasPassed(processInstance.getId(), EVENT_THROW_MSG_PURCHASE_ORDER.getName())));
+                camundaHelper.hasPassed(processInstance.getId(), EVENT_THROW_MSG_DROPSHIPMENT_ORDER_CREATED.getName())));
 
         var messageCorrelationResult = bpmUtil.sendMessage(Messages.DROPSHIPMENT_ORDER_CONFIRMED, salesOrder.getOrderNumber(),
                 Variables.putValue(IS_DROPSHIPMENT_ORDER_CONFIRMED.getName(), false));
@@ -289,6 +308,151 @@ class DropshipmentOrderServiceIntegrationTest {
 
     }
 
+    @Test
+    void testModelContinueDropShipmentOrderProcessing() throws Exception {
+
+        var salesOrders = List.of(
+                createAndSaveDropshipmentOrder("111111111"),
+                createAndSaveDropshipmentOrder("222222222"),
+                createAndSaveDropshipmentOrder("333333333"));
+
+        setPauseDropshipmentProcessingFlag(true);
+
+        doNothing().when(publishDropshipmentOrderCreatedDelegate).execute(any());
+
+        var processInstances = salesOrders.stream()
+                .map(salesOrder -> camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP))
+                .collect(Collectors.toUnmodifiableList());
+
+        salesOrders.forEach(salesOrder -> assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+                camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber()))));
+
+        processInstances.forEach(processInstance -> {
+            assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+                    camundaHelper.hasPassed(processInstance.getId(), XOR_CHECK_PAUSE_PROCESSING_DROPSHIPMENT_ORDER_FLAG.getName())));
+
+            assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+                    camundaHelper.hasNotPassed(processInstance.getId(), EVENT_THROW_MSG_DROPSHIPMENT_ORDER_CREATED.getName())));
+
+            bpmUtil.isProcessWaitingAtExpectedToken(processInstance, EVENT_SIGNAL_PAUSE_PROCESSING_DROPSHIPMENT_ORDER.getName());
+        });
+
+        var processInstanceIds = processInstances.stream()
+                .map(ProcessInstance::getId)
+                .collect(Collectors.toUnmodifiableList());
+
+        var waitingProcessInstancesBeforeSignal = getWaitingProcessInstanceIds();
+
+        assertThat(waitingProcessInstancesBeforeSignal).containsAll(processInstanceIds);
+
+        camundaHelper.sendSignal(Signals.CONTINUE_PROCESSING_DROPSHIPMENT_ORDERS);
+
+        var waitingProcessInstancesAfterSignal = getWaitingProcessInstanceIds();
+
+        assertThat(processInstanceIds).isNotIn(waitingProcessInstancesAfterSignal);
+
+        processInstances.forEach(processInstance -> {
+            assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+                    camundaHelper.hasPassed(processInstance.getId(), EVENT_SIGNAL_PAUSE_PROCESSING_DROPSHIPMENT_ORDER.getName())));
+
+            assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(5), () ->
+                    camundaHelper.hasPassed(processInstance.getId(), EVENT_THROW_MSG_DROPSHIPMENT_ORDER_CREATED.getName())));
+        });
+
+    }
+
+    @Test
+    void testModelPauseDropshipmentOrderProcessingTrue() {
+
+        var salesOrder = createAndSaveDropshipmentOrder("111111111");
+
+        setPauseDropshipmentProcessingFlag(true);
+
+        var processInstance = camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
+
+        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+                camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
+
+        bpmUtil.isProcessWaitingAtExpectedToken(processInstance, EVENT_SIGNAL_PAUSE_PROCESSING_DROPSHIPMENT_ORDER.getName());
+
+        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+                camundaHelper.hasNotPassed(processInstance.getId(), EVENT_THROW_MSG_DROPSHIPMENT_ORDER_CREATED.getName())));
+
+    }
+
+    @Test
+    void testModelPauseDropshipmentOrderProcessingFalse() throws Exception {
+
+        var salesOrder = createAndSaveDropshipmentOrder("111111111");
+
+        var processInstance = camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
+
+        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+                camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
+
+        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+                camundaHelper.hasNotPassed(processInstance.getId(), EVENT_SIGNAL_PAUSE_PROCESSING_DROPSHIPMENT_ORDER.getName())));
+
+        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(5), () ->
+                camundaHelper.hasPassed(processInstance.getId(), EVENT_THROW_MSG_DROPSHIPMENT_ORDER_CREATED.getName())));
+
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideArgumentsForSetPauseDropshipmentProcessing")
+    void setPauseDropshipmentProcessing(Boolean currentPauseDropshipmentProcessing,
+                                        Boolean newPauseDropshipmentProcessing,
+                                        VerificationMode verificationMode) {
+
+        setPauseDropshipmentProcessingFlag(currentPauseDropshipmentProcessing);
+        doNothing().when(camundaHelper).sendSignal(any());
+
+        var savedPauseDropshipmentProcessingProperty =
+                dropshipmentOrderService.setPauseDropshipmentProcessing(newPauseDropshipmentProcessing);
+
+        assertThat(savedPauseDropshipmentProcessingProperty.getKey()).isEqualTo(PersistentProperties.PAUSE_DROPSHIPMENT_PROCESSING);
+        assertThat(savedPauseDropshipmentProcessingProperty.getValue()).isEqualTo(newPauseDropshipmentProcessing.toString());
+
+        verify(camundaHelper, verificationMode).sendSignal(Signals.CONTINUE_PROCESSING_DROPSHIPMENT_ORDERS);
+
+    }
+
+    private static Stream<Arguments> provideArgumentsForSetPauseDropshipmentProcessing() {
+        return Stream.of(
+                Arguments.of(Boolean.FALSE, Boolean.FALSE, never()),
+                Arguments.of(Boolean.FALSE, Boolean.TRUE, never()),
+                Arguments.of(Boolean.TRUE, Boolean.TRUE, never()),
+                Arguments.of(Boolean.TRUE, Boolean.FALSE, times(1))
+        );
+    }
+
+    private List<String> getWaitingProcessInstanceIds() {
+        return bpmUtil.findEventSubscriptions(EventType.SIGNAL,
+                Signals.CONTINUE_PROCESSING_DROPSHIPMENT_ORDERS.getName()).stream()
+                .map(EventSubscription::getProcessInstanceId)
+                .collect(Collectors.toUnmodifiableList());
+    }
+
+    private void setPauseDropshipmentProcessingFlag(Boolean value) {
+        keyValuePropertyService.getPropertyByKey(PersistentProperties.PAUSE_DROPSHIPMENT_PROCESSING)
+                .ifPresentOrElse(property -> {
+                    property.setValue(value.toString());
+                    keyValuePropertyService.save(property);
+                }, () -> {
+                    throw new NotFoundException("Could not found persistent property. Key:  " + PersistentProperties.PAUSE_DROPSHIPMENT_PROCESSING);
+                });
+    }
+
+    @Commit
+    private SalesOrder createAndSaveDropshipmentOrder(String orderNumber) {
+        var salesOrder =
+                SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
+        salesOrder.setOrderNumber(orderNumber);
+        ((Order) salesOrder.getOriginalOrder()).getOrderHeader().setOrderFulfillment(DELTICOM.getName());
+        salesOrderService.save(salesOrder, Action.ORDER_CREATED);
+        return salesOrder;
+    }
+
     @SneakyThrows({URISyntaxException.class, IOException.class})
     private String readResource(String path) {
         return java.nio.file.Files.readString(Paths.get(
@@ -299,6 +463,7 @@ class DropshipmentOrderServiceIntegrationTest {
     @AfterEach
     @SneakyThrows
     public void cleanup() {
+        setPauseDropshipmentProcessingFlag(false);
         auditLogRepository.deleteAll();
         salesOrderRepository.deleteAll();
         salesOrderInvoiceRepository.deleteAll();

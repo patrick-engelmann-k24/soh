@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.history.HistoricProcessInstance;
+import org.camunda.bpm.engine.runtime.EventSubscription;
 import org.camunda.bpm.engine.runtime.MessageCorrelationBuilder;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
@@ -148,5 +149,12 @@ public class BpmUtil {
         } catch (Throwable ignored) {
             log.error(ignored.getMessage(), ignored);
         }
+    }
+
+    public List<EventSubscription> findEventSubscriptions(EventType eventType, String eventName) {
+        return runtimeService.createEventSubscriptionQuery()
+                .eventType(eventType.getName())
+                .eventName(eventName)
+                .list();
     }
 }

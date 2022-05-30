@@ -1,14 +1,18 @@
 package de.kfzteile24.salesOrderHub.services;
 
+import de.kfzteile24.salesOrderHub.constants.PersistentProperties;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Signals;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
+import de.kfzteile24.salesOrderHub.domain.property.KeyValueProperty;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
+import de.kfzteile24.salesOrderHub.services.property.KeyValuePropertyService;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +43,7 @@ public class DropshipmentOrderService {
     private final CamundaHelper helper;
     private final SalesOrderService salesOrderService;
     private final InvoiceService invoiceService;
+    private final KeyValuePropertyService keyValuePropertyService;
 
     public void handleDropShipmentOrderConfirmed(DropshipmentPurchaseOrderBookedMessage message) {
         String orderNumber = message.getSalesOrderNumber();
@@ -111,6 +116,33 @@ public class DropshipmentOrderService {
         var originalOrder = (Order) salesOrder.getOriginalOrder();
         var orderFulfillment = originalOrder.getOrderHeader().getOrderFulfillment();
         return org.apache.commons.lang3.StringUtils.equalsIgnoreCase(orderFulfillment, DELTICOM.getName());
+    }
+
+    public KeyValueProperty setPauseDropshipmentProcessing(Boolean newPauseDropshipmentProcessing) {
+        var currentPauseDropshipmentProcessingProperty = keyValuePropertyService.getPropertyByKey(PersistentProperties.PAUSE_DROPSHIPMENT_PROCESSING)
+                .orElseThrow(() -> new NotFoundException("Could not found persistent property. Key:  " + PersistentProperties.PAUSE_DROPSHIPMENT_PROCESSING));
+
+        var currentPauseDropshipmentProcessing = currentPauseDropshipmentProcessingProperty.getTypedValue();
+
+        log.info("Current value of '{}' is '{}'", PersistentProperties.PAUSE_DROPSHIPMENT_PROCESSING,
+                currentPauseDropshipmentProcessing);
+
+        currentPauseDropshipmentProcessingProperty.setValue(newPauseDropshipmentProcessing.toString());
+
+        var savedPauseDropshipmentProcessingProperty = keyValuePropertyService.save(currentPauseDropshipmentProcessingProperty);
+
+        log.info("Set value of '{}' to '{}'", PersistentProperties.PAUSE_DROPSHIPMENT_PROCESSING, newPauseDropshipmentProcessing);
+
+        if (Boolean.TRUE.equals(currentPauseDropshipmentProcessing) && Boolean.FALSE.equals(newPauseDropshipmentProcessing)) {
+            continueProcessingDropShipmentOrder();
+            log.info("Sent signal to all the process instances waiting for dropshipment order continuation");
+        }
+
+        return savedPauseDropshipmentProcessingProperty;
+    }
+
+    private void continueProcessingDropShipmentOrder() {
+        helper.sendSignal(Signals.CONTINUE_PROCESSING_DROPSHIPMENT_ORDERS);
     }
 
     private void addParcelNumber(ShipmentItem item, OrderRows row) {

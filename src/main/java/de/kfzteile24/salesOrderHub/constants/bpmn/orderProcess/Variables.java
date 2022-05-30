@@ -31,7 +31,8 @@ public enum Variables implements BpmItem {
     IS_DROPSHIPMENT_ORDER("isDropshipmentOrder"),
     IS_DROPSHIPMENT_ORDER_CONFIRMED("isDropshipmentOrderConfirmed"),
     TRACKING_LINKS("trackingList"),
-    ORDER_ROW("orderRow")
+    ORDER_ROW("orderRow"),
+    PAUSE_DROPSHIPMENT_ORDER_PROCESSING("pauseDropshipmentOrderProcessing")
     ;
 
     private final String name;

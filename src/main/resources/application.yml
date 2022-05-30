@@ -152,6 +152,11 @@ kfzteile:
       - 10033
       - 10034
       - 10035
+  persistent-properties:
+    -
+      key: pauseDropshipmentProcessing
+      value: true
+      overwrite-on-startup: false
 
 ignoreCoreSalesInvoice: ${ignore_core_sales_invoice}
 ignoreCoreCreditNote: ${ignore_core_credit_note}
