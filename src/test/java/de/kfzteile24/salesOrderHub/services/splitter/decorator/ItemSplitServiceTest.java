@@ -274,22 +274,26 @@ class ItemSplitServiceTest {
         assertEquals(new BigDecimal("13.50"), orderRow2.getSumValues().getTotalDiscountedNet());
     }
 
-    //this test is not complete yet, I find it hard to come up with a case where there will be a rounding difference for now
     @Test
     void testRecalculateSetItemPricesAddDifference() {
 
+        BigDecimal oneCent = new BigDecimal("0.01");
+
         OrderRows orderRow1 = createEmptyOrderRows("sku-1");
         OrderRows orderRow2 = createEmptyOrderRows("sku-2");
-        List<OrderRows> setItems = List.of(orderRow1, orderRow2);
+        OrderRows orderRow3 = createEmptyOrderRows("sku-3");
+        List<OrderRows> setItems = List.of(orderRow1, orderRow2, orderRow3);
 
         SumValues setSumValues = SumValues.builder()
-                .goodsValueGross(new BigDecimal("1.15")).goodsValueNet(new BigDecimal("1.00")).build();
+                .goodsValueGross(new BigDecimal("2.92")).goodsValueNet(new BigDecimal("1.92")).build();
 
         PricingItem pricingItem1 = createPricingItem(
                 new BigDecimal("3.50"), new BigDecimal("3.00"), new BigDecimal("0.34"), "sku-1");
         PricingItem pricingItem2 = createPricingItem(
-                new BigDecimal("13.50"), new BigDecimal("13.00"), new BigDecimal("0.66"), "sku-2");
-        List<PricingItem> pricingItems = List.of(pricingItem1, pricingItem2);
+                new BigDecimal("13.50"), new BigDecimal("13.00"), new BigDecimal("0.33"), "sku-2");
+        PricingItem pricingItem3 = createPricingItem(
+                new BigDecimal("42.19"), new BigDecimal("41.20"), new BigDecimal("0.33"), "sku-3");
+        List<PricingItem> pricingItems = List.of(pricingItem1, pricingItem2, pricingItem3);
 
         itemSplitService.recalculateSetItemPrices(setItems, setSumValues, pricingItems);
 
@@ -297,19 +301,28 @@ class ItemSplitServiceTest {
         assertEquals(new BigDecimal("3.00"), orderRow1.getUnitValues().getGoodsValueNet());
         assertEquals(new BigDecimal("3.50"), orderRow1.getUnitValues().getDiscountedGross());
         assertEquals(new BigDecimal("3.00"), orderRow1.getUnitValues().getDiscountedNet());
-        assertEquals(new BigDecimal("0.39"), orderRow1.getSumValues().getGoodsValueGross());
-        assertEquals(new BigDecimal("0.34"), orderRow1.getSumValues().getGoodsValueNet());
-        assertEquals(new BigDecimal("0.39"), orderRow1.getSumValues().getTotalDiscountedGross());
-        assertEquals(new BigDecimal("0.34"), orderRow1.getSumValues().getTotalDiscountedNet());
+        assertEquals(new BigDecimal("0.99").add(oneCent), orderRow1.getSumValues().getGoodsValueGross());
+        assertEquals(new BigDecimal("0.65").add(oneCent), orderRow1.getSumValues().getGoodsValueNet());
+        assertEquals(new BigDecimal("0.99").add(oneCent), orderRow1.getSumValues().getTotalDiscountedGross());
+        assertEquals(new BigDecimal("0.65").add(oneCent), orderRow1.getSumValues().getTotalDiscountedNet());
 
         assertEquals(new BigDecimal("13.50"), orderRow2.getUnitValues().getGoodsValueGross());
         assertEquals(new BigDecimal("13.00"), orderRow2.getUnitValues().getGoodsValueNet());
         assertEquals(new BigDecimal("13.50"), orderRow2.getUnitValues().getDiscountedGross());
         assertEquals(new BigDecimal("13.00"), orderRow2.getUnitValues().getDiscountedNet());
-        assertEquals(new BigDecimal("0.76"), orderRow2.getSumValues().getGoodsValueGross());
-        assertEquals(new BigDecimal("0.66"), orderRow2.getSumValues().getGoodsValueNet());
-        assertEquals(new BigDecimal("0.76"), orderRow2.getSumValues().getTotalDiscountedGross());
-        assertEquals(new BigDecimal("0.66"), orderRow2.getSumValues().getTotalDiscountedNet());
+        assertEquals(new BigDecimal("0.96"), orderRow2.getSumValues().getGoodsValueGross());
+        assertEquals(new BigDecimal("0.63"), orderRow2.getSumValues().getGoodsValueNet());
+        assertEquals(new BigDecimal("0.96"), orderRow2.getSumValues().getTotalDiscountedGross());
+        assertEquals(new BigDecimal("0.63"), orderRow2.getSumValues().getTotalDiscountedNet());
+
+        assertEquals(new BigDecimal("42.19"), orderRow3.getUnitValues().getGoodsValueGross());
+        assertEquals(new BigDecimal("41.20"), orderRow3.getUnitValues().getGoodsValueNet());
+        assertEquals(new BigDecimal("42.19"), orderRow3.getUnitValues().getDiscountedGross());
+        assertEquals(new BigDecimal("41.20"), orderRow3.getUnitValues().getDiscountedNet());
+        assertEquals(new BigDecimal("0.96"), orderRow3.getSumValues().getGoodsValueGross());
+        assertEquals(new BigDecimal("0.63"), orderRow3.getSumValues().getGoodsValueNet());
+        assertEquals(new BigDecimal("0.96"), orderRow3.getSumValues().getTotalDiscountedGross());
+        assertEquals(new BigDecimal("0.63"), orderRow3.getSumValues().getTotalDiscountedNet());
     }
 
     @Test
