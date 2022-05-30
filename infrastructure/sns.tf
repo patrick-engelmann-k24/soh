@@ -146,6 +146,14 @@ data "aws_sns_topic" "sns_migration_core_sales_credit_note_created" {
   name = "migration-core-sales-credit-note-created-v1"
 }
 
+data "aws_sns_topic" "sns_dropshipment_purchase_order_return_notified" {
+  name = "dropshipment-purchase-order-return-notified-v1"
+}
+
+data "aws_sns_topic" "sns_soh_dropshipment_order_return_notified_v1" {
+  name = "soh-dropshipment-order-return-notified-v1"
+}
+
 # subscriptions of sqs to sns
 resource "aws_sns_topic_subscription" "sns_subscription_ecp_orders_v3" {
   endpoint = aws_sqs_queue.ecp_shop_orders.arn
@@ -275,3 +283,11 @@ resource "aws_sns_topic_subscription" "sns_subscription_migration_core_sales_cre
   protocol = "sqs"
   topic_arn = data.aws_sns_topic.sns_migration_core_sales_credit_note_created.arn
 }
+
+# subscription for dropshipment purchase order return notified
+resource "aws_sns_topic_subscription" "sns_subscription_dropshipment_purchase_order_return_notified" {
+  endpoint = aws_sqs_queue.soh_dropshipment_purchase_order_return_notified.arn
+  protocol = "sqs"
+  topic_arn = data.aws_sns_topic.sns_dropshipment_purchase_order_return_notified.arn
+}
+

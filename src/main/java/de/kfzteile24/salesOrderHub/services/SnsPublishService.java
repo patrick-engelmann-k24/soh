@@ -5,7 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.AwsSnsConfig;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
+import de.kfzteile24.salesOrderHub.dto.events.CoreSalesInvoiceCreatedReceivedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.DropshipmentOrderCreatedEvent;
+import de.kfzteile24.salesOrderHub.dto.events.DropshipmentOrderReturnNotifiedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.OrderCancelledEvent;
 import de.kfzteile24.salesOrderHub.dto.events.OrderRowCancelledEvent;
 import de.kfzteile24.salesOrderHub.dto.events.ReturnOrderCreatedEvent;
@@ -14,7 +16,9 @@ import de.kfzteile24.salesOrderHub.dto.events.SalesOrderCompletedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInfoEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInvoiceCreatedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderShipmentConfirmedEvent;
-import de.kfzteile24.salesOrderHub.dto.events.CoreSalesInvoiceCreatedReceivedEvent;
+import de.kfzteile24.salesOrderHub.dto.events.dropshipment.DropshipmentOrderPackage;
+import de.kfzteile24.salesOrderHub.dto.events.dropshipment.DropshipmentOrderPackageItemLine;
+import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnNotifiedMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.NonNull;
@@ -25,6 +29,7 @@ import org.springframework.cloud.aws.messaging.core.NotificationMessagingTemplat
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -117,6 +122,30 @@ public class SnsPublishService {
 
         publishEvent(config.getSnsDropshipmentOrderCreatedV1(), "Dropshipment Order Created V1",
                 dropshipmentOrderCreatedEvent, salesOrder.getOrderNumber());
+
+    }
+
+    public void publishDropshipmentOrderReturnNotifiedEvent(SalesOrder salesOrder,
+                                                            DropshipmentPurchaseOrderReturnNotifiedMessage message) {
+
+        var packages = message.getPackages().stream()
+                .map(p -> DropshipmentOrderPackage.builder()
+                        .trackingLink(p.getTrackingLink())
+                        .items(p.getItems().stream()
+                                .map(item -> DropshipmentOrderPackageItemLine.builder()
+                                        .sku(item.getProductNumber())
+                                        .quantity(item.getQuantity())
+                                        .build()
+                                ).collect(Collectors.toList()))
+                        .build()).collect(Collectors.toList());
+
+        var dropshipmentOrderReturnNotifiedEvent = DropshipmentOrderReturnNotifiedEvent.builder()
+                .order(salesOrder.getLatestJson())
+                .packages(packages)
+                .build();
+
+        publishEvent(config.getSnsDropshipmentOrderReturnNotifiedV1(), "Dropshipment Order Return Notified V1",
+                dropshipmentOrderReturnNotifiedEvent, salesOrder.getOrderNumber());
 
     }
 

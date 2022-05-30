@@ -66,6 +66,7 @@ soh:
       migrationSalesOrderCancelledV1: ${sns_migration_soh_sales_order_cancelled_v1}
       migrationReturnOrderCreatedV1: ${sns_migration_soh_return_order_created_v1}
       dropshipmentOrderCreatedV1: ${sns_soh_dropshipment_order_created_v1}
+      dropshipmentOrderReturnNotifiedV1: ${sns_soh_dropshipment_order_return_notified_v1}
   sqs:
     queue:
       ecpShopOrders: ${soh_sqs_ecp_shop_orders}
@@ -83,6 +84,7 @@ soh:
       d365OrderPaymentSecured: ${soh_sqs_d365_order_payment_secured}
       dropshipmentShipmentConfirmed: ${soh_sqs_dropshipment_shipment_confirmed}
       dropshipmentPurchaseOrderBooked: ${soh_sqs_dropshipment_purchase_order_booked}
+      dropshipmentPurchaseOrderReturnNotified: ${soh_sqs_dropshipment_purchase_order_return_notified}
       coreSalesCreditNoteCreated: ${soh_sqs_core_sales_credit_note_created}
       coreSalesInvoiceCreated: ${soh_sqs_core_sales_invoice_created}
       migrationCoreSalesOrderCreated: ${soh_sqs_migration_core_sales_order_created}
