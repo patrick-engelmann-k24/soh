@@ -36,12 +36,14 @@ import org.springframework.stereotype.Service;
 import javax.transaction.Transactional;
 import java.math.BigDecimal;
 import java.text.MessageFormat;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static de.kfzteile24.salesOrderHub.constants.SOHConstants.DATE_TIME_FORMATTER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_CREDIT_NOTE_CREATED;
@@ -62,9 +64,6 @@ public class SalesOrderRowService {
 
     @NonNull
     private final SalesOrderReturnService salesOrderReturnService;
-
-    @NonNull
-    private final TimedPollingService timedPollingService;
 
     @NonNull
     private final OrderUtil orderUtil;
@@ -115,6 +114,7 @@ public class SalesOrderRowService {
 
         String newOrderNumber = orderUtil.createOrderNumberInSOH(orderNumber, salesCreditNoteHeader.getCreditNoteNumber());
         returnOrderJson.getOrderHeader().setOrderNumber(newOrderNumber);
+        returnOrderJson.getOrderHeader().setOrderDateTime(DATE_TIME_FORMATTER.format(LocalDateTime.now()));
 
         var salesOrderReturn = SalesOrderReturn.builder()
                 .orderGroupId(orderNumber)
