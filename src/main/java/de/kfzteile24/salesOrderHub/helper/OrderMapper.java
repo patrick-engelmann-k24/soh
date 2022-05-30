@@ -11,7 +11,9 @@ import org.mapstruct.Named;
 import org.mapstruct.factory.Mappers;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
+import static de.kfzteile24.salesOrderHub.constants.SOHConstants.DATE_TIME_FORMATTER;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getNetValue;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getMultipliedValue;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getDiscountResult;
@@ -22,8 +24,10 @@ import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getDiscountResu
 
 @Mapper
 public interface OrderMapper {
+
     OrderMapper INSTANCE = Mappers.getMapper(OrderMapper.class);
 
+    @Mapping(target = "orderDateTime", source = "orderDateTime", qualifiedByName = "evaluateOrderDateTime")
     OrderHeader toOrderHeader(OrderHeader orderHeader);
 
     OrderRows toOrderRow(OrderRows orderRow);
@@ -100,5 +104,10 @@ public interface OrderMapper {
     @Named("evaluateTotalDiscountNet")
     default BigDecimal evaluateTotalDiscountNet(UnitValues unitValues, @Context BigDecimal quantity) {
         return getMultipliedValue(getDiscountResult(unitValues.getGoodsValueNet(), unitValues.getDiscountNet()), quantity);
+    }
+
+    @Named("evaluateOrderDateTime")
+    default String evaluateOrderDateTime(String orderDateTime) {
+        return DATE_TIME_FORMATTER.format(LocalDateTime.now());
     }
 }
