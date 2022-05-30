@@ -46,6 +46,13 @@ public class CalculationUtil {
         return value;
     }
 
+    public static BigDecimal round(BigDecimal value) {
+        if (value != null && value.scale() > PRECISION) {
+            return value.setScale(PRECISION, RoundingMode.HALF_UP);
+        }
+        return value;
+    }
+
     public static BigDecimal getSumValue(Function<SumValues, BigDecimal> function, List<SumValues> sumValues) {
 
         return sumValues.stream().map(function).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
