@@ -44,6 +44,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.DATE_TIME_FORMATTER;
+import static de.kfzteile24.salesOrderHub.constants.SOHConstants.VIRTUAL_ITEMS_SKU;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_CREDIT_NOTE_CREATED;
@@ -410,33 +411,37 @@ public class SalesOrderRowService {
         }
     }
 
-    public void publishOrderRowMsg(RowMessages rowMessage,
-                                   String orderGroupId,
-                                   String orderItemSku,
-                                   String logMessage,
-                                   String rawMessage,
-                                   RowEvents rowEvents) {
-        salesOrderService.getOrderNumberListByOrderGroupIdAndFilterNotCancelled(orderGroupId, orderItemSku).forEach(orderNumber -> {
-            try {
-                MessageCorrelationResult result = helper.correlateMessageForOrderRowProcess(rowMessage, orderNumber, rowEvents, orderItemSku);
+    public void correlateOrderRowMessage(RowMessages rowMessage,
+                                         String orderGroupId,
+                                         String orderItemSku,
+                                         String logMessage,
+                                         String rawMessage,
+                                         RowEvents rowEvents) {
+        if (VIRTUAL_ITEMS_SKU.contains(orderItemSku) || orderItemSku.startsWith("90")) {
+            log.info("sku: {} is a virtual item so it would be ignored for bpmn processes.", orderItemSku);
+        } else {
+            salesOrderService.getOrderNumberListByOrderGroupIdAndFilterNotCancelled(orderGroupId, orderItemSku).forEach(orderNumber -> {
+                try {
+                    MessageCorrelationResult result = helper.correlateMessageForOrderRowProcess(rowMessage, orderNumber, rowEvents, orderItemSku);
 
-                if (!result.getExecution().getProcessInstanceId().isEmpty()) {
-                    log.info("{} message for order-number {} and sku {} successfully received",
+                    if (!result.getExecution().getProcessInstanceId().isEmpty()) {
+                        log.info("{} message for order-number {} and sku {} successfully received",
+                                logMessage,
+                                orderNumber,
+                                orderItemSku
+                        );
+                    }
+                } catch (Exception e) {
+                    log.error("{} message error: \r\nOrderNumber: {}\r\nOrderItem-SKU: {}\r\nSQS-Message: {}\r\nError-Message: {}",
                             logMessage,
                             orderNumber,
-                            orderItemSku
+                            orderItemSku,
+                            rawMessage,
+                            e.getMessage()
                     );
+                    throw e;
                 }
-            } catch (Exception e) {
-                log.error("{} message error: \r\nOrderNumber: {}\r\nOrderItem-SKU: {}\r\nSQS-Message: {}\r\nError-Message: {}",
-                        logMessage,
-                        orderNumber,
-                        orderItemSku,
-                        rawMessage,
-                        e.getMessage()
-                );
-                throw e;
-            }
-        });
+            });
+        }
     }
 }

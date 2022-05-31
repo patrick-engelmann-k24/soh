@@ -2,6 +2,7 @@ package de.kfzteile24.salesOrderHub.constants;
 
 import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 public final class SOHConstants {
 
@@ -13,6 +14,7 @@ public final class SOHConstants {
     public static final int LENGTH_INVOICE_NUMBER = 18;
     public static final String PATTERN_CREDIT_NOTE_NUMBER = "^\\d{4}2\\d{5}$";
     public static final int LENGTH_CREDIT_NOTE_NUMBER = 10;
+    public static final List<String> VIRTUAL_ITEMS_SKU = List.of("MARK-0001", "KBA", "KBA2", "KBA3");
 
     private SOHConstants() {}
 }
