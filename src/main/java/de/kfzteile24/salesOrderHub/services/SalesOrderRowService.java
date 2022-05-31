@@ -44,7 +44,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.DATE_TIME_FORMATTER;
-import static de.kfzteile24.salesOrderHub.constants.SOHConstants.VIRTUAL_ITEMS_SKU;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_CREDIT_NOTE_CREATED;
@@ -417,7 +416,7 @@ public class SalesOrderRowService {
                                          String logMessage,
                                          String rawMessage,
                                          RowEvents rowEvents) {
-        if (VIRTUAL_ITEMS_SKU.contains(orderItemSku) || orderItemSku.startsWith("90")) {
+        if (isVirtualSku(orderItemSku)) {
             log.info("sku: {} is a virtual item so it would be ignored for bpmn processes.", orderItemSku);
         } else {
             salesOrderService.getOrderNumberListByOrderGroupIdAndFilterNotCancelled(orderGroupId, orderItemSku).forEach(orderNumber -> {
@@ -443,5 +442,12 @@ public class SalesOrderRowService {
                 }
             });
         }
+    }
+
+    private boolean isVirtualSku(String sku) {
+
+        return sku.startsWith("KBA") ||
+                sku.startsWith("MARK-") ||
+                (sku.startsWith("90") && sku.length() == 8 && !sku.contains("-"));
     }
 }

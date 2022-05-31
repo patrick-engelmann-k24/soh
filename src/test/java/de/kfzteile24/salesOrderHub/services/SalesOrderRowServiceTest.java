@@ -181,8 +181,9 @@ class SalesOrderRowServiceTest {
         verify(snsPublishService).publishCoreInvoiceReceivedEvent(event);
     }
 
-    @Test
-    void testCorrelateOrderRowMessageFilteredOIn() {
+    @ParameterizedTest
+    @MethodSource("provideArgumentsForCorrelateOrderRowMessageForNonVirtualItems")
+    void testCorrelateOrderRowMessageFilteredOIn(String orderItemSku) {
 
         var executionEntity = new ExecutionEntity();
         executionEntity.setProcessInstanceId(ANY_PROCESS_INSTANCE_ID);
@@ -197,22 +198,33 @@ class SalesOrderRowServiceTest {
         salesOrderRowService.correlateOrderRowMessage(
                 ROW_TRANSMITTED_TO_LOGISTICS,
                 "fake_order_number",
-                "fake_item_sku",
+                orderItemSku,
                 "",
                 "",
                 RowEvents.ROW_TRANSMITTED_TO_LOGISTICS);
 
-        verify(salesOrderService).getOrderNumberListByOrderGroupIdAndFilterNotCancelled(anyString(), anyString());
+        verify(salesOrderService).getOrderNumberListByOrderGroupIdAndFilterNotCancelled(
+                eq("fake_order_number"),
+                eq(orderItemSku));
         verify(camundaHelper).correlateMessageForOrderRowProcess(
                 eq(ROW_TRANSMITTED_TO_LOGISTICS),
                 eq("fake_order_number"),
                 eq(RowEvents.ROW_TRANSMITTED_TO_LOGISTICS),
-                eq("fake_item_sku"));
+                eq(orderItemSku));
 
     }
 
+    private static Stream<Arguments> provideArgumentsForCorrelateOrderRowMessageForNonVirtualItems() {
+
+        return Stream.of(
+                Arguments.of("901-1083"),
+                Arguments.of("9013"),
+                Arguments.of("aKBA"),
+                Arguments.of("aaaMARK-0001"));
+    }
+
     @ParameterizedTest
-    @MethodSource("provideArgumentsForCorrelateOrderRowMessage")
+    @MethodSource("provideArgumentsForCorrelateOrderRowMessageForVirtualItems")
     void testCorrelateOrderRowMessageFilteredOut(String orderItemSku) {
 
         salesOrderRowService.correlateOrderRowMessage(
@@ -223,7 +235,9 @@ class SalesOrderRowServiceTest {
                 "",
                 RowEvents.ROW_TRANSMITTED_TO_LOGISTICS);
 
-        verify(salesOrderService, never()).getOrderNumberListByOrderGroupIdAndFilterNotCancelled(anyString(), anyString());
+        verify(salesOrderService, never()).getOrderNumberListByOrderGroupIdAndFilterNotCancelled(
+                eq("fake_order_number"),
+                eq(orderItemSku));
         verify(camundaHelper, never()).correlateMessageForOrderRowProcess(
                 eq(ROW_TRANSMITTED_TO_LOGISTICS),
                 eq("fake_order_number"),
@@ -231,12 +245,13 @@ class SalesOrderRowServiceTest {
                 eq(orderItemSku));
     }
 
-    private static Stream<Arguments> provideArgumentsForCorrelateOrderRowMessage() {
+    private static Stream<Arguments> provideArgumentsForCorrelateOrderRowMessageForVirtualItems() {
 
-        return Stream.of(Arguments.of("MARK-0001"),
+        return Stream.of(
+                Arguments.of("MARK-0001"),
                 Arguments.of("KBA"),
                 Arguments.of("KBA2"),
-                Arguments.of("KBA3"),
+                Arguments.of("KBA"),
                 Arguments.of("90101083"));
     }
 
