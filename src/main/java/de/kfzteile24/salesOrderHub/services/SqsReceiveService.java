@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.newrelic.api.agent.Trace;
 import de.kfzteile24.salesOrderHub.configuration.FeatureFlagConfig;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
@@ -37,15 +36,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_CREATED_IN_SOH;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_ECP;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.INVOICE_URL;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static java.util.function.Predicate.not;
 import static org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy.ON_SUCCESS;
 
@@ -272,17 +268,11 @@ public class SqsReceiveService {
         final var invoiceUrl = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
 
         try {
-            final var orderNumber = InvoiceUrlExtractor.extractOrderNumber(invoiceUrl);
-
-            log.info("Received invoice from core with order number: {} ", orderNumber);
-
-            final Map<String, Object> processVariables = Map.of(
-                    ORDER_NUMBER.getName(), orderNumber,
-                    INVOICE_URL.getName(), invoiceUrl
-            );
-
-            runtimeService.startProcessInstanceByMessage(Messages.INVOICE_CREATED.getName(), orderNumber, processVariables);
-            log.info("Invoice {} from core for order-number {} successfully received", invoiceUrl, orderNumber);
+            if (InvoiceUrlExtractor.isDropshipmentCreditNote(invoiceUrl)) {
+                salesOrderService.handleInvoiceFromDropshipmentOrderReturn(invoiceUrl);
+            } else {
+                salesOrderService.handleInvoiceFromCore(invoiceUrl);
+            }
         } catch (Exception e) {
             log.error("Invoice received from core message error - invoice url: {}\r\nErrorMessage: {}", invoiceUrl, e);
             throw e;

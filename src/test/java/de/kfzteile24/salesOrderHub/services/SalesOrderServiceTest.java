@@ -14,6 +14,7 @@ import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.soh.order.dto.GrandTotalTaxes;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Platform;
+import org.camunda.bpm.engine.RuntimeService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -61,6 +62,12 @@ class SalesOrderServiceTest {
 
     @Mock
     private OrderUtil orderUtil;
+
+    @Mock
+    private RuntimeService runtimeService;
+
+    @Mock
+    private SalesOrderReturnService salesOrderReturnService;
 
     @InjectMocks
     private SalesOrderService salesOrderService;
@@ -213,7 +220,7 @@ class SalesOrderServiceTest {
 
     @Test
     @DisplayName("Test That Invoice is Fully Matched With Original Order for Unknown Sku Shipping Cost LIne")
-    void testFullyMatchedWithOriginalOrderUnknowSkuShippingCostLine() {
+    void testFullyMatchedWithOriginalOrderUnknownSkuShippingCostLine() {
         // Prepare sales order
         String rawMessage =  readResource("examples/testmessage.json");
         var salesOrder = getSalesOrder(rawMessage);

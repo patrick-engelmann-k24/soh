@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import javax.persistence.Basic;
 import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
@@ -54,4 +55,7 @@ public class SalesOrderReturn {
     @Convert(converter = CreditNoteMessageConverter.class)
     private SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage;
 
+    @Basic
+    @Column(name = "url")
+    private String url;
 }

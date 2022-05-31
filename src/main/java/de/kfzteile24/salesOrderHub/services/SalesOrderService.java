@@ -1,5 +1,6 @@
 package de.kfzteile24.salesOrderHub.services;
 
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
@@ -23,6 +24,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.camunda.bpm.engine.RuntimeService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,12 +32,15 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.INVOICE_URL;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.INVOICE_RECEIVED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getGrossValue;
@@ -59,6 +64,12 @@ public class SalesOrderService {
 
     @NonNull
     private final OrderUtil orderUtil;
+
+    @NonNull
+    private final SalesOrderReturnService salesOrderReturnService;
+
+    @NonNull
+    private final RuntimeService runtimeService;
 
     @Transactional
     public SalesOrder updateOrder(final SalesOrder salesOrder) {
@@ -356,5 +367,32 @@ public class SalesOrderService {
 
     public String createOrderNumberInSOH(String orderNumber, String reference) {
         return orderUtil.createOrderNumberInSOH(orderNumber, reference);
+    }
+
+    public void handleInvoiceFromCore(String invoiceUrl) {
+        final var orderNumber = InvoiceUrlExtractor.extractOrderNumber(invoiceUrl);
+
+        log.info("Received invoice from core with order number: {} ", orderNumber);
+
+        final Map<String, Object> processVariables = Map.of(
+                ORDER_NUMBER.getName(), orderNumber,
+                INVOICE_URL.getName(), invoiceUrl
+        );
+        runtimeService.startProcessInstanceByMessage(Messages.INVOICE_CREATED.getName(), orderNumber, processVariables);
+        log.info("Invoice {} from core for order-number {} successfully received", invoiceUrl, orderNumber);
+    }
+
+    public void handleInvoiceFromDropshipmentOrderReturn(String invoiceUrl) {
+        final var orderNumber = InvoiceUrlExtractor.extractOrderNumber(invoiceUrl);
+
+        log.info("Received invoice from core with order number: {} ", orderNumber);
+
+        final Map<String, Object> processVariables = Map.of(
+                ORDER_NUMBER.getName(), orderNumber,
+                INVOICE_URL.getName(), invoiceUrl
+        );
+
+        runtimeService.startProcessInstanceByMessage(Messages.DROPSHIPMENT_CREDIT_NOTE_CREATED.getName(), orderNumber, processVariables);
+        log.info("Invoice {} for dropshipment order return for order-number {} successfully received", invoiceUrl, orderNumber);
     }
 }
