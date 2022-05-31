@@ -129,7 +129,7 @@ public class SqsReceiveService {
         FulfillmentMessage fulfillmentMessage = objectMapper.readValue(body, FulfillmentMessage.class);
         log.info("Received item shipped  message with order number: {} ", fulfillmentMessage.getOrderNumber());
 
-        salesOrderRowService.publishOrderRowMsg(
+        salesOrderRowService.correlateOrderRowMessage(
                 RowMessages.ROW_SHIPPED,
                 fulfillmentMessage.getOrderNumber(),
                 fulfillmentMessage.getOrderItemSku(),
@@ -175,7 +175,7 @@ public class SqsReceiveService {
         FulfillmentMessage fulfillmentMessage = objectMapper.readValue(body, FulfillmentMessage.class);
         log.info("Received order item transmitted to logistic message with order number: {} ", fulfillmentMessage.getOrderNumber());
 
-        salesOrderRowService.publishOrderRowMsg(
+        salesOrderRowService.correlateOrderRowMessage(
                 RowMessages.ROW_TRANSMITTED_TO_LOGISTICS,
                 fulfillmentMessage.getOrderNumber(),
                 fulfillmentMessage.getOrderItemSku(),
@@ -199,7 +199,7 @@ public class SqsReceiveService {
         FulfillmentMessage fulfillmentMessage = objectMapper.readValue(body, FulfillmentMessage.class);
         log.info("Received order item packing message with order number: {} ", fulfillmentMessage.getOrderNumber());
 
-        salesOrderRowService.publishOrderRowMsg(
+        salesOrderRowService.correlateOrderRowMessage(
                 RowMessages.PACKING_STARTED,
                 fulfillmentMessage.getOrderNumber(),
                 fulfillmentMessage.getOrderItemSku(),
@@ -223,7 +223,7 @@ public class SqsReceiveService {
         FulfillmentMessage fulfillmentMessage = objectMapper.readValue(body, FulfillmentMessage.class);
         log.info("Received order item tracking id message with order number: {} ", fulfillmentMessage.getOrderNumber());
 
-        salesOrderRowService.publishOrderRowMsg(
+        salesOrderRowService.correlateOrderRowMessage(
                 RowMessages.TRACKING_ID_RECEIVED,
                 fulfillmentMessage.getOrderNumber(),
                 fulfillmentMessage.getOrderItemSku(),
@@ -247,7 +247,7 @@ public class SqsReceiveService {
         FulfillmentMessage fulfillmentMessage = objectMapper.readValue(body, FulfillmentMessage.class);
         log.info("Received order item tour started message with order number: {} ", fulfillmentMessage.getOrderNumber());
 
-        salesOrderRowService.publishOrderRowMsg(
+        salesOrderRowService.correlateOrderRowMessage(
                 RowMessages.TOUR_STARTED,
                 fulfillmentMessage.getOrderNumber(),
                 fulfillmentMessage.getOrderItemSku(),
