@@ -1,0 +1,3 @@
+{
+  "Message": "{\n\"ExternalOrderNumber\": \"13.2\",\n\"SalesOrderNumber\": \"123\",\n\"Packages\": [{\"TrackingLink\": \"abc\",\n\"Items\": [{\"ProductNumber\": \"2270-13012\",\"Quantity\": 1}, {\"ProductNumber\": \"2270-13013\",\"Quantity\": 1}]}]}"
+}

@@ -20,6 +20,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static de.kfzteile24.salesOrderHub.constants.SOHConstants.ORDER_NUMBER_SEPARATOR;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getGrossValue;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.isNotNullAndNotEqual;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.round;
@@ -44,8 +45,13 @@ public class OrderUtil {
     }
 
     public Integer getLastRowKey(SalesOrder originalSalesOrder) {
-        var originalOrder = (Order) originalSalesOrder.getOriginalOrder();
-        return originalOrder.getOrderRows().stream().map(OrderRows::getRowKey).filter(Objects::nonNull).reduce(0, Integer::max);
+
+        return getLastRowKey((Order) originalSalesOrder.getOriginalOrder());
+    }
+
+    public Integer getLastRowKey(Order order) {
+
+        return order.getOrderRows().stream().map(OrderRows::getRowKey).filter(Objects::nonNull).reduce(0, Integer::max);
     }
 
     public Integer updateLastRowKey(SalesOrder salesOrder, String itemSku, Integer lastRowKey) {
@@ -57,7 +63,7 @@ public class OrderUtil {
     }
 
     public String createOrderNumberInSOH(String orderNumber, String reference) {
-        return orderNumber + "-" + reference;
+        return orderNumber + ORDER_NUMBER_SEPARATOR + reference;
     }
 
     private List<OrderRows> createRowFromLatestJson(SalesOrder salesOrder, CoreSalesFinancialDocumentLine item) {

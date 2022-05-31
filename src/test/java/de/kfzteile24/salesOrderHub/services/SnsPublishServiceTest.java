@@ -6,13 +6,19 @@ import de.kfzteile24.salesOrderHub.configuration.AwsSnsConfig;
 import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
-import de.kfzteile24.salesOrderHub.dto.events.OrderRowCancelledEvent;
+import de.kfzteile24.salesOrderHub.dto.events.DropshipmentOrderReturnNotifiedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.OrderCancelledEvent;
+import de.kfzteile24.salesOrderHub.dto.events.OrderRowCancelledEvent;
+import de.kfzteile24.salesOrderHub.dto.events.ReturnOrderCreatedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderCompletedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInfoEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInvoiceCreatedEvent;
-import de.kfzteile24.salesOrderHub.dto.events.ReturnOrderCreatedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderShipmentConfirmedEvent;
+import de.kfzteile24.salesOrderHub.dto.events.dropshipment.DropshipmentOrderPackage;
+import de.kfzteile24.salesOrderHub.dto.events.dropshipment.DropshipmentOrderPackageItemLine;
+import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnNotifiedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.dropshipment.DropshipmentPurchaseOrderPackage;
+import de.kfzteile24.salesOrderHub.dto.sns.dropshipment.DropshipmentPurchaseOrderPackageItemLine;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.soh.order.dto.OrderRows;
@@ -28,6 +34,7 @@ import org.springframework.cloud.aws.messaging.core.NotificationMessagingTemplat
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
@@ -419,6 +426,46 @@ class SnsPublishServiceTest {
         verify(notificationMessagingTemplate).sendNotification(
                 expectedTopic,
                 objectMapper.writeValueAsString(returnOrderCreatedEvent),
+                expectedSubject
+        );
+    }
+
+    @Test
+    @SneakyThrows
+    void testPublishDropshipmentOrderReturnNotifiedEvent() {
+        final var expectedTopic = "dropshipment-order-return-notified";
+        final var expectedSubject = "Dropshipment Order Return Notified V1";
+
+        final var salesOrder = createNewSalesOrderV3(true, REGULAR, CREDIT_CARD, NEW);
+        final var receivedEvent = DropshipmentPurchaseOrderReturnNotifiedMessage.builder()
+                .salesOrderNumber(salesOrder.getOrderNumber())
+                .externalOrderNumber("1234")
+                .packages(List.of(DropshipmentPurchaseOrderPackage.builder()
+                        .trackingLink("http://abc1")
+                        .items(salesOrder.getLatestJson().getOrderRows().stream().map(row -> DropshipmentPurchaseOrderPackageItemLine.builder()
+                                .productNumber(row.getSku())
+                                .quantity(row.getQuantity().intValue())
+                                .build()).collect(Collectors.toList()))
+                        .build()))
+                .build();
+
+        when(awsSnsConfig.getSnsDropshipmentOrderReturnNotifiedV1()).thenReturn(expectedTopic);
+        snsPublishService.publishDropshipmentOrderReturnNotifiedEvent(salesOrder, receivedEvent);
+
+        final var expectedEvent = DropshipmentOrderReturnNotifiedEvent.builder()
+                .order(salesOrder.getLatestJson())
+                .packages(List.of(DropshipmentOrderPackage.builder()
+                        .trackingLink("http://abc1")
+                        .items(salesOrder.getLatestJson().getOrderRows().stream().map(row -> DropshipmentOrderPackageItemLine.builder()
+                                .sku(row.getSku())
+                                .quantity(row.getQuantity().intValue())
+                                .build()).collect(Collectors.toList()))
+                        .build()))
+                .build();
+
+        verify(notificationMessagingTemplate).sendNotification(
+                expectedTopic,
+                objectMapper.writeValueAsString(expectedEvent),
                 expectedSubject
         );
     }

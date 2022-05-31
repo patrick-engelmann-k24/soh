@@ -10,7 +10,8 @@ public enum Gateways implements BpmItem {
     XOR_INVOICE_EXIST("gwXORInvoiceExist"),
     XOR_CHECK_BRANCH_TYPE("gwXORCheckBranchType"),
     XOR_CHECK_PAYMENT_TYPE("gwXORCheckPaymentType"),
-    XOR_CHECK_ORDER_CANCELLATION("gwXORCheckOrderCancellation")
+    XOR_CHECK_ORDER_CANCELLATION("gwXORCheckOrderCancellation"),
+    XOR_CHECK_PAUSE_PROCESSING_DROPSHIPMENT_ORDER_FLAG("gwXORCheckPauseProcessingDropShipmentOrderFlag")
     ;
 
     private final String name;

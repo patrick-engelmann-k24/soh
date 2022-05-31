@@ -14,12 +14,12 @@ public class InvoiceUrlExtractor {
 
         if (afterLastSlash > 0) {
             final var docRefPart = invoiceUrl.substring(afterLastSlash);
-            final var afterLastMinus = docRefPart.lastIndexOf("-") + 1;
+            final var startPositionOfInvoiceNumber = getStartPositionOfInvoiceNumber(docRefPart);
 
-            if (afterLastMinus > 0) {
-                final var dot = docRefPart.indexOf('.', afterLastMinus);
+            if (startPositionOfInvoiceNumber > 0) {
+                final var dot = docRefPart.indexOf('.', startPositionOfInvoiceNumber);
                 if (dot != -1) {
-                    return docRefPart.substring(afterLastMinus, dot);
+                    return docRefPart.substring(startPositionOfInvoiceNumber, dot);
                 }
             }
         }
@@ -38,6 +38,16 @@ public class InvoiceUrlExtractor {
         }
 
         throw new IllegalArgumentException("Cannot parse OrderNumber from invoice url: " + invoiceUrl);
+    }
+
+    private int getStartPositionOfInvoiceNumber(String docRefPart) {
+        int lastDashPosition = docRefPart.lastIndexOf("-");
+        int yearDigitCount = 4;
+        if (lastDashPosition != -1) {
+            var beforeYearInfo = lastDashPosition - yearDigitCount;
+            return docRefPart.substring(0, beforeYearInfo).lastIndexOf("-") + 1;
+        }
+        return -1;
     }
 
     public boolean isDropShipmentRelated(final String orderFulfillment) {

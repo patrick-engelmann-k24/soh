@@ -11,21 +11,21 @@ class InvoiceUrlExtractorTest {
 
     @ParameterizedTest
     @ValueSource(strings = {
-        "xxxxxxxxx-xxxxxxxxx",
-        "xxxxxxxxx--xxxxxxxxx",
-        "xxxxxxxxx-------------------xxxxxxxxx"
+        "xxxxxxxxx-xxxx-xxxxxxxxx",
+        "xxxxxxxxx--xxxx-xxxxxxxxx",
+        "xxxxxxxxx-------------------xxxx-xxxxxxxxx"
     })
     void testExtractInvoiceNumber(String docRefPart) {
         var invoiceUrl = String.format("s3://production-k24-invoices/app_android-kfzteile24-de/2021/06/04/%s.pdf", docRefPart);
         var invoiceNumber = InvoiceUrlExtractor.extractInvoiceNumber(invoiceUrl);
-        assertThat(invoiceNumber).isEqualTo("xxxxxxxxx");
+        assertThat(invoiceNumber).isEqualTo("xxxx-xxxxxxxxx");
     }
 
     @ParameterizedTest
     @ValueSource(strings = {
-            "xxxxxxxxx-xxxxxxxxx",
-            "xxxxxxxxx--xxxxxxxxx",
-            "xxxxxxxxx-------------------xxxxxxxxx"
+            "xxxxxxxxx-xxxx-xxxxxxxxxxxxx",
+            "xxxxxxxxx--xxxx-xxxxxxxxxxxxx",
+            "xxxxxxxxx-------------------xxxx-xxxxxxxxxxxxx"
     })
     void testExtractOrderNumber(String docRefPart) {
         var invoiceUrl = String.format("s3://production-k24-invoices/app_android-kfzteile24-de/2021/06/04/%s.pdf", docRefPart);
@@ -33,9 +33,13 @@ class InvoiceUrlExtractorTest {
         assertThat(orderNumber).isEqualTo("xxxxxxxxx");
     }
 
-    @Test
-    void testExtractInvoiceNumberThrownException() {
-        var invoiceUrl = "s3://production-k24-invoices/app_android-kfzteile24-de/2021/06/04/xxxxxxxxxxxxxxxxxx.pdf";
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "xxxxxxxxxxxxxxxxxx",
+            "xxxxxxxxx--xxxxxxxxx",
+    })
+    void testExtractInvoiceNumberThrownException(String docRefPart) {
+        var invoiceUrl = String.format("s3://production-k24-invoices/app_android-kfzteile24-de/2021/06/04/%s.pdf", docRefPart);
         assertThatThrownBy(() -> InvoiceUrlExtractor.extractInvoiceNumber(invoiceUrl))
                 .isExactlyInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Cannot parse InvoiceNumber");

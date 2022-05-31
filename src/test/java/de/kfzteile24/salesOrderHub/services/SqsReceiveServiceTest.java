@@ -11,6 +11,7 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.dto.mapper.CreditNoteEventMapper;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnNotifiedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoice;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
@@ -319,6 +320,22 @@ class SqsReceiveServiceTest {
         DropshipmentPurchaseOrderBookedMessage message =
                 objectMapper.readValue(body, DropshipmentPurchaseOrderBookedMessage.class);
         verify(dropshipmentOrderService).handleDropShipmentOrderConfirmed(message);
+    }
+
+    @Test
+    @SneakyThrows
+    void testQueueListenerDropshipmentPurchaseOrderReturnNotified() {
+
+        SalesOrder salesOrder = getSalesOrder(readResource("examples/ecpOrderMessage.json"));
+        when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.of(salesOrder));
+        String rawMessage = readResource("examples/dropshipmentPurchaseOrderReturnNotified.json");
+
+        sqsReceiveService.queueListenerDropshipmentPurchaseOrderReturnNotified(rawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+
+        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+        DropshipmentPurchaseOrderReturnNotifiedMessage message =
+                objectMapper.readValue(body, DropshipmentPurchaseOrderReturnNotifiedMessage.class);
+        verify(snsPublishService).publishDropshipmentOrderReturnNotifiedEvent(salesOrder, message);
     }
 
     @Test

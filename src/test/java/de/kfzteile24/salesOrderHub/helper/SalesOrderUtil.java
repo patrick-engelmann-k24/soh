@@ -10,6 +10,7 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.domain.converter.InvoiceSource;
+import de.kfzteile24.salesOrderHub.domain.pdh.ProductEnvelope;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
@@ -44,6 +45,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+import static de.kfzteile24.salesOrderHub.constants.SOHConstants.ORDER_NUMBER_SEPARATOR;
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.RECURRING;
@@ -400,12 +402,18 @@ public class SalesOrderUtil {
     }
 
     public static String createOrderNumberInSOH(String orderNumber, String reference) {
-        return orderNumber + "-" + reference;
+        return orderNumber + ORDER_NUMBER_SEPARATOR + reference;
+    }
+
+    @SneakyThrows(JsonProcessingException.class)
+    public static ProductEnvelope getProductEnvelope(String rawMessage){
+        ObjectMapper mapper = new ObjectMapperConfig().objectMapper();
+        return mapper.readValue(rawMessage, ProductEnvelope.class);
     }
 
     public static SalesOrderInvoice createSalesOrderInvoice(final String orderNumber, final boolean isCorrection) {
         final var sep = isCorrection ? "--" : "-";
-        final var invoiceNumber = RandomStringUtils.randomNumeric(10);
+        final var invoiceNumber = "2022-1" + RandomStringUtils.randomNumeric(12);
         final var invoiceUrl = "s3://k24-invoices/www-k24-at/2020/08/12/" + orderNumber + sep + invoiceNumber + ".pdf";
         return SalesOrderInvoice.builder()
                 .invoiceNumber(invoiceNumber)

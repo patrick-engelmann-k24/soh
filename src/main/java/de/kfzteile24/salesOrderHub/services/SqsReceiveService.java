@@ -13,6 +13,7 @@ import de.kfzteile24.salesOrderHub.dto.mapper.CreditNoteEventMapper;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnNotifiedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.FulfillmentMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.OrderPaymentSecuredMessage;
@@ -375,6 +376,39 @@ public class SqsReceiveService {
                 message.getSalesOrderNumber(), message.getExternalOrderNumber());
 
         dropshipmentOrderService.handleDropShipmentOrderConfirmed(message);
+    }
+
+    /**
+     * Consume messages from sqs for dropshipment purchase order booked
+     */
+    @SqsListener(value = "${soh.sqs.queue.dropshipmentPurchaseOrderReturnNotified}", deletionPolicy = ON_SUCCESS)
+    @SneakyThrows(JsonProcessingException.class)
+    @Trace(metricName = "Handling Dropshipment Purchase Order Return Notified message", dispatcher = true)
+    public void queueListenerDropshipmentPurchaseOrderReturnNotified(
+            String rawMessage,
+            @Header("SenderId") String senderId,
+            @Header("ApproximateReceiveCount") Integer receiveCount) {
+
+        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+        var message = objectMapper.readValue(body, DropshipmentPurchaseOrderReturnNotifiedMessage.class);
+
+        log.info("Received dropshipment purchase order return notified message with " +
+                        "Sales Order Number: {}, External Order Number: {}, Sender Id: {}, Received Count {}",
+                message.getSalesOrderNumber(), message.getExternalOrderNumber(), senderId, receiveCount);
+
+        try {
+            var salesOrder = salesOrderService.getOrderByOrderNumber(message.getSalesOrderNumber())
+                    .orElseThrow(() -> new SalesOrderNotFoundException(message.getSalesOrderNumber()));
+
+            snsPublishService.publishDropshipmentOrderReturnNotifiedEvent(salesOrder, message);
+        } catch (Exception e) {
+            log.error("Dropshipment purchase order return notified message error:\r\nOrderNumber: " +
+                            "{}\r\nExternalOrderNumber: {}\r\nError-Message: {}",
+                    message.getSalesOrderNumber(),
+                    message.getExternalOrderNumber(),
+                    e.getMessage());
+            throw e;
+        }
     }
 
     /**

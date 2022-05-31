@@ -61,4 +61,11 @@ public class AwsSnsConfig {
 
     @Value("${soh.sns.topic.migrationReturnOrderCreatedV1}")
     private String snsMigrationReturnOrderCreatedV1;
+
+    @Value("${soh.sns.topic.dropshipmentOrderCreatedV1}")
+    private String snsDropshipmentOrderCreatedV1;
+
+    @Value("${soh.sns.topic.dropshipmentOrderReturnNotifiedV1}")
+    private String snsDropshipmentOrderReturnNotifiedV1;
+
 }

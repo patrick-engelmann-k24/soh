@@ -27,6 +27,7 @@ module "application_module" {
     SPRING_PROFILES_ACTIVE                     = "default,${var.stage}"
     name                                       = "backend-${var.stage}"
     java_opts                                  = "-Xms3072m -Xmx3072m"
+    environment                                = var.environment
 
     soh_db_host                                = module.aurora.this_rds_cluster_endpoint
     soh_db_port                                = module.aurora.this_rds_cluster_port
@@ -50,6 +51,8 @@ module "application_module" {
     sns_migration_soh_sales_order_row_cancelled_v1 = data.aws_sns_topic.sns_migration_soh_sales_order_row_cancelled_v1.arn
     sns_migration_soh_sales_order_cancelled_v1 = data.aws_sns_topic.sns_migration_soh_sales_order_cancelled_v1.arn
     sns_migration_soh_return_order_created_v1  = data.aws_sns_topic.sns_migration_soh_return_order_created_v1.arn
+    sns_soh_dropshipment_order_created_v1      = data.aws_sns_topic.sns_soh_dropshipment_order_created_v1.arn
+    sns_soh_dropshipment_order_return_notified_v1 = data.aws_sns_topic.sns_soh_dropshipment_order_return_notified_v1.arn
 
     soh_sqs_ecp_shop_orders                    = aws_sqs_queue.ecp_shop_orders.id
     soh_sqs_bc_shop_orders                     = aws_sqs_queue.bc_shop_orders.id
@@ -66,6 +69,7 @@ module "application_module" {
     soh_sqs_d365_order_payment_secured         = aws_sqs_queue.d365_order_payment_secured.id
     soh_sqs_dropshipment_shipment_confirmed    = aws_sqs_queue.soh_dropshipment_shipment_confirmed.id
     soh_sqs_dropshipment_purchase_order_booked = aws_sqs_queue.dropshipment_purchase_order_booked.id
+    soh_sqs_dropshipment_purchase_order_return_notified = aws_sqs_queue.soh_dropshipment_purchase_order_return_notified.id
     soh_sqs_core_sales_credit_note_created     = aws_sqs_queue.soh_core_sales_credit_note_created.id
     soh_sqs_core_sales_invoice_created         = aws_sqs_queue.soh_core_sales_invoice_created.id
     soh_sqs_migration_core_sales_order_created = aws_sqs_queue.soh_migration_core_sales_order_created.id
@@ -80,7 +84,7 @@ module "application_module" {
     ignore_sales_order_splitter                = var.ignore_sales_order_splitter
   }
 
-  ssm_secrets_count = 7
+  ssm_secrets_count = 9
 
   ssm_secrets = {
 
@@ -93,6 +97,9 @@ module "application_module" {
 
     soh_camunda_username       = data.aws_ssm_parameter.camunda_user.arn
     soh_camunda_password       = data.aws_ssm_parameter.camunda_password.arn
+
+    pdh_client_id              = aws_ssm_parameter.pdh_client_id.arn
+    pdh_client_secret          = aws_ssm_parameter.pdh_client_secret.arn
   }
 
   github_token = var.github_token
