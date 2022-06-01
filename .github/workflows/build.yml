@@ -15,9 +15,6 @@ env:
   SERVICES: sns,sqs # Add more services depending on your test case
   soh_order_created_v2: 'arn:aws:sns:eu-central-1:000000000000:soh-order-created-v2'
   soh_order_completed: 'arn:aws:sns:eu-central-1:000000000000:soh-order-completed'
-  soh_order_cancelled: 'arn:aws:sns:eu-central-1:000000000000:soh-order-cancelled'
-  soh_order_item_cancelled: 'arn:aws:sns:eu-central-1:000000000000:soh-order-item-cancelled'
-  soh_order_rows_cancelled: 'arn:aws:sns:eu-central-1:000000000000:soh-order-rows-cancelled-v1'
   soh_invoice_address_changed: 'arn:aws:sns:eu-central-1:000000000000:soh-invoice-address-changed'
   soh_delivery_address_changed: 'arn:aws:sns:eu-central-1:000000000000:soh-delivery-address-changed'
   soh_sales_order_row_cancellation: 'arn:aws:sns:eu-central-1:000000000000:soh-sales-order-row-cancellation'
