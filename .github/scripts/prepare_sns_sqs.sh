@@ -13,9 +13,6 @@ TOPICS="
     soh-delivery-address-changed
     soh-order-created-v2
     soh-sales-order-completed-v1
-    soh-order-cancelled
-    soh-order-item-cancelled
-    soh-order-rows-cancelled-v1
     soh-order-item-delivered
     soh-order-item-packing-started
     soh-order-item-tour-started

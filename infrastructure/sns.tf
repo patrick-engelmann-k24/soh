@@ -2,10 +2,6 @@ data "aws_sns_topic" "sns_soh_order_created_v2_topic" {
   name = "soh-order-created-v2"
 }
 
-data "aws_sns_topic" "sns_soh_sales_order_canceled_topic" {
-  name = "soh-sales-order-canceled"
-}
-
 data "aws_sns_topic" "sns_soh_tracking_id_received_topic" {
   name = "soh-tracking-id-received"
 }
@@ -20,18 +16,6 @@ data "aws_sns_topic" "sns_soh_packing_started_topic" {
 
 data "aws_sns_topic" "sns_soh_sales_order_completed_topic_v1" {
   name = "soh-sales-order-completed-v1"
-}
-
-data "aws_sns_topic" "sns_soh_order_item_cancelled_topic" {
-  name = "soh-order-item-cancelled"
-}
-
-data "aws_sns_topic" "sns_soh_order_cancelled_topic" {
-  name = "soh-order-cancelled"
-}
-
-data "aws_sns_topic" "sns_soh_order_rows_cancelled_topic_v1" {
-  name = "soh-order-rows-cancelled-v1"
 }
 
 data "aws_sns_topic" "sns_soh_invoice_address_changed_topic" {

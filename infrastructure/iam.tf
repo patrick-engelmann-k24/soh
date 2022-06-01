@@ -9,9 +9,6 @@ data "aws_iam_policy_document" "sns_sqs_access_policy" {
     resources = [
       data.aws_sns_topic.sns_soh_order_created_v2_topic.arn,
       data.aws_sns_topic.sns_soh_sales_order_completed_topic_v1.arn,
-      data.aws_sns_topic.sns_soh_order_cancelled_topic.arn,
-      data.aws_sns_topic.sns_soh_order_item_cancelled_topic.arn,
-      data.aws_sns_topic.sns_soh_order_rows_cancelled_topic_v1.arn,
       data.aws_sns_topic.sns_soh_invoice_address_changed_topic.arn,
       data.aws_sns_topic.sns_soh_delivery_address_changed_topic.arn,
       data.aws_sns_topic.sns_soh_sales_order_row_cancellation_v1.arn,
