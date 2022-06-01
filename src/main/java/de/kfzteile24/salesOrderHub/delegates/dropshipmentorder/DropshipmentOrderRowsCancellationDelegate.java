@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-class DropshipmentOrderRowsCancellationDelegate implements JavaDelegate {
+public class DropshipmentOrderRowsCancellationDelegate implements JavaDelegate {
 
     private final DropshipmentOrderService dropshipmentOrderService;
 

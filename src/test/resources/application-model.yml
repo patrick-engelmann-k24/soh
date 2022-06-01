@@ -1,0 +1,39 @@
+#
+# This profile is used by the github actions to run the model tests
+#
+---
+spring:
+  profiles: model
+
+  flyway:
+    enabled: false
+  datasource:
+    jdbcUrl: "jdbc:h2:mem:camundadb;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL"
+    driverClassName: org.h2.Driver
+    username: sa
+    generate-unique-name: true
+    password: sa
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+    show-sql: false
+    database-platform: org.hibernate.dialect.H2Dialect
+  main:
+    lazy-initialization: true
+
+camunda:
+  bpm:
+    generate-unique-process-engine-name: true
+    generate-unique-process-application-name: true
+    job-execution:
+      enabled: false
+    admin-user:
+      id: user
+      password: user
+      firstName: user
+    history-level: FULL
+    history-level-default: FULL
+    database:
+      schema-update: true
+      schema-name: public

@@ -22,6 +22,9 @@
     <mapstruct.version>1.4.2.Final</mapstruct.version>
     <lombok.version>1.18.22</lombok.version>
     <spring-wiremock-version>2.2.8.RELEASE</spring-wiremock-version>
+    <camunda-bpm-assert-scenario.version>1.1.1</camunda-bpm-assert-scenario.version>
+    <camunda-process-test-coverage-starter-platform8.version>1.0.3
+    </camunda-process-test-coverage-starter-platform8.version>
   </properties>
 
   <dependencyManagement>
@@ -160,11 +163,22 @@
       <version>4.12.0</version>
       <scope>test</scope>
     </dependency>
-
     <dependency>
       <groupId>com.github.tomakehurst</groupId>
       <artifactId>wiremock-jre8</artifactId>
       <version>2.33.2</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.camunda.bpm.extension</groupId>
+      <artifactId>camunda-bpm-assert-scenario</artifactId>
+      <version>${camunda-bpm-assert-scenario.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.camunda.bpm.extension</groupId>
+      <artifactId>camunda-bpm-process-test-coverage-spring-test</artifactId>
+      <version>1.0.3</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -277,6 +291,29 @@
       </build>
     </profile>
     <profile>
+      <id>model-test</id>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>${surefire-version}</version>
+            <dependencies>
+              <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-engine</artifactId>
+                <version>${junit-version}</version>
+              </dependency>
+            </dependencies>
+            <configuration>
+              <includes>
+                <include>**/*ModelTest</include>
+              </includes>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
       <id>unit-test</id>
       <activation>
         <activeByDefault>true</activeByDefault>
@@ -297,6 +334,7 @@
               <excludes>
                 <exclude>**/*IntegrationTest</exclude>
                 <exclude>**/*IntTest</exclude>
+                <exclude>**/*ModelTest</exclude>
               </excludes>
             </configuration>
           </plugin>

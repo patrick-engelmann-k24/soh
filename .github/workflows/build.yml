@@ -78,7 +78,7 @@ jobs:
           path: target/site/jacoco/jacoco.xml
 
   codacy-coverage-reporter:
-    needs: [ unit-test, integration-test ]
+    needs: [ unit-test, integration-test, model-test ]
     runs-on: ubuntu-latest
     name: Codacy code coverage upload
     steps:
@@ -144,3 +144,28 @@ jobs:
         run: |
           mvn -s ${MAVEN_SETTINGS_FILE} flyway:migrate
           mvn -s ${MAVEN_SETTINGS_FILE} clean verify -Pintegration -e -Dspring.profiles.active=test
+
+  model-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-int-test-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-int-test-
+      - uses: actions/setup-java@v1
+        with:
+          java-version: 11
+      - name: Run model test
+        run:
+          mvn -s ${MAVEN_SETTINGS_FILE} clean verify -Pmodel-test -e -Dspring.profiles.active=model
+      - name: Create coverage report files
+        run:
+          mvn jacoco:report
+      - name: Upload code coverage results
+        uses: actions/upload-artifact@v2
+        with:
+          name: code-coverage-file
+          path: target/site/jacoco/jacoco.xml
