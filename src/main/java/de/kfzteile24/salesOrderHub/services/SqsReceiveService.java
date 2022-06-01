@@ -269,7 +269,7 @@ public class SqsReceiveService {
 
         try {
             if (InvoiceUrlExtractor.isDropshipmentCreditNote(invoiceUrl)) {
-                salesOrderService.handleInvoiceFromDropshipmentOrderReturn(invoiceUrl);
+                salesOrderService.handleCreditNoteFromDropshipmentOrderReturn(invoiceUrl);
             } else {
                 salesOrderService.handleInvoiceFromCore(invoiceUrl);
             }

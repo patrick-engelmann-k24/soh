@@ -382,17 +382,17 @@ public class SalesOrderService {
         log.info("Invoice {} from core for order-number {} successfully received", invoiceUrl, orderNumber);
     }
 
-    public void handleInvoiceFromDropshipmentOrderReturn(String invoiceUrl) {
-        final var orderNumber = InvoiceUrlExtractor.extractOrderNumber(invoiceUrl);
+    public void handleCreditNoteFromDropshipmentOrderReturn(String invoiceUrl) {
+        final var returnOrderNumber = InvoiceUrlExtractor.extractOrderNumber(invoiceUrl);
 
-        log.info("Received invoice from core with order number: {} ", orderNumber);
+        log.info("Received credit note from dropshipment with return order number: {} ", returnOrderNumber);
 
         final Map<String, Object> processVariables = Map.of(
-                ORDER_NUMBER.getName(), orderNumber,
+                ORDER_NUMBER.getName(), returnOrderNumber,
                 INVOICE_URL.getName(), invoiceUrl
         );
 
-        runtimeService.startProcessInstanceByMessage(Messages.DROPSHIPMENT_CREDIT_NOTE_CREATED.getName(), orderNumber, processVariables);
-        log.info("Invoice {} for dropshipment order return for order-number {} successfully received", invoiceUrl, orderNumber);
+        runtimeService.startProcessInstanceByMessage(Messages.DROPSHIPMENT_CREDIT_NOTE_CREATED.getName(), returnOrderNumber, processVariables);
+        log.info("Invoice {} for credit note of dropshipment order return for order-number {} successfully received", invoiceUrl, returnOrderNumber);
     }
 }

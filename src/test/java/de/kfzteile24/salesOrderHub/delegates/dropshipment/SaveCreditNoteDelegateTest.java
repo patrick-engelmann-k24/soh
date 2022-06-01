@@ -1,6 +1,6 @@
 package de.kfzteile24.salesOrderHub.delegates.dropshipment;
 
-import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.SaveDropshipmentReturnInvoiceDelegate;
+import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.SaveCreditNoteDelegate;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -24,7 +24,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class SaveDropshipmentReturnInvoiceDelegateTest {
+class SaveCreditNoteDelegateTest {
 
     @Mock
     private DelegateExecution delegateExecution;
@@ -33,7 +33,7 @@ class SaveDropshipmentReturnInvoiceDelegateTest {
     private SalesOrderReturnService salesOrderReturnService;
 
     @InjectMocks
-    private SaveDropshipmentReturnInvoiceDelegate saveDropshipmentReturnInvoiceDelegate;
+    private SaveCreditNoteDelegate saveCreditNoteDelegate;
 
     @Test
     void testPublishDropshipmentTrackingInformationDelegate() throws Exception {
@@ -47,7 +47,7 @@ class SaveDropshipmentReturnInvoiceDelegateTest {
         when(delegateExecution.getVariable(INVOICE_URL.getName())).thenReturn(invoiceUrl);
         when(salesOrderReturnService.getByOrderNumber(any())).thenReturn(salesOrderReturn);
 
-        saveDropshipmentReturnInvoiceDelegate.execute(delegateExecution);
+        saveCreditNoteDelegate.execute(delegateExecution);
 
         salesOrderReturn.setUrl(invoiceUrl);
         verify(salesOrderReturnService).save(salesOrderReturn);

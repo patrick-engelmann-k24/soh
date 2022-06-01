@@ -1,4 +1,4 @@
-package de.kfzteile24.salesOrderHub.delegates.dropshipment;
+package de.kfzteile24.salesOrderHub.delegates.dropshipmentorder;
 
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;

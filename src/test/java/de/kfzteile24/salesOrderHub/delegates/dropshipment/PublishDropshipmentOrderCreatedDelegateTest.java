@@ -1,5 +1,6 @@
 package de.kfzteile24.salesOrderHub.delegates.dropshipment;
 
+import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.PublishDropshipmentOrderCreatedDelegate;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
