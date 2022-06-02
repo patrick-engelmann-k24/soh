@@ -268,7 +268,7 @@ public class SqsReceiveService {
         final var invoiceUrl = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
 
         try {
-            if (InvoiceUrlExtractor.isDropshipmentCreditNote(invoiceUrl)) {
+            if (InvoiceUrlExtractor.matchesCreditNoteNumberPattern(invoiceUrl)) {
                 salesOrderService.handleCreditNoteFromDropshipmentOrderReturn(invoiceUrl);
             } else {
                 salesOrderService.handleInvoiceFromCore(invoiceUrl);

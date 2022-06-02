@@ -17,10 +17,24 @@ class InvoiceUrlExtractorTest {
         "987654321--1234-1123456789012",
         "987654321-------------------1234-1123456789012"
     })
-    void testExtractInvoiceNumber(String docRefPart) {
+    void testExtractInvoiceNumberMatchingPattern(String docRefPart) {
         var invoiceUrl = String.format("s3://production-k24-invoices/app_android-kfzteile24-de/2021/06/04/%s.pdf", docRefPart);
         var invoiceNumber = InvoiceUrlExtractor.extractInvoiceNumber(invoiceUrl);
         assertThat(invoiceNumber).isEqualTo("1234-1123456789012");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "987654321-1123456789012",
+        "987654321-1-1123456789012",
+        "987654321-900009-1123456789012",
+        "987654321--1123456789012",
+        "987654321-------------------1123456789012"
+    })
+    void testExtractInvoiceNumberNotMatchingPattern(String docRefPart) {
+        var invoiceUrl = String.format("s3://production-k24-invoices/app_android-kfzteile24-de/2021/06/04/%s.pdf", docRefPart);
+        var invoiceNumber = InvoiceUrlExtractor.extractInvoiceNumber(invoiceUrl);
+        assertThat(invoiceNumber).isEqualTo("1123456789012");
     }
 
     @ParameterizedTest
@@ -43,7 +57,9 @@ class InvoiceUrlExtractorTest {
             "987654321--1234-1123456789012",
             "987654321-2022212345",
             "987654321--2022212345",
-            "987654321-------------------1234-112345678901"
+            "987654321-------------------1234-1123456789012",
+            "987654321-123123123",
+            "987654321--123123123"
     })
     void testExtractOrderNumber(String docRefPart) {
         var invoiceUrl = String.format("s3://production-k24-invoices/app_android-kfzteile24-de/2021/06/04/%s.pdf", docRefPart);
@@ -56,7 +72,9 @@ class InvoiceUrlExtractorTest {
             "987654321-12345-1234-1123456789012",
             "987654321-12345--1234-1123456789012",
             "987654321-12345-2022212345",
-            "987654321-12345--2022212345"
+            "987654321-12345--2022212345",
+            "987654321-12345-2345235536546",
+            "987654321-12345--2345235536546"
     })
     void testExtractOrderNumber2(String docRefPart) {
         var invoiceUrl = String.format("s3://production-k24-invoices/app_android-kfzteile24-de/2021/06/04/%s.pdf", docRefPart);
@@ -64,19 +82,21 @@ class InvoiceUrlExtractorTest {
         assertThat(orderNumber).isEqualTo("987654321-12345");
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {
-            "123456789123456789",
-            "987654321--123456789",
-            "987654321-x-2022212345",
-    })
-    void testExtractInvoiceNumberThrownException(String docRefPart) {
-        var invoiceUrl = String.format("s3://production-k24-invoices/app_android-kfzteile24-de/2021/06/04/%s.pdf", docRefPart);
+    @Test
+    void testExtractInvoiceNumberThrownException() {
+        var invoiceUrl = "s3://production-k24-invoices/app_android-kfzteile24-de/2021/06/04/123456789098754321.pdf";
         assertThatThrownBy(() -> InvoiceUrlExtractor.extractInvoiceNumber(invoiceUrl))
                 .isExactlyInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Cannot parse InvoiceNumber");
     }
 
+    @Test
+    void testExtractCreditNoteNumberThrownException() {
+        var invoiceUrl = "s3://production-k24-invoices/app_android-kfzteile24-de/2021/06/04/123456789098754321.pdf";
+        assertThatThrownBy(() -> InvoiceUrlExtractor.extractCreditNoteNumber(invoiceUrl))
+                .isExactlyInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Cannot parse CreditNoteNumber");
+    }
 
     @Test
     void testExtractOrderNumberThrownException() {
