@@ -1,4 +1,4 @@
-package de.kfzteile24.salesOrderHub.delegates.dropshipment;
+package de.kfzteile24.salesOrderHub.delegates.dropshipmentorder;
 
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
@@ -10,9 +10,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import java.util.Set;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.TRACKING_LINKS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createNewSalesOrderV3;
@@ -21,7 +23,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class PublishDropshipmentOrderCreatedDelegateTest {
+class PublishDropshipmentTrackingInformationDelegateTest {
 
     @Mock
     private DelegateExecution delegateExecution;
@@ -33,20 +35,22 @@ class PublishDropshipmentOrderCreatedDelegateTest {
     private SnsPublishService snsPublishService;
 
     @InjectMocks
-    private PublishDropshipmentOrderCreatedDelegate publishDropshipmentOrderCreatedDelegate;
+    private PublishDropshipmentTrackingInformationDelegate publishDropshipmentTrackingInformationDelegate;
 
     @Test
-    void testPublishDropshipmentOrderCreatedDelegate() throws Exception {
+    void testPublishDropshipmentTrackingInformationDelegate() throws Exception {
         final var expectedOrderNumber = "123";
 
         final var salesOrder = createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
         salesOrder.setOrderNumber(expectedOrderNumber);
+        final var trackingLinks = Set.of("http://abc1", "http://abc2");
         when(delegateExecution.getVariable(ORDER_NUMBER.getName())).thenReturn(expectedOrderNumber);
+        when(delegateExecution.getVariable(TRACKING_LINKS.getName())).thenReturn(trackingLinks);
         when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.of(salesOrder));
 
-        publishDropshipmentOrderCreatedDelegate.execute(delegateExecution);
+        publishDropshipmentTrackingInformationDelegate.execute(delegateExecution);
 
-        verify(snsPublishService).publishDropshipmentOrderCreatedEvent(salesOrder);
+        verify(snsPublishService).publishSalesOrderShipmentConfirmedEvent(salesOrder, trackingLinks);
 
     }
 }

@@ -49,9 +49,6 @@ soh:
     topic:
       orderCreatedV2: ${soh_order_created_v2}
       orderCompleted: ${soh_order_completed}
-      orderCancelled: ${soh_order_cancelled}
-      orderItemCancelled: ${soh_order_item_cancelled}
-      orderRowsCancelled: ${soh_order_rows_cancelled}
       invoiceAddressChanged: ${soh_invoice_address_changed}
       deliveryAddressChanged: ${soh_delivery_address_changed}
       salesOrderRowCancelled: ${soh_sales_order_row_cancellation}

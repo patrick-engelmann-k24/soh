@@ -5,7 +5,9 @@ import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.services.InvoiceService;
+import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
+import org.camunda.bpm.engine.RuntimeService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -34,6 +36,12 @@ class SplitOrderRecalculationServiceTest {
 
     @Mock
     private OrderUtil orderUtil;
+
+    @Mock
+    private SalesOrderReturnService salesOrderReturnService;
+
+    @Mock
+    private RuntimeService runtimeService;
 
     @InjectMocks
     private SalesOrderService salesOrderService;

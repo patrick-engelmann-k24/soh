@@ -410,33 +410,44 @@ public class SalesOrderRowService {
         }
     }
 
-    public void publishOrderRowMsg(RowMessages rowMessage,
-                                   String orderGroupId,
-                                   String orderItemSku,
-                                   String logMessage,
-                                   String rawMessage,
-                                   RowEvents rowEvents) {
-        salesOrderService.getOrderNumberListByOrderGroupIdAndFilterNotCancelled(orderGroupId, orderItemSku).forEach(orderNumber -> {
-            try {
-                MessageCorrelationResult result = helper.correlateMessageForOrderRowProcess(rowMessage, orderNumber, rowEvents, orderItemSku);
+    public void correlateOrderRowMessage(RowMessages rowMessage,
+                                         String orderGroupId,
+                                         String orderItemSku,
+                                         String logMessage,
+                                         String rawMessage,
+                                         RowEvents rowEvents) {
+        if (isVirtualSku(orderItemSku)) {
+            log.info("sku: {} is a virtual item so it would be ignored for bpmn processes.", orderItemSku);
+        } else {
+            salesOrderService.getOrderNumberListByOrderGroupIdAndFilterNotCancelled(orderGroupId, orderItemSku).forEach(orderNumber -> {
+                try {
+                    MessageCorrelationResult result = helper.correlateMessageForOrderRowProcess(rowMessage, orderNumber, rowEvents, orderItemSku);
 
-                if (!result.getExecution().getProcessInstanceId().isEmpty()) {
-                    log.info("{} message for order-number {} and sku {} successfully received",
+                    if (!result.getExecution().getProcessInstanceId().isEmpty()) {
+                        log.info("{} message for order-number {} and sku {} successfully received",
+                                logMessage,
+                                orderNumber,
+                                orderItemSku
+                        );
+                    }
+                } catch (Exception e) {
+                    log.error("{} message error: \r\nOrderNumber: {}\r\nOrderItem-SKU: {}\r\nSQS-Message: {}\r\nError-Message: {}",
                             logMessage,
                             orderNumber,
-                            orderItemSku
+                            orderItemSku,
+                            rawMessage,
+                            e.getMessage()
                     );
+                    throw e;
                 }
-            } catch (Exception e) {
-                log.error("{} message error: \r\nOrderNumber: {}\r\nOrderItem-SKU: {}\r\nSQS-Message: {}\r\nError-Message: {}",
-                        logMessage,
-                        orderNumber,
-                        orderItemSku,
-                        rawMessage,
-                        e.getMessage()
-                );
-                throw e;
-            }
-        });
+            });
+        }
+    }
+
+    private boolean isVirtualSku(String sku) {
+
+        return sku.startsWith("KBA") ||
+                sku.startsWith("MARK-") ||
+                (sku.startsWith("90") && sku.length() == 8 && !sku.contains("-"));
     }
 }
