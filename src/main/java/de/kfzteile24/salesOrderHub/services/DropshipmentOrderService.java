@@ -7,8 +7,15 @@ import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
 import de.kfzteile24.salesOrderHub.domain.property.KeyValueProperty;
+import de.kfzteile24.salesOrderHub.dto.shared.creditnote.CreditNoteLine;
+import de.kfzteile24.salesOrderHub.dto.shared.creditnote.SalesCreditNote;
+import de.kfzteile24.salesOrderHub.dto.shared.creditnote.SalesCreditNoteHeader;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.dropshipment.DropshipmentPurchaseOrderPackageItemLine;
+import de.kfzteile24.salesOrderHub.dto.sns.shared.Address;
 import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
@@ -22,17 +29,27 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
+import static de.kfzteile24.salesOrderHub.constants.CurrencyType.convert;
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_DROPSHIPMENT_ORDER_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.TRACKING_LINKS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.ORDER_ROW_ID;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_BOOKED;
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ITEM_SHIPPED;
+import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getGrossValue;
+import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getMultipliedValue;
+import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getSumValue;
+import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.round;
 import static java.text.MessageFormat.format;
+import static java.time.LocalDateTime.now;
 import static java.util.stream.Collectors.toUnmodifiableSet;
 
 @Service
@@ -44,6 +61,8 @@ public class DropshipmentOrderService {
     private final SalesOrderService salesOrderService;
     private final InvoiceService invoiceService;
     private final KeyValuePropertyService keyValuePropertyService;
+    private final SalesOrderReturnService salesOrderReturnService;
+    private final SalesOrderRowService salesOrderRowService;
 
     public void handleDropShipmentOrderConfirmed(DropshipmentPurchaseOrderBookedMessage message) {
         String orderNumber = message.getSalesOrderNumber();
@@ -55,6 +74,67 @@ public class DropshipmentOrderService {
 
         helper.correlateMessage(Messages.DROPSHIPMENT_ORDER_CONFIRMED, salesOrder,
                 Variables.putValue(IS_DROPSHIPMENT_ORDER_CONFIRMED.getName(), isDropshipmentOrderBooked));
+    }
+
+    public void handleDropshipmentPurchaseOrderReturnConfirmed(DropshipmentPurchaseOrderReturnConfirmedMessage message) {
+        var salesCreditNoteCreatedMessage = buildSalesCreditNoteCreatedMessage(message);
+        handleDropshipmentPurchaseOrderReturnConfirmed(message, salesCreditNoteCreatedMessage);
+    }
+
+    void handleDropshipmentPurchaseOrderReturnConfirmed(DropshipmentPurchaseOrderReturnConfirmedMessage message, SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage) {
+        salesOrderRowService.handleSalesOrderReturn(salesCreditNoteCreatedMessage, DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED);
+    }
+
+    SalesCreditNoteCreatedMessage buildSalesCreditNoteCreatedMessage(DropshipmentPurchaseOrderReturnConfirmedMessage message) {
+        String orderNumber = message.getSalesOrderNumber();
+        var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
+                .orElseThrow(() -> new SalesOrderNotFoundException("Could not find order: " + orderNumber));
+        List<CreditNoteLine> creditNoteLines = new ArrayList<>();
+        for (OrderRows orderRow: salesOrder.getLatestJson().getOrderRows()) {
+            for (DropshipmentPurchaseOrderPackageItemLine item: message.getPackages().stream()
+                    .flatMap(c -> c.getItems().stream()).collect(Collectors.toList())) {
+                if (StringUtils.pathEquals(item.getProductNumber(), orderRow.getSku())) {
+                    var quantity = Optional.ofNullable(BigDecimal.valueOf(item.getQuantity())).orElse(BigDecimal.ZERO);
+                    var unitNetAmount = Optional.ofNullable(orderRow.getUnitValues().getDiscountedNet()).orElse(BigDecimal.ZERO);
+                    var lineNetAmount = round(getMultipliedValue(unitNetAmount, quantity));
+                    var taxRate = Optional.ofNullable(orderRow.getTaxRate()).orElse(BigDecimal.ZERO);
+                    var unitGrossAmount = getGrossValue(unitNetAmount, taxRate);
+                    var lineGrossAmount = round(getMultipliedValue(unitGrossAmount, quantity));
+                    var lineTaxAmount = lineGrossAmount.subtract(lineNetAmount);
+                    CreditNoteLine creditNoteLine = CreditNoteLine.builder()
+                            .itemNumber(orderRow.getSku())
+                            .taxRate(taxRate)
+                            .quantity(quantity)
+                            .unitNetAmount(unitNetAmount)
+                            .lineNetAmount(lineNetAmount)
+                            .lineTaxAmount(lineTaxAmount)
+                            .isShippingCost(false)
+                            .build();
+                    creditNoteLines.add(creditNoteLine);
+                }
+            }
+        }
+        var creditNoteNumber = salesOrderReturnService.createCreditNoteNumber();
+        var salesCreditNoteHeader = SalesCreditNoteHeader.builder()
+                .creditNoteNumber(creditNoteNumber)
+                .creditNoteDate(now())
+                .currencyCode(convert(salesOrder.getLatestJson().getOrderHeader().getOrderCurrency()))
+                .billingAddress(Address.fromBillingAddress(salesOrder.getLatestJson().getOrderHeader().getBillingAddress()))
+                .creditNoteLines(creditNoteLines)
+                .orderGroupId(salesOrder.getLatestJson().getOrderHeader().getOrderGroupId())
+                .orderNumber(salesOrder.getLatestJson().getOrderHeader().getOrderNumber())
+                .grossAmount(getSumValue(line -> line.getLineTaxAmount().add(line.getLineNetAmount()), creditNoteLines))
+                .netAmount(getSumValue(line -> line.getLineNetAmount(), creditNoteLines))
+                .build();
+        var salesCreditNote = SalesCreditNote.builder()
+                .deliveryNotes(new ArrayList<>())
+                .salesCreditNoteHeader(salesCreditNoteHeader)
+                .build();
+        var salesCreditNoteCreatedMessage = SalesCreditNoteCreatedMessage.builder()
+                .salesCreditNote(salesCreditNote)
+                .build();
+
+        return salesCreditNoteCreatedMessage;
     }
 
     public void handleDropShipmentOrderTrackingInformationReceived(DropshipmentShipmentConfirmedMessage message) {

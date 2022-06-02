@@ -11,11 +11,13 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.dto.mapper.CreditNoteEventMapper;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnNotifiedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoice;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
+import de.kfzteile24.salesOrderHub.helper.FileUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
@@ -32,15 +34,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.nio.file.Paths;
 import java.util.Collections;
-import java.util.Objects;
 import java.util.Optional;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.PAYPAL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.RETURN_ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createOrderNumberInSOH;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrderFromOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getCreditNoteMsg;
@@ -92,9 +93,9 @@ class SqsReceiveServiceTest {
     @Mock
     private SnsPublishService snsPublishService;
     @Mock
-    private CreditNoteEventMapper creditNoteEventMapper;
-    @Mock
     private DropshipmentOrderService dropshipmentOrderService;
+    @Mock
+    private CreditNoteEventMapper creditNoteEventMapper;
     @InjectMocks
     private SqsReceiveService sqsReceiveService;
 
@@ -339,6 +340,17 @@ class SqsReceiveServiceTest {
     }
 
     @Test
+    @SneakyThrows
+    void testQueueListenerDropshipmentPurchaseOrderReturnConfirmed() {
+        String rawMessage = readResource("examples/dropshipmentPurchaseOrderReturnConfirmed.json");
+        sqsReceiveService.queueListenerDropshipmentPurchaseOrderReturnConfirmed(rawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+        DropshipmentPurchaseOrderReturnConfirmedMessage message =
+                objectMapper.readValue(body, DropshipmentPurchaseOrderReturnConfirmedMessage.class);
+        verify(dropshipmentOrderService).handleDropshipmentPurchaseOrderReturnConfirmed(message);
+    }
+
+    @Test
     void testQueueListenerMigrationCoreSalesOrderCreatedDuplication() {
 
         String rawMessage = readResource("examples/ecpOrderMessage.json");
@@ -400,7 +412,7 @@ class SqsReceiveServiceTest {
 
         sqsReceiveService.queueListenerMigrationCoreSalesCreditNoteCreated(rawEventMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
-        verify(salesOrderRowService).handleSalesOrderReturn(eq(orderNumber), eq(creditNoteMsg));
+        verify(salesOrderRowService).handleSalesOrderReturn(eq(creditNoteMsg), eq(RETURN_ORDER_CREATED));
     }
 
     private SalesOrder createSalesOrder(String orderNumber) {
@@ -413,8 +425,6 @@ class SqsReceiveServiceTest {
 
     @SneakyThrows({URISyntaxException.class, IOException.class})
     private String readResource(String path) {
-        return java.nio.file.Files.readString(Paths.get(
-                Objects.requireNonNull(getClass().getClassLoader().getResource(path))
-                        .toURI()));
+        return FileUtil.readResource(getClass(), path);
     }
 }

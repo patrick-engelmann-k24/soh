@@ -82,6 +82,10 @@ data "aws_sns_topic" "sns_soh_dropshipment_purchase_order_booked_v1" {
   name = "dropshipment-purchase-order-booked-v1"
 }
 
+data "aws_sns_topic" "sns_soh_dropshipment_purchase_order_return_confirmed_v1" {
+  name = "dropshipment-purchase-order-return-confirmed-v1"
+}
+
 data "aws_sns_topic" "sns_core_sales_credit_note_created_v1" {
   name = "core-sales-credit-note-created-v1"
 }
@@ -240,6 +244,12 @@ resource "aws_sns_topic_subscription" "dropshipment-purchase_order_booked" {
   endpoint  = aws_sqs_queue.dropshipment_purchase_order_booked.arn
   protocol  = "sqs"
   topic_arn = data.aws_sns_topic.sns_soh_dropshipment_purchase_order_booked_v1.arn
+}
+
+resource "aws_sns_topic_subscription" "dropshipment_purchase_order_return_confirmed" {
+  endpoint  = aws_sqs_queue.dropshipment_purchase_order_return_confirmed.arn
+  protocol  = "sqs"
+  topic_arn = data.aws_sns_topic.sns_soh_dropshipment_purchase_order_return_confirmed_v1.arn
 }
 
 # subscription for core sales credit note created published by core-publisher

@@ -12,6 +12,7 @@ import de.kfzteile24.salesOrderHub.dto.mapper.CreditNoteEventMapper;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnNotifiedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.FulfillmentMessage;
@@ -42,6 +43,7 @@ import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_CREATED_IN_SOH;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_ECP;
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.RETURN_ORDER_CREATED;
 import static java.util.function.Predicate.not;
 import static org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy.ON_SUCCESS;
 
@@ -369,6 +371,27 @@ public class SqsReceiveService {
     }
 
     /**
+     * Consume messages from sqs for dropshipment purchase order return confirmed
+     */
+    @SqsListener(value = "${soh.sqs.queue.dropshipmentPurchaseOrderReturnConfirmed}", deletionPolicy = ON_SUCCESS)
+    @SneakyThrows(JsonProcessingException.class)
+    @Trace(metricName = "Handling Dropshipment Purchase Order Return Confirmed Message", dispatcher = true)
+    public void queueListenerDropshipmentPurchaseOrderReturnConfirmed(
+            String rawMessage,
+            @Header("SenderId") String senderId,
+            @Header("ApproximateReceiveCount") Integer receiveCount) {
+
+        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+        DropshipmentPurchaseOrderReturnConfirmedMessage message =
+                objectMapper.readValue(body, DropshipmentPurchaseOrderReturnConfirmedMessage.class);
+
+        log.info("Received dropshipment purchase order return confirmed message with Sales Order Number: {}, External Order NUmber: {}",
+                message.getSalesOrderNumber(), message.getExternalOrderNumber());
+
+        dropshipmentOrderService.handleDropshipmentPurchaseOrderReturnConfirmed(message);
+    }
+
+    /**
      * Consume messages from sqs for dropshipment purchase order booked
      */
     @SqsListener(value = "${soh.sqs.queue.dropshipmentPurchaseOrderReturnNotified}", deletionPolicy = ON_SUCCESS)
@@ -421,7 +444,7 @@ public class SqsReceiveService {
 
             var orderNumber = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber();
             log.info("Received core sales credit note created message with order number: {}", orderNumber);
-            salesOrderRowService.handleSalesOrderReturn(orderNumber, salesCreditNoteCreatedMessage);
+            salesOrderRowService.handleSalesOrderReturn(salesCreditNoteCreatedMessage, RETURN_ORDER_CREATED);
         }
     }
 

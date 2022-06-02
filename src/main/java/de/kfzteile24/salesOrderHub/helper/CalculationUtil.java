@@ -53,7 +53,7 @@ public class CalculationUtil {
         return value;
     }
 
-    public static BigDecimal getSumValue(Function<SumValues, BigDecimal> function, List<SumValues> sumValues) {
+    public static <T> BigDecimal getSumValue(Function<T, BigDecimal> function, List<T> sumValues) {
 
         return sumValues.stream().map(function).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
     }
