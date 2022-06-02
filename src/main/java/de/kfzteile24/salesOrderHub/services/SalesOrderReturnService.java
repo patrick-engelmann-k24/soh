@@ -20,4 +20,8 @@ public class SalesOrderReturnService {
     public SalesOrderReturn save(SalesOrderReturn salesOrderReturn) {
         return salesOrderReturnRepository.save(salesOrderReturn);
     }
+
+    public void updateUrl(String orderNumber, String url) {
+        salesOrderReturnRepository.updateUrl(orderNumber, url);
+    }
 }

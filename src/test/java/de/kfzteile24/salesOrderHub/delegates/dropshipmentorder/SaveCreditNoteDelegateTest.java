@@ -1,6 +1,5 @@
-package de.kfzteile24.salesOrderHub.delegates.dropshipment;
+package de.kfzteile24.salesOrderHub.delegates.dropshipmentorder;
 
-import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.SaveCreditNoteDelegate;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -11,7 +10,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.INVOICE_URL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
@@ -19,7 +17,6 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Paymen
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createNewSalesOrderV3;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrderReturn;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -36,7 +33,7 @@ class SaveCreditNoteDelegateTest {
     private SaveCreditNoteDelegate saveCreditNoteDelegate;
 
     @Test
-    void testPublishDropshipmentTrackingInformationDelegate() throws Exception {
+    void testSaveCreditNoteDelegate() throws Exception {
         final var expectedOrderNumber = "123-1";
         final var salesOrder = createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
         salesOrder.setOrderNumber(expectedOrderNumber);
@@ -45,12 +42,8 @@ class SaveCreditNoteDelegateTest {
         final var invoiceUrl = "s3://k24-invoices/www-k24-at/2020/08/12/" + expectedOrderNumber + "-" + creditNoteNumber + ".pdf";
         when(delegateExecution.getVariable(ORDER_NUMBER.getName())).thenReturn(expectedOrderNumber);
         when(delegateExecution.getVariable(INVOICE_URL.getName())).thenReturn(invoiceUrl);
-        when(salesOrderReturnService.getByOrderNumber(any())).thenReturn(salesOrderReturn);
 
         saveCreditNoteDelegate.execute(delegateExecution);
-
-        salesOrderReturn.setUrl(invoiceUrl);
-        verify(salesOrderReturnService).save(salesOrderReturn);
-
+        verify(salesOrderReturnService).updateUrl(expectedOrderNumber, invoiceUrl);
     }
 }
