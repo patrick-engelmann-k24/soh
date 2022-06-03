@@ -1,4 +1,4 @@
-package de.kfzteile24.salesOrderHub.services;
+package de.kfzteile24.salesOrderHub.services.sqs;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,6 +19,13 @@ import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.FileUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
+import de.kfzteile24.salesOrderHub.services.DropshipmentOrderService;
+import de.kfzteile24.salesOrderHub.services.SalesOrderPaymentSecuredService;
+import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
+import de.kfzteile24.salesOrderHub.services.SalesOrderRowService;
+import de.kfzteile24.salesOrderHub.services.SalesOrderService;
+import de.kfzteile24.salesOrderHub.services.SnsPublishService;
+import de.kfzteile24.salesOrderHub.services.SplitterService;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -58,7 +65,6 @@ import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.argThat;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -97,41 +103,8 @@ class SqsReceiveServiceTest {
     @Mock
     private CreditNoteEventMapper creditNoteEventMapper;
     @InjectMocks
+    @Spy
     private SqsReceiveService sqsReceiveService;
-
-
-    @Test
-    void testQueueListenerEcpShopOrders() {
-        String rawMessage = readResource("examples/ecpOrderMessage.json");
-        SalesOrder salesOrder = getSalesOrder(rawMessage);
-        salesOrder.setRecurringOrder(false);
-
-        when(salesOrderService.createSalesOrder(any())).thenReturn(salesOrder);
-        when(splitterService.splitSalesOrder(any())).thenReturn(Collections.singletonList(salesOrder));
-
-        sqsReceiveService.queueListenerEcpShopOrders(rawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
-
-        verify(camundaHelper).createOrderProcess(any(SalesOrder.class), any(Messages.class));
-        verify(salesOrderService).createSalesOrder(salesOrder);
-        verify(salesOrderService, never()).getOrderByOrderNumber(eq(salesOrder.getOrderNumber()));
-    }
-
-    @Test
-    void testQueueListenerCoreDuplicateShopOrders() {
-        //This test case can be removed if no more duplicate items are expected from core publisher.
-        var senderId = "Core";
-        String rawMessage = readResource("examples/coreOrderMessage.json");
-        SalesOrder salesOrder = getSalesOrder(rawMessage);
-        salesOrder.setRecurringOrder(false);
-
-        when(salesOrderService.getOrderByOrderNumber("524001240")).thenReturn(Optional.of(salesOrder));
-        when(splitterService.splitSalesOrder(any())).thenReturn(Collections.singletonList(salesOrder));
-
-        sqsReceiveService.queueListenerEcpShopOrders(rawMessage, senderId, ANY_RECEIVE_COUNT);
-
-        verify(camundaHelper, never()).createOrderProcess(any(SalesOrder.class), any(Messages.class));
-        verify(salesOrderService).getOrderByOrderNumber(eq("524001240"));
-    }
 
     @Test
     void testQueueListenerInvoiceCreatedMsgReceived() {
@@ -324,33 +297,6 @@ class SqsReceiveServiceTest {
     }
 
     @Test
-    @SneakyThrows
-    void testQueueListenerDropshipmentPurchaseOrderReturnNotified() {
-
-        SalesOrder salesOrder = getSalesOrder(readResource("examples/ecpOrderMessage.json"));
-        when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.of(salesOrder));
-        String rawMessage = readResource("examples/dropshipmentPurchaseOrderReturnNotified.json");
-
-        sqsReceiveService.queueListenerDropshipmentPurchaseOrderReturnNotified(rawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
-
-        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-        DropshipmentPurchaseOrderReturnNotifiedMessage message =
-                objectMapper.readValue(body, DropshipmentPurchaseOrderReturnNotifiedMessage.class);
-        verify(snsPublishService).publishDropshipmentOrderReturnNotifiedEvent(salesOrder, message);
-    }
-
-    @Test
-    @SneakyThrows
-    void testQueueListenerDropshipmentPurchaseOrderReturnConfirmed() {
-        String rawMessage = readResource("examples/dropshipmentPurchaseOrderReturnConfirmed.json");
-        sqsReceiveService.queueListenerDropshipmentPurchaseOrderReturnConfirmed(rawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
-        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-        DropshipmentPurchaseOrderReturnConfirmedMessage message =
-                objectMapper.readValue(body, DropshipmentPurchaseOrderReturnConfirmedMessage.class);
-        verify(dropshipmentOrderService).handleDropshipmentPurchaseOrderReturnConfirmed(message);
-    }
-
-    @Test
     void testQueueListenerMigrationCoreSalesOrderCreatedDuplication() {
 
         String rawMessage = readResource("examples/ecpOrderMessage.json");
@@ -370,13 +316,12 @@ class SqsReceiveServiceTest {
         SalesOrder salesOrder = getSalesOrder(rawMessage);
 
         when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.empty());
-        when(salesOrderService.createSalesOrder(any())).thenReturn(salesOrder);
         when(featureFlagConfig.getIgnoreMigrationCoreSalesOrder()).thenReturn(false);
-        when(splitterService.splitSalesOrder(any())).thenReturn(Collections.singletonList(salesOrder));
+        doNothing().when(sqsReceiveService).queueListenerShopOrders(anyString(), anyString(), any());
 
         sqsReceiveService.queueListenerMigrationCoreSalesOrderCreated(rawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
-        verify(camundaHelper).createOrderProcess(eq(salesOrder), any(Messages.class));
+        verify(sqsReceiveService).queueListenerShopOrders(anyString(), anyString(), any());
     }
 
     @Test

@@ -1,16 +1,17 @@
 package de.kfzteile24.salesOrderHub.services;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
 import de.kfzteile24.salesOrderHub.constants.CurrencyType;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.shared.creditnote.CreditNoteLine;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnConfirmedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnNotifiedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.shared.Address;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.helper.FileUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
@@ -40,6 +41,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Shipme
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -47,9 +49,6 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class DropshipmentOrderServiceTest {
-
-    @Spy
-    private final ObjectMapper objectMapper = new ObjectMapperConfig().objectMapper();
 
     @InjectMocks
     @Spy
@@ -64,6 +63,12 @@ class DropshipmentOrderServiceTest {
     @Mock
     private SalesOrderRowService salesOrderRowService;
 
+    @Mock
+    private SnsPublishService snsPublishService;
+
+    @Spy
+    private ObjectMapperConfig objectMapperConfig;
+
     @ParameterizedTest
     @MethodSource("provideArgumentsForIsDropShipmentOrder")
     void testIsDropShipmentOrder(String fulfillment, boolean expected) {
@@ -77,9 +82,9 @@ class DropshipmentOrderServiceTest {
     @SneakyThrows
     public void testHandleDropshipmentPurchaseOrderReturnConfirmed() {
         String rawMessage = readResource("examples/dropshipmentPurchaseOrderReturnConfirmed.json");
-        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+        String body = objectMapperConfig.objectMapper().readValue(rawMessage, SqsMessage.class).getBody();
         DropshipmentPurchaseOrderReturnConfirmedMessage message =
-                objectMapper.readValue(body, DropshipmentPurchaseOrderReturnConfirmedMessage.class);
+                objectMapperConfig.objectMapper().readValue(body, DropshipmentPurchaseOrderReturnConfirmedMessage.class);
         String orderNumber = message.getSalesOrderNumber();
 
         String rawSalesOrderMessage = readResource("examples/ecpOrderMessageWithTwoRows.json");
@@ -123,6 +128,29 @@ class DropshipmentOrderServiceTest {
 
         dropshipmentOrderService.handleDropshipmentPurchaseOrderReturnConfirmed(message, salesCreditNoteCreatedMessage);
         verify(salesOrderRowService).handleSalesOrderReturn(salesCreditNoteCreatedMessage, DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED);
+    }
+
+    @Test
+    @SneakyThrows
+    void testHandleDropshipmentPurchaseOrderReturnNotified() {
+
+        SalesOrder salesOrder = getSalesOrder(readResource("examples/ecpOrderMessage.json"));
+        when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.of(salesOrder));
+        String rawMessage = readResource("examples/dropshipmentPurchaseOrderReturnNotified.json");
+        var sqsMessage = objectMapperConfig.objectMapper().readValue(rawMessage, SqsMessage.class);
+        var message =
+                objectMapperConfig.objectMapper().readValue(sqsMessage.getBody(),
+                        DropshipmentPurchaseOrderReturnNotifiedMessage.class);
+
+        MessageWrapper<DropshipmentPurchaseOrderReturnNotifiedMessage> messageWrapper =
+                MessageWrapper.<DropshipmentPurchaseOrderReturnNotifiedMessage>builder()
+                        .rawMessage(rawMessage)
+                        .message(message)
+                        .build();
+
+        dropshipmentOrderService.handleDropshipmentPurchaseOrderReturnNotified(messageWrapper);
+
+        verify(snsPublishService).publishDropshipmentOrderReturnNotifiedEvent(salesOrder, message);
     }
 
     @SneakyThrows({URISyntaxException.class, IOException.class})
