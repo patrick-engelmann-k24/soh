@@ -16,6 +16,7 @@ import de.kfzteile24.salesOrderHub.domain.converter.InvoiceSource;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
@@ -69,6 +70,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.ORDER_ROW_ID;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.assertSalesCreditNoteCreatedMessage;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrderFromOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getOrder;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -147,9 +149,6 @@ class DropshipmentOrderServiceIntegrationTest {
         Order order = getOrder(orderRawMessage);
         order.getOrderHeader().setOrderFulfillment(DELTICOM.getName());
         SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(order));
-        SalesOrderReturn salesOrderReturn = SalesOrderUtil.getSalesOrderReturn(salesOrder, "123");
-        salesOrderReturn.getReturnOrderJson().getOrderHeader().setOrderNumberExternal("13.2");
-        salesOrderReturn = salesOrderReturnService.save(salesOrderReturn);
 
         doNothing().when(camundaHelper).correlateMessage(any(), any(), any());
 
@@ -162,11 +161,12 @@ class DropshipmentOrderServiceIntegrationTest {
         dropshipmentOrderService.handleDropshipmentPurchaseOrderReturnConfirmed(message);
 
         SalesOrderReturn updatedOrder = salesOrderReturnService.getByOrderNumber(salesOrder.getOrderNumber() + "-" + nextCreditNoteNumber);
+        SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage = updatedOrder.getSalesCreditNoteCreatedMessage();
         assertNotNull(updatedOrder);
         assertEquals(nextCreditNoteNumber, updatedOrder.getSalesCreditNoteCreatedMessage().getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteNumber());
 
-        String result = salesOrderReturnService.createCreditNoteNumber();
-        assertTrue(result.endsWith("00002"));
+        assertThat(salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber()).isEqualTo(salesOrder.getOrderNumber() + "-" + nextCreditNoteNumber);
+        assertSalesCreditNoteCreatedMessage(salesCreditNoteCreatedMessage, salesOrder);
     }
 
     @Test

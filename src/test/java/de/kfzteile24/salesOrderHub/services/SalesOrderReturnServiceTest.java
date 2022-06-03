@@ -2,6 +2,7 @@ package de.kfzteile24.salesOrderHub.services;
 
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderReturnRepository;
 import lombok.SneakyThrows;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -24,11 +25,16 @@ class SalesOrderReturnServiceTest {
 
     @Test
     @SneakyThrows
-    public void testCreateCreditNotNumber() {
-
+    @DisplayName(("Create Credit Note Number When Latest Credit Note Number Is Empty"))
+    public void testCreateCreditNoteNumberWhenLatestCreditNoteNumberIsEmpty() {
         when(salesOrderReturnService.findLatestCreditNoteNumber()).thenReturn(Optional.empty());
         assertThat(salesOrderReturnService.getNextCreditNoteCount()).isEqualTo("00001");
+    }
 
+    @Test
+    @SneakyThrows
+    @DisplayName(("Create Credit Note Number When Latest Credit Note Number Is Not Empty"))
+    public void testCreateCreditNoteNumberWhenLatestCreditNoteNumberIsNotEmpty() {
         when(salesOrderReturnService.findLatestCreditNoteNumber()).thenReturn(Optional.of("2022200001"));
         assertThat(salesOrderReturnService.getNextCreditNoteCount()).isEqualTo("00002");
     }
