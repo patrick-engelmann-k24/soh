@@ -55,6 +55,7 @@ data "aws_iam_policy_document" "sns_sqs_access_policy" {
       aws_sqs_queue.d365_order_payment_secured.arn,
       aws_sqs_queue.soh_dropshipment_shipment_confirmed.arn,
       aws_sqs_queue.dropshipment_purchase_order_booked.arn,
+      aws_Sqs_queue.dropshipment_purchase_order_return_confirmed.arn,
       aws_sqs_queue.soh_dropshipment_purchase_order_return_notified.arn,
       aws_sqs_queue.soh_core_sales_credit_note_created.arn,
       aws_sqs_queue.soh_core_sales_invoice_created.arn,
