@@ -66,9 +66,6 @@ public class SalesOrderService {
     private final OrderUtil orderUtil;
 
     @NonNull
-    private final SalesOrderReturnService salesOrderReturnService;
-
-    @NonNull
     private final RuntimeService runtimeService;
 
     @Transactional

@@ -14,4 +14,12 @@ public enum CurrencyType {
 
     @NonNull
     private String name;
+
+    public static CurrencyType convert(String name) {
+        try {
+            return CurrencyType.valueOf(name);
+        } catch (IllegalArgumentException e) {
+            return EUR;
+        }
+    }
 }

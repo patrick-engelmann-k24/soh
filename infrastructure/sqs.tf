@@ -33,6 +33,8 @@ locals {
     dropshipment_purchase_order_booked_dlq = "${var.environment}-${local.service_prefix}-dropshipment-purchase-order-booked-${local.version}-dlq",
     dropshipment_purchase_order_return_notified="${var.environment}-${local.service_prefix}-dropshipment-purchase-order-return-notified-${local.version}",
     dropshipment_purchase_order_return_notified_dlq="${var.environment}-${local.service_prefix}-dropshipment-purchase-order-return-notified-${local.version}-dlq",
+    dropshipment_purchase_order_return_confirmed = "${var.environment}-${local.service_prefix}-dropshipment-purchase-order-return-confirmed-${local.version}",
+    dropshipment_purchase_order_return_confirmed_dlq = "${var.environment}-${local.service_prefix}-dropshipment-purchase-order-return-confirmed-${local.version}-dlq",
     core_sales_credit_note_created = "${var.environment}-${local.service_prefix}-core-sales-credit-note-created-${local.version}",
     core_sales_credit_note_created_dlq = "${var.environment}-${local.service_prefix}-core-sales-credit-note-created-${local.version}-dlq",
     core_sales_invoice_created = "${var.environment}-${local.service_prefix}-core-sales-invoice-created-${local.version}",
@@ -190,6 +192,15 @@ resource "aws_sqs_queue" "soh_dropshipment_purchase_order_return_notified_dlq" {
 resource "aws_sqs_queue" "soh_dropshipment_purchase_order_return_notified" {
   name = local.sqs_queues.dropshipment_purchase_order_return_notified
   redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.soh_dropshipment_purchase_order_return_notified_dlq.arn}\",\"maxReceiveCount\":4}"
+}
+
+resource "aws_sqs_queue" "dropshipment_purchase_order_return_confirmed_dlq" {
+  name = local.sqs_queues.dropshipment_purchase_order_return_confirmed_dlq
+}
+
+resource "aws_sqs_queue" "dropshipment_purchase_order_return_confirmed" {
+  name = local.sqs_queues.dropshipment_purchase_order_return_confirmed
+  redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.dropshipment_purchase_order_return_confirmed_dlq.arn}\",\"maxReceiveCount\":4}"
 }
 
 resource "aws_sqs_queue" "soh_core_sales_credit_note_created_dlq" {

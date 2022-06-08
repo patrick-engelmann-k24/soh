@@ -34,6 +34,7 @@ TOPICS="
     soh-dropshipment-shipment-confirmed
     soh-shipment-confirmed-v1
     soh-dropshipment-purchase-order-booked
+    soh-dropshipment-purchase-order-return-confirmed
     soh-core-sales-credit-note-created
     soh-dropshipment-purchase-order-return-notified
     soh-return-order-created-v1

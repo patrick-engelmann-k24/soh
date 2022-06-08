@@ -66,9 +66,6 @@ class SalesOrderServiceTest {
     @Mock
     private RuntimeService runtimeService;
 
-    @Mock
-    private SalesOrderReturnService salesOrderReturnService;
-
     @InjectMocks
     private SalesOrderService salesOrderService;
 

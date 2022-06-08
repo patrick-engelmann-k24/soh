@@ -1,4 +1,4 @@
-package de.kfzteile24.salesOrderHub.services;
+package de.kfzteile24.salesOrderHub.services.sqs;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,6 +12,7 @@ import de.kfzteile24.salesOrderHub.dto.mapper.CreditNoteEventMapper;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnNotifiedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.FulfillmentMessage;
@@ -20,14 +21,21 @@ import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
+import de.kfzteile24.salesOrderHub.services.DropshipmentOrderService;
+import de.kfzteile24.salesOrderHub.services.InvoiceUrlExtractor;
+import de.kfzteile24.salesOrderHub.services.SalesOrderPaymentSecuredService;
+import de.kfzteile24.salesOrderHub.services.SalesOrderProcessService;
+import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
+import de.kfzteile24.salesOrderHub.services.SalesOrderRowService;
+import de.kfzteile24.salesOrderHub.services.SalesOrderService;
+import de.kfzteile24.salesOrderHub.services.SnsPublishService;
+import de.kfzteile24.salesOrderHub.services.SplitterService;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
-import de.kfzteile24.soh.order.dto.Platform;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.springframework.cloud.aws.messaging.listener.annotation.SqsListener;
 import org.springframework.messaging.handler.annotation.Header;
@@ -42,6 +50,7 @@ import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_CREATED_IN_SOH;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_ECP;
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.RETURN_ORDER_CREATED;
 import static java.util.function.Predicate.not;
 import static org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy.ON_SUCCESS;
 
@@ -50,7 +59,6 @@ import static org.springframework.cloud.aws.messaging.listener.SqsMessageDeletio
 @RequiredArgsConstructor
 public class SqsReceiveService {
 
-    private final RuntimeService runtimeService;
     private final SalesOrderService salesOrderService;
     private final SalesOrderRowService salesOrderRowService;
     private final SalesOrderReturnService salesOrderReturnService;
@@ -62,56 +70,31 @@ public class SqsReceiveService {
     private final CreditNoteEventMapper creditNoteEventMapper;
     private final SplitterService splitterService;
     private final DropshipmentOrderService dropshipmentOrderService;
+    private final SalesOrderProcessService salesOrderCreateService;
+    private final MessageWrapperUtil messageWrapperUtil;
 
     /**
-     * Consume sqs for new orders from ecp shop
+     * Consume sqs for new orders from ecp, bc and core shops
      */
-    @SqsListener({
+    @SqsListener(value = {
             "${soh.sqs.queue.ecpShopOrders}",
             "${soh.sqs.queue.bcShopOrders}",
             "${soh.sqs.queue.coreShopOrders}"
-    })
-    @SneakyThrows(JsonProcessingException.class)
-    @Transactional
+    }, deletionPolicy = ON_SUCCESS)
     @Trace(metricName = "Handling shop order message", dispatcher = true)
-    public void queueListenerEcpShopOrders(String rawMessage, @Header("SenderId") String senderId,
-        @Header("ApproximateReceiveCount") Integer receiveCount) {
+    public void queueListenerShopOrders(String rawMessage, @Header("SenderId") String senderId,
+                                        @Header("ApproximateReceiveCount") Integer receiveCount) {
 
-        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-        Order order = objectMapper.readValue(body, Order.class);
+        var orderMessageWrapper = messageWrapperUtil.create(rawMessage, Order.class);
+        var order = orderMessageWrapper.getMessage();
 
-        String orderNumber = order.getOrderHeader().getOrderNumber();
-        if (StringUtils.isBlank(order.getOrderHeader().getOrderGroupId())) {
-            order.getOrderHeader().setOrderGroupId(orderNumber);
-        }
+        log.info("Received shop order message with order number: {}. Platform: {}. Receive count: {}. Sender ID: {}",
+                order.getOrderHeader().getOrderNumber(),
+                order.getOrderHeader().getPlatform(),
+                receiveCount,
+                senderId);
 
-        for (final SalesOrder salesOrder : splitterService.splitSalesOrder(order)) {
-
-
-            try {
-
-                log.info("Received message from ecp shop with sender id : {}, order number: {}, Platform: {} ", senderId, order.getOrderHeader().getOrderNumber(), order.getOrderHeader().getPlatform());
-
-                //This condition is introduced temporarily because the self pick-up items created in BC are coming back from core orders which raises duplicate issue.
-                if (Platform.CORE.equals(order.getOrderHeader().getPlatform())
-                        && salesOrderService.getOrderByOrderNumber(order.getOrderHeader().getOrderNumber()).isPresent()) {
-                    log.error("The following order won't be processed because it exists in SOH system already from another source. " +
-                            "Platform: {}, Order Number: {}", order.getOrderHeader().getPlatform(), order.getOrderHeader().getOrderNumber());
-                    return;
-                }
-
-                ProcessInstance result = camundaHelper.createOrderProcess(
-                        salesOrderService.createSalesOrder(salesOrder), ORDER_RECEIVED_ECP);
-
-                if (result != null) {
-                    log.info("New ecp order process started for order number: {}. Process-Instance-ID: {} ", order.getOrderHeader().getOrderNumber(), result.getProcessInstanceId());
-                }
-            } catch (Exception e) {
-                log.error("New ecp order process is failed by message error:\r\nError-Message: {}, Message Body: {}", e.getMessage(), body);
-                throw e;
-            }
-
-        }
+        salesOrderCreateService.handleShopOrdersReceived(orderMessageWrapper);
     }
 
     /**
@@ -268,7 +251,7 @@ public class SqsReceiveService {
         final var invoiceUrl = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
 
         try {
-            if (InvoiceUrlExtractor.isDropshipmentCreditNote(invoiceUrl)) {
+            if (InvoiceUrlExtractor.matchesCreditNoteNumberPattern(invoiceUrl)) {
                 salesOrderService.handleCreditNoteFromDropshipmentOrderReturn(invoiceUrl);
             } else {
                 salesOrderService.handleInvoiceFromCore(invoiceUrl);
@@ -369,36 +352,46 @@ public class SqsReceiveService {
     }
 
     /**
+     * Consume messages from sqs for dropshipment purchase order return confirmed
+     */
+    @SqsListener(value = "${soh.sqs.queue.dropshipmentPurchaseOrderReturnConfirmed}", deletionPolicy = ON_SUCCESS)
+    @SneakyThrows(JsonProcessingException.class)
+    @Trace(metricName = "Handling Dropshipment Purchase Order Return Confirmed Message", dispatcher = true)
+    public void queueListenerDropshipmentPurchaseOrderReturnConfirmed(
+            String rawMessage,
+            @Header("SenderId") String senderId,
+            @Header("ApproximateReceiveCount") Integer receiveCount) {
+
+        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+        DropshipmentPurchaseOrderReturnConfirmedMessage message =
+                objectMapper.readValue(body, DropshipmentPurchaseOrderReturnConfirmedMessage.class);
+
+        log.info("Received dropshipment purchase order return confirmed message with Sales Order Number: {}, External Order NUmber: {}",
+                message.getSalesOrderNumber(), message.getExternalOrderNumber());
+
+        dropshipmentOrderService.handleDropshipmentPurchaseOrderReturnConfirmed(message);
+    }
+
+    /**
      * Consume messages from sqs for dropshipment purchase order booked
      */
     @SqsListener(value = "${soh.sqs.queue.dropshipmentPurchaseOrderReturnNotified}", deletionPolicy = ON_SUCCESS)
-    @SneakyThrows(JsonProcessingException.class)
     @Trace(metricName = "Handling Dropshipment Purchase Order Return Notified message", dispatcher = true)
     public void queueListenerDropshipmentPurchaseOrderReturnNotified(
             String rawMessage,
             @Header("SenderId") String senderId,
             @Header("ApproximateReceiveCount") Integer receiveCount) {
 
-        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-        var message = objectMapper.readValue(body, DropshipmentPurchaseOrderReturnNotifiedMessage.class);
+        var messageWrapper =
+                messageWrapperUtil.create(rawMessage, DropshipmentPurchaseOrderReturnNotifiedMessage.class);
+
+        var message = messageWrapper.getMessage();
 
         log.info("Received dropshipment purchase order return notified message with " +
                         "Sales Order Number: {}, External Order Number: {}, Sender Id: {}, Received Count {}",
                 message.getSalesOrderNumber(), message.getExternalOrderNumber(), senderId, receiveCount);
 
-        try {
-            var salesOrder = salesOrderService.getOrderByOrderNumber(message.getSalesOrderNumber())
-                    .orElseThrow(() -> new SalesOrderNotFoundException(message.getSalesOrderNumber()));
-
-            snsPublishService.publishDropshipmentOrderReturnNotifiedEvent(salesOrder, message);
-        } catch (Exception e) {
-            log.error("Dropshipment purchase order return notified message error:\r\nOrderNumber: " +
-                            "{}\r\nExternalOrderNumber: {}\r\nError-Message: {}",
-                    message.getSalesOrderNumber(),
-                    message.getExternalOrderNumber(),
-                    e.getMessage());
-            throw e;
-        }
+        dropshipmentOrderService.handleDropshipmentPurchaseOrderReturnNotified(messageWrapper);
     }
 
     /**
@@ -421,7 +414,7 @@ public class SqsReceiveService {
 
             var orderNumber = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber();
             log.info("Received core sales credit note created message with order number: {}", orderNumber);
-            salesOrderRowService.handleSalesOrderReturn(orderNumber, salesCreditNoteCreatedMessage);
+            salesOrderRowService.handleSalesOrderReturn(salesCreditNoteCreatedMessage, RETURN_ORDER_CREATED);
         }
     }
 
@@ -588,7 +581,7 @@ public class SqsReceiveService {
                 snsPublishService.publishMigrationOrderCreated(orderNumber);
             } else {
                 log.info("Order with order number: {} is a new order. Call redirected to normal flow.", orderNumber);
-                queueListenerEcpShopOrders(rawMessage, senderId, receiveCount);
+                queueListenerShopOrders(rawMessage, senderId, receiveCount);
             }
         }
 

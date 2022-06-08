@@ -1,5 +1,7 @@
 package de.kfzteile24.salesOrderHub.services;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
 import de.kfzteile24.salesOrderHub.constants.PersistentProperties;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
@@ -8,11 +10,15 @@ import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.PublishDropshipme
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
+import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
 import de.kfzteile24.salesOrderHub.domain.converter.InvoiceSource;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
+import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.EventType;
@@ -33,6 +39,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Spy;
 import org.mockito.verification.VerificationMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -63,6 +70,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.ORDER_ROW_ID;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.assertSalesCreditNoteCreatedMessage;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrderFromOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getOrder;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -105,6 +113,12 @@ class DropshipmentOrderServiceIntegrationTest {
     @SpyBean
     private PublishDropshipmentOrderCreatedDelegate publishDropshipmentOrderCreatedDelegate;
 
+    @SpyBean
+    private SalesOrderReturnService salesOrderReturnService;
+
+    @Spy
+    private final ObjectMapper objectMapper = new ObjectMapperConfig().objectMapper();
+
     @Test
     void testHandleDropShipmentOrderConfirmed() {
 
@@ -124,6 +138,35 @@ class DropshipmentOrderServiceIntegrationTest {
         SalesOrder updatedOrder = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber()).orElse(null);
         assertNotNull(updatedOrder);
         assertEquals("13.2", updatedOrder.getLatestJson().getOrderHeader().getOrderNumberExternal());
+    }
+
+    @Test
+    @SneakyThrows
+    void testHandleDropShipmentPurchaseOrderReturnConfirmed() {
+
+        String nextCreditNoteNumber = salesOrderReturnService.createCreditNoteNumber();
+        String orderRawMessage = readResource("examples/ecpOrderMessageWithTwoRows.json");
+        Order order = getOrder(orderRawMessage);
+        order.getOrderHeader().setOrderFulfillment(DELTICOM.getName());
+        SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(order));
+
+        doNothing().when(camundaHelper).correlateMessage(any(), any(), any());
+
+        String rawMessage = readResource("examples/dropshipmentPurchaseOrderReturnConfirmed.json");
+        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+        DropshipmentPurchaseOrderReturnConfirmedMessage message =
+                objectMapper.readValue(body, DropshipmentPurchaseOrderReturnConfirmedMessage.class);
+        message.setSalesOrderNumber(salesOrder.getOrderNumber());
+
+        dropshipmentOrderService.handleDropshipmentPurchaseOrderReturnConfirmed(message);
+
+        SalesOrderReturn updatedOrder = salesOrderReturnService.getByOrderNumber(salesOrder.getOrderNumber() + "-" + nextCreditNoteNumber);
+        SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage = updatedOrder.getSalesCreditNoteCreatedMessage();
+        assertNotNull(updatedOrder);
+        assertEquals(nextCreditNoteNumber, updatedOrder.getSalesCreditNoteCreatedMessage().getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteNumber());
+
+        assertThat(salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber()).isEqualTo(salesOrder.getOrderNumber() + "-" + nextCreditNoteNumber);
+        assertSalesCreditNoteCreatedMessage(salesCreditNoteCreatedMessage, salesOrder);
     }
 
     @Test

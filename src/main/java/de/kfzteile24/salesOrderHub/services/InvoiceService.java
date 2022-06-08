@@ -151,8 +151,6 @@ public class InvoiceService {
     }
 
     private String getStreet(BillingAddress address) {
-        return address.getStreet1() +
-                (address.getStreet2() != null ? " " + address.getStreet2() : "") +
-                (address.getStreet3() != null ? " " + address.getStreet3() : "");
+        return Address.getStreet(address);
     }
 }

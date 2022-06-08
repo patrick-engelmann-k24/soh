@@ -748,6 +748,48 @@ resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_dropshipment_purchas
   policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_dropshipment_purchase_order_booked.json
 }
 
+data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_dropshipment_purchase_order_return_confirmed" {
+  statement {
+    sid = "SNS-dropshipment-purchase-order-return-confirmed"
+    effect = "Allow"
+
+    actions = [
+      "sqs:SendMessage",
+    ]
+
+    principals {
+      identifiers = ["*"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.dropshipment_purchase_order_return_confirmed.arn
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sqs:*",
+    ]
+
+    principals {
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.dropshipment_purchase_order_return_confirmed.arn
+    ]
+  }
+}
+
+resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_dropshipment_purchase_order_return_confirmed" {
+  queue_url = aws_sqs_queue.dropshipment_purchase_order_return_confirmed.id
+  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_dropshipment_purchase_order_return_confirmed.json
+}
+
 data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_dropshipment_purchase_order_return_notified" {
   statement {
     sid = "SNS-dropshipment-purchase-order-return-notified"

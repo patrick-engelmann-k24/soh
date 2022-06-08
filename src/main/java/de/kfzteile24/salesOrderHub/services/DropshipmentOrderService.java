@@ -8,11 +8,16 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
 import de.kfzteile24.salesOrderHub.domain.property.KeyValueProperty;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnConfirmedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnNotifiedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
+import de.kfzteile24.salesOrderHub.helper.ReturnOrderHelper;
 import de.kfzteile24.salesOrderHub.services.property.KeyValuePropertyService;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +36,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.TRACKING_LINKS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.ORDER_ROW_ID;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_BOOKED;
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ITEM_SHIPPED;
 import static java.text.MessageFormat.format;
 import static java.util.stream.Collectors.toUnmodifiableSet;
@@ -44,6 +50,10 @@ public class DropshipmentOrderService {
     private final SalesOrderService salesOrderService;
     private final InvoiceService invoiceService;
     private final KeyValuePropertyService keyValuePropertyService;
+    private final SalesOrderReturnService salesOrderReturnService;
+    private final SalesOrderRowService salesOrderRowService;
+    private final SnsPublishService snsPublishService;
+    private final ReturnOrderHelper returnOrderHelper;
 
     public void handleDropShipmentOrderConfirmed(DropshipmentPurchaseOrderBookedMessage message) {
         String orderNumber = message.getSalesOrderNumber();
@@ -55,6 +65,19 @@ public class DropshipmentOrderService {
 
         helper.correlateMessage(Messages.DROPSHIPMENT_ORDER_CONFIRMED, salesOrder,
                 Variables.putValue(IS_DROPSHIPMENT_ORDER_CONFIRMED.getName(), isDropshipmentOrderBooked));
+    }
+
+    public void handleDropshipmentPurchaseOrderReturnConfirmed(DropshipmentPurchaseOrderReturnConfirmedMessage message) {
+        var salesCreditNoteCreatedMessage = buildSalesCreditNoteCreatedMessage(message);
+        salesOrderRowService.handleSalesOrderReturn(salesCreditNoteCreatedMessage, DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED);
+    }
+
+    SalesCreditNoteCreatedMessage buildSalesCreditNoteCreatedMessage(DropshipmentPurchaseOrderReturnConfirmedMessage message) {
+        var orderNumber = message.getSalesOrderNumber();
+        SalesOrder salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
+                .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
+        String creditNoteNumber = salesOrderReturnService.createCreditNoteNumber();
+        return returnOrderHelper.buildSalesCreditNoteCreatedMessage(message, salesOrder, creditNoteNumber);
     }
 
     public void handleDropShipmentOrderTrackingInformationReceived(DropshipmentShipmentConfirmedMessage message) {
@@ -139,6 +162,26 @@ public class DropshipmentOrderService {
         }
 
         return savedPauseDropshipmentProcessingProperty;
+    }
+
+    public void handleDropshipmentPurchaseOrderReturnNotified(
+            MessageWrapper<DropshipmentPurchaseOrderReturnNotifiedMessage> messageWrapper) {
+
+        var message = messageWrapper.getMessage();
+
+        try {
+            var salesOrder = salesOrderService.getOrderByOrderNumber(message.getSalesOrderNumber())
+                    .orElseThrow(() -> new SalesOrderNotFoundException(message.getSalesOrderNumber()));
+
+            snsPublishService.publishDropshipmentOrderReturnNotifiedEvent(salesOrder, message);
+        } catch (Exception e) {
+            log.error("Dropshipment purchase order return notified message error:\r\nOrderNumber: " +
+                            "{}\r\nExternalOrderNumber: {}\r\nError-Message: {}",
+                    message.getSalesOrderNumber(),
+                    message.getExternalOrderNumber(),
+                    e.getMessage());
+            throw e;
+        }
     }
 
     private void continueProcessingDropShipmentOrder() {

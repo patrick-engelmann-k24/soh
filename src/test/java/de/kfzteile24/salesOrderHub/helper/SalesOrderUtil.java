@@ -3,6 +3,7 @@ package de.kfzteile24.salesOrderHub.helper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
+import de.kfzteile24.salesOrderHub.constants.CurrencyType;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
@@ -11,8 +12,10 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.domain.converter.InvoiceSource;
 import de.kfzteile24.salesOrderHub.domain.pdh.ProductEnvelope;
+import de.kfzteile24.salesOrderHub.dto.shared.creditnote.CreditNoteLine;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.shared.Address;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.soh.order.dto.GrandTotalTaxes;
@@ -44,6 +47,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.ORDER_NUMBER_SEPARATOR;
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
@@ -53,6 +57,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Paymen
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.NONE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @Component
@@ -267,6 +272,40 @@ public class SalesOrderUtil {
                 .orderGroupId(salesOrder.getOrderGroupId())
                 .returnOrderJson(salesOrder.getLatestJson())
                 .build();
+    }
+
+    public static void assertSalesCreditNoteCreatedMessage(SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage, SalesOrder salesOrder) {
+        assertThat(salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getOrderGroupId()).isEqualTo(salesOrder.getOrderGroupId());
+        assertThat(salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getBillingAddress().getCity()).isEqualTo(salesOrder.getLatestJson().getOrderHeader().getBillingAddress().getCity());
+        assertThat(salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getBillingAddress().getCountryCode()).isEqualTo(salesOrder.getLatestJson().getOrderHeader().getBillingAddress().getCountryCode());
+        assertThat(salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getBillingAddress().getStreet()).isEqualTo(Address.getStreet(salesOrder.getLatestJson().getOrderHeader().getBillingAddress()));
+        assertThat(salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getBillingAddress().getSalutation()).isEqualTo(salesOrder.getLatestJson().getOrderHeader().getBillingAddress().getSalutation());
+        assertThat(salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getBillingAddress().getFirstName()).isEqualTo(salesOrder.getLatestJson().getOrderHeader().getBillingAddress().getFirstName());
+        assertThat(salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getBillingAddress().getLastName()).isEqualTo(salesOrder.getLatestJson().getOrderHeader().getBillingAddress().getLastName());
+        assertThat(salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getBillingAddress().getZipCode()).isEqualTo(salesOrder.getLatestJson().getOrderHeader().getBillingAddress().getZipCode());
+        assertThat(salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getCurrencyCode()).isEqualTo(CurrencyType.convert(salesOrder.getLatestJson().getOrderHeader().getOrderCurrency()));
+
+        List<CreditNoteLine> creditNoteLines = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteLines().stream().collect(Collectors.toList());
+        assertThat(creditNoteLines.size()).isEqualTo(2);
+        assertThat(creditNoteLines.get(0).getIsShippingCost()).isEqualTo(false);
+        assertThat(creditNoteLines.get(0).getQuantity()).isEqualTo(BigDecimal.valueOf(2));
+        assertThat(creditNoteLines.get(0).getUnitNetAmount()).isEqualTo(BigDecimal.valueOf(10.84));
+        assertThat(creditNoteLines.get(0).getLineNetAmount()).isEqualTo(BigDecimal.valueOf(21.68));
+        assertThat(creditNoteLines.get(0).getItemNumber()).isEqualTo("2270-13013");
+        assertThat(creditNoteLines.get(0).getLineTaxAmount()).isEqualTo(BigDecimal.valueOf(4.12));
+        assertThat(creditNoteLines.get(0).getTaxRate()).isEqualTo(BigDecimal.valueOf(19.00).setScale(2));
+
+        assertThat(creditNoteLines.get(1).getIsShippingCost()).isEqualTo(false);
+        assertThat(creditNoteLines.get(1).getQuantity()).isEqualTo(BigDecimal.valueOf(2));
+        assertThat(creditNoteLines.get(1).getUnitNetAmount()).isEqualTo(BigDecimal.valueOf(10.84));
+        assertThat(creditNoteLines.get(1).getLineNetAmount()).isEqualTo(BigDecimal.valueOf(21.68));
+        assertThat(creditNoteLines.get(1).getItemNumber()).isEqualTo("2270-13012");
+        assertThat(creditNoteLines.get(1).getLineTaxAmount()).isEqualTo(BigDecimal.valueOf(4.12));
+        assertThat(creditNoteLines.get(1).getTaxRate()).isEqualTo(BigDecimal.valueOf(19.00).setScale(2));
+
+        assertThat(salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getNetAmount()).isEqualTo(BigDecimal.valueOf(43.36));
+        assertThat(salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getGrossAmount()).isEqualTo(BigDecimal.valueOf(51.60).setScale(2));
+
     }
 
     @SneakyThrows(JsonProcessingException.class)
