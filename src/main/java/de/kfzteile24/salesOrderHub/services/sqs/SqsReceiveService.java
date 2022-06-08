@@ -29,7 +29,6 @@ import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderRowService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
-import de.kfzteile24.salesOrderHub.services.SplitterService;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import lombok.RequiredArgsConstructor;
@@ -49,7 +48,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_CREATED_IN_SOH;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_ECP;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.RETURN_ORDER_CREATED;
 import static java.util.function.Predicate.not;
 import static org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy.ON_SUCCESS;
@@ -68,7 +66,6 @@ public class SqsReceiveService {
     private final FeatureFlagConfig featureFlagConfig;
     private final SnsPublishService snsPublishService;
     private final CreditNoteEventMapper creditNoteEventMapper;
-    private final SplitterService splitterService;
     private final DropshipmentOrderService dropshipmentOrderService;
     private final SalesOrderProcessService salesOrderCreateService;
     private final MessageWrapperUtil messageWrapperUtil;
@@ -505,30 +502,13 @@ public class SqsReceiveService {
 
     protected void updateOriginalSalesOrder(CoreSalesInvoiceCreatedMessage invoiceMsg,
                                             SalesOrder originalSalesOrder) {
-        var orderNumber = invoiceMsg.getSalesInvoice().getSalesInvoiceHeader().getOrderNumber();
+
         var invoiceNumber = invoiceMsg.getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber();
         originalSalesOrder.getLatestJson().getOrderHeader().setDocumentRefNumber(invoiceNumber);
         invoiceMsg.getSalesInvoice().getSalesInvoiceHeader().setOrderGroupId(
                 originalSalesOrder.getLatestJson().getOrderHeader().getOrderGroupId());
         originalSalesOrder.setInvoiceEvent(invoiceMsg);
         salesOrderService.updateOrder(originalSalesOrder);
-
-        if (!camundaHelper.checkIfActiveProcessExists(orderNumber)) {
-            ProcessInstance result = camundaHelper.createOrderProcess(
-                    salesOrderService.createSalesOrder(originalSalesOrder), ORDER_RECEIVED_ECP);
-            log.info("Original sales order is updated by core sales invoice created message with " +
-                            "order number: {} and invoice number: {}.",
-                    orderNumber,
-                    invoiceNumber);
-
-            if (result != null) {
-                log.info("Order process re-started by core sales invoice created message with " +
-                                "order number: {} and invoice number: {}. Process-Instance-ID: {} ",
-                        orderNumber,
-                        invoiceNumber,
-                        result.getProcessInstanceId());
-            }
-        }
     }
 
     protected void handleCancellationForOrderRows(SalesOrder originalSalesOrder, List<OrderRows> orderRows) {
