@@ -27,3 +27,16 @@ resource "aws_ssm_parameter" "pdh_client_secret" {
     GitRepoName = local.service
   }
 }
+
+resource "aws_ssm_parameter" "pricing_service_api_key" {
+  name      = "/${local.service}/pricing_service_api_key"
+  type      = "SecureString"
+  overwrite = true
+  value     = data.sops_file.secrets.data["pricing_service_api_key"]
+
+  tags = {
+    Name        = "${local.service} pricing service api key"
+    Group       = local.service
+    GitRepoName = local.service
+  }
+}

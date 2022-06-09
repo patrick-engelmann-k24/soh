@@ -1,4 +1,4 @@
-package de.kfzteile24.salesOrderHub.domain.pricing;
+package de.kfzteile24.salesOrderHub.dto.pricing;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

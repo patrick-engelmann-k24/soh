@@ -1,10 +1,12 @@
 package de.kfzteile24.salesOrderHub.services.splitter.decorator;
 
+import de.kfzteile24.salesOrderHub.clients.PricingServiceClient;
 import de.kfzteile24.salesOrderHub.clients.ProductDataHubClient;
 import de.kfzteile24.salesOrderHub.domain.pdh.Product;
 import de.kfzteile24.salesOrderHub.domain.pdh.product.Country;
 import de.kfzteile24.salesOrderHub.domain.pdh.product.Localization;
-import de.kfzteile24.salesOrderHub.domain.pricing.PricingItem;
+import de.kfzteile24.salesOrderHub.dto.pricing.PricingItem;
+import de.kfzteile24.salesOrderHub.dto.pricing.SetUnitPriceAPIResponse;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.soh.order.dto.Order;
@@ -39,6 +41,9 @@ public class ItemSplitService extends AbstractSplitDecorator {
     private ProductDataHubClient productDataHubClient;
 
     @Autowired
+    private PricingServiceClient pricingServiceClient;
+
+    @Autowired
     private OrderUtil orderUtil;
 
     @Override
@@ -62,7 +67,7 @@ public class ItemSplitService extends AbstractSplitDecorator {
                 throw new NotFoundException("Could not get product data from PDH for sku: " + row.getSku());
             } else if (product.isSetItem()) {
                 final var setItems = new ArrayList<OrderRows>();
-                List<PricingItem> itemPrices = getSetPrices(row.getSku());
+                List<PricingItem> itemPrices = getSetPrices(row.getSku(), order.getOrderHeader().getSalesChannel());
                 for (final var setItem : product.getSetProductCollection()) {
                     final BigDecimal qty = setItem.getQuantity().multiply(row.getQuantity());
                     final var pdhProduct = getProduct(setItem.getSku());
@@ -97,9 +102,14 @@ public class ItemSplitService extends AbstractSplitDecorator {
      * @param setSku - sku of the set product
      * @return get list of the prices for the items in the set
      */
-    protected List<PricingItem> getSetPrices(String setSku) {
+    protected List<PricingItem> getSetPrices(String setSku, String salesChannelCode) {
 
-        return List.of();
+        Optional<SetUnitPriceAPIResponse> setPriceInfo = pricingServiceClient.getSetPriceInfo(setSku, salesChannelCode);
+        if (setPriceInfo.isPresent()) {
+            return setPriceInfo.get().getSetUnitPrices();
+        }
+
+        throw new NotFoundException(String.format("Prices for the items in the set are not found! Sku of set item: %s", setSku));
     }
 
     /**

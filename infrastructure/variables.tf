@@ -81,3 +81,7 @@ variable "ignore_migration_core_sales_order" {
 variable "ignore_sales_order_splitter" {
   type = bool
 }
+
+variable "pricing_service_endpoint_url" {
+  type = string
+}
