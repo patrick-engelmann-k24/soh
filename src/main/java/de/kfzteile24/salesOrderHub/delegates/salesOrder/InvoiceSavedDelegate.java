@@ -1,7 +1,6 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
-import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.services.InvoiceUrlExtractor;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
@@ -22,12 +21,18 @@ class InvoiceSavedDelegate implements JavaDelegate {
     public void execute(DelegateExecution delegateExecution) throws Exception {
         final var orderNumber = (String) delegateExecution.getVariable(Variables.ORDER_NUMBER.getName());
         final var invoiceUrl = (String) delegateExecution.getVariable(Variables.INVOICE_URL.getName());
-        final var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
-                .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
-        final var originalOrder = (Order) salesOrder.getOriginalOrder();
 
-        if (InvoiceUrlExtractor.isDropShipmentRelated(originalOrder.getOrderHeader().getOrderFulfillment())) {
+        if (isDropShipmentRelated(orderNumber)) {
             snsPublishService.publishOrderInvoiceCreated(orderNumber, invoiceUrl);
         }
+    }
+
+    private boolean isDropShipmentRelated(String orderNumber) {
+        final var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber);
+        if (salesOrder.isPresent()) {
+            final var originalOrder = (Order) salesOrder.get().getOriginalOrder();
+            return InvoiceUrlExtractor.isDropShipmentRelated(originalOrder.getOrderHeader().getOrderFulfillment());
+        }
+        return false;
     }
 }

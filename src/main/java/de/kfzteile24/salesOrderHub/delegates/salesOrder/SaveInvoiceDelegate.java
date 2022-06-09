@@ -31,7 +31,7 @@ class SaveInvoiceDelegate implements JavaDelegate {
         var salesOrderInvoice = createAndSaveSalesOrderInvoice(orderNumber, invoiceUrl);
 
         salesOrderService.getOrderByOrderNumber(orderNumber)
-                .ifPresent(salesOrder -> salesOrderService.addSalesOrderInvoice(salesOrder, salesOrderInvoice));
+                .ifPresent(salesOrder -> invoiceService.addSalesOrderToInvoice(salesOrder, salesOrderInvoice));
     }
 
     private SalesOrderInvoice createAndSaveSalesOrderInvoice(String orderNumber, String invoiceUrl) {
