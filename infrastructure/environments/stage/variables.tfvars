@@ -1,6 +1,6 @@
 terraform_role_arn             = "arn:aws:iam::307487914182:role/K24.Terraform"
 source_repo_branch             = "develop"
-db_instance_class              = "db.t3.medium"
+db_instance_class              = "db.r4.2xlarge"
 domain_name                    = "stage.kfzteile24.io"
 environment                    = "stage"
 stage                          = "staging-1"
@@ -18,3 +18,4 @@ ignore_migration_core_sales_invoice      = false
 ignore_migration_core_sales_credit_note  = false
 ignore_migration_core_sales_order        = false
 ignore_sales_order_splitter              = true
+pricing_service_endpoint_url   = "https://s8vlbhblll.execute-api.eu-central-1.amazonaws.com/stage"

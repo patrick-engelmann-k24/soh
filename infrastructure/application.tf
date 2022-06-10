@@ -80,9 +80,11 @@ module "application_module" {
     ignore_migration_core_sales_credit_note    = var.ignore_migration_core_sales_credit_note
     ignore_migration_core_sales_order          = var.ignore_migration_core_sales_order
     ignore_sales_order_splitter                = var.ignore_sales_order_splitter
+    soh_bpmn_pricing_service_url               = var.pricing_service_endpoint_url
+    soh_bpmn_http_connection_timeout_seconds   = 8
   }
 
-  ssm_secrets_count = 9
+  ssm_secrets_count = 10
 
   ssm_secrets = {
 
@@ -98,6 +100,8 @@ module "application_module" {
 
     pdh_client_id              = aws_ssm_parameter.pdh_client_id.arn
     pdh_client_secret          = aws_ssm_parameter.pdh_client_secret.arn
+
+    pricing_service_api_key    = aws_ssm_parameter.pricing_service_api_key.arn
   }
 
   github_token = var.github_token

@@ -75,6 +75,14 @@ soh:
     config:
       maxNumberOfMessages: 10
       waitTimeOut: 10
+  http:
+    connection:
+      timeout: 8
+
+kfzteile:
+  pricing-service:
+    url: https://s8vlbhblll.execute-api.eu-central-1.amazonaws.com/stage
+    apiKey:  ${pricing_service_api_key:api_key}
 
 ignore_core_sales_invoice: false
 ignore_core_credit_note: false

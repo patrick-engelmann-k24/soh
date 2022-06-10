@@ -17,6 +17,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.shared.Address;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
+import de.kfzteile24.salesOrderHub.services.InvoiceService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.soh.order.dto.GrandTotalTaxes;
 import de.kfzteile24.soh.order.dto.Order;
@@ -46,6 +47,7 @@ import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -66,6 +68,9 @@ public class SalesOrderUtil {
 
     @NonNull
     private final SalesOrderService salesOrderService;
+
+    @NonNull
+    private final InvoiceService invoiceService;
 
     @NonNull
     private final BpmUtil bpmUtil;
@@ -448,6 +453,10 @@ public class SalesOrderUtil {
     public static ProductEnvelope getProductEnvelope(String rawMessage){
         ObjectMapper mapper = new ObjectMapperConfig().objectMapper();
         return mapper.readValue(rawMessage, ProductEnvelope.class);
+    }
+
+    public Set<SalesOrderInvoice> getSalesOrderInvoices(final String orderNumber) {
+        return invoiceService.getInvoicesByOrderNumber(orderNumber);
     }
 
     public static SalesOrderInvoice createSalesOrderInvoice(final String orderNumber, final boolean isCorrection) {

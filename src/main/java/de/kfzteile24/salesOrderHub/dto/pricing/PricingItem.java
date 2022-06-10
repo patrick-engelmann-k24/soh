@@ -1,4 +1,4 @@
-package de.kfzteile24.salesOrderHub.domain.pricing;
+package de.kfzteile24.salesOrderHub.dto.pricing;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;

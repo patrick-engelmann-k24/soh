@@ -1,8 +1,10 @@
 package de.kfzteile24.salesOrderHub.services.splitter.decorator;
 
+import de.kfzteile24.salesOrderHub.clients.PricingServiceClient;
 import de.kfzteile24.salesOrderHub.clients.ProductDataHubClient;
-import de.kfzteile24.salesOrderHub.domain.pricing.Prices;
-import de.kfzteile24.salesOrderHub.domain.pricing.PricingItem;
+import de.kfzteile24.salesOrderHub.dto.pricing.Prices;
+import de.kfzteile24.salesOrderHub.dto.pricing.PricingItem;
+import de.kfzteile24.salesOrderHub.dto.pricing.SetUnitPriceAPIResponse;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.soh.order.dto.Order;
@@ -20,6 +22,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getProductEnvelope;
@@ -40,6 +43,9 @@ class ItemSplitServiceTest {
 
     @Mock
     private ProductDataHubClient productDataHubClient;
+
+    @Mock
+    private PricingServiceClient pricingServiceClient;
 
     @Mock
     private OrderUtil orderUtil;
@@ -68,7 +74,7 @@ class ItemSplitServiceTest {
         list.add(order1);
         list.add(order2);
 
-        when(itemSplitService.getSetPrices((any()))).thenReturn(List.of(PricingItem.builder().build()));
+        when(pricingServiceClient.getSetPriceInfo(any(), any())).thenReturn(Optional.of(SetUnitPriceAPIResponse.builder().setUnitPrices(List.of(PricingItem.builder().build())).build()));
         doNothing().when(itemSplitService).recalculateSetItemPrices(any(), any(), any());
         when(orderUtil.getLastRowKey(any(Order.class))).thenReturn(3);
 
@@ -114,7 +120,7 @@ class ItemSplitServiceTest {
 
         final var order = getOrder(readResource("examples/splitterSalesOrderMessageWithTwoRows.json"));
 
-        when(itemSplitService.getSetPrices((any()))).thenReturn(List.of(PricingItem.builder().build()));
+        when(pricingServiceClient.getSetPriceInfo(any(), any())).thenReturn(Optional.of(SetUnitPriceAPIResponse.builder().setUnitPrices(List.of(PricingItem.builder().build())).build()));
         doNothing().when(itemSplitService).recalculateSetItemPrices(any(), any(), any());
         when(orderUtil.getLastRowKey(any(Order.class))).thenReturn(3);
         itemSplitService.processOrder(order);
@@ -160,7 +166,7 @@ class ItemSplitServiceTest {
         OrderRows setOrderRow = order.getOrderRows().stream().filter(row -> row.getSku().equals(setSku)).findFirst().orElseThrow();
         setOrderRow.setQuantity(new BigDecimal(2));
 
-        when(itemSplitService.getSetPrices((any()))).thenReturn(List.of(PricingItem.builder().build()));
+        when(pricingServiceClient.getSetPriceInfo(any(), any())).thenReturn(Optional.of(SetUnitPriceAPIResponse.builder().setUnitPrices(List.of(PricingItem.builder().build())).build()));
         doNothing().when(itemSplitService).recalculateSetItemPrices(any(), any(), any());
         when(orderUtil.getLastRowKey(any(Order.class))).thenReturn(3);
         itemSplitService.processOrder(order);
