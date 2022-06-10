@@ -58,6 +58,7 @@ import static org.mockito.Mockito.when;
 class SalesOrderRowServiceTest {
 
     private static final String ANY_PROCESS_INSTANCE_ID = UUID.randomUUID().toString();
+    private static final String ANY_PROCESS_ID = UUID.randomUUID().toString();
 
     @Mock
     private CamundaHelper camundaHelper;
@@ -186,6 +187,7 @@ class SalesOrderRowServiceTest {
     void testCorrelateOrderRowMessageFilteredOIn(String orderItemSku) {
 
         var executionEntity = new ExecutionEntity();
+        executionEntity.setId(ANY_PROCESS_ID);
         executionEntity.setProcessInstanceId(ANY_PROCESS_INSTANCE_ID);
         var messageCorrelationResult =
                 new MessageCorrelationResultImpl(CorrelationHandlerResult.matchedExecution(executionEntity));

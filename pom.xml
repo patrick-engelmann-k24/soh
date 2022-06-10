@@ -7,8 +7,8 @@
   <description>Run the core sales order hub BPMN processes</description>
 
   <properties>
-    <camunda.spring-boot.version>7.14.0</camunda.spring-boot.version>
-    <spring-boot.version>2.3.5.RELEASE</spring-boot.version>
+    <camunda.spring-boot.version>7.16.0</camunda.spring-boot.version>
+    <spring-boot.version>2.5.14</spring-boot.version>
     <spring-boot-test.version>5.2.3.RELEASE</spring-boot-test.version>
     <maven.compiler.source>11</maven.compiler.source>
     <maven.compiler.target>11</maven.compiler.target>
@@ -18,9 +18,9 @@
     <soh-order-json.version>1.0.26</soh-order-json.version>
     <junit-version>5.6.2</junit-version>
     <surefire-version>3.0.0-M5</surefire-version>
-    <newrelic.version>7.5.0</newrelic.version>
+    <newrelic.version>7.7.0</newrelic.version>
     <mapstruct.version>1.4.2.Final</mapstruct.version>
-    <lombok.version>1.18.22</lombok.version>
+    <lombok.version>1.18.24</lombok.version>
     <spring-wiremock-version>2.2.8.RELEASE</spring-wiremock-version>
     <camunda-bpm-assert-scenario.version>1.1.1</camunda-bpm-assert-scenario.version>
     <camunda-process-test-coverage-starter-platform8.version>1.0.3
@@ -112,7 +112,7 @@
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
-      <version>42.3.3</version>
+      <version>42.3.6</version>
     </dependency>
     <dependency>
       <groupId>org.springdoc</groupId>
@@ -209,13 +209,13 @@
       <plugin>
         <groupId>org.flywaydb</groupId>
         <artifactId>flyway-maven-plugin</artifactId>
-        <version>6.5.5</version>
+        <version>8.5.12</version>
         <configuration/>
         <dependencies>
           <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>42.3.3</version>
+            <version>42.3.6</version>
           </dependency>
         </dependencies>
       </plugin>

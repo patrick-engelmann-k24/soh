@@ -26,7 +26,6 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.compress.utils.Lists;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.Execution;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
@@ -37,6 +36,7 @@ import javax.transaction.Transactional;
 import java.math.BigDecimal;
 import java.text.MessageFormat;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -203,7 +203,7 @@ public class SalesOrderRowService {
     public Order recalculateOrderByReturns(SalesOrder salesOrder, Collection<CreditNoteLine> items) {
 
         var returnLatestJson = orderUtil.copyOrderJson(salesOrder.getLatestJson());
-        returnLatestJson.setOrderRows(Lists.newArrayList());
+        returnLatestJson.setOrderRows(new ArrayList<>());
         var totals = returnLatestJson.getOrderHeader().getTotals();
         var lastRowKey = orderUtil.getLastRowKey(salesOrder);
 
