@@ -11,6 +11,7 @@ import de.kfzteile24.salesOrderHub.dto.events.DropshipmentOrderReturnNotifiedEve
 import de.kfzteile24.salesOrderHub.dto.events.OrderCancelledEvent;
 import de.kfzteile24.salesOrderHub.dto.events.OrderRowCancelledEvent;
 import de.kfzteile24.salesOrderHub.dto.events.ReturnOrderCreatedEvent;
+import de.kfzteile24.salesOrderHub.dto.events.SalesCreditNoteCreatedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesCreditNoteReceivedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderCompletedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInfoEvent;
@@ -163,6 +164,12 @@ public class SnsPublishService {
                 salesCreditNoteReceivedEvent.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber();
         publishEvent(config.getSnsCreditNoteReceivedV1(), "Credit Note Received V1",
                 salesCreditNoteReceivedEvent, orderNumber);
+    }
+
+    public void publishCreditNoteCreatedEvent(SalesCreditNoteCreatedEvent salesCreditNoteCreatedEvent) {
+        var orderNumber = salesCreditNoteCreatedEvent.getReturnOrder().getOrderHeader().getOrderNumber();
+        publishEvent(config.getSnsCreditNoteCreatedV1(), "Credit Note Created V1",
+                salesCreditNoteCreatedEvent, orderNumber);
     }
 
     public void publishMigrationOrderCreated(String orderNumber) {

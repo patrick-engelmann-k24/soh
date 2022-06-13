@@ -44,6 +44,7 @@ module "application_module" {
     sns_soh_return_order_created_v1            = data.aws_sns_topic.sns_soh_return_order_created_v1.arn
     sns_soh_core_invoice_received_v1           = data.aws_sns_topic.sns_soh_core_invoice_received_v1.arn
     sns_soh_credit_note_received_v1            = data.aws_sns_topic.sns_soh_credit_note_received_v1.arn
+    sns_soh_credit_note_created_v1             = data.aws_sns_topic.sns_soh_credit_note_created_v1.arn
     sns_migration_soh_order_created_v2         = data.aws_sns_topic.sns_migration_soh_order_created_v2.arn
     sns_migration_soh_sales_order_row_cancelled_v1 = data.aws_sns_topic.sns_migration_soh_sales_order_row_cancelled_v1.arn
     sns_migration_soh_sales_order_cancelled_v1 = data.aws_sns_topic.sns_migration_soh_sales_order_cancelled_v1.arn
