@@ -12,7 +12,7 @@
     <bpmn:sequenceFlow id="Flow_1awervx" sourceRef="eventStartMsgCreditNoteCreated" targetRef="activitySaveCreditNoteUrl" />
     <bpmn:endEvent id="eventCreditNoteSaved" name="Credit note saved">
       <bpmn:incoming>Flow_17irrdt</bpmn:incoming>
-      <bpmn:messageEventDefinition id="MessageEventDefinition_05h0ljh" camunda:expression="${true}" />
+      <bpmn:messageEventDefinition id="MessageEventDefinition_05h0ljh" camunda:delegateExpression="${publishCreditNoteCreatedDelegate}" />
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_17irrdt" sourceRef="activitySaveCreditNoteUrl" targetRef="eventCreditNoteSaved" />
   </bpmn:process>

@@ -39,6 +39,7 @@ TOPICS="
     soh-dropshipment-purchase-order-return-notified
     soh-return-order-created-v1
     soh-credit-note-received-v1
+    soh-credit-note-created-v1
     soh-core-sales-invoice-created
     soh-core-invoice-received-v1
     migration-core-sales-order-created

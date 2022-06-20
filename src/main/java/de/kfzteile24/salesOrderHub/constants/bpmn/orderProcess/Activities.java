@@ -8,6 +8,7 @@ public enum Activities implements BpmItem {
     ORDER_ROW_FULFILLMENT_PROCESS("activityOrderRowFulfillmentProcess"),
     SUB_PROCESS_INVOICE_ADDRESS_CHANGE("activitySubProcessInvoiceAddressChange"),
     SAVE_INVOICE("activitySaveInvoice"),
+    SAVE_CREDIT_NOTE("activitySaveCreditNoteUrl"),
     EVENT_THROW_MSG_ORDER_CREATED("eventThrowMsgOrderCreated"),
     EVENT_THROW_MSG_DROPSHIPMENT_ORDER_CREATED("eventThrowMsgCreatePurchaseOrder"),
     EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED("eventMsgDropShipmentOrderConfirmed"),

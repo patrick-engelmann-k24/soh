@@ -11,6 +11,8 @@ public enum Messages implements BpmItem {
     ORDER_RECEIVED_GARAGE("msgOrderReceivedGarage"),
     ORDER_INVOICE_ADDRESS_CHANGE_RECEIVED("msgInvoiceAddressChangeReceived"),
     INVOICE_CREATED("msgInvoiceCreated"),
+
+    CREDIT_NOTE_CREATED("msgCreditNoteCreated"),
     ORDER_CREATED_IN_SOH("msgOrderCreatedInSoh"),
     CORE_SALES_INVOICE_CREATED_RECEIVED("msgCoreSalesInvoiceCreatedReceived"),
     CORE_CREDIT_NOTE_CREATED("msgCoreCreditNoteCreated"),
