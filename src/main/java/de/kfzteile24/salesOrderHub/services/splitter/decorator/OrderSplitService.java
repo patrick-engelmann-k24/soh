@@ -51,7 +51,7 @@ public class OrderSplitService extends AbstractSplitDecorator {
 
             List<OrderRows> toRemove = new ArrayList<>();
             for (final var orderRows : currentOrder.getOrderRows()) {
-                if (orderUtil.isDropShipmentItem(orderRows)) {
+                if (orderUtil.isDropShipmentItem(orderRows, currentOrder.getOrderHeader().getPlatform())) {
                     dsOrder.getOrderRows().add(orderRows);
                     toRemove.add(orderRows);
                 }

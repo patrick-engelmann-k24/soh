@@ -2,10 +2,10 @@ package de.kfzteile24.salesOrderHub.helper;
 
 import de.kfzteile24.salesOrderHub.configuration.DropShipmentConfig;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesFinancialDocumentLine;
 import de.kfzteile24.salesOrderHub.dto.sns.shared.OrderItem;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
+import de.kfzteile24.soh.order.dto.Platform;
 import de.kfzteile24.soh.order.dto.SumValues;
 import de.kfzteile24.soh.order.dto.UnitValues;
 import lombok.RequiredArgsConstructor;
@@ -15,14 +15,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.ORDER_NUMBER_SEPARATOR;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getGrossValue;
-import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.isNotNullAndNotEqual;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.round;
 import static java.math.RoundingMode.HALF_UP;
 
@@ -64,22 +61,6 @@ public class OrderUtil {
 
     public String createOrderNumberInSOH(String orderNumber, String reference) {
         return orderNumber + ORDER_NUMBER_SEPARATOR + reference;
-    }
-
-    private List<OrderRows> createRowFromLatestJson(SalesOrder salesOrder, CoreSalesFinancialDocumentLine item) {
-        return salesOrder.getLatestJson().getOrderRows().stream()
-                .filter(row -> row.getSku().equals(item.getItemNumber()))
-                .map(OrderMapper.INSTANCE::toOrderRow)
-                .map(row -> {
-                    row.setIsCancelled(false);
-                    if (row.getQuantity().compareTo(item.getQuantity()) <= 0) {
-                        return updateOrderRowByNewItemValues(row, item);
-                    } else {
-                        item.setQuantity(item.getQuantity().subtract(row.getQuantity()));
-                        return row;
-                    }
-                })
-                .collect(Collectors.toList());
     }
 
     public OrderRows createNewOrderRow(OrderItem item, SalesOrder salesOrder, Integer lastRowKey) {
@@ -134,7 +115,7 @@ public class OrderUtil {
 
     public boolean containsDropShipmentItems(Order order) {
         for (final var rows : order.getOrderRows()) {
-            if (isDropShipmentItem(rows)) {
+            if (isDropShipmentItem(rows, order.getOrderHeader().getPlatform())) {
                 return true;
             }
         }
@@ -146,53 +127,21 @@ public class OrderUtil {
             return false;
         }
         for (final var rows : order.getOrderRows()) {
-            if (!isDropShipmentItem(rows)) {
+            if (!isDropShipmentItem(rows, order.getOrderHeader().getPlatform())) {
                 return false;
             }
         }
         return true;
     }
 
-    public boolean containsOnlyRegularItems(Order order) {
-        return !containsDropShipmentItems(order);
-    }
-
-    public boolean isDropShipmentItem(OrderRows rows) {
-        return config.getSplitGenarts().contains(rows.getGenart());
-    }
-
-    protected OrderRows updateOrderRowByNewItemValues(OrderRows row, CoreSalesFinancialDocumentLine item) {
-        if (row != null) {
-            if (isNotNullAndNotEqual(item.getTaxRate(), row.getTaxRate())) {
-                updateOrderRowByTaxRate(row, item.getTaxRate());
-            }
-
-            if (isNotNullAndNotEqual(item.getUnitNetAmount(), row.getUnitValues().getGoodsValueNet())) {
-                updateOrderRowByUnitPriceNet(row, item.getUnitNetAmount());
-            }
-
-            if (isNotNullAndNotEqual(item.getQuantity(), row.getQuantity())) {
-                updateOrderRowByQuantity(row, item.getQuantity());
-            }
+    public boolean isDropShipmentItem(OrderRows rows, Platform platform) {
+        if (platform == Platform.ECP) {
+            return config.getEcp().contains(rows.getGenart());
+        } else if (platform == Platform.BRAINCRAFT) {
+            return config.getDeshop().contains(rows.getGenart());
+        } else {
+            return false;
         }
-        return row;
-    }
-
-    private void updateOrderRowByTaxRate(OrderRows row, BigDecimal taxRate) {
-        row.setTaxRate(taxRate);
-        row.setUnitValues(roundUnitValues(OrderMapper.INSTANCE.updateByTaxRate(row.getUnitValues(), taxRate)));
-        row.setSumValues(roundSumValues(OrderMapper.INSTANCE.toSumValues(row.getUnitValues(), row.getQuantity())));
-    }
-
-    private void updateOrderRowByQuantity(OrderRows row, BigDecimal quantity) {
-        row.setQuantity(quantity);
-        row.setSumValues(roundSumValues(OrderMapper.INSTANCE.toSumValues(row.getUnitValues(), quantity)));
-    }
-
-    private void updateOrderRowByUnitPriceNet(OrderRows row, BigDecimal unitPriceNet) {
-        var unitPriceGross = getGrossValue(unitPriceNet, row.getTaxRate());
-        row.setUnitValues(roundUnitValues(OrderMapper.INSTANCE.updateByGoodsValue(row.getUnitValues(), unitPriceGross, unitPriceNet)));
-        row.setSumValues(roundSumValues(OrderMapper.INSTANCE.toSumValues(row.getUnitValues(), row.getQuantity())));
     }
 
     private UnitValues roundUnitValues(UnitValues unitValues) {
