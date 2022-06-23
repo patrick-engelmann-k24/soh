@@ -75,7 +75,7 @@ public class ProductDataHubClient {
                     throw new NotFoundException("Could not get product data from PDH for sku: " + sku);
                 }
             } catch (Exception e) {
-                log.info("Could not get product data for sku: {}, there was a connection error", sku);
+                log.error("Could not get product data for sku: {}, there was a connection error", sku, e);
                 throw new NotFoundException("Could not get product data from PDH for sku: " + sku);
             }
         });
