@@ -163,7 +163,6 @@ class SalesOrderServiceTest {
         when(salesOrderRepository.save(any())).thenAnswer((Answer<SalesOrder>) invocation -> invocation.getArgument(0));
 
         // Establish some updates before the test in order to see the change
-        salesOrder.setOrderGroupId("33333"); //set order group id to a different value to observe the change
         GrandTotalTaxes actualGrandTotalTax = GrandTotalTaxes.builder()
                 .rate(BigDecimal.TEN)
                 .value(BigDecimal.TEN)

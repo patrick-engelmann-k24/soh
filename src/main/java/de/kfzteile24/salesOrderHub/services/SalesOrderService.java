@@ -8,6 +8,7 @@ import de.kfzteile24.salesOrderHub.domain.audit.AuditLog;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesFinancialDocumentLine;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
+import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundCustomException;
 import de.kfzteile24.salesOrderHub.helper.OrderMapper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
@@ -24,6 +25,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.logging.log4j.util.Strings;
 import org.camunda.bpm.engine.RuntimeService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -130,6 +132,7 @@ public class SalesOrderService {
         Order order = createOrderForSubsequentSalesOrder(salesInvoiceCreatedMessage, originalSalesOrder);
         order.getOrderHeader().setPlatform(Platform.SOH);
         order.getOrderHeader().setOrderNumber(newOrderNumber);
+        order.getOrderHeader().setOrderGroupId(originalSalesOrder.getOrderGroupId());
         order.getOrderHeader().setDocumentRefNumber(salesInvoiceHeader.getInvoiceNumber());
         salesInvoiceHeader.setOrderNumber(newOrderNumber);
         salesInvoiceHeader.setOrderGroupId(order.getOrderHeader().getOrderGroupId());
@@ -137,16 +140,27 @@ public class SalesOrderService {
                 .filter(CoreSalesFinancialDocumentLine::getIsShippingCost).findFirst().orElse(null);
         recalculateTotals(order, shippingCostDocumentLine);
 
+        var customerEmail = Strings.isNotEmpty(originalSalesOrder.getCustomerEmail()) ?
+                originalSalesOrder.getCustomerEmail() :
+                getCustomerEmailByOrderJson(order);
         var salesOrder = SalesOrder.builder()
                 .orderNumber(newOrderNumber)
-                .orderGroupId(order.getOrderHeader().getOrderGroupId())
+                .orderGroupId(originalSalesOrder.getOrderGroupId())
                 .salesChannel(order.getOrderHeader().getSalesChannel())
-                .customerEmail(order.getOrderHeader().getCustomer().getCustomerEmail())
+                .customerEmail(customerEmail)
                 .originalOrder(order)
                 .latestJson(order)
                 .invoiceEvent(salesInvoiceCreatedMessage)
                 .build();
         return createSalesOrder(salesOrder);
+    }
+
+    private String getCustomerEmailByOrderJson(Order order) {
+        if (order.getOrderHeader().getCustomer() != null) {
+            return order.getOrderHeader().getCustomer().getCustomerEmail();
+        }
+        throw new NotFoundException("Customer Email is not found for the order number: " +
+                order.getOrderHeader().getOrderNumber());
     }
 
     protected Order createOrderForSubsequentSalesOrder(CoreSalesInvoiceCreatedMessage coreSalesInvoiceCreatedMessage,
