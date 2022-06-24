@@ -10,11 +10,15 @@ import javax.validation.constraints.NotNull;
 import java.util.List;
 
 @Configuration
-@ConfigurationProperties(prefix = "kfzteile.dropshipment")
+@ConfigurationProperties(prefix = "kfzteile.dropshipment.splitgenarts")
 @Data
 public class DropShipmentConfig {
 
     @NotNull
     @NotEmpty
-    private List<@NotBlank String> splitGenarts;
+    private List<@NotBlank String> ecp;
+
+    @NotNull
+    @NotEmpty
+    private List<@NotBlank String> deshop;
 }

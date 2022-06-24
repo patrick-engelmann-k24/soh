@@ -8,6 +8,7 @@ import de.kfzteile24.salesOrderHub.domain.audit.AuditLog;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesFinancialDocumentLine;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
+import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundCustomException;
 import de.kfzteile24.salesOrderHub.helper.OrderMapper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
@@ -24,6 +25,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.logging.log4j.util.Strings;
 import org.camunda.bpm.engine.RuntimeService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,7 +44,6 @@ import java.util.stream.Collectors;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.INVOICE_URL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
-import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getGrossValue;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getSumValue;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.isNotNullAndEqual;
 import static java.text.MessageFormat.format;
@@ -130,6 +131,7 @@ public class SalesOrderService {
         Order order = createOrderForSubsequentSalesOrder(salesInvoiceCreatedMessage, originalSalesOrder);
         order.getOrderHeader().setPlatform(Platform.SOH);
         order.getOrderHeader().setOrderNumber(newOrderNumber);
+        order.getOrderHeader().setOrderGroupId(originalSalesOrder.getOrderGroupId());
         order.getOrderHeader().setDocumentRefNumber(salesInvoiceHeader.getInvoiceNumber());
         salesInvoiceHeader.setOrderNumber(newOrderNumber);
         salesInvoiceHeader.setOrderGroupId(order.getOrderHeader().getOrderGroupId());
@@ -137,16 +139,27 @@ public class SalesOrderService {
                 .filter(CoreSalesFinancialDocumentLine::getIsShippingCost).findFirst().orElse(null);
         recalculateTotals(order, shippingCostDocumentLine);
 
+        var customerEmail = Strings.isNotEmpty(originalSalesOrder.getCustomerEmail()) ?
+                originalSalesOrder.getCustomerEmail() :
+                getCustomerEmailByOrderJson(order);
         var salesOrder = SalesOrder.builder()
                 .orderNumber(newOrderNumber)
-                .orderGroupId(order.getOrderHeader().getOrderGroupId())
+                .orderGroupId(originalSalesOrder.getOrderGroupId())
                 .salesChannel(order.getOrderHeader().getSalesChannel())
-                .customerEmail(order.getOrderHeader().getCustomer().getCustomerEmail())
+                .customerEmail(customerEmail)
                 .originalOrder(order)
                 .latestJson(order)
                 .invoiceEvent(salesInvoiceCreatedMessage)
                 .build();
         return createSalesOrder(salesOrder);
+    }
+
+    private String getCustomerEmailByOrderJson(Order order) {
+        if (order.getOrderHeader().getCustomer() != null) {
+            return order.getOrderHeader().getCustomer().getCustomerEmail();
+        }
+        throw new NotFoundException("Customer Email is not found for the order number: " +
+                order.getOrderHeader().getOrderNumber());
     }
 
     protected Order createOrderForSubsequentSalesOrder(CoreSalesInvoiceCreatedMessage coreSalesInvoiceCreatedMessage,
@@ -220,7 +233,7 @@ public class SalesOrderService {
 
     private boolean isShippingCostGrossMatch(SalesOrder originalSalesOrder, CoreSalesFinancialDocumentLine shippingCostDocumentLine) {
         var shippingCostGross = shippingCostDocumentLine != null
-                ? getGrossValue(shippingCostDocumentLine.getUnitNetAmount(), shippingCostDocumentLine.getTaxRate()) : BigDecimal.ZERO;
+                ?shippingCostDocumentLine.getUnitGrossAmount() : BigDecimal.ZERO;
         var orderHeaderShippingCostGross = originalSalesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostGross();
         return isNotNullAndEqual(shippingCostGross != null ? shippingCostGross : BigDecimal.ZERO, orderHeaderShippingCostGross);
     }
@@ -283,8 +296,7 @@ public class SalesOrderService {
 
     private void recalculateTotals(Order order, CoreSalesFinancialDocumentLine shippingCostLine) {
         BigDecimal shippingCostNet = shippingCostLine != null ? shippingCostLine.getUnitNetAmount() : BigDecimal.ZERO;
-        BigDecimal shippingCostGross = shippingCostLine != null ?
-                getGrossValue(shippingCostLine.getUnitNetAmount(), shippingCostLine.getTaxRate()) : BigDecimal.ZERO;
+        BigDecimal shippingCostGross = shippingCostLine != null ? shippingCostLine.getUnitGrossAmount() : BigDecimal.ZERO;
         recalculateTotals(order, shippingCostNet, shippingCostGross, shippingCostLine != null);
     }
 

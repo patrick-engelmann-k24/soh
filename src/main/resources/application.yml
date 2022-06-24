@@ -138,7 +138,7 @@ kfzteile:
   product-data-hub:
     pdhUrl: https://pdh-dashboard-api.${environment:stage}.kfzteile24.io
     authUrl: https://kfzteile24-${environment:stage}.auth.eu-central-1.amazoncognito.com/oauth2/token
-    clientId:  ${pdh_client_id:client_id}
+    clientId: ${pdh_client_id:client_id}
     clientSecret: ${pdh_client_secret:client_secret}
   #
   # Delete processes that are not used?
@@ -150,11 +150,16 @@ kfzteile:
       publish-delay: PT10S
   orderReturnProcess:
     publishDelay: PT10S
-  dropShipment:
-    splitGenarts:
-      - 10033
-      - 10034
-      - 10035
+  dropshipment:
+    splitgenarts:
+      ecp:
+        - 10033
+        - 10034
+        - 10035
+      deshop:
+        - 10040
+        - 10041
+        - 10042
   persistent-properties:
     -
       key: pauseDropshipmentProcessing
@@ -162,7 +167,7 @@ kfzteile:
       overwrite-on-startup: false
   pricing-service:
     url: ${soh_bpmn_pricing_service_url}
-    apiKey:  ${pricing_service_api_key:api_key}
+    apiKey: ${pricing_service_api_key:api_key}
 
 ignoreCoreSalesInvoice: ${ignore_core_sales_invoice}
 ignoreCoreCreditNote: ${ignore_core_credit_note}

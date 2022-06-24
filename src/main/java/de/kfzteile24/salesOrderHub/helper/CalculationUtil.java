@@ -1,8 +1,5 @@
 package de.kfzteile24.salesOrderHub.helper;
 
-import de.kfzteile24.soh.order.dto.SumValues;
-import org.apache.commons.lang3.RandomStringUtils;
-
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
@@ -21,22 +18,9 @@ public class CalculationUtil {
 
     private CalculationUtil() {}
 
-    public static BigDecimal getValueOrDefault(BigDecimal value, BigDecimal defaultValue) {
-        return Objects.nonNull(value) ? value : defaultValue;
-    }
-
-    public static boolean isGreater(BigDecimal value, BigDecimal otherValue) {
-        return value.compareTo(otherValue) > 0;
-    }
-
     public static boolean isNotNullAndEqual(BigDecimal targetValue, BigDecimal comparedValue) {
         return targetValue != null &&
                 targetValue.compareTo(Optional.ofNullable(comparedValue).orElse(BigDecimal.ZERO)) == 0;
-    }
-
-    public static boolean isNotNullAndNotEqual(BigDecimal targetValue, BigDecimal comparedValue) {
-        return targetValue != null &&
-                targetValue.compareTo(Optional.ofNullable(comparedValue).orElse(BigDecimal.ZERO)) != 0;
     }
 
     public static BigDecimal round(BigDecimal value, RoundingMode roundingMode) {
@@ -63,13 +47,6 @@ public class CalculationUtil {
         return Optional.ofNullable(value).orElse(BigDecimal.ZERO).multiply(quantity);
     }
 
-    public static BigDecimal getGrossValue(BigDecimal netValue, BigDecimal taxRate) {
-        if (netValue == null || taxRate == null)
-            return netValue;
-
-        return round(netValue.multiply(BigDecimal.valueOf(100).add(taxRate)).divide(BigDecimal.valueOf(100), MATH_CONTEXT), RoundingMode.HALF_UP);
-    }
-
     public static BigDecimal getNetValue(BigDecimal grossValue, BigDecimal taxRate) {
         if (grossValue == null || taxRate == null)
             return grossValue;
@@ -82,18 +59,5 @@ public class CalculationUtil {
             return null;
 
         return goodValue.subtract(Optional.ofNullable(discountedValue).orElse(BigDecimal.ZERO));
-    }
-
-    public static BigDecimal getSumOfGoodsNetFromSumOfGoodsGross(BigDecimal salesPriceGross, BigDecimal quantity, BigDecimal taxRate) {
-        if (salesPriceGross == null || quantity == null || BigDecimal.ZERO.equals(quantity) || taxRate == null) {
-            return salesPriceGross;
-        }
-        var goodsValueGross = salesPriceGross.divide(quantity, MATH_CONTEXT);
-        var goodsValueNet = getNetValue(goodsValueGross, taxRate);
-        return quantity.multiply(goodsValueNet);
-    }
-
-    public static String randomNumbers(int digitCount) {
-        return RandomStringUtils.random(digitCount, false, true);
     }
 }

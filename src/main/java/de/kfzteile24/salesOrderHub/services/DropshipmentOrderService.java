@@ -136,8 +136,8 @@ public class DropshipmentOrderService {
     public boolean isDropShipmentOrder(String orderNumber) {
         var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
-        var originalOrder = (Order) salesOrder.getOriginalOrder();
-        var orderFulfillment = originalOrder.getOrderHeader().getOrderFulfillment();
+        var latestOrder = (Order) salesOrder.getLatestJson();
+        var orderFulfillment = latestOrder.getOrderHeader().getOrderFulfillment();
         return org.apache.commons.lang3.StringUtils.equalsIgnoreCase(orderFulfillment, DELTICOM.getName());
     }
 

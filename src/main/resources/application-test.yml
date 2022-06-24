@@ -107,6 +107,16 @@ kfzteile:
   product-data-hub:
     pdhUrl: http://localhost:18080
     authUrl: http://localhost:18080/oauth2/token
+  dropshipment:
+    splitgenarts:
+      ecp:
+        - 10033
+        - 10034
+        - 10035
+      deshop:
+        - 10040
+        - 10041
+        - 10042
   persistent-properties:
     - key: pauseDropshipmentProcessing
       value: false

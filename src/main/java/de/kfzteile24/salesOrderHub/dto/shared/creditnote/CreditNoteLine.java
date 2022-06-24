@@ -25,6 +25,12 @@ public class CreditNoteLine implements OrderItem {
     @JsonProperty("LineNetAmount")
     BigDecimal lineNetAmount;
 
+    @JsonProperty("UnitGrossAmount")
+    BigDecimal unitGrossAmount;
+
+    @JsonProperty("LineGrossAmount")
+    BigDecimal lineGrossAmount;
+
     @JsonProperty("LineTaxAmount")
     BigDecimal lineTaxAmount;
 

@@ -163,7 +163,6 @@ class SalesOrderServiceTest {
         when(salesOrderRepository.save(any())).thenAnswer((Answer<SalesOrder>) invocation -> invocation.getArgument(0));
 
         // Establish some updates before the test in order to see the change
-        salesOrder.setOrderGroupId("33333"); //set order group id to a different value to observe the change
         GrandTotalTaxes actualGrandTotalTax = GrandTotalTaxes.builder()
                 .rate(BigDecimal.TEN)
                 .value(BigDecimal.TEN)
@@ -209,7 +208,7 @@ class SalesOrderServiceTest {
         assertEquals(2, salesOrder.getLatestJson().getOrderRows().size());
 
         // Prepare sub-sequent delivery note obj
-        var invoiceCreatedMessage = createFullyMatchedItemsMessage(salesOrder, null, null);
+        var invoiceCreatedMessage = createFullyMatchedItemsMessage(salesOrder, null, null, null);
 
         CoreSalesInvoiceHeader salesInvoiceHeader = invoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
         assertTrue(salesOrderService.isFullyMatchedWithOriginalOrder(salesOrder, salesInvoiceHeader.getInvoiceLines()));
@@ -224,7 +223,7 @@ class SalesOrderServiceTest {
         assertEquals(2, salesOrder.getLatestJson().getOrderRows().size());
 
         // Prepare sub-sequent delivery note obj
-        var invoiceCreatedMessage = createFullyMatchedItemsMessage(salesOrder, "test", null);
+        var invoiceCreatedMessage = createFullyMatchedItemsMessage(salesOrder, "test", null, null);
 
         CoreSalesInvoiceHeader salesInvoiceHeader = invoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
         assertTrue(salesOrderService.isFullyMatchedWithOriginalOrder(salesOrder, salesInvoiceHeader.getInvoiceLines()));
@@ -242,7 +241,7 @@ class SalesOrderServiceTest {
 
         // Prepare sub-sequent delivery note obj
         var invoiceCreatedMessage = createFullyMatchedItemsMessage(salesOrder,
-                orderRow.getSku(), null);
+                orderRow.getSku(), null, null);
 
         CoreSalesInvoiceHeader salesInvoiceHeader = invoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
         assertTrue(salesOrderService.isFullyMatchedWithOriginalOrder(salesOrder, salesInvoiceHeader.getInvoiceLines()));
@@ -260,7 +259,7 @@ class SalesOrderServiceTest {
 
         // Prepare sub-sequent delivery note obj
         var invoiceCreatedMessage = createFullyMatchedItemsMessage(salesOrder,
-                orderRow.getSku(), null);
+                orderRow.getSku(), null, null);
 
         CoreSalesInvoiceHeader salesInvoiceHeader = invoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
         assertFalse(salesOrderService.isFullyMatchedWithOriginalOrder(salesOrder, salesInvoiceHeader.getInvoiceLines()));
@@ -278,7 +277,7 @@ class SalesOrderServiceTest {
 
         // Prepare sub-sequent delivery note obj
         var invoiceCreatedMessage = createFullyMatchedItemsMessage(salesOrder,
-                orderRow.getSku(), BigDecimal.valueOf(0.1));
+                orderRow.getSku(), BigDecimal.valueOf(0.1), BigDecimal.valueOf(0.3));
 
         CoreSalesInvoiceHeader salesInvoiceHeader = invoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
         assertFalse(salesOrderService.isFullyMatchedWithOriginalOrder(salesOrder, salesInvoiceHeader.getInvoiceLines()));
@@ -292,6 +291,8 @@ class SalesOrderServiceTest {
                 .quantity(quantity)
                 .unitNetAmount(BigDecimal.valueOf(9))
                 .lineNetAmount(BigDecimal.valueOf(9).multiply(quantity))
+                .unitGrossAmount(BigDecimal.valueOf(9.8))
+                .unitGrossAmount(BigDecimal.valueOf(9.8).multiply(quantity))
                 .taxRate(BigDecimal.TEN)
                 .isShippingCost(false)
                 .build();
@@ -309,7 +310,9 @@ class SalesOrderServiceTest {
         return salesInvoiceCreatedMessage;
     }
 
-    private CoreSalesInvoiceCreatedMessage createFullyMatchedItemsMessage(SalesOrder order, String shippingCostLineSku, BigDecimal shippingCostLineNetAmount) {
+    private CoreSalesInvoiceCreatedMessage createFullyMatchedItemsMessage(
+            SalesOrder order, String shippingCostLineSku,
+            BigDecimal shippingCostUnitNetAmount, BigDecimal shippingCostUnitGrossAmount) {
         CoreSalesInvoiceHeader coreSalesInvoiceHeader = new CoreSalesInvoiceHeader();
         coreSalesInvoiceHeader.setOrderNumber(order.getOrderNumber());
         CoreSalesInvoice coreSalesInvoice = new CoreSalesInvoice();
@@ -321,6 +324,9 @@ class SalesOrderServiceTest {
                     .quantity(orderRow.getQuantity())
                     .taxRate(orderRow.getTaxRate())
                     .unitNetAmount(orderRow.getUnitValues().getGoodsValueNet())
+                    .lineNetAmount(orderRow.getSumValues().getGoodsValueNet())
+                    .unitGrossAmount(orderRow.getUnitValues().getGoodsValueGross())
+                    .lineGrossAmount(orderRow.getSumValues().getGoodsValueGross())
                     .isShippingCost(false)
                     .build();
             invoiceLines.add(item);
@@ -329,7 +335,8 @@ class SalesOrderServiceTest {
         if (shippingCostLineSku != null) {
             CoreSalesFinancialDocumentLine item = CoreSalesFinancialDocumentLine.builder()
                     .itemNumber(shippingCostLineSku)
-                    .unitNetAmount(shippingCostLineNetAmount)
+                    .unitNetAmount(shippingCostUnitNetAmount)
+                    .unitGrossAmount(shippingCostUnitGrossAmount)
                     .quantity(null)
                     .isShippingCost(true)
                     .build();

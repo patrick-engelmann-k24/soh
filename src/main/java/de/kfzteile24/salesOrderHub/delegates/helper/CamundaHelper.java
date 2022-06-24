@@ -147,7 +147,7 @@ public class CamundaHelper {
         String paymentType;
         String platformType;
         orderRowSkus = new ArrayList<>();
-        final var order = (Order) salesOrder.getOriginalOrder();
+        final var order = (Order) salesOrder.getLatestJson();
         platformType = order.getOrderHeader().getPlatform().name();
         paymentType = getPaymentType(order.getOrderHeader().getPayments());
         shippingType = order.getOrderRows().get(0).getShippingType();

@@ -1,17 +1,33 @@
 package de.kfzteile24.salesOrderHub.utils;
 
+import de.kfzteile24.salesOrderHub.configuration.DropShipmentConfig;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
+import de.kfzteile24.soh.order.dto.OrderRows;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.List;
 
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.readResource;
+import static de.kfzteile24.soh.order.dto.Platform.BRAINCRAFT;
+import static de.kfzteile24.soh.order.dto.Platform.CORE;
+import static de.kfzteile24.soh.order.dto.Platform.ECP;
+import static de.kfzteile24.soh.order.dto.Platform.EMIDA;
+import static de.kfzteile24.soh.order.dto.Platform.SOH;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class OrderUtilTest {
+
+    @Mock
+    private DropShipmentConfig dropShipmentConfig;
 
     @InjectMocks
     private OrderUtil orderUtil;
@@ -45,5 +61,51 @@ class OrderUtilTest {
         lastRowKey = orderUtil.updateLastRowKey(salesOrder, "ABC-2", lastRowKey);
 
         assertThat(lastRowKey).isEqualTo(4);
+    }
+
+    @Test
+    void testIsDropshipmentItem() {
+
+        when(dropShipmentConfig.getEcp()).thenReturn(List.of("10033", "10034", "10035"));
+        when(dropShipmentConfig.getDeshop()).thenReturn(List.of("10040", "10041", "10042"));
+
+        assertTrue(orderUtil.isDropShipmentItem(OrderRows.builder().genart("10033").build(), ECP));
+        assertTrue(orderUtil.isDropShipmentItem(OrderRows.builder().genart("10034").build(), ECP));
+        assertTrue(orderUtil.isDropShipmentItem(OrderRows.builder().genart("10035").build(), ECP));
+        assertFalse(orderUtil.isDropShipmentItem(OrderRows.builder().genart("10036").build(), ECP));
+        assertFalse(orderUtil.isDropShipmentItem(OrderRows.builder().genart("10040").build(), ECP));
+        assertFalse(orderUtil.isDropShipmentItem(OrderRows.builder().genart("10041").build(), ECP));
+        assertFalse(orderUtil.isDropShipmentItem(OrderRows.builder().genart("10042").build(), ECP));
+
+        assertTrue(orderUtil.isDropShipmentItem(OrderRows.builder().genart("10040").build(), BRAINCRAFT));
+        assertTrue(orderUtil.isDropShipmentItem(OrderRows.builder().genart("10041").build(), BRAINCRAFT));
+        assertTrue(orderUtil.isDropShipmentItem(OrderRows.builder().genart("10042").build(), BRAINCRAFT));
+        assertFalse(orderUtil.isDropShipmentItem(OrderRows.builder().genart("10043").build(), BRAINCRAFT));
+        assertFalse(orderUtil.isDropShipmentItem(OrderRows.builder().genart("10033").build(), BRAINCRAFT));
+        assertFalse(orderUtil.isDropShipmentItem(OrderRows.builder().genart("10034").build(), BRAINCRAFT));
+        assertFalse(orderUtil.isDropShipmentItem(OrderRows.builder().genart("10035").build(), BRAINCRAFT));
+
+        assertFalse(orderUtil.isDropShipmentItem(OrderRows.builder().genart("10033").build(), CORE));
+        assertFalse(orderUtil.isDropShipmentItem(OrderRows.builder().genart("10034").build(), CORE));
+        assertFalse(orderUtil.isDropShipmentItem(OrderRows.builder().genart("10035").build(), CORE));
+        assertFalse(orderUtil.isDropShipmentItem(OrderRows.builder().genart("10040").build(), CORE));
+        assertFalse(orderUtil.isDropShipmentItem(OrderRows.builder().genart("10041").build(), CORE));
+        assertFalse(orderUtil.isDropShipmentItem(OrderRows.builder().genart("10042").build(), CORE));
+
+        assertFalse(orderUtil.isDropShipmentItem(OrderRows.builder().genart("10033").build(), EMIDA));
+        assertFalse(orderUtil.isDropShipmentItem(OrderRows.builder().genart("10034").build(), EMIDA));
+        assertFalse(orderUtil.isDropShipmentItem(OrderRows.builder().genart("10035").build(), EMIDA));
+        assertFalse(orderUtil.isDropShipmentItem(OrderRows.builder().genart("10040").build(), EMIDA));
+        assertFalse(orderUtil.isDropShipmentItem(OrderRows.builder().genart("10041").build(), EMIDA));
+        assertFalse(orderUtil.isDropShipmentItem(OrderRows.builder().genart("10042").build(), EMIDA));
+
+        assertFalse(orderUtil.isDropShipmentItem(OrderRows.builder().genart("10033").build(), SOH));
+        assertFalse(orderUtil.isDropShipmentItem(OrderRows.builder().genart("10034").build(), SOH));
+        assertFalse(orderUtil.isDropShipmentItem(OrderRows.builder().genart("10035").build(), SOH));
+        assertFalse(orderUtil.isDropShipmentItem(OrderRows.builder().genart("10040").build(), SOH));
+        assertFalse(orderUtil.isDropShipmentItem(OrderRows.builder().genart("10041").build(), SOH));
+        assertFalse(orderUtil.isDropShipmentItem(OrderRows.builder().genart("10042").build(), SOH));
+
+
     }
 }

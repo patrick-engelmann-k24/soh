@@ -106,6 +106,8 @@ public class InvoiceService {
                     .taxRate(row.getTaxRate())
                     .unitNetAmount(Optional.ofNullable(row.getUnitValues().getDiscountedNet()).orElse(BigDecimal.ZERO))
                     .lineNetAmount(Optional.ofNullable(row.getSumValues().getTotalDiscountedNet()).orElse(BigDecimal.ZERO))
+                    .unitGrossAmount(Optional.ofNullable(row.getUnitValues().getDiscountedGross()).orElse(BigDecimal.ZERO))
+                    .lineGrossAmount(Optional.ofNullable(row.getSumValues().getTotalDiscountedGross()).orElse(BigDecimal.ZERO))
                     .lineTaxAmount(Optional.ofNullable(row.getSumValues().getTotalDiscountedGross()).orElse(BigDecimal.ZERO)
                             .subtract(Optional.ofNullable(row.getSumValues().getTotalDiscountedNet()).orElse(BigDecimal.ZERO)))
                     .isShippingCost(false)
