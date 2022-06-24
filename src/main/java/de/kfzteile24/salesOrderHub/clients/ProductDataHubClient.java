@@ -52,30 +52,25 @@ public class ProductDataHubClient {
 
             final var httpEntity = new HttpEntity<>(null, authHeaders);
 
-            try {
-                ResponseEntity<String> response = restTemplate.exchange(endpoint, GET, httpEntity, String.class);
-                if (response.getStatusCode() == HttpStatus.FOUND) {
-                    URI location = response.getHeaders().getLocation();
-                    ResponseEntity<ProductEnvelope> productDataResponse =
-                            restTemplate.exchange(Objects.requireNonNull(location), GET, null, ProductEnvelope.class);
-                    return Objects.requireNonNull(productDataResponse.getBody()).getProduct();
-                } else if (response.getStatusCode() == HttpStatus.OK) {
-                    try {
-                        ProductEnvelope productEnvelope = objectMapper.readValue(response.getBody(), ProductEnvelope.class);
-                        return productEnvelope.getProduct();
-                    } catch (JsonProcessingException e) {
-                        log.info("Could not get product data for sku: {}, could not parse the response from PDH: \n{}", sku, response.getBody());
-                        throw new NotFoundException("Could not get product data from PDH for sku: " + sku);
-                    }
-                } else if (response.getStatusCode() == HttpStatus.NO_CONTENT) {
-                    log.info("Could not get product data for sku: {}, PDH does not have the data.", sku);
-                    throw new NotFoundException("Could not get product data from PDH for sku: " + sku);
-                } else {
-                    log.info("Could not get product data for sku: {}, there was a problem with the redirect.", sku);
+            ResponseEntity<String> response = restTemplate.exchange(endpoint, GET, httpEntity, String.class);
+            if (response.getStatusCode() == HttpStatus.FOUND) {
+                URI location = response.getHeaders().getLocation();
+                ResponseEntity<ProductEnvelope> productDataResponse =
+                        restTemplate.exchange(Objects.requireNonNull(location), GET, null, ProductEnvelope.class);
+                return Objects.requireNonNull(productDataResponse.getBody()).getProduct();
+            } else if (response.getStatusCode() == HttpStatus.OK) {
+                try {
+                    ProductEnvelope productEnvelope = objectMapper.readValue(response.getBody(), ProductEnvelope.class);
+                    return productEnvelope.getProduct();
+                } catch (JsonProcessingException e) {
+                    log.info("Could not get product data for sku: {}, could not parse the response from PDH: \n{}", sku, response.getBody());
                     throw new NotFoundException("Could not get product data from PDH for sku: " + sku);
                 }
-            } catch (Exception e) {
-                log.error("Could not get product data for sku: {}, there was a connection error", sku, e);
+            } else if (response.getStatusCode() == HttpStatus.NO_CONTENT) {
+                log.info("Could not get product data for sku: {}, PDH does not have the data.", sku);
+                throw new NotFoundException("Could not get product data from PDH for sku: " + sku);
+            } else {
+                log.info("Could not get product data for sku: {}, there was a problem with the redirect.", sku);
                 throw new NotFoundException("Could not get product data from PDH for sku: " + sku);
             }
         });
