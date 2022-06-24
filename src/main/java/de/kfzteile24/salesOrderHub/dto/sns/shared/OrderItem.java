@@ -12,6 +12,10 @@ public interface OrderItem {
 
     BigDecimal getLineNetAmount();
 
+    BigDecimal getUnitGrossAmount();
+
+    BigDecimal getLineGrossAmount();
+
     BigDecimal getTaxRate();
 
     Boolean getIsShippingCost();

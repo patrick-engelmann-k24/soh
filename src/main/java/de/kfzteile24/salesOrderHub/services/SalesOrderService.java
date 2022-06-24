@@ -44,7 +44,6 @@ import java.util.stream.Collectors;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.INVOICE_URL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
-import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getGrossValue;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getSumValue;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.isNotNullAndEqual;
 import static java.text.MessageFormat.format;
@@ -234,7 +233,7 @@ public class SalesOrderService {
 
     private boolean isShippingCostGrossMatch(SalesOrder originalSalesOrder, CoreSalesFinancialDocumentLine shippingCostDocumentLine) {
         var shippingCostGross = shippingCostDocumentLine != null
-                ? getGrossValue(shippingCostDocumentLine.getUnitNetAmount(), shippingCostDocumentLine.getTaxRate()) : BigDecimal.ZERO;
+                ?shippingCostDocumentLine.getUnitGrossAmount() : BigDecimal.ZERO;
         var orderHeaderShippingCostGross = originalSalesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostGross();
         return isNotNullAndEqual(shippingCostGross != null ? shippingCostGross : BigDecimal.ZERO, orderHeaderShippingCostGross);
     }
@@ -297,8 +296,7 @@ public class SalesOrderService {
 
     private void recalculateTotals(Order order, CoreSalesFinancialDocumentLine shippingCostLine) {
         BigDecimal shippingCostNet = shippingCostLine != null ? shippingCostLine.getUnitNetAmount() : BigDecimal.ZERO;
-        BigDecimal shippingCostGross = shippingCostLine != null ?
-                getGrossValue(shippingCostLine.getUnitNetAmount(), shippingCostLine.getTaxRate()) : BigDecimal.ZERO;
+        BigDecimal shippingCostGross = shippingCostLine != null ? shippingCostLine.getUnitGrossAmount() : BigDecimal.ZERO;
         recalculateTotals(order, shippingCostNet, shippingCostGross, shippingCostLine != null);
     }
 

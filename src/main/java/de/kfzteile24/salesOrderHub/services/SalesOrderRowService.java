@@ -14,7 +14,6 @@ import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
-import de.kfzteile24.salesOrderHub.helper.CalculationUtil;
 import de.kfzteile24.salesOrderHub.helper.EventMapper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.soh.order.dto.GrandTotalTaxes;
@@ -260,7 +259,7 @@ public class SalesOrderRowService {
                 .findFirst()
                 .ifPresent(creditNoteLine -> {
                     totals.setShippingCostNet(creditNoteLine.getLineNetAmount());
-                    totals.setShippingCostGross(getGrossValue(creditNoteLine, creditNoteLine.getLineNetAmount()));
+                    totals.setShippingCostGross(creditNoteLine.getUnitGrossAmount());
                     totals.setGrandTotalNet(totals.getGrandTotalNet().add(totals.getShippingCostNet()));
                     totals.setGrandTotalGross(totals.getGrandTotalGross().add(totals.getShippingCostGross()));
                     totals.setPaymentTotal(totals.getGrandTotalGross());
@@ -271,18 +270,6 @@ public class SalesOrderRowService {
                     totals.getGrandTotalTaxes().stream().findFirst().
                             ifPresent(tax -> tax.setValue(tax.getValue().add(taxValueToAdd)));
                 });
-    }
-
-    private BigDecimal getGrossValue(CreditNoteLine creditNoteLine, BigDecimal lineNetAmount) {
-        var taxRate = creditNoteLine.getTaxRate().abs();
-        var netValue = creditNoteLine.getUnitNetAmount();
-        var grossValue = CalculationUtil.getGrossValue(netValue, taxRate);
-
-        if (lineNetAmount.compareTo(BigDecimal.ZERO ) < 0 && grossValue.compareTo(BigDecimal.ZERO) > 0) {
-            return grossValue.negate();
-        }
-
-        return grossValue;
     }
 
     private void cancelOrderRowsOfOrderGroup(String orderGroupId, String orderRowId) {

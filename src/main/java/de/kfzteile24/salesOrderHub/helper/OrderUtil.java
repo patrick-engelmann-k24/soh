@@ -19,7 +19,6 @@ import java.util.Objects;
 import java.util.Optional;
 
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.ORDER_NUMBER_SEPARATOR;
-import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getGrossValue;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.round;
 import static java.math.RoundingMode.HALF_UP;
 
@@ -70,9 +69,9 @@ public class OrderUtil {
                 .findFirst().orElse(OrderRows.builder().build());
         var shippingType = salesOrder.getLatestJson().getOrderRows().get(0).getShippingType();
 
-        var unitPriceGross = getGrossValue(item.getUnitNetAmount(), item.getTaxRate());
+        var unitPriceGross = item.getUnitGrossAmount();
         var unitPriceNet = item.getUnitNetAmount();
-        var sumOfGoodsPriceGross = getGrossValue(item.getLineNetAmount(), item.getTaxRate());
+        var sumOfGoodsPriceGross = item.getLineGrossAmount();
         var sumOfGoodsPriceNet = item.getLineNetAmount();
 
         return OrderRows.builder()

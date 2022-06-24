@@ -143,13 +143,13 @@ class SalesOrderCreatedInSohIntegrationTest {
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku3)));
         assertTrue(timerService.pollWithDefaultTiming(() -> checkIfInvoiceCreatedReceivedProcessExists(newOrderNumberCreatedInSoh)));
         checkTotalsValues(newOrderNumberCreatedInSoh,
-                "432.51",
+                "432.52",
                 "360.64",
                 "0",
                 "0",
-                "445.59",
+                "445.60",
                 "371.63",
-                "445.59",
+                "445.60",
                 "13.08",
                 "10.99");
         checkOrderRows(newOrderNumberCreatedInSoh, rowSku1, rowSku2, rowSku3);
@@ -189,13 +189,13 @@ class SalesOrderCreatedInSohIntegrationTest {
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku2)));
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku3)));
         checkTotalsValues(newOrderNumberCreatedInSoh,
-                "432.51",
+                "432.52",
                 "360.64",
                 "0",
                 "0",
-                "445.59",
+                "445.60",
                 "371.63",
-                "445.59",
+                "445.60",
                 "13.08",
                 "10.99");
         checkOrderRows(newOrderNumberCreatedInSoh, rowSku1, rowSku2, rowSku3);
@@ -238,13 +238,13 @@ class SalesOrderCreatedInSohIntegrationTest {
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku2)));
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku3)));
         checkTotalsValues(newOrderNumberCreatedInSoh,
-                "432.51",
+                "432.52",
                 "360.64",
                 "0",
                 "0",
-                "445.59",
+                "445.60",
                 "371.63",
-                "445.59",
+                "445.60",
                 "13.08",
                 "10.99");
         checkOrderRows(newOrderNumberCreatedInSoh, rowSku1, rowSku2, rowSku3);
@@ -346,11 +346,11 @@ class SalesOrderCreatedInSohIntegrationTest {
                         .discountedNet(new BigDecimal("8.4"))
                         .build(),
                 SumValues.builder()
-                        .goodsValueGross(new BigDecimal("19.99"))
+                        .goodsValueGross(new BigDecimal("20.00"))
                         .goodsValueNet(new BigDecimal("16.8"))
                         .discountGross(BigDecimal.ZERO)
                         .discountNet(BigDecimal.ZERO)
-                        .totalDiscountedGross(new BigDecimal("19.99"))
+                        .totalDiscountedGross(new BigDecimal("20.00"))
                         .totalDiscountedNet(new BigDecimal("16.8"))
                         .build());
         checkOrderRowValues(
