@@ -296,20 +296,24 @@ public class SalesOrderUtil {
         assertThat(creditNoteLines.get(0).getQuantity()).isEqualTo(BigDecimal.valueOf(2));
         assertThat(creditNoteLines.get(0).getUnitNetAmount()).isEqualTo(BigDecimal.valueOf(10.84));
         assertThat(creditNoteLines.get(0).getLineNetAmount()).isEqualTo(BigDecimal.valueOf(21.68));
+        assertThat(creditNoteLines.get(0).getUnitGrossAmount()).isEqualTo(BigDecimal.valueOf(12.91));
+        assertThat(creditNoteLines.get(0).getLineGrossAmount()).isEqualTo(BigDecimal.valueOf(25.82));
         assertThat(creditNoteLines.get(0).getItemNumber()).isEqualTo("2270-13013");
-        assertThat(creditNoteLines.get(0).getLineTaxAmount()).isEqualTo(BigDecimal.valueOf(4.12));
+        assertThat(creditNoteLines.get(0).getLineTaxAmount()).isEqualTo(BigDecimal.valueOf(4.14));
         assertThat(creditNoteLines.get(0).getTaxRate()).isEqualTo(BigDecimal.valueOf(19.00).setScale(2));
 
         assertThat(creditNoteLines.get(1).getIsShippingCost()).isEqualTo(false);
         assertThat(creditNoteLines.get(1).getQuantity()).isEqualTo(BigDecimal.valueOf(2));
         assertThat(creditNoteLines.get(1).getUnitNetAmount()).isEqualTo(BigDecimal.valueOf(10.84));
         assertThat(creditNoteLines.get(1).getLineNetAmount()).isEqualTo(BigDecimal.valueOf(21.68));
+        assertThat(creditNoteLines.get(1).getUnitGrossAmount()).isEqualTo(BigDecimal.valueOf(12.91));
+        assertThat(creditNoteLines.get(1).getLineGrossAmount()).isEqualTo(BigDecimal.valueOf(25.82));
         assertThat(creditNoteLines.get(1).getItemNumber()).isEqualTo("2270-13012");
-        assertThat(creditNoteLines.get(1).getLineTaxAmount()).isEqualTo(BigDecimal.valueOf(4.12));
+        assertThat(creditNoteLines.get(1).getLineTaxAmount()).isEqualTo(BigDecimal.valueOf(4.14));
         assertThat(creditNoteLines.get(1).getTaxRate()).isEqualTo(BigDecimal.valueOf(19.00).setScale(2));
 
         assertThat(salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getNetAmount()).isEqualTo(BigDecimal.valueOf(43.36));
-        assertThat(salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getGrossAmount()).isEqualTo(BigDecimal.valueOf(51.60).setScale(2));
+        assertThat(salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getGrossAmount()).isEqualTo(BigDecimal.valueOf(51.64).setScale(2));
 
     }
 

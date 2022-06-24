@@ -27,6 +27,12 @@ public class CoreSalesFinancialDocumentLine implements OrderItem {
     @JsonProperty("LineNetAmount")
     private BigDecimal lineNetAmount;
 
+    @JsonProperty("UnitGrossAmount")
+    private BigDecimal unitGrossAmount;
+
+    @JsonProperty("LineGrossAmount")
+    private BigDecimal lineGrossAmount;
+
     @JsonProperty("LineTaxAmount")
     private BigDecimal lineTaxAmount;
 
