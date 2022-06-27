@@ -89,6 +89,7 @@ soh:
       migrationCoreSalesOrderCreated: ${soh_sqs_migration_core_sales_order_created}
       migrationCoreSalesInvoiceCreated: ${soh_sqs_migration_core_sales_invoice_created}
       migrationCoreSalesCreditNoteCreated: ${soh_sqs_migration_core_sales_credit_note_created}
+      parcelShipped: ${soh_sqs_parcel_shipped}
   aws:
     config:
       maxNumberOfMessages: 10

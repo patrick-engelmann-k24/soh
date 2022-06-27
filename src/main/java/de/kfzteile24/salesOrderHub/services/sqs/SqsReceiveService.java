@@ -8,6 +8,7 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.dto.events.shipmentconfirmed.TrackingLink;
 import de.kfzteile24.salesOrderHub.dto.mapper.CreditNoteEventMapper;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
@@ -19,6 +20,8 @@ import de.kfzteile24.salesOrderHub.dto.sns.FulfillmentMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.OrderPaymentSecuredMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
+import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ArticleItemsDto;
+import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ParcelShipped;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.services.DropshipmentOrderService;
@@ -655,6 +658,42 @@ public class SqsReceiveService {
                         creditNoteNumber);
                 queueListenerCoreSalesCreditNoteCreated(rawMessage, senderId, receiveCount);
             }
+        }
+    }
+
+    /**
+     * Consume messages from sqs for event parcel shipped
+     * to trigger emails on soh-communication-service for regular orders
+     */
+    @SqsListener(value = "${soh.sqs.queue.parcelShipped}", deletionPolicy = ON_SUCCESS)
+    @SneakyThrows(JsonProcessingException.class)
+    @Trace(metricName = "Handling ParcelShipped message", dispatcher = true)
+    public void queueListenerParcelShipped(String rawMessage,
+                                           @Header("SenderId") String senderId,
+                                           @Header("ApproximateReceiveCount") Integer receiveCount) {
+        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+        var event = objectMapper.readValue(body, ParcelShipped.class);
+        var orderNumber = event.getOrderNumber();
+        log.info("Parcel shipped received with order number {} and tracking link: {}",
+                orderNumber,
+                event.getTrackingLink());
+
+        var itemList = event.getArticleItemsDtos();
+        if (itemList == null || itemList.isEmpty()) {
+            throw new IllegalArgumentException("The provided event does not contain order item");
+        }
+        var trackingLink = TrackingLink.builder()
+                .url(event.getTrackingLink())
+                .orderItems(itemList.stream().map(ArticleItemsDto::getNumber).collect(Collectors.toList()))
+                .build();
+
+        try {
+            var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
+                    .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
+            snsPublishService.publishSalesOrderShipmentConfirmedEvent(salesOrder, List.of(trackingLink));
+        } catch (Exception e) {
+            log.error("Parcel shipped received message error - order_number: {}\r\nErrorMessage: {}", orderNumber, e);
+            throw e;
         }
     }
 }

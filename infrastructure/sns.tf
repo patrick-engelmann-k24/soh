@@ -146,6 +146,10 @@ data "aws_sns_topic" "sns_soh_dropshipment_order_return_notified_v1" {
   name = "soh-dropshipment-order-return-notified-v1"
 }
 
+data "aws_sns_topic" "sns_parcel_shipped" {
+  name = "parcel-shipped-v1"
+}
+
 # subscriptions of sqs to sns
 resource "aws_sns_topic_subscription" "sns_subscription_ecp_orders_v3" {
   endpoint = aws_sqs_queue.ecp_shop_orders.arn
@@ -287,5 +291,12 @@ resource "aws_sns_topic_subscription" "sns_subscription_dropshipment_purchase_or
   endpoint = aws_sqs_queue.soh_dropshipment_purchase_order_return_notified.arn
   protocol = "sqs"
   topic_arn = data.aws_sns_topic.sns_dropshipment_purchase_order_return_notified.arn
+}
+
+# subscription for parcel shipped to trigger emails on soh-communication-service for regular orders
+resource "aws_sns_topic_subscription" "sns_subscription_parcel_shipped" {
+  endpoint = aws_sqs_queue.soh_parcel_shipped.arn
+  protocol = "sqs"
+  topic_arn = data.aws_sns_topic.sns_parcel_shipped.arn
 }
 

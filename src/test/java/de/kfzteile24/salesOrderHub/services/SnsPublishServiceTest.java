@@ -13,9 +13,10 @@ import de.kfzteile24.salesOrderHub.dto.events.ReturnOrderCreatedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderCompletedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInfoEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInvoiceCreatedEvent;
-import de.kfzteile24.salesOrderHub.dto.events.SalesOrderShipmentConfirmedEvent;
+import de.kfzteile24.salesOrderHub.dto.events.shipmentconfirmed.SalesOrderShipmentConfirmedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.dropshipment.DropshipmentOrderPackage;
 import de.kfzteile24.salesOrderHub.dto.events.dropshipment.DropshipmentOrderPackageItemLine;
+import de.kfzteile24.salesOrderHub.dto.events.shipmentconfirmed.TrackingLink;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnNotifiedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.dropshipment.DropshipmentPurchaseOrderPackage;
 import de.kfzteile24.salesOrderHub.dto.sns.dropshipment.DropshipmentPurchaseOrderPackageItemLine;
@@ -35,6 +36,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
@@ -266,9 +268,11 @@ class SnsPublishServiceTest {
         final var expectedSubject = "Sales order shipment confirmed V1";
 
         final var salesOrder = createNewSalesOrderV3(true, REGULAR, CREDIT_CARD, NEW);
-        final var trackingLinks = List.of(
-                "http://abc1",
-                "http://abc2");
+        final var trackingLinks = Stream.of("http://abc1", "http://abc2")
+                .map(link -> TrackingLink.builder()
+                        .url(link)
+                        .build()
+                ).collect(Collectors.toList());
 
         when(awsSnsConfig.getSnsShipmentConfirmedV1()).thenReturn(expectedTopic);
 

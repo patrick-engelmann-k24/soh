@@ -51,6 +51,7 @@ TOPICS="
     migration-soh-return-order-created-v1
     soh-dropshipment-order-created-v1
     soh-dropshipment-order-return-notified-v1
+    soh-parcel-shipped
     "
 
 # Outdated topics

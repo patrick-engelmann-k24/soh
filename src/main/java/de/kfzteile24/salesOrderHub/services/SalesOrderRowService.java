@@ -109,6 +109,7 @@ public class SalesOrderRowService {
                 .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
         var returnOrderJson = recalculateOrderByReturns(salesOrder, getOrderRowUpdateItems(creditNoteLines));
         updateShippingCosts(returnOrderJson, creditNoteLines);
+        returnOrderJson = orderUtil.removeInvalidGrandTotalTaxes(returnOrderJson);
 
         String newOrderNumber = orderUtil.createOrderNumberInSOH(orderNumber, salesCreditNoteHeader.getCreditNoteNumber());
         returnOrderJson.getOrderHeader().setOrderNumber(newOrderNumber);

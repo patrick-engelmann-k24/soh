@@ -1,0 +1,4 @@
+{
+  "MessageType": "urn:message:Events:ParcelShippedEvent",
+  "Message": "{\"FirstName\":\"Automation\",\"LastName\":\"User\",\"Street\":\"AutomationStreet\",\"ZipCode\": \"9999\",\"CountryCode\":\"DK\",\"City\":\"Wien\",\"Email\": \"automation-154b81de-df76-4938-a5df-936733c4afcb@yopmail.com\",\"OrderNumber\": \"524001240\",\"TrackingNumber\":\"123456789\",\"TrackingLink\":\"https://www.example.com\",\"AmountToBeCollected\":1.00,\"ArticleItemsDtos\":[{\"Number\":\"1130-0713\",\"Description\":\"Sidespejl\",\"Quantity\":1.00,\"IsDeposit\":false}],\"LogisticsPartnerName\":\"DPD\"}"
+}

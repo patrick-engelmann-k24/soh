@@ -1,5 +1,7 @@
 package de.kfzteile24.salesOrderHub.services;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.constants.PersistentProperties;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Signals;
@@ -7,6 +9,7 @@ import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
 import de.kfzteile24.salesOrderHub.domain.property.KeyValueProperty;
+import de.kfzteile24.salesOrderHub.dto.events.shipmentconfirmed.TrackingLink;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnNotifiedMessage;
@@ -27,8 +30,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED;
@@ -39,7 +47,6 @@ import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCH
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ITEM_SHIPPED;
 import static java.text.MessageFormat.format;
-import static java.util.stream.Collectors.toUnmodifiableSet;
 
 @Service
 @Slf4j
@@ -54,6 +61,7 @@ public class DropshipmentOrderService {
     private final SalesOrderRowService salesOrderRowService;
     private final SnsPublishService snsPublishService;
     private final ReturnOrderHelper returnOrderHelper;
+    private final ObjectMapper objectMapper;
 
     public void handleDropShipmentOrderConfirmed(DropshipmentPurchaseOrderBookedMessage message) {
         String orderNumber = message.getSalesOrderNumber();
@@ -80,7 +88,7 @@ public class DropshipmentOrderService {
         return returnOrderHelper.buildSalesCreditNoteCreatedMessage(message, salesOrder, creditNoteNumber);
     }
 
-    public void handleDropShipmentOrderTrackingInformationReceived(DropshipmentShipmentConfirmedMessage message) {
+    public void handleDropShipmentOrderTrackingInformationReceived(DropshipmentShipmentConfirmedMessage message) throws JsonProcessingException {
         var orderNumber = message.getSalesOrderNumber();
         SalesOrder salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
@@ -105,12 +113,40 @@ public class DropshipmentOrderService {
         setDocumentRefNumber(salesOrder);
         salesOrder = salesOrderService.save(salesOrder, ORDER_ITEM_SHIPPED);
 
-        var trackingLinks = shippedItems.stream()
-                .map(ShipmentItem::getTrackingLink)
-                .collect(toUnmodifiableSet());
-
         helper.correlateMessage(Messages.DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED, salesOrder,
-                Variables.putValue(TRACKING_LINKS.getName(), trackingLinks));
+                Variables.putValue(TRACKING_LINKS.getName(), getTrackingLinks(shippedItems)));
+    }
+
+    private List<String> getTrackingLinks(Collection<ShipmentItem> shippedItems) throws JsonProcessingException {
+        List<String> trackingLinks = new ArrayList<>();
+        var skuMap = getSkuMap(shippedItems);
+        List<String> linkList = shippedItems.stream()
+                .map(ShipmentItem::getTrackingLink)
+                .distinct()
+                .collect(Collectors.toList());
+        for (String link : linkList) {
+            trackingLinks.add(objectMapper.writeValueAsString(TrackingLink.builder()
+                    .url(link)
+                    .orderItems(skuMap.get(link))
+                    .build()));
+        }
+        return trackingLinks;
+    }
+
+    private Map<String, List<String>> getSkuMap(Collection<ShipmentItem> shippedItems) {
+        Map<String, List<String>> skuMap = new HashMap<>();
+        shippedItems.forEach(item -> {
+            var key = item.getTrackingLink();
+            var value = item.getProductNumber();
+            var valueList = skuMap.get(key);
+            if (valueList == null) {
+                valueList = List.of(value);
+            } else {
+                valueList.add(value);
+            }
+            skuMap.put(key, valueList);
+        });
+        return skuMap;
     }
 
     @Transactional

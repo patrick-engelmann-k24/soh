@@ -23,8 +23,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED;
@@ -121,7 +121,10 @@ class StoreDropshipmentInvoiceDelegateIntegrationTest {
 
     private void sendAndVerifyTrackingInfoReceived(String orderNumber, ProcessInstance orderProcess) {
         util.sendMessage(DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED, orderNumber,
-                Map.of(TRACKING_LINKS.getName(), Set.of("http://abc1", "http://abc2"))
+                Map.of(TRACKING_LINKS.getName(),
+                        List.of(
+                                "{\"url\":\"http://abc1\", \"order_items\":[\"1440-47378\"]}",
+                                "{\"url\":\"http://abc2\", \"order_items\":[\"2010-10183\"]}"))
         );
         assertTrue(pollingService.poll(Duration.ofSeconds(5), Duration.ofSeconds(10), () -> {
             assertThat(orderProcess).hasPassedInOrder(
