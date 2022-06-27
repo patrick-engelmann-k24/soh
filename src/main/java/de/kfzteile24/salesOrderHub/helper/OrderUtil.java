@@ -3,6 +3,7 @@ package de.kfzteile24.salesOrderHub.helper;
 import de.kfzteile24.salesOrderHub.configuration.DropShipmentConfig;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.sns.shared.OrderItem;
+import de.kfzteile24.soh.order.dto.GrandTotalTaxes;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Platform;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -181,5 +183,12 @@ public class OrderUtil {
         sumValues.setExchangePartValueGross(round(sumValues.getExchangePartValueGross(), HALF_UP));
         sumValues.setExchangePartValueNet(round(sumValues.getExchangePartValueNet(), HALF_UP));
         return sumValues;
+    }
+
+    public Order removeInvalidGrandTotalTaxes(Order order) {
+
+        List<GrandTotalTaxes> grandTotalTaxes = order.getOrderHeader().getTotals().getGrandTotalTaxes();
+        grandTotalTaxes.removeIf(tax -> Objects.equals(tax.getValue(), BigDecimal.ZERO));
+        return order;
     }
 }

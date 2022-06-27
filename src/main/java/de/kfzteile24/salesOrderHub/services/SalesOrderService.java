@@ -135,7 +135,7 @@ public class SalesOrderService {
         order.getOrderHeader().setDocumentRefNumber(salesInvoiceHeader.getInvoiceNumber());
         salesInvoiceHeader.setOrderNumber(newOrderNumber);
         salesInvoiceHeader.setOrderGroupId(order.getOrderHeader().getOrderGroupId());
-        var shippingCostDocumentLine =  salesInvoiceHeader.getInvoiceLines().stream()
+        var shippingCostDocumentLine = salesInvoiceHeader.getInvoiceLines().stream()
                 .filter(CoreSalesFinancialDocumentLine::getIsShippingCost).findFirst().orElse(null);
         recalculateTotals(order, shippingCostDocumentLine);
 
@@ -233,7 +233,7 @@ public class SalesOrderService {
 
     private boolean isShippingCostGrossMatch(SalesOrder originalSalesOrder, CoreSalesFinancialDocumentLine shippingCostDocumentLine) {
         var shippingCostGross = shippingCostDocumentLine != null
-                ?shippingCostDocumentLine.getUnitGrossAmount() : BigDecimal.ZERO;
+                ? shippingCostDocumentLine.getUnitGrossAmount() : BigDecimal.ZERO;
         var orderHeaderShippingCostGross = originalSalesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostGross();
         return isNotNullAndEqual(shippingCostGross != null ? shippingCostGross : BigDecimal.ZERO, orderHeaderShippingCostGross);
     }
@@ -332,6 +332,7 @@ public class SalesOrderService {
         }
 
         order.getOrderHeader().setTotals(totals);
+        orderUtil.removeInvalidGrandTotalTaxes(order);
     }
 
     public List<GrandTotalTaxes> calculateGrandTotalTaxes(Order order) {
