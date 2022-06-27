@@ -1,5 +1,7 @@
 package de.kfzteile24.salesOrderHub.delegates.dropshipmentorder;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import de.kfzteile24.salesOrderHub.dto.events.shipmentconfirmed.TrackingLink;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
@@ -9,8 +11,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
-import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
@@ -34,6 +38,9 @@ class PublishDropshipmentTrackingInformationDelegateTest {
     @Mock
     private SnsPublishService snsPublishService;
 
+    @Mock
+    private ObjectMapper objectMapper;
+
     @InjectMocks
     private PublishDropshipmentTrackingInformationDelegate publishDropshipmentTrackingInformationDelegate;
 
@@ -43,9 +50,15 @@ class PublishDropshipmentTrackingInformationDelegateTest {
 
         final var salesOrder = createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
         salesOrder.setOrderNumber(expectedOrderNumber);
-        final var trackingLinks = Set.of("http://abc1", "http://abc2");
+        final var trackingLinks = Stream.of("http://abc1", "http://abc2")
+                .map(link -> TrackingLink.builder()
+                        .url(link)
+                        .build()
+                ).collect(Collectors.toList());
         when(delegateExecution.getVariable(ORDER_NUMBER.getName())).thenReturn(expectedOrderNumber);
-        when(delegateExecution.getVariable(TRACKING_LINKS.getName())).thenReturn(trackingLinks);
+        when(delegateExecution.getVariable(TRACKING_LINKS.getName())).thenReturn(List.of("{\"url\":\"http://abc1\"}", "{\"url\":\"http://abc2\"}"));
+        when(objectMapper.readValue("{\"url\":\"http://abc1\"}", TrackingLink.class)).thenReturn(trackingLinks.get(0));
+        when(objectMapper.readValue("{\"url\":\"http://abc2\"}", TrackingLink.class)).thenReturn(trackingLinks.get(1));
         when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.of(salesOrder));
 
         publishDropshipmentTrackingInformationDelegate.execute(delegateExecution);

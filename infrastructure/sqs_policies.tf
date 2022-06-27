@@ -999,3 +999,46 @@ resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_soh_migration_core_s
   queue_url = aws_sqs_queue.soh_migration_core_sales_credit_note_created.id
   policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_migration_core_sales_credit_note_created.json
 }
+
+data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_parcel_shipped" {
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sqs:*",
+    ]
+
+    principals {
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_parcel_shipped.arn
+    ]
+  }
+
+  statement {
+    sid = "SNS-parce-shipped"
+    effect = "Allow"
+
+    actions = [
+      "sqs:SendMessage",
+    ]
+
+    principals {
+      identifiers = ["*"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_parcel_shipped.arn
+    ]
+  }
+}
+
+resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_parcel_shipped" {
+  queue_url = aws_sqs_queue.soh_parcel_shipped.id
+  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_parcel_shipped.json
+}

@@ -1,5 +1,6 @@
 package de.kfzteile24.salesOrderHub.services;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
 import de.kfzteile24.salesOrderHub.constants.PersistentProperties;
@@ -170,7 +171,7 @@ class DropshipmentOrderServiceIntegrationTest {
     }
 
     @Test
-    void testHandleDropShipmentOrderTrackingInformationReceived() {
+    void testHandleDropShipmentOrderTrackingInformationReceived() throws JsonProcessingException {
 
         var salesOrder = createSalesOrder();
         var message = createShipmentConfirmedMessage(salesOrder);
@@ -205,7 +206,7 @@ class DropshipmentOrderServiceIntegrationTest {
     }
 
     @Test
-    void testHandleDropShipmentOrderTrackingInformationReceivedWhenThereIsAnotherInvoiceForSameYear() {
+    void testHandleDropShipmentOrderTrackingInformationReceivedWhenThereIsAnotherInvoiceForSameYear() throws JsonProcessingException {
 
         var salesOrder = createSalesOrder();
         createSalesOrderInvoice(salesOrder);

@@ -1,5 +1,6 @@
-package de.kfzteile24.salesOrderHub.dto.events;
+package de.kfzteile24.salesOrderHub.dto.events.shipmentconfirmed;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.Builder;
 import lombok.Singular;
@@ -16,5 +17,6 @@ public class SalesOrderShipmentConfirmedEvent {
     Order order;
 
     @Singular
-    Collection<String> trackingLinks;
+    @JsonProperty("tracking_links")
+    Collection<TrackingLink> trackingLinks;
 }

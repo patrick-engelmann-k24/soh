@@ -16,9 +16,10 @@ import de.kfzteile24.salesOrderHub.dto.events.SalesCreditNoteReceivedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderCompletedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInfoEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInvoiceCreatedEvent;
-import de.kfzteile24.salesOrderHub.dto.events.SalesOrderShipmentConfirmedEvent;
+import de.kfzteile24.salesOrderHub.dto.events.shipmentconfirmed.SalesOrderShipmentConfirmedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.dropshipment.DropshipmentOrderPackage;
 import de.kfzteile24.salesOrderHub.dto.events.dropshipment.DropshipmentOrderPackageItemLine;
+import de.kfzteile24.salesOrderHub.dto.events.shipmentconfirmed.TrackingLink;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnNotifiedMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.soh.order.dto.Order;
@@ -103,7 +104,7 @@ public class SnsPublishService {
                 event, orderNumber);
     }
 
-    public void publishSalesOrderShipmentConfirmedEvent(SalesOrder salesOrder, Collection<String> trackingLinks) {
+    public void publishSalesOrderShipmentConfirmedEvent(SalesOrder salesOrder, Collection<TrackingLink> trackingLinks) {
 
         var salesOrderShipmentConfirmedEvent = SalesOrderShipmentConfirmedEvent.builder()
                 .order(salesOrder.getLatestJson())

@@ -66,6 +66,7 @@ soh:
       migrationCoreSalesOrderCreated: http://localhost:4566/000000000000/migration-core-sales-order-created-queue
       migrationCoreSalesInvoiceCreated: http://localhost:4566/000000000000/migration-core-sales-invoice-created-queue
       migrationCoreSalesCreditNoteCreated: http://localhost:4566/000000000000/migration-core-sales-credit-note-created-queue
+      parcelShipped:                  http://localhost:4566/000000000000/soh-parcel-shipped-queue
   aws:
     config:
       maxNumberOfMessages: 10
