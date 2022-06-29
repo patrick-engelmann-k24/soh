@@ -350,7 +350,7 @@ class ItemSplitServiceTest {
 
         assertThatThrownBy(() -> itemSplitService.recalculateSetItemPrices(setItems, setSumValues, pricingItems))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Prices from Pricing Service do not add up. Set cannot be split.");
+                .hasMessage("Gross prices from Pricing Service do not add up.Set cannot be split.");
     }
 
     private OrderRows createEmptyOrderRows(String sku) {
