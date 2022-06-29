@@ -6,6 +6,7 @@ import de.kfzteile24.salesOrderHub.services.splitter.decorator.ItemSplitService;
 import de.kfzteile24.salesOrderHub.services.splitter.decorator.OrderSplitService;
 import de.kfzteile24.salesOrderHub.services.splitter.decorator.SplitOrderRecalculationService;
 import de.kfzteile24.soh.order.dto.Order;
+import de.kfzteile24.soh.order.dto.Platform;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -42,7 +43,10 @@ public class SplitterService {
         } else {
             // add further splitters here (all operations happening on the list object)
             itemSplitService.processOrderList(orderList);
-            orderSplitService.processOrderList(orderList);
+            Order order = orderList.stream().findFirst().orElseThrow();
+            if (order.getOrderHeader().getPlatform() == Platform.BRAINCRAFT) {
+                orderSplitService.processOrderList(orderList);
+            }
 
             if (orderList.size() > 1) {
                 //recalculate totals only if we added splitted order, which means we also changed original order
