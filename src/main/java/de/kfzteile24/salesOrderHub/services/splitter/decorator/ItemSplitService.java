@@ -219,9 +219,10 @@ public class ItemSplitService extends AbstractSplitDecorator {
             firstSetItemSumValues.setGoodsValueGross(newGrossPrice);
             firstSetItemSumValues.setTotalDiscountedGross(newGrossPrice);
         } else if (difference.compareTo(BigDecimal.ZERO) != 0) {
-            String errorMessage = "Prices from Pricing Service do not add up. Set cannot be split.";
-            log.error(errorMessage);
-            throw new IllegalArgumentException(errorMessage);
+            log.error("Gross prices from Pricing Service do not add up.\n" +
+                    "Initial set gross price: {}, set gross price from pricing: {}\n" +
+                    "Set cannot be split.", setSumValues.getGoodsValueGross(), totalSum);
+            throw new IllegalArgumentException("Gross prices from Pricing Service do not add up.Set cannot be split.");
         }
 
         BigDecimal totalNetSum = getSumValue(SumValues::getGoodsValueNet,
@@ -237,9 +238,10 @@ public class ItemSplitService extends AbstractSplitDecorator {
             firstSetItemSumValues.setGoodsValueNet(newNetPrice);
             firstSetItemSumValues.setTotalDiscountedNet(newNetPrice);
         } else if (netDifference.compareTo(BigDecimal.ZERO) != 0) {
-            String errorMessage = "Prices from Pricing Service do not add up. Set cannot be split.";
-            log.error(errorMessage);
-            throw new IllegalArgumentException(errorMessage);
+            log.error("Net prices from Pricing Service do not add up.\n" +
+                    "Initial set net price: {}, set net price from pricing: {}\n" +
+                    "Set cannot be split.", setSumValues.getGoodsValueNet(), totalNetSum);
+            throw new IllegalArgumentException("Net prices from Pricing Service do not add up.Set cannot be split.");
         }
     }
 
