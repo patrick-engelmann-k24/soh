@@ -564,7 +564,17 @@ public class SqsReceiveService {
                 snsPublishService.publishMigrationOrderCreated(orderNumber);
             } else {
                 log.info("Order with order number: {} is a new order. Call redirected to normal flow.", orderNumber);
-                queueListenerShopOrders(rawMessage, senderId, receiveCount);
+                MessageWrapper<Order> orderMessageWrapper = messageWrapperUtil.create(rawMessage, Order.class);
+                var newSalesOrder = SalesOrder
+                        .builder()
+                        .orderNumber(order.getOrderHeader().getOrderNumber())
+                        .orderGroupId(order.getOrderHeader().getOrderGroupId())
+                        .salesChannel(order.getOrderHeader().getSalesChannel())
+                        .customerEmail(order.getOrderHeader().getCustomer().getCustomerEmail())
+                        .originalOrder(order)
+                        .latestJson(order)
+                        .build();
+                salesOrderCreateService.startSalesOrderProcess(newSalesOrder, orderMessageWrapper);
             }
         }
 

@@ -1,6 +1,5 @@
 package de.kfzteile24.salesOrderHub.services.sqs;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.FeatureFlagConfig;
 import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
@@ -19,6 +18,7 @@ import de.kfzteile24.salesOrderHub.helper.FileUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.services.DropshipmentOrderService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderPaymentSecuredService;
+import de.kfzteile24.salesOrderHub.services.SalesOrderProcessService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderRowService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
@@ -82,6 +82,10 @@ class SqsReceiveServiceTest {
     private final ObjectMapper objectMapper = new ObjectMapperConfig().objectMapper();
     @Mock
     private SalesOrderService salesOrderService;
+    @Mock
+    private SalesOrderProcessService salesOrderProcessService;
+    @Mock
+    private MessageWrapperUtil messageWrapperUtil;
     @Mock
     private SplitterService splitterService;
     @Mock
@@ -147,7 +151,7 @@ class SqsReceiveServiceTest {
 
     @Test
     @DisplayName("Test That Original Order should be updated, if Invoice is Fully Matched With Original Order and sales invoice event was not published for the Original Order")
-    void testQueueListenerOriginalOrderUpdateIfSalesInvoiceNotPublished() throws JsonProcessingException {
+    void testQueueListenerOriginalOrderUpdateIfSalesInvoiceNotPublished() {
         String rawMessage = readResource("examples/ecpOrderMessage.json");
         SalesOrder salesOrder = getSalesOrder(rawMessage);
         String invoiceRawMessage = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
@@ -308,18 +312,24 @@ class SqsReceiveServiceTest {
     }
 
     @Test
+    @SneakyThrows
     void testQueueListenerMigrationCoreSalesOrderCreatedNewOrder() {
 
         String rawMessage = readResource("examples/ecpOrderMessage.json");
-        SalesOrder salesOrder = getSalesOrder(rawMessage);
+        SqsMessage sqsMessage = objectMapper.readValue(rawMessage, SqsMessage.class);
+        MessageWrapper<Order> messageWrapper = MessageWrapper.<Order>builder()
+                .sqsMessage(sqsMessage)
+                .message(objectMapper.readValue(sqsMessage.getBody(), Order.class))
+                .rawMessage(rawMessage)
+                .build();
 
         when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.empty());
         when(featureFlagConfig.getIgnoreMigrationCoreSalesOrder()).thenReturn(false);
-        doNothing().when(sqsReceiveService).queueListenerShopOrders(anyString(), anyString(), any());
+        when(messageWrapperUtil.create(eq(rawMessage), eq(Order.class))).thenReturn(messageWrapper);
 
         sqsReceiveService.queueListenerMigrationCoreSalesOrderCreated(rawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
-        verify(sqsReceiveService).queueListenerShopOrders(anyString(), anyString(), any());
+        verify(salesOrderProcessService).startSalesOrderProcess(any(), any());
     }
 
     @Test
