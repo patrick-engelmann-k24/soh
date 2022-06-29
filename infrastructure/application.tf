@@ -84,6 +84,7 @@ module "application_module" {
     ignore_sales_order_splitter                = var.ignore_sales_order_splitter
     soh_bpmn_pricing_service_url               = var.pricing_service_endpoint_url
     soh_bpmn_http_connection_timeout_seconds   = 8
+    ignore_set_dissolvement                    = var.ignore_set_dissolvement
   }
 
   ssm_secrets_count = 10

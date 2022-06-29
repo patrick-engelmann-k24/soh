@@ -129,3 +129,4 @@ ignoreMigrationCoreSalesInvoice: false
 ignoreMigrationCoreSalesCreditNote: false
 ignoreMigrationCoreSalesOrder: false
 ignoreSalesOrderSplitter: false
+ignoreSetDissolvement: false
