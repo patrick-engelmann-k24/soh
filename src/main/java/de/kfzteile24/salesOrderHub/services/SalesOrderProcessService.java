@@ -28,7 +28,7 @@ public class SalesOrderProcessService {
                 .forEach(salesOrder -> startSalesOrderProcess(salesOrder, orderMessageWrapper));
     }
 
-    private void startSalesOrderProcess(SalesOrder salesOrder, MessageWrapper<Order> orderMessageWrapper) {
+    public void startSalesOrderProcess(SalesOrder salesOrder, MessageWrapper<Order> orderMessageWrapper) {
         var order = orderMessageWrapper.getMessage();
         try {
             if (Platform.CORE.equals(order.getOrderHeader().getPlatform())
