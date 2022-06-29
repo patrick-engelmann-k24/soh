@@ -302,7 +302,9 @@ public class SqsReceiveService {
         String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
         OrderPaymentSecuredMessage orderPaymentSecuredMessage = objectMapper.readValue(body, OrderPaymentSecuredMessage.class);
 
-        var orderNumbers = orderPaymentSecuredMessage.getData().getSalesOrderId().toArray(new String[]{});
+        var orderNumbers = orderPaymentSecuredMessage.getData().getSalesOrderId().stream()
+                .filter(not(dropshipmentOrderService::isDropShipmentOrder))
+                .toArray(String[]::new);
         log.info("Received d365 order payment secured message with order group id: {} and order numbers: {}",
             orderPaymentSecuredMessage.getData().getOrderGroupId(),  orderNumbers);
 

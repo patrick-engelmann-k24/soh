@@ -273,6 +273,21 @@ class SqsReceiveServiceTest {
     }
 
     @Test
+    void testQueueListenerD365OrderPaymentSecuredDropshipmentOrderReceived() {
+        String rawMessage =  readResource("examples/d365OrderPaymentSecuredMessageWithTwoOrderNumbers.json");
+
+
+        when(dropshipmentOrderService.isDropShipmentOrder("4567787")).thenReturn(true);
+        doNothing().when(salesOrderPaymentSecuredService).correlateOrderReceivedPaymentSecured(any());
+
+        sqsReceiveService.queueListenerD365OrderPaymentSecured(rawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+
+        verify(salesOrderPaymentSecuredService).correlateOrderReceivedPaymentSecured( "4567858");
+
+        verifyNoMoreInteractions(salesOrderPaymentSecuredService);
+    }
+
+    @Test
     void testQueueListenerD365OrderPaymentSecuredReceivedThrownException() {
         String rawMessage =  readResource("examples/d365OrderPaymentSecuredMessageWithTwoOrderNumbers.json");
 
