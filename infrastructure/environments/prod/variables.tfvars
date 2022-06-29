@@ -1,6 +1,6 @@
 terraform_role_arn             = "arn:aws:iam::556221214774:role/K24.Terraform"
 source_repo_branch             = "master"
-db_instance_class              = "db.t3.large"
+db_instance_class              = "db.r4.2xlarge"
 domain_name                    = "prod.kfzteile24.io"
 environment                    = "prod"
 stage                          = "production"
@@ -17,6 +17,6 @@ ignore_core_credit_note        = true
 ignore_migration_core_sales_invoice      = true
 ignore_migration_core_sales_credit_note  = true
 ignore_migration_core_sales_order        = true
-ignore_sales_order_splitter              = true
-
+ignore_sales_order_splitter              = false
 pricing_service_endpoint_url   = "https://2bqdw5i7yj.execute-api.eu-central-1.amazonaws.com/prod"
+ignore_set_dissolvement = true

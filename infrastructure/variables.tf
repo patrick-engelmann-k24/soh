@@ -85,3 +85,7 @@ variable "ignore_sales_order_splitter" {
 variable "pricing_service_endpoint_url" {
   type = string
 }
+
+variable "ignore_set_dissolvement" {
+  type = bool
+}

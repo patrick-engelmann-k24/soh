@@ -25,4 +25,7 @@ public class FeatureFlagConfig {
 
     @Value("${ignoreSalesOrderSplitter}")
     private Boolean ignoreSalesOrderSplitter;
+
+    @Value("${ignoreSetDissolvement}")
+    private Boolean ignoreSetDissolvement;
 }

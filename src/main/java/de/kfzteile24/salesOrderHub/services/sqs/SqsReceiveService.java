@@ -302,7 +302,9 @@ public class SqsReceiveService {
         String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
         OrderPaymentSecuredMessage orderPaymentSecuredMessage = objectMapper.readValue(body, OrderPaymentSecuredMessage.class);
 
-        var orderNumbers = orderPaymentSecuredMessage.getData().getSalesOrderId().toArray(new String[]{});
+        var orderNumbers = orderPaymentSecuredMessage.getData().getSalesOrderId().stream()
+                .filter(not(dropshipmentOrderService::isDropShipmentOrder))
+                .toArray(String[]::new);
         log.info("Received d365 order payment secured message with order group id: {} and order numbers: {}",
             orderPaymentSecuredMessage.getData().getOrderGroupId(),  orderNumbers);
 
@@ -564,7 +566,17 @@ public class SqsReceiveService {
                 snsPublishService.publishMigrationOrderCreated(orderNumber);
             } else {
                 log.info("Order with order number: {} is a new order. Call redirected to normal flow.", orderNumber);
-                queueListenerShopOrders(rawMessage, senderId, receiveCount);
+                MessageWrapper<Order> orderMessageWrapper = messageWrapperUtil.create(rawMessage, Order.class);
+                var newSalesOrder = SalesOrder
+                        .builder()
+                        .orderNumber(order.getOrderHeader().getOrderNumber())
+                        .orderGroupId(order.getOrderHeader().getOrderGroupId())
+                        .salesChannel(order.getOrderHeader().getSalesChannel())
+                        .customerEmail(order.getOrderHeader().getCustomer().getCustomerEmail())
+                        .originalOrder(order)
+                        .latestJson(order)
+                        .build();
+                salesOrderCreateService.startSalesOrderProcess(newSalesOrder, orderMessageWrapper);
             }
         }
 
