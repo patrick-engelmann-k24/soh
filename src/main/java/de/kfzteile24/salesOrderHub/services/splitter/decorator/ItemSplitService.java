@@ -266,6 +266,8 @@ public class ItemSplitService extends AbstractSplitDecorator {
                     orderRow.getSku(), sumGross, sumNet);
             sumValues.setGoodsValueGross(sumGross);
             sumValues.setGoodsValueNet(sumNet);
+            sumValues.setTotalDiscountedGross(sumGross);
+            sumValues.setTotalDiscountedNet(sumNet);
         }
     }
 
