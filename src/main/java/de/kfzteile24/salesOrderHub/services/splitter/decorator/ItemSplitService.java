@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -192,14 +193,12 @@ public class ItemSplitService extends AbstractSplitDecorator {
             SumValues sumValues = orderRow.getSumValues();
             PricingItem pricingItem = prices.stream().filter(Objects::nonNull)
                     .filter(price -> price.getSku().equals(orderRow.getSku())).findFirst().orElseThrow();
-            BigDecimal unitGross =
-                    round(Optional.ofNullable(pricingItem.getUnitPrices().getGross()).orElse(BigDecimal.ZERO));
-            BigDecimal unitNet =
-                    round(Optional.ofNullable(pricingItem.getUnitPrices().getNet()).orElse(BigDecimal.ZERO));
             BigDecimal sumGross = round(Optional.of(pricingItem.getValueShare()).orElse(BigDecimal.ZERO)
                     .multiply(setUnitValues.getDiscountedGross()));
             BigDecimal sumNet = round(Optional.of(pricingItem.getValueShare()).orElse(BigDecimal.ZERO)
                     .multiply(setUnitValues.getDiscountedNet()));
+            BigDecimal unitGross = round(sumGross.divide(orderRow.getQuantity(), RoundingMode.HALF_UP));
+            BigDecimal unitNet = round(sumNet.divide(orderRow.getQuantity(), RoundingMode.HALF_UP));
 
             log.info("SumValues initially calculated for sku: {}, sum gross: {}, sum net: {}, order number {}",
                     orderRow.getSku(), sumGross, sumNet, orderNumber);
