@@ -19,5 +19,5 @@ ignore_migration_core_sales_credit_note  = true
 ignore_migration_core_sales_order        = true
 ignore_sales_order_splitter              = false
 pricing_service_endpoint_url   = "https://2bqdw5i7yj.execute-api.eu-central-1.amazonaws.com/prod"
-ignore_set_dissolvement = true
+ignore_set_dissolvement = false
 prevent_set_processing = true
