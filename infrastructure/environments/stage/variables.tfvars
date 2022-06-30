@@ -20,3 +20,4 @@ ignore_migration_core_sales_order        = false
 ignore_sales_order_splitter              = false
 pricing_service_endpoint_url   = "https://s8vlbhblll.execute-api.eu-central-1.amazonaws.com/stage"
 ignore_set_dissolvement = false
+prevent_set_processing = true

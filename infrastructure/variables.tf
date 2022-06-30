@@ -89,3 +89,7 @@ variable "pricing_service_endpoint_url" {
 variable "ignore_set_dissolvement" {
   type = bool
 }
+
+variable "prevent_set_processing" {
+  type = bool
+}
