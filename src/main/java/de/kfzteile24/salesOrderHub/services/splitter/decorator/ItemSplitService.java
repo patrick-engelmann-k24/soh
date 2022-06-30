@@ -82,7 +82,8 @@ public class ItemSplitService extends AbstractSplitDecorator {
                         throw new NotFoundException(errorMessage);
                     }
                 }
-                recalculateSetItemPrices(setItems, row.getSumValues(), itemPrices);
+                recalculateSetItemPrices(setItems, row.getUnitValues(), itemPrices);
+                recalculateSumValues(setItems, row.getSumValues(), row.getQuantity());
                 replacementProductCollection.addAll(setItems);
                 originItemsWhichGetReplaced.add(row);
             }
@@ -174,13 +175,15 @@ public class ItemSplitService extends AbstractSplitDecorator {
 
     /**
      * @param setItems     - the items in the origin set
-     * @param setSumValues - the set sum values
+     * @param setUnitValues - the set sum values
      * @param prices       - the list of prices for the items in the set
      */
     protected void recalculateSetItemPrices(
-            List<OrderRows> setItems, final SumValues setSumValues, List<PricingItem> prices) {
+            List<OrderRows> setItems, final UnitValues setUnitValues, List<PricingItem> prices) {
 
         for (OrderRows orderRow : setItems) {
+            log.info("calculating unit prices for set item with sku: {}, initial unit gross: {} initial unit net: {}",
+                    orderRow.getSku(), setUnitValues.getGoodsValueGross(), setUnitValues.getGoodsValueNet());
             UnitValues unitValues = orderRow.getUnitValues();
             SumValues sumValues = orderRow.getSumValues();
             PricingItem pricingItem = prices.stream().filter(Objects::nonNull)
@@ -190,9 +193,12 @@ public class ItemSplitService extends AbstractSplitDecorator {
             BigDecimal unitNet =
                     round(Optional.ofNullable(pricingItem.getUnitPrices().getNet()).orElse(BigDecimal.ZERO));
             BigDecimal sumGross = round(Optional.of(pricingItem.getValueShare()).orElse(BigDecimal.ZERO)
-                    .multiply(setSumValues.getGoodsValueGross()));
+                    .multiply(setUnitValues.getGoodsValueGross()));
             BigDecimal sumNet = round(Optional.of(pricingItem.getValueShare()).orElse(BigDecimal.ZERO)
-                    .multiply(setSumValues.getGoodsValueNet()));
+                    .multiply(setUnitValues.getGoodsValueNet()));
+
+            log.info("SumValues initially calculated for sku: {}, sum gross: {}, sum net: {}",
+                    orderRow.getSku(), sumGross, sumNet);
 
             unitValues.setGoodsValueGross(unitGross);
             unitValues.setGoodsValueNet(unitNet);
@@ -207,41 +213,59 @@ public class ItemSplitService extends AbstractSplitDecorator {
 
         BigDecimal totalSum = getSumValue(SumValues::getGoodsValueGross,
                 setItems.stream().map(OrderRows::getSumValues).collect(Collectors.toList()));
-        BigDecimal difference = setSumValues.getGoodsValueGross().subtract(totalSum);
-        SumValues firstSetItemSumValues = setItems.get(0).getSumValues();
+        BigDecimal difference = setUnitValues.getGoodsValueGross().subtract(totalSum);
 
         /*
          * if the difference between the set price and the sum of the set items is one cent we add it to the first item
          * if the difference is greater we throw an exception
          */
         if (difference.abs().compareTo(ONE_CENT) == 0) {
+            SumValues firstSetItemSumValues = setItems.get(0).getSumValues();
             BigDecimal newGrossPrice = firstSetItemSumValues.getGoodsValueGross().add(difference);
             firstSetItemSumValues.setGoodsValueGross(newGrossPrice);
             firstSetItemSumValues.setTotalDiscountedGross(newGrossPrice);
         } else if (difference.compareTo(BigDecimal.ZERO) != 0) {
             log.error("Gross prices from Pricing Service do not add up.\n" +
                     "Initial set gross price: {}, set gross price from pricing: {}\n" +
-                    "Set cannot be split.", setSumValues.getGoodsValueGross(), totalSum);
+                    "Set cannot be split.", setUnitValues.getGoodsValueGross(), totalSum);
             throw new IllegalArgumentException("Gross prices from Pricing Service do not add up.Set cannot be split.");
         }
 
         BigDecimal totalNetSum = getSumValue(SumValues::getGoodsValueNet,
                 setItems.stream().map(OrderRows::getSumValues).collect(Collectors.toList()));
-        BigDecimal netDifference = setSumValues.getGoodsValueNet().subtract(totalNetSum);
+        BigDecimal netDifference = setUnitValues.getGoodsValueNet().subtract(totalNetSum);
 
         /*
          * if the difference between the set price and the sum of the set items is one cent we add it to the first item
          * if the difference is greater we throw an exception
          */
         if (netDifference.abs().compareTo(ONE_CENT) == 0) {
+            SumValues firstSetItemSumValues = setItems.get(0).getSumValues();
             BigDecimal newNetPrice = firstSetItemSumValues.getGoodsValueNet().add(netDifference);
             firstSetItemSumValues.setGoodsValueNet(newNetPrice);
             firstSetItemSumValues.setTotalDiscountedNet(newNetPrice);
         } else if (netDifference.compareTo(BigDecimal.ZERO) != 0) {
             log.error("Net prices from Pricing Service do not add up.\n" +
                     "Initial set net price: {}, set net price from pricing: {}\n" +
-                    "Set cannot be split.", setSumValues.getGoodsValueNet(), totalNetSum);
+                    "Set cannot be split.", setUnitValues.getGoodsValueNet(), totalNetSum);
             throw new IllegalArgumentException("Net prices from Pricing Service do not add up.Set cannot be split.");
+        }
+    }
+
+    private void recalculateSumValues(List<OrderRows> setItems, SumValues setSumValues, BigDecimal quantity) {
+
+        for (OrderRows orderRow : setItems) {
+            log.info("calculating sum prices for set item with sku: {}, initial sum gross: {} initial sum net: {}",
+                    orderRow.getSku(), setSumValues.getGoodsValueGross(), setSumValues.getGoodsValueNet());
+
+            SumValues sumValues = orderRow.getSumValues();
+            BigDecimal sumGross = round(sumValues.getGoodsValueGross().multiply(quantity));
+            BigDecimal sumNet = round(sumValues.getGoodsValueNet().multiply(quantity));
+
+            log.info("SumValues finally calculated for sku: {}, sum gross: {}, sum net: {}",
+                    orderRow.getSku(), sumGross, sumNet);
+            sumValues.setGoodsValueGross(sumGross);
+            sumValues.setGoodsValueNet(sumNet);
         }
     }
 
