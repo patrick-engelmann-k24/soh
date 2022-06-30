@@ -2,6 +2,7 @@ package de.kfzteile24.salesOrderHub.services.splitter.decorator;
 
 import de.kfzteile24.salesOrderHub.clients.PricingServiceClient;
 import de.kfzteile24.salesOrderHub.clients.ProductDataHubClient;
+import de.kfzteile24.salesOrderHub.configuration.FeatureFlagConfig;
 import de.kfzteile24.salesOrderHub.dto.pricing.Prices;
 import de.kfzteile24.salesOrderHub.dto.pricing.PricingItem;
 import de.kfzteile24.salesOrderHub.dto.pricing.SetUnitPriceAPIResponse;
@@ -50,6 +51,9 @@ class ItemSplitServiceTest {
     @Mock
     private OrderUtil orderUtil;
 
+    @Mock
+    private FeatureFlagConfig featureFlagConfig;
+
     @Test
     void processOrderList() {
 
@@ -74,6 +78,7 @@ class ItemSplitServiceTest {
         list.add(order1);
         list.add(order2);
 
+        when(featureFlagConfig.getPreventSetProcessing()).thenReturn(false);
         when(pricingServiceClient.getSetPriceInfo(any(), any(), any())).thenReturn(Optional.of(SetUnitPriceAPIResponse.builder().setUnitPrices(List.of(PricingItem.builder().build())).build()));
         doNothing().when(itemSplitService).recalculateSetItemPrices(any(), any(), any(), any(), any());
         doNothing().when(itemSplitService).recalculateSumValues(any(), any(), any(), any(), any());
@@ -121,6 +126,7 @@ class ItemSplitServiceTest {
 
         final var order = getOrder(readResource("examples/splitterSalesOrderMessageWithTwoRows.json"));
 
+        when(featureFlagConfig.getPreventSetProcessing()).thenReturn(false);
         when(pricingServiceClient.getSetPriceInfo(any(), any(), any())).thenReturn(Optional.of(SetUnitPriceAPIResponse.builder().setUnitPrices(List.of(PricingItem.builder().build())).build()));
         doNothing().when(itemSplitService).recalculateSetItemPrices(any(), any(), any(), any(), any());
         doNothing().when(itemSplitService).recalculateSumValues(any(), any(), any(), any(), any());
@@ -168,6 +174,7 @@ class ItemSplitServiceTest {
         OrderRows setOrderRow = order.getOrderRows().stream().filter(row -> row.getSku().equals(setSku)).findFirst().orElseThrow();
         setOrderRow.setQuantity(new BigDecimal(2));
 
+        when(featureFlagConfig.getPreventSetProcessing()).thenReturn(false);
         when(pricingServiceClient.getSetPriceInfo(any(), any(), any())).thenReturn(Optional.of(SetUnitPriceAPIResponse.builder().setUnitPrices(List.of(PricingItem.builder().build())).build()));
         doNothing().when(itemSplitService).recalculateSetItemPrices(any(), any(), any(), any(), any());
         doNothing().when(itemSplitService).recalculateSumValues(any(), any(), any(), any(), any());
