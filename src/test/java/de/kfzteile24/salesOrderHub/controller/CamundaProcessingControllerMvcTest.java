@@ -23,7 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-class CamundaProcessingControllerIntegrationTest extends AbstractControllerIntegrationTest {
+class CamundaProcessingControllerMvcTest extends AbstractControllerMvcTest {
 
     private static final String ANY_PROPERTY_KEY = RandomStringUtils.randomAlphabetic(10);
     private static final String ANY_PROPERTY_VALUE = RandomStringUtils.randomAlphabetic(10);
