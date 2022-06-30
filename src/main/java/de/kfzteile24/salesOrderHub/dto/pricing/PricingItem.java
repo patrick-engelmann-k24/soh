@@ -17,7 +17,7 @@ public class PricingItem {
     @JsonProperty("unit_prices")
     private Prices unitPrices;
 
-    @JsonProperty("value_share")
+    @JsonProperty("unit_share")
     private BigDecimal valueShare;
 
     @JsonProperty("product_number")
