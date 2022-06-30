@@ -250,7 +250,7 @@ class ItemSplitServiceTest {
         OrderRows orderRow2 = createEmptyOrderRows("sku-2");
         List<OrderRows> setItems = List.of(orderRow1, orderRow2);
 
-        SumValues setSumValues = SumValues.builder()
+        UnitValues setUnitValues = UnitValues.builder()
                 .goodsValueGross(new BigDecimal("20.00")).goodsValueNet(new BigDecimal("18.00")).build();
 
         PricingItem pricingItem1 = createPricingItem(
@@ -259,7 +259,7 @@ class ItemSplitServiceTest {
                 new BigDecimal("13.50"), new BigDecimal("13.00"), new BigDecimal("0.75"), "sku-2");
         List<PricingItem> pricingItems = List.of(pricingItem1, pricingItem2);
 
-        itemSplitService.recalculateSetItemPrices(setItems, setSumValues, pricingItems);
+        itemSplitService.recalculateSetItemPrices(setItems, setUnitValues, pricingItems);
 
         assertEquals(new BigDecimal("3.50"), orderRow1.getUnitValues().getGoodsValueGross());
         assertEquals(new BigDecimal("3.00"), orderRow1.getUnitValues().getGoodsValueNet());
@@ -290,7 +290,7 @@ class ItemSplitServiceTest {
         OrderRows orderRow3 = createEmptyOrderRows("sku-3");
         List<OrderRows> setItems = List.of(orderRow1, orderRow2, orderRow3);
 
-        SumValues setSumValues = SumValues.builder()
+        UnitValues setUnitValues = UnitValues.builder()
                 .goodsValueGross(new BigDecimal("2.92")).goodsValueNet(new BigDecimal("1.92")).build();
 
         PricingItem pricingItem1 = createPricingItem(
@@ -301,7 +301,7 @@ class ItemSplitServiceTest {
                 new BigDecimal("42.19"), new BigDecimal("41.20"), new BigDecimal("0.33"), "sku-3");
         List<PricingItem> pricingItems = List.of(pricingItem1, pricingItem2, pricingItem3);
 
-        itemSplitService.recalculateSetItemPrices(setItems, setSumValues, pricingItems);
+        itemSplitService.recalculateSetItemPrices(setItems, setUnitValues, pricingItems);
 
         assertEquals(new BigDecimal("3.50"), orderRow1.getUnitValues().getGoodsValueGross());
         assertEquals(new BigDecimal("3.00"), orderRow1.getUnitValues().getGoodsValueNet());
@@ -338,7 +338,7 @@ class ItemSplitServiceTest {
         OrderRows orderRow2 = createEmptyOrderRows("sku-2");
         List<OrderRows> setItems = List.of(orderRow1, orderRow2);
 
-        SumValues setSumValues = SumValues.builder()
+        UnitValues setUnitValues = UnitValues.builder()
                 .goodsValueGross(new BigDecimal("20.00")).goodsValueNet(new BigDecimal("18.00")).build();
 
         PricingItem pricingItem1 = createPricingItem(
@@ -348,7 +348,7 @@ class ItemSplitServiceTest {
         List<PricingItem> pricingItems = List.of(pricingItem1, pricingItem2);
 
 
-        assertThatThrownBy(() -> itemSplitService.recalculateSetItemPrices(setItems, setSumValues, pricingItems))
+        assertThatThrownBy(() -> itemSplitService.recalculateSetItemPrices(setItems, setUnitValues, pricingItems))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Gross prices from Pricing Service do not add up.Set cannot be split.");
     }
