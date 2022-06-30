@@ -76,6 +76,7 @@ class ItemSplitServiceTest {
 
         when(pricingServiceClient.getSetPriceInfo(any(), any())).thenReturn(Optional.of(SetUnitPriceAPIResponse.builder().setUnitPrices(List.of(PricingItem.builder().build())).build()));
         doNothing().when(itemSplitService).recalculateSetItemPrices(any(), any(), any());
+        doNothing().when(itemSplitService).recalculateSumValues(any(), any(), any());
         when(orderUtil.getLastRowKey(any(Order.class))).thenReturn(3);
 
         itemSplitService.processOrderList(list);
@@ -122,6 +123,7 @@ class ItemSplitServiceTest {
 
         when(pricingServiceClient.getSetPriceInfo(any(), any())).thenReturn(Optional.of(SetUnitPriceAPIResponse.builder().setUnitPrices(List.of(PricingItem.builder().build())).build()));
         doNothing().when(itemSplitService).recalculateSetItemPrices(any(), any(), any());
+        doNothing().when(itemSplitService).recalculateSumValues(any(), any(), any());
         when(orderUtil.getLastRowKey(any(Order.class))).thenReturn(3);
         itemSplitService.processOrder(order);
 
@@ -168,6 +170,7 @@ class ItemSplitServiceTest {
 
         when(pricingServiceClient.getSetPriceInfo(any(), any())).thenReturn(Optional.of(SetUnitPriceAPIResponse.builder().setUnitPrices(List.of(PricingItem.builder().build())).build()));
         doNothing().when(itemSplitService).recalculateSetItemPrices(any(), any(), any());
+        doNothing().when(itemSplitService).recalculateSumValues(any(), any(), any());
         when(orderUtil.getLastRowKey(any(Order.class))).thenReturn(3);
         itemSplitService.processOrder(order);
 

@@ -167,8 +167,8 @@ public class ItemSplitService extends AbstractSplitDecorator {
                 .shippingAddressKey(originItem.getShippingAddressKey())
                 .shippingProvider(originItem.getShippingProvider())
                 .trackingNumbers(originItem.getTrackingNumbers())
-                .unitValues(originItem.getUnitValues())
-                .sumValues(originItem.getSumValues())
+                .unitValues(UnitValues.builder().build())
+                .sumValues(SumValues.builder().build())
                 .manufacturerProductNumber(productNumber)
                 .build();
     }
@@ -252,7 +252,7 @@ public class ItemSplitService extends AbstractSplitDecorator {
         }
     }
 
-    private void recalculateSumValues(List<OrderRows> setItems, SumValues setSumValues, BigDecimal quantity) {
+    protected void recalculateSumValues(List<OrderRows> setItems, SumValues setSumValues, BigDecimal quantity) {
 
         for (OrderRows orderRow : setItems) {
             log.info("calculating sum prices for set item with sku: {}, initial sum gross: {} initial sum net: {}",
