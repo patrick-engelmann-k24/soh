@@ -2,6 +2,7 @@ package de.kfzteile24.salesOrderHub.services.splitter.decorator;
 
 import de.kfzteile24.salesOrderHub.clients.PricingServiceClient;
 import de.kfzteile24.salesOrderHub.clients.ProductDataHubClient;
+import de.kfzteile24.salesOrderHub.configuration.FeatureFlagConfig;
 import de.kfzteile24.salesOrderHub.domain.pdh.Product;
 import de.kfzteile24.salesOrderHub.domain.pdh.product.Country;
 import de.kfzteile24.salesOrderHub.domain.pdh.product.Localization;
@@ -47,6 +48,9 @@ public class ItemSplitService extends AbstractSplitDecorator {
     @Autowired
     private OrderUtil orderUtil;
 
+    @Autowired
+    private FeatureFlagConfig featureFlagConfig;
+
     @Override
     public void processOrderList(ArrayList<Order> orderList) {
 
@@ -68,26 +72,31 @@ public class ItemSplitService extends AbstractSplitDecorator {
                 log.error("Could not get product data from PDH for sku: {}", row.getSku());
                 throw new NotFoundException("Could not get product data from PDH for sku: " + row.getSku());
             } else if (product.isSetItem()) {
-                final var setItems = new ArrayList<OrderRows>();
-                List<PricingItem> itemPrices = getSetPrices(row.getSku(), order.getOrderHeader().getSalesChannel(), orderNumber);
-                for (final var setItem : product.getSetProductCollection()) {
-                    final BigDecimal qty = setItem.getQuantity().multiply(row.getQuantity());
-                    final var pdhProduct = getProduct(setItem.getSku());
-                    if (pdhProduct != null) {
-                        final var replacementProduct = mapProductToOrderRows(pdhProduct, row, qty, locale);
-                        replacementProduct.setRowKey(rowKey);
-                        setItems.add(replacementProduct);
-                        ++rowKey;
-                    } else {
-                        String errorMessage = "Could not get product data from PDH for sku: " + setItem.getSku();
-                        log.error(errorMessage);
-                        throw new NotFoundException(errorMessage);
+                if (featureFlagConfig.getPreventSetProcessing()) {
+                    log.error("Order number {} contains a setitem and cannot be processed", orderNumber);
+                    throw new IllegalArgumentException("Order number " + orderNumber + " contains a setitem and cannot be processed");
+                } else {
+                    final var setItems = new ArrayList<OrderRows>();
+                    List<PricingItem> itemPrices = getSetPrices(row.getSku(), order.getOrderHeader().getSalesChannel(), orderNumber);
+                    for (final var setItem : product.getSetProductCollection()) {
+                        final BigDecimal qty = setItem.getQuantity().multiply(row.getQuantity());
+                        final var pdhProduct = getProduct(setItem.getSku());
+                        if (pdhProduct != null) {
+                            final var replacementProduct = mapProductToOrderRows(pdhProduct, row, qty, locale);
+                            replacementProduct.setRowKey(rowKey);
+                            setItems.add(replacementProduct);
+                            ++rowKey;
+                        } else {
+                            String errorMessage = "Could not get product data from PDH for sku: " + setItem.getSku();
+                            log.error(errorMessage);
+                            throw new NotFoundException(errorMessage);
+                        }
                     }
+                    recalculateSetItemPrices(setItems, row.getUnitValues(), itemPrices, orderNumber, row.getSku());
+                    recalculateSumValues(setItems, row.getSumValues(), row.getQuantity(), orderNumber, row.getSku());
+                    replacementProductCollection.addAll(setItems);
+                    originItemsWhichGetReplaced.add(row);
                 }
-                recalculateSetItemPrices(setItems, row.getUnitValues(), itemPrices, orderNumber, row.getSku());
-                recalculateSumValues(setItems, row.getSumValues(), row.getQuantity(), orderNumber, row.getSku());
-                replacementProductCollection.addAll(setItems);
-                originItemsWhichGetReplaced.add(row);
             }
         }
         order.getOrderRows().removeAll(originItemsWhichGetReplaced);
