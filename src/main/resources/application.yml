@@ -123,7 +123,6 @@ camunda:
 springdoc:
   swagger-ui:
     path: /api/swagger
-    disable-swagger-default-url: true
   api-docs:
     path: /api-docs
 
