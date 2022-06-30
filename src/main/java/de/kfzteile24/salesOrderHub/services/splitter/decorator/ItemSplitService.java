@@ -167,8 +167,8 @@ public class ItemSplitService extends AbstractSplitDecorator {
                 .shippingAddressKey(originItem.getShippingAddressKey())
                 .shippingProvider(originItem.getShippingProvider())
                 .trackingNumbers(originItem.getTrackingNumbers())
-                .unitValues(originItem.getUnitValues())
-                .sumValues(originItem.getSumValues())
+                .unitValues(UnitValues.builder().build())
+                .sumValues(SumValues.builder().build())
                 .manufacturerProductNumber(productNumber)
                 .build();
     }
