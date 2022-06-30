@@ -2,6 +2,7 @@ package de.kfzteile24.salesOrderHub.services;
 
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.Platform;
@@ -21,6 +22,8 @@ public class SalesOrderProcessService {
     private final SalesOrderService salesOrderService;
     private final CamundaHelper camundaHelper;
     private final SplitterService splitterService;
+
+    private final MetricsHelper metricsHelper;
 
     public void handleShopOrdersReceived(MessageWrapper<Order> orderMessageWrapper) {
         setOrderGroupIdIfEmpty(orderMessageWrapper.getMessage());
@@ -42,6 +45,7 @@ public class SalesOrderProcessService {
                 if (result != null) {
                     log.info("New ecp order process started for order number: {}. Process-Instance-ID: {} ",
                             order.getOrderHeader().getOrderNumber(), result.getProcessInstanceId());
+                    metricsHelper.salesOrderConsumed(order);
                 }
             }
         } catch (Exception e) {
