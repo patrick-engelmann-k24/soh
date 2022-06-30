@@ -562,6 +562,7 @@ public class SqsReceiveService {
 
             final Optional<SalesOrder> salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber);
             if (salesOrder.isPresent()) {
+                salesOrderService.updateSalesOrderByOrderJson(salesOrder.get(), order);
                 log.info("Order with order number: {} is duplicated for migration. Publishing event on migration topic", orderNumber);
                 snsPublishService.publishMigrationOrderCreated(orderNumber);
             } else {

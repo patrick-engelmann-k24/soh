@@ -17,6 +17,7 @@ import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.soh.order.dto.GrandTotalTaxes;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
+import de.kfzteile24.soh.order.dto.Payments;
 import de.kfzteile24.soh.order.dto.Platform;
 import de.kfzteile24.soh.order.dto.SumValues;
 import de.kfzteile24.soh.order.dto.Surcharges;
@@ -43,9 +44,11 @@ import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.INVOICE_URL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.MIGRATION_SALES_ORDER_RECEIVED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getSumValue;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.isNotNullAndEqual;
+import static de.kfzteile24.salesOrderHub.helper.PaymentUtil.updatePaymentProvider;
 import static java.text.MessageFormat.format;
 
 @Service
@@ -395,5 +398,32 @@ public class SalesOrderService {
 
         runtimeService.startProcessInstanceByMessage(Messages.DROPSHIPMENT_CREDIT_NOTE_CREATED.getName(), returnOrderNumber, processVariables);
         log.info("Invoice {} for credit note of dropshipment order return for order-number {} successfully received", invoiceUrl, returnOrderNumber);
+    }
+
+    @Transactional
+    public void updateSalesOrderByOrderJson(SalesOrder salesOrder, Order order) {
+        updatePayments(salesOrder, order);
+        salesOrder.setOriginalOrder(order);
+        salesOrder.setLatestJson(order);
+        save(salesOrder, MIGRATION_SALES_ORDER_RECEIVED);
+    }
+
+    private void updatePayments(SalesOrder salesOrder, Order order) {
+        var orderNumber = salesOrder.getOrderNumber();
+        var targetPaymentList = order.getOrderHeader().getPayments();
+        var sourcePaymentList = salesOrder.getLatestJson().getOrderHeader().getPayments();
+        var updatedPayments = targetPaymentList.stream()
+                .map(payment -> filterAndUpdatePayment(sourcePaymentList, payment, orderNumber))
+                .collect(Collectors.toList());
+        order.getOrderHeader().setPayments(updatedPayments);
+    }
+
+    private Payments filterAndUpdatePayment(List<Payments> sourcePaymentsList, Payments target, String orderNumber) {
+        return sourcePaymentsList.stream().filter(payment -> payment.getType().equals(target.getType()))
+                .map(payment -> updatePaymentProvider(payment, target))
+                .findFirst()
+                .orElseThrow(() ->
+                        new IllegalArgumentException("Order does not contain a valid payment type. Order number: " +
+                                orderNumber));
     }
 }
