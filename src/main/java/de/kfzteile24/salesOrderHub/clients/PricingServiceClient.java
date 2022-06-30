@@ -38,7 +38,7 @@ public class PricingServiceClient {
             try {
                 final SetUnitPriceAPIResponse response =
                         restTemplate.exchange(endpoint, GET, httpEntity, SetUnitPriceAPIResponse.class).getBody();
-                log.info("Return from pricing service for order number {} for sku {} and sales channel {}: \n{}",
+                log.info("Return from pricing service for order number {} for sku {} and sales channel {}: \n {}",
                         orderNumber, sku, salesChannelCode, response);
                 return Optional.ofNullable(
                         response == null ||
