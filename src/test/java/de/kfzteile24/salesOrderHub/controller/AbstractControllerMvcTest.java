@@ -12,7 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @AutoConfigureMockMvc
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @Slf4j
-abstract class AbstractControllerIntegrationTest {
+abstract class AbstractControllerMvcTest {
 
     @Autowired
     protected ObjectMapper objectMapper;

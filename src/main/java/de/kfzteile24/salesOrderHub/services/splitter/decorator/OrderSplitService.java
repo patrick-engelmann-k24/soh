@@ -21,6 +21,8 @@ import java.util.UUID;
 public class OrderSplitService extends AbstractSplitDecorator {
     public static final String ORDER_FULFILLMENT_DELTICOM = "delticom";
 
+    public static final String ORDER_FULFILLMENT_K24 = "K24";
+
     private final ObjectMapperConfig objectMapperConfig;
 
     private final OrderUtil orderUtil;
@@ -45,9 +47,9 @@ public class OrderSplitService extends AbstractSplitDecorator {
         // Scenario 2: There are some dropshipment items (split as usual)
         // Scenario 3: There are no dropshipment items (no split is needed)
         if (orderUtil.containsOnlyDropShipmentItems(currentOrder)) {
-            updateExistingOrder(currentOrder);
+            updateDropshipmentOrder(currentOrder);
         } else if (orderUtil.containsDropShipmentItems(currentOrder)) {
-            final var dsOrder = copyOrderFromExistingOrder(currentOrder);
+            final var dsOrder = copyDropshipmentOrderFromExistingOrder(currentOrder);
 
             List<OrderRows> toRemove = new ArrayList<>();
             for (final var orderRows : currentOrder.getOrderRows()) {
@@ -70,16 +72,16 @@ public class OrderSplitService extends AbstractSplitDecorator {
      *
      * @return the copied order
      */
-    private Order copyOrderFromExistingOrder(Order originalOrder) {
+    private Order copyDropshipmentOrderFromExistingOrder(Order originalOrder) {
         Order copy = objectMapperConfig.objectMapper().convertValue(originalOrder, Order.class);
+        updateDropshipmentOrder(copy);
         copy.getOrderHeader().setOrderNumber(originalOrder.getOrderHeader().getOrderNumber().concat("-1"));
         copy.getOrderHeader().setOrderId(UUID.randomUUID());
-        copy.getOrderHeader().setOrderFulfillment(ORDER_FULFILLMENT_DELTICOM);
         copy.getOrderRows().clear();
         return copy;
     }
 
-    private Order updateExistingOrder(Order originalOrder) {
+    private Order updateDropshipmentOrder(Order originalOrder) {
         originalOrder.getOrderHeader().setOrderFulfillment(ORDER_FULFILLMENT_DELTICOM);
         return originalOrder;
     }

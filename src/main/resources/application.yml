@@ -123,7 +123,6 @@ camunda:
 springdoc:
   swagger-ui:
     path: /api/swagger
-    disable-swagger-default-url: true
   api-docs:
     path: /api-docs
 
@@ -177,3 +176,4 @@ ignoreMigrationCoreSalesCreditNote: ${ignore_migration_core_sales_credit_note}
 ignoreMigrationCoreSalesOrder: ${ignore_migration_core_sales_order}
 ignoreSalesOrderSplitter: ${ignore_sales_order_splitter}
 ignoreSetDissolvement: ${ignore_set_dissolvement}
+preventSetProcessing: ${prevent_set_processing}

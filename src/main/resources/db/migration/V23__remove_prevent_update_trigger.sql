@@ -1,0 +1,1 @@
+DROP TRIGGER IF EXISTS prevent_update_trigger ON "public".sales_order;

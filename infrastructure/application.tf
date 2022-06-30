@@ -85,6 +85,7 @@ module "application_module" {
     soh_bpmn_pricing_service_url               = var.pricing_service_endpoint_url
     soh_bpmn_http_connection_timeout_seconds   = 8
     ignore_set_dissolvement                    = var.ignore_set_dissolvement
+    prevent_set_processing                     = var.prevent_set_processing
   }
 
   ssm_secrets_count = 10

@@ -12,9 +12,13 @@ import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.soh.order.dto.GrandTotalTaxes;
+import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
+import de.kfzteile24.soh.order.dto.PaymentProviderData;
+import de.kfzteile24.soh.order.dto.Payments;
 import de.kfzteile24.soh.order.dto.Platform;
 import org.camunda.bpm.engine.RuntimeService;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -68,6 +72,19 @@ class SalesOrderServiceTest {
 
     @InjectMocks
     private SalesOrderService salesOrderService;
+
+    private static final String paypalType = "paypal";
+    private static final String creditcardType = "creditcard";
+    private static final UUID uuid = UUID.randomUUID();
+    private static final String externalId = "866560d1878642839eec6a414d1e8e1a";
+    private static final BigDecimal transactionAmount = BigDecimal.valueOf(175.09);
+    private static final String transactionId = "dd07626e5c76412ba494ec9d824a6bb1";
+    private static final String description = "Authentication completed correctly";
+    private static final String status = "OK";
+    private static final String providerCode = "00000000";
+    private static final String cardNumber = "0505210887207822";
+    private static final String expiryDate = "2025-06-01";
+    private static final String cardBrand = "Mastercard";
 
     @ParameterizedTest
     @MethodSource("provideParamsForRecurringOrderTest")
@@ -358,7 +375,7 @@ class SalesOrderServiceTest {
     }
 
     @Test
-    public void testGetOrderNumberListByOrderGroupIdForMultipleSalesOrdersHavingRightSku(){
+    void testGetOrderNumberListByOrderGroupIdForMultipleSalesOrdersHavingRightSku(){
         var salesOrderList = new ArrayList<SalesOrder>();
         String rawMessage =  readResource("examples/ecpOrderMessage.json");
 
@@ -400,7 +417,7 @@ class SalesOrderServiceTest {
     }
 
     @Test
-    public void testGetOrderNumberListByOrderGroupIdForNoneSalesOrderHavingRightSku(){
+    void testGetOrderNumberListByOrderGroupIdForNoneSalesOrderHavingRightSku(){
         var salesOrderList = new ArrayList<SalesOrder>();
         String rawMessage =  readResource("examples/ecpOrderMessage.json");
 
@@ -422,7 +439,7 @@ class SalesOrderServiceTest {
     }
 
     @Test
-    public void testGetOrderNumberListByOrderGroupIdForNoneSalesOrderInGroupId(){
+    void testGetOrderNumberListByOrderGroupIdForNoneSalesOrderInGroupId(){
         var salesOrderList = new ArrayList<SalesOrder>();
         String rawMessage =  readResource("examples/ecpOrderMessage.json");
 
@@ -442,6 +459,141 @@ class SalesOrderServiceTest {
                         salesOrder.getOrderGroupId(),
                         "order row sku number",
                         salesOrder.getLatestJson().getOrderRows().get(0).getSku());
+    }
+
+    @Test
+    void testUpdateSalesOrderByOrderJson(){
+
+        // Prepare sales order
+        var orderNumber = "872634242";
+        var originalSalesOrder = getSalesOrder(readResource("examples/testmessage.json"));
+        var originalProviderData = getPaypalPaymentProviderData(originalSalesOrder);
+        updateOriginalSalesOrder(orderNumber, originalSalesOrder);
+
+        // Prepare new order json
+        var orderJson = getOrderJson(orderNumber, false);
+
+        when(salesOrderRepository.save(any())).thenAnswer((Answer<SalesOrder>) invocation -> invocation.getArgument(0));
+
+        salesOrderService.updateSalesOrderByOrderJson(originalSalesOrder, orderJson);
+        var orderHeader = ((Order) originalSalesOrder.getOriginalOrder()).getOrderHeader();
+        var paypalPayment = orderHeader.getPayments().stream().filter(p -> p.getType().equals(paypalType)).findFirst().get();
+        var paypalProviderData = paypalPayment.getPaymentProviderData();
+        var creditcardPayment = orderHeader.getPayments().stream().filter(p -> p.getType().equals(creditcardType)).findFirst().get();
+        var creditcardProviderData = creditcardPayment.getPaymentProviderData();
+        assertThat(orderHeader.getOrderNumber()).contains(orderNumber);
+        assertThat(orderHeader.getOrderGroupId()).contains(orderNumber);
+        assertThat(paypalPayment.getPaymentTransactionId()).isNotEqualTo(UUID.fromString("4b3826ac-48a2-42d3-a724-2ecfa0737f47"));
+        assertThat(paypalProviderData.getExternalId()).isEqualTo(originalProviderData.getExternalId());
+        assertThat(paypalProviderData.getTransactionAmount()).isEqualTo(originalProviderData.getTransactionAmount());
+        assertThat(paypalProviderData.getSenderFirstName()).isEqualTo(originalProviderData.getSenderFirstName());
+        assertThat(paypalProviderData.getSenderLastName()).isEqualTo(originalProviderData.getSenderLastName());
+        assertThat(paypalProviderData.getExternalTransactionId()).isEqualTo(originalProviderData.getExternalTransactionId());
+        assertThat(paypalProviderData.getExternalPaymentStatus()).isEqualTo(originalProviderData.getExternalPaymentStatus());
+        assertThat(paypalProviderData.getBillingAgreement()).isEqualTo(originalProviderData.getBillingAgreement());
+        assertThat(creditcardPayment.getPaymentTransactionId()).isEqualTo(uuid);
+        assertThat(creditcardProviderData.getExternalId()).isEqualTo(externalId);
+        assertThat(creditcardProviderData.getTransactionAmount()).isEqualTo(BigDecimal.valueOf(180.99));
+        assertThat(creditcardProviderData.getPaymentProviderTransactionId()).isEqualTo(transactionId);
+        assertThat(creditcardProviderData.getPaymentProviderPaymentId()).isEqualTo(externalId);
+        assertThat(creditcardProviderData.getPaymentProviderStatus()).isEqualTo("DONE");
+        assertThat(creditcardProviderData.getPaymentProviderOrderDescription()).isEqualTo(description);
+        assertThat(creditcardProviderData.getPaymentProviderCode()).isEqualTo(providerCode);
+        assertThat(creditcardProviderData.getPseudoCardNumber()).isEqualTo(cardNumber);
+        assertThat(creditcardProviderData.getCardExpiryDate()).isEqualTo(expiryDate);
+        assertThat(creditcardProviderData.getCardBrand()).isEqualTo(cardBrand);
+        assertThat(creditcardProviderData.getOrderDescription()).isEqualTo(description);
+    }
+
+    @Test
+    void testUpdateSalesOrderByOrderJsonThrowsAnException(){
+
+        // Prepare sales order
+        var orderNumber = "872634243";
+        var originalSalesOrder = getSalesOrder(readResource("examples/testmessage.json"));
+        updateOriginalSalesOrder(orderNumber, originalSalesOrder);
+
+        // Prepare new order json
+        var orderJson = getOrderJson(orderNumber, true);
+
+        assertThatThrownBy(() -> salesOrderService.updateSalesOrderByOrderJson(originalSalesOrder, orderJson))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Order does not contain a valid payment type. Order number: " +
+                                orderNumber);
+    }
+
+    @NotNull
+    private Order getOrderJson(String orderNumber, boolean addInvalidPaymentType) {
+        String rawMessage = readResource("examples/ecpOrderMessageWithTwoRows.json");
+        var orderJson = getSalesOrder(rawMessage).getLatestJson();
+        orderJson.getOrderHeader().setOrderNumber(orderNumber);
+        orderJson.getOrderHeader().setOrderGroupId(orderNumber);
+
+        if (addInvalidPaymentType) {
+            orderJson.getOrderHeader().setPayments(List.of(
+                    Payments.builder().type(paypalType).build(),
+                    Payments.builder().type(creditcardType).build(),
+                    Payments.builder()
+                            .type("voucher")
+                            .value(BigDecimal.valueOf(50.99))
+                            .paymentProviderData(PaymentProviderData.builder()
+                                    .code("ABC123")
+                                    .promotionIdentifier("string")
+                                    .build())
+                            .build()
+            ));
+        } else {
+            orderJson.getOrderHeader().setPayments(List.of(
+                    Payments.builder()
+                            .type(paypalType)
+                            .paymentTransactionId(UUID.randomUUID())
+                            .build(),
+                    Payments.builder()
+                            .type(creditcardType)
+                            .paymentProviderData(PaymentProviderData.builder()
+                                    .transactionAmount(BigDecimal.valueOf(180.99))
+                                    .paymentProviderStatus("DONE")
+                                    .build())
+                            .paymentTransactionId(UUID.fromString("00000000-0000-0000-0000-000000000000"))
+                            .build()));
+        }
+        return orderJson;
+    }
+
+    private void updateOriginalSalesOrder(String orderNumber, SalesOrder originalSalesOrder) {
+        originalSalesOrder.setOrderNumber(orderNumber);
+        originalSalesOrder.getLatestJson().getOrderHeader().getPayments()
+                .add(Payments.builder()
+                        .type(creditcardType)
+                        .paymentTransactionId(uuid)
+                        .paymentProviderData(PaymentProviderData.builder()
+                                .externalId(externalId)
+                                .transactionAmount(transactionAmount)
+                                .paymentProviderTransactionId(transactionId)
+                                .paymentProviderPaymentId(externalId)
+                                .paymentProviderStatus(status)
+                                .paymentProviderOrderDescription(description)
+                                .paymentProviderCode(providerCode)
+                                .pseudoCardNumber(cardNumber)
+                                .cardExpiryDate(expiryDate)
+                                .cardBrand(cardBrand)
+                                .orderDescription(description)
+                                .build())
+                        .build());
+    }
+
+    private PaymentProviderData getPaypalPaymentProviderData(SalesOrder originalSalesOrder) {
+        var providerData =
+                originalSalesOrder.getLatestJson().getOrderHeader().getPayments().get(0).getPaymentProviderData();
+        return PaymentProviderData.builder()
+                .externalId(providerData.getExternalId())
+                .transactionAmount(providerData.getTransactionAmount())
+                .senderFirstName(providerData.getSenderFirstName())
+                .senderLastName(providerData.getSenderLastName())
+                .externalTransactionId(providerData.getExternalTransactionId())
+                .externalPaymentStatus(providerData.getExternalPaymentStatus())
+                .billingAgreement(providerData.getBillingAgreement())
+                .build();
     }
 
 }

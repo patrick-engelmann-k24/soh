@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 
+import static de.kfzteile24.salesOrderHub.services.splitter.decorator.OrderSplitService.ORDER_FULFILLMENT_K24;
+
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -36,6 +38,7 @@ public class SplitterService {
      * @return list of split SalesOrders
      */
     public List<SalesOrder> splitSalesOrder(final Order originOrder) {
+        updateOriginalOrder(originOrder);
         final var orderList = new ArrayList<Order>();
         orderList.add(originOrder);
         if (featureFlagConfig.getIgnoreSalesOrderSplitter()) {
@@ -85,5 +88,10 @@ public class SplitterService {
                 .originalOrder(originOrder)
                 .latestJson(/*splitted order goes here */ splitOrder)
                 .build();
+    }
+
+    private Order updateOriginalOrder(Order originalOrder) {
+        originalOrder.getOrderHeader().setOrderFulfillment(ORDER_FULFILLMENT_K24);
+        return originalOrder;
     }
 }

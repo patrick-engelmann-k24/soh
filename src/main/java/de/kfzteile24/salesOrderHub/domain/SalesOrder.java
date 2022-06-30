@@ -44,7 +44,7 @@ public class SalesOrder extends AbstractBaseEntity {
     @Column(name = "process_id")
     private String processId;
 
-    @Column(name = "original_order", columnDefinition = "json", updatable = false)
+    @Column(name = "original_order", columnDefinition = "json")
     @Convert(converter = OrderJsonConverter.class)
     private Object originalOrder;
 
