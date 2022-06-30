@@ -29,6 +29,6 @@ public class FeatureFlagConfig {
     @Value("${ignoreSetDissolvement}")
     private Boolean ignoreSetDissolvement;
 
-    @Value("preventSetProcessing")
+    @Value("${preventSetProcessing}")
     private Boolean preventSetProcessing;
 }
