@@ -51,7 +51,7 @@ public class PricingServiceClientTest {
         expectedPricingInfo.setSetUnitPrices(List.of(PricingItem.builder().sku("1010-0607").unitPrices(Prices.builder().gross(BigDecimal.valueOf(12.34)).build()).build()));
         mockSuccessfulPricingAnswer(expectedPricingInfo);
 
-        final var pricingInfoOpt = pricingServiceClient.getSetPriceInfo("1010-0607", "www-k24-de");
+        final var pricingInfoOpt = pricingServiceClient.getSetPriceInfo("1010-0607", "www-k24-de", "12345");
         assertTrue(pricingInfoOpt.isPresent());
         assertEquals(expectedPricingInfo.getSetUnitPrices().get(0).getUnitPrices().getGross(),
                 pricingInfoOpt.get().getSetUnitPrices().get(0).getUnitPrices().getGross());
@@ -62,7 +62,7 @@ public class PricingServiceClientTest {
         when(restTemplate.exchange(any(URI.class), any(), any(), ArgumentMatchers.<Class<SetUnitPriceAPIResponse>> any()))
                 .thenReturn(new ResponseEntity<>(OK));
 
-        final var pricingInfoOpt = pricingServiceClient.getSetPriceInfo("", "");
+        final var pricingInfoOpt = pricingServiceClient.getSetPriceInfo("", "", "");
         assertFalse(pricingInfoOpt.isPresent());
     }
 

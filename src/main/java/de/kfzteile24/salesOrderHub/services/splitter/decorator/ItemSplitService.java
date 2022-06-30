@@ -68,7 +68,7 @@ public class ItemSplitService extends AbstractSplitDecorator {
                 throw new NotFoundException("Could not get product data from PDH for sku: " + row.getSku());
             } else if (product.isSetItem()) {
                 final var setItems = new ArrayList<OrderRows>();
-                List<PricingItem> itemPrices = getSetPrices(row.getSku(), order.getOrderHeader().getSalesChannel());
+                List<PricingItem> itemPrices = getSetPrices(row.getSku(), order.getOrderHeader().getSalesChannel(), orderNumber);
                 for (final var setItem : product.getSetProductCollection()) {
                     final BigDecimal qty = setItem.getQuantity().multiply(row.getQuantity());
                     final var pdhProduct = getProduct(setItem.getSku());
@@ -104,14 +104,14 @@ public class ItemSplitService extends AbstractSplitDecorator {
      * @param setSku - sku of the set product
      * @return get list of the prices for the items in the set
      */
-    protected List<PricingItem> getSetPrices(String setSku, String salesChannelCode) {
+    protected List<PricingItem> getSetPrices(String setSku, String salesChannelCode, String orderNumber) {
 
-        Optional<SetUnitPriceAPIResponse> setPriceInfo = pricingServiceClient.getSetPriceInfo(setSku, salesChannelCode);
+        Optional<SetUnitPriceAPIResponse> setPriceInfo = pricingServiceClient.getSetPriceInfo(setSku, salesChannelCode, orderNumber);
         if (setPriceInfo.isPresent()) {
             return setPriceInfo.get().getSetUnitPrices();
         }
 
-        throw new NotFoundException(String.format("Prices for the items in the set are not found! Sku of set item: %s", setSku));
+        throw new NotFoundException(String.format("Prices for order-number {} the items in the set are not found! Sku of set item: %s",orderNumber, setSku));
     }
 
     /**
@@ -186,8 +186,8 @@ public class ItemSplitService extends AbstractSplitDecorator {
         log.info("Recalculating prices for set items for order number: {} and sku: {}", orderNumber, setItemSku);
 
         for (OrderRows orderRow : setItems) {
-            log.info("calculating unit prices for set item with sku: {}, initial unit gross: {} initial unit net: {}",
-                    orderRow.getSku(), setUnitValues.getDiscountedGross(), setUnitValues.getDiscountedNet());
+            log.info("calculating unit prices for set item with sku: {}, initial unit gross: {} initial unit net: {} orderNumber: {}",
+                    orderRow.getSku(), setUnitValues.getDiscountedGross(), setUnitValues.getDiscountedNet(), orderNumber);
             UnitValues unitValues = orderRow.getUnitValues();
             SumValues sumValues = orderRow.getSumValues();
             PricingItem pricingItem = prices.stream().filter(Objects::nonNull)
@@ -201,8 +201,8 @@ public class ItemSplitService extends AbstractSplitDecorator {
             BigDecimal sumNet = round(Optional.of(pricingItem.getValueShare()).orElse(BigDecimal.ZERO)
                     .multiply(setUnitValues.getDiscountedNet()));
 
-            log.info("SumValues initially calculated for sku: {}, sum gross: {}, sum net: {}",
-                    orderRow.getSku(), sumGross, sumNet);
+            log.info("SumValues initially calculated for sku: {}, sum gross: {}, sum net: {}, order number {}",
+                    orderRow.getSku(), sumGross, sumNet, orderNumber);
 
             unitValues.setGoodsValueGross(unitGross);
             unitValues.setGoodsValueNet(unitNet);

@@ -74,7 +74,7 @@ class ItemSplitServiceTest {
         list.add(order1);
         list.add(order2);
 
-        when(pricingServiceClient.getSetPriceInfo(any(), any())).thenReturn(Optional.of(SetUnitPriceAPIResponse.builder().setUnitPrices(List.of(PricingItem.builder().build())).build()));
+        when(pricingServiceClient.getSetPriceInfo(any(), any(), any())).thenReturn(Optional.of(SetUnitPriceAPIResponse.builder().setUnitPrices(List.of(PricingItem.builder().build())).build()));
         doNothing().when(itemSplitService).recalculateSetItemPrices(any(), any(), any(), any(), any());
         doNothing().when(itemSplitService).recalculateSumValues(any(), any(), any(), any(), any());
         when(orderUtil.getLastRowKey(any(Order.class))).thenReturn(3);
@@ -121,7 +121,7 @@ class ItemSplitServiceTest {
 
         final var order = getOrder(readResource("examples/splitterSalesOrderMessageWithTwoRows.json"));
 
-        when(pricingServiceClient.getSetPriceInfo(any(), any())).thenReturn(Optional.of(SetUnitPriceAPIResponse.builder().setUnitPrices(List.of(PricingItem.builder().build())).build()));
+        when(pricingServiceClient.getSetPriceInfo(any(), any(), any())).thenReturn(Optional.of(SetUnitPriceAPIResponse.builder().setUnitPrices(List.of(PricingItem.builder().build())).build()));
         doNothing().when(itemSplitService).recalculateSetItemPrices(any(), any(), any(), any(), any());
         doNothing().when(itemSplitService).recalculateSumValues(any(), any(), any(), any(), any());
         when(orderUtil.getLastRowKey(any(Order.class))).thenReturn(3);
@@ -168,7 +168,7 @@ class ItemSplitServiceTest {
         OrderRows setOrderRow = order.getOrderRows().stream().filter(row -> row.getSku().equals(setSku)).findFirst().orElseThrow();
         setOrderRow.setQuantity(new BigDecimal(2));
 
-        when(pricingServiceClient.getSetPriceInfo(any(), any())).thenReturn(Optional.of(SetUnitPriceAPIResponse.builder().setUnitPrices(List.of(PricingItem.builder().build())).build()));
+        when(pricingServiceClient.getSetPriceInfo(any(), any(), any())).thenReturn(Optional.of(SetUnitPriceAPIResponse.builder().setUnitPrices(List.of(PricingItem.builder().build())).build()));
         doNothing().when(itemSplitService).recalculateSetItemPrices(any(), any(), any(), any(), any());
         doNothing().when(itemSplitService).recalculateSumValues(any(), any(), any(), any(), any());
         when(orderUtil.getLastRowKey(any(Order.class))).thenReturn(3);

@@ -29,17 +29,17 @@ public class PricingServiceClient {
     private final PricingServiceConfig pricingServiceConfig;
 
     @Timed("fetch.price")
-    public Optional<SetUnitPriceAPIResponse> getSetPriceInfo(String sku, String salesChannelCode) {
+    public Optional<SetUnitPriceAPIResponse> getSetPriceInfo(String sku, String salesChannelCode, String orderNumber) {
         return executeRequest((authHeaders) -> {
             var endpoint = new UriTemplate(pricingServiceConfig.getUrl() + GET_PRICE_ENDPOINT)
                     .expand(sku, salesChannelCode);
-            log.info("Calling pricing service endpoint: {}", endpoint);
+            log.info("For order number {} Calling pricing service endpoint: {}",orderNumber, endpoint);
             final var httpEntity = new HttpEntity<>(null, authHeaders);
             try {
                 final SetUnitPriceAPIResponse response =
                         restTemplate.exchange(endpoint, GET, httpEntity, SetUnitPriceAPIResponse.class).getBody();
-                log.info("Return from pricing service for sku {} and sales channel {}: \n{}",
-                        sku, salesChannelCode, response);
+                log.info("Return from pricing service for order number {} for sku {} and sales channel {}: \n{}",
+                        orderNumber, sku, salesChannelCode, response);
                 return Optional.ofNullable(
                         response == null ||
                                 response.getSetParentProductNumber() == null ||
@@ -49,9 +49,9 @@ public class PricingServiceClient {
                                 null : response
                 );
             } catch (Exception e) {
-                log.error("Could not get pricing data from Pricing-Service for sku: {}", sku);
+                log.error("Could not get pricing data from Pricing-Service for order number {} sku: {}",orderNumber, sku);
                 log.error(e.getMessage());
-                throw new NotFoundException("Could not get pricing data from Pricing-Service for sku: " + sku + " :: " + e.getMessage());
+                throw new NotFoundException("Could not get pricing data from Pricing-Service for order number " + orderNumber + " for sku: " + sku + " :: " + e.getMessage());
             }
         });
     }
