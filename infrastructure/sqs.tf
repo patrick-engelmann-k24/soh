@@ -46,7 +46,13 @@ locals {
     migration_core_sales_credit_note_created = "${var.environment}-${local.service_prefix}-migration-core-sales-credit-note-created-${local.version}",
     migration_core_sales_credit_note_created_dlq = "${var.environment}-${local.service_prefix}-migration-core-sales-credit-note-created-${local.version}-dlq",
     parcel_shipped = "${var.environment}-${local.service_prefix}-parcel-shipped-${local.version}",
-    parcel_shipped_dlq = "${var.environment}-${local.service_prefix}-parcel-shipped-${local.version}-dlq"
+    parcel_shipped_dlq = "${var.environment}-${local.service_prefix}-parcel-shipped-${local.version}-dlq",
+    tmp_core_sales_order_created = "${var.environment}-${local.service_prefix}-tmp-core-sales-order-created-${local.version}",
+    tmp_core_sales_order_created_dlq = "${var.environment}-${local.service_prefix}-tmp-core-sales-order-created-${local.version}-dlq",
+    tmp_core_sales_invoice_created = "${var.environment}-${local.service_prefix}-tmp-core-sales-invoice-created-${local.version}",
+    tmp_core_sales_invoice_created_dlq = "${var.environment}-${local.service_prefix}-tmp-core-sales-invoice-created-${local.version}-dlq",
+    tmp_core_sales_credit_note_created = "${var.environment}-${local.service_prefix}-tmp-core-sales-credit-note-created-${local.version}",
+    tmp_core_sales_credit_note_created_dlq = "${var.environment}-${local.service_prefix}-tmp-core-sales-credit-note-created-${local.version}-dlq"
   }
 }
 
@@ -257,4 +263,32 @@ resource "aws_sqs_queue" "soh_parcel_shipped_dlq" {
 resource "aws_sqs_queue" "soh_parcel_shipped" {
   name = local.sqs_queues.parcel_shipped
   redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.soh_parcel_shipped_dlq.arn}\",\"maxReceiveCount\":4}"
+}
+
+
+resource "aws_sqs_queue" "soh_tmp_core_sales_order_created_dlq" {
+  name = local.sqs_queues.tmp_core_sales_order_created_dlq
+}
+
+resource "aws_sqs_queue" "soh_tmp_core_sales_order_created" {
+  name = local.sqs_queues.tmp_core_sales_order_created
+  redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.soh_tmp_core_sales_order_created_dlq.arn}\",\"maxReceiveCount\":4}"
+}
+
+resource "aws_sqs_queue" "soh_tmp_core_sales_invoice_created_dlq" {
+  name = local.sqs_queues.tmp_core_sales_invoice_created_dlq
+}
+
+resource "aws_sqs_queue" "soh_tmp_core_sales_invoice_created" {
+  name = local.sqs_queues.tmp_core_sales_invoice_created
+  redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.soh_tmp_core_sales_invoice_created_dlq.arn}\",\"maxReceiveCount\":4}"
+}
+
+resource "aws_sqs_queue" "soh_tmp_core_sales_credit_note_created_dlq" {
+  name = local.sqs_queues.tmp_core_sales_credit_note_created_dlq
+}
+
+resource "aws_sqs_queue" "soh_tmp_core_sales_credit_note_created" {
+  name = local.sqs_queues.tmp_core_sales_credit_note_created
+  redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.soh_tmp_core_sales_credit_note_created_dlq.arn}\",\"maxReceiveCount\":4}"
 }

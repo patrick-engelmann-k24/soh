@@ -1042,3 +1042,130 @@ resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_parcel_shipped" {
   queue_url = aws_sqs_queue.soh_parcel_shipped.id
   policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_parcel_shipped.json
 }
+
+#tmp migration policies
+data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_tmp_sales_order_created" {
+  statement {
+    sid = "SNS-tmp-sales-order-created"
+    effect = "Allow"
+
+    actions = [
+      "sqs:SendMessage",
+    ]
+
+    principals {
+      identifiers = ["*"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_tmp_core_sales_order_created.arn
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sqs:*",
+    ]
+
+    principals {
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_tmp_core_sales_order_created.arn
+    ]
+  }
+}
+
+resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_tmp_sales_order_created" {
+  queue_url = aws_sqs_queue.soh_tmp_core_sales_order_created.id
+  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_tmp_sales_order_created.json
+}
+
+data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_tmp_core_sales_invoice_created" {
+  statement {
+    sid = "SNS-tmp-core-sales-invoice-created"
+    effect = "Allow"
+
+    actions = [
+      "sqs:SendMessage",
+    ]
+
+    principals {
+      identifiers = ["*"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_tmp_core_sales_invoice_created.arn
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sqs:*",
+    ]
+
+    principals {
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_tmp_core_sales_invoice_created.arn
+    ]
+  }
+}
+
+resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_soh_tmp_core_sales_invoice_created" {
+  queue_url = aws_sqs_queue.soh_tmp_core_sales_invoice_created.id
+  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_tmp_core_sales_invoice_created.json
+}
+
+data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_tmp_core_sales_credit_note_created" {
+  statement {
+    sid = "SNS-tmp-core-sales-credit-note-created"
+    effect = "Allow"
+
+    actions = [
+      "sqs:SendMessage",
+    ]
+
+    principals {
+      identifiers = ["*"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_tmp_core_sales_credit_note_created.arn
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sqs:*",
+    ]
+
+    principals {
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_tmp_core_sales_credit_note_created.arn
+    ]
+  }
+}
+
+resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_soh_tmp_core_sales_credit_note_created" {
+  queue_url = aws_sqs_queue.soh_tmp_core_sales_credit_note_created.id
+  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_tmp_core_sales_credit_note_created.json
+}
