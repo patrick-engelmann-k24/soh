@@ -362,7 +362,7 @@ public class ItemSplitService extends AbstractSplitDecorator {
         /*
          * if the totalDiscountGrossDifference is not 0 we throw an exception
          */
-        if (totalDiscountGrossDifference.abs().compareTo(TWO_CENTS) != 0) {
+        if (totalDiscountGrossDifference.abs().compareTo(BigDecimal.ZERO) != 0) {
             log.error("Discounted Gross prices from Pricing Service do not add up for order number: {} and sku: {}.\n" +
                             "Initial set gross price: {}, set gross price from pricing: {}\n" +
                             "Set cannot be split.",
