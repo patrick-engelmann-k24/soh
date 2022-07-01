@@ -227,10 +227,10 @@ public class ItemSplitService extends AbstractSplitDecorator {
 
     protected void recalculateUnitValuesForSetItems(List<OrderRows> setItems, String orderNumber, String setItemSku) {
 
-        log.info("Recalculating Sum Values for set items for order number: {} and sku: {}", orderNumber, setItemSku);
+        log.info("Recalculating unit Values for set items for order number: {} and sku: {}", orderNumber, setItemSku);
 
         for (OrderRows orderRow : setItems) {
-            log.info("calculating sum values for set item with sku: {}, sum values: {}, quantity: {}, orderNumber: {}",
+            log.info("calculating unit values for set item with sku: {}, sum values: {}, quantity: {}, orderNumber: {}",
                     orderRow.getSku(), orderRow.getSumValues(), orderRow.getQuantity(), orderNumber);
 
             SumValues sumValues = orderRow.getSumValues();
@@ -340,13 +340,15 @@ public class ItemSplitService extends AbstractSplitDecorator {
                     orderNumber, setItemSku);
 
             SumValues sumValues = orderRow.getSumValues();
-            BigDecimal sumGross = sumValues.getTotalDiscountedGross().multiply(setQuantity);
-            BigDecimal sumNet = sumValues.getTotalDiscountedNet().multiply(setQuantity);
+            BigDecimal sumDiscountedGross = sumValues.getTotalDiscountedGross().multiply(setQuantity);
+            BigDecimal sumDiscountedNet = sumValues.getTotalDiscountedNet().multiply(setQuantity);
+            BigDecimal sumGoodsValueGross = sumValues.getTotalDiscountedGross().multiply(setQuantity);
+            BigDecimal sumGoodsValueNet = sumValues.getTotalDiscountedNet().multiply(setQuantity);
 
-            sumValues.setGoodsValueGross(sumGross);
-            sumValues.setGoodsValueNet(sumNet);
-            sumValues.setTotalDiscountedGross(sumGross);
-            sumValues.setTotalDiscountedNet(sumNet);
+            sumValues.setGoodsValueGross(sumDiscountedGross);
+            sumValues.setGoodsValueNet(sumDiscountedNet);
+            sumValues.setTotalDiscountedGross(sumGoodsValueGross);
+            sumValues.setTotalDiscountedNet(sumGoodsValueNet);
             log.info("SumValues finally calculated for sku: {}, sum values: {}\n" +
                     "orderNumber: {}, set sku: {}", orderRow.getSku(), sumValues, orderNumber, setItemSku);
             orderRow.setQuantity(orderRow.getQuantity().multiply(setQuantity));
