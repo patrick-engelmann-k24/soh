@@ -28,6 +28,7 @@ public class SalesOrderProcessService {
     public void handleShopOrdersReceived(MessageWrapper<Order> orderMessageWrapper) {
         setOrderGroupIdIfEmpty(orderMessageWrapper.getMessage());
         splitterService.splitSalesOrder(orderMessageWrapper.getMessage())
+                .stream().filter(order -> order.getLatestJson().getOrderHeader().getPlatform() != Platform.CORE)
                 .forEach(salesOrder -> startSalesOrderProcess(salesOrder, orderMessageWrapper));
     }
 
