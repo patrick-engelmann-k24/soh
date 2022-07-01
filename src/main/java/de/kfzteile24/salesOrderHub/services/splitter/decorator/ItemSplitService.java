@@ -340,15 +340,15 @@ public class ItemSplitService extends AbstractSplitDecorator {
                     orderNumber, setItemSku);
 
             SumValues sumValues = orderRow.getSumValues();
+            BigDecimal sumGoodsValueGross = sumValues.getGoodsValueGross().multiply(setQuantity);
+            BigDecimal sumGoodsValueNet = sumValues.getGoodsValueNet().multiply(setQuantity);
             BigDecimal sumDiscountedGross = sumValues.getTotalDiscountedGross().multiply(setQuantity);
             BigDecimal sumDiscountedNet = sumValues.getTotalDiscountedNet().multiply(setQuantity);
-            BigDecimal sumGoodsValueGross = sumValues.getTotalDiscountedGross().multiply(setQuantity);
-            BigDecimal sumGoodsValueNet = sumValues.getTotalDiscountedNet().multiply(setQuantity);
 
-            sumValues.setGoodsValueGross(sumDiscountedGross);
-            sumValues.setGoodsValueNet(sumDiscountedNet);
-            sumValues.setTotalDiscountedGross(sumGoodsValueGross);
-            sumValues.setTotalDiscountedNet(sumGoodsValueNet);
+            sumValues.setGoodsValueGross(sumGoodsValueGross);
+            sumValues.setGoodsValueNet(sumGoodsValueNet);
+            sumValues.setTotalDiscountedGross(sumDiscountedGross);
+            sumValues.setTotalDiscountedNet(sumDiscountedNet);
             log.info("SumValues finally calculated for sku: {}, sum values: {}\n" +
                     "orderNumber: {}, set sku: {}", orderRow.getSku(), sumValues, orderNumber, setItemSku);
             orderRow.setQuantity(orderRow.getQuantity().multiply(setQuantity));
