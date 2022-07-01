@@ -45,9 +45,11 @@ public class SplitterService {
             log.info("Sales Order Splitter is ignored");
         } else {
             // add further splitters here (all operations happening on the list object)
-            if (!featureFlagConfig.getIgnoreSetDissolvement())
-            {
-                itemSplitService.processOrderList(orderList);
+            if (!featureFlagConfig.getIgnoreSetDissolvement()) {
+                Order order = orderList.stream().findFirst().orElseThrow();
+                if (order.getOrderHeader().getPlatform() != Platform.CORE) {
+                    itemSplitService.processOrderList(orderList);
+                }
             }
 
             Order order = orderList.stream().findFirst().orElseThrow();
