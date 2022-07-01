@@ -84,7 +84,7 @@ class ItemSplitServiceTest {
         doNothing().when(itemSplitService).recalculateUnitValuesForSetItems(any(), any(), any());
         doNothing().when(itemSplitService).flattenDifference(any(), any(), any(), any());
         doNothing().when(itemSplitService).recalculateSumValues(any(), any(), any(), any(), any());
-        doNothing().when(itemSplitService).flattenSumValuesDifference(any(), any(), any(), any());
+        doNothing().when(itemSplitService).checkSumValuesDifference(any(), any(), any(), any());
         when(orderUtil.getLastRowKey(any(Order.class))).thenReturn(3);
 
         itemSplitService.processOrderList(list);
@@ -135,7 +135,7 @@ class ItemSplitServiceTest {
         doNothing().when(itemSplitService).recalculateUnitValuesForSetItems(any(), any(), any());
         doNothing().when(itemSplitService).flattenDifference(any(), any(), any(), any());
         doNothing().when(itemSplitService).recalculateSumValues(any(), any(), any(), any(), any());
-        doNothing().when(itemSplitService).flattenSumValuesDifference(any(), any(), any(), any());
+        doNothing().when(itemSplitService).checkSumValuesDifference(any(), any(), any(), any());
         when(orderUtil.getLastRowKey(any(Order.class))).thenReturn(3);
         itemSplitService.processOrder(order);
 
