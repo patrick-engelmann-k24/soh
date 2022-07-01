@@ -483,6 +483,9 @@ class SalesOrderServiceTest {
         var creditcardProviderData = creditcardPayment.getPaymentProviderData();
         assertThat(orderHeader.getOrderNumber()).contains(orderNumber);
         assertThat(orderHeader.getOrderGroupId()).contains(orderNumber);
+        assertThat(originalSalesOrder.getOrderGroupId()).isEqualTo(originalSalesOrder.getOrderNumber());
+        assertThat(originalSalesOrder.getLatestJson().getOrderHeader().getOrderGroupId()).isEqualTo(originalSalesOrder.getOrderNumber());
+        assertThat(((Order)originalSalesOrder.getOriginalOrder()).getOrderHeader().getOrderGroupId()).isEqualTo(originalSalesOrder.getOrderNumber());
         assertThat(paypalPayment.getPaymentTransactionId()).isNotEqualTo(UUID.fromString("4b3826ac-48a2-42d3-a724-2ecfa0737f47"));
         assertThat(paypalProviderData.getExternalId()).isEqualTo(originalProviderData.getExternalId());
         assertThat(paypalProviderData.getTransactionAmount()).isEqualTo(originalProviderData.getTransactionAmount());
@@ -503,6 +506,7 @@ class SalesOrderServiceTest {
         assertThat(creditcardProviderData.getCardExpiryDate()).isEqualTo(expiryDate);
         assertThat(creditcardProviderData.getCardBrand()).isEqualTo(cardBrand);
         assertThat(creditcardProviderData.getOrderDescription()).isEqualTo(description);
+        assertThat(originalSalesOrder.getCustomerEmail()).isEqualTo("test@test.mail");
     }
 
     @Test
