@@ -26,6 +26,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.camunda.bpm.engine.RuntimeService;
 import org.springframework.stereotype.Service;
@@ -402,13 +403,21 @@ public class SalesOrderService {
 
     @Transactional
     public void updateSalesOrderByOrderJson(SalesOrder salesOrder, Order order) {
-        updatePayments(salesOrder, order);
+        updatePaymentsAndOrderGroupId(salesOrder, order);
         salesOrder.setOriginalOrder(order);
         salesOrder.setLatestJson(order);
+        salesOrder.setOrderGroupId(salesOrder.getOrderNumber());
+        mapCustomerEmailIfExists(salesOrder, order);
         save(salesOrder, MIGRATION_SALES_ORDER_RECEIVED);
     }
 
-    private void updatePayments(SalesOrder salesOrder, Order order) {
+    private static void mapCustomerEmailIfExists(SalesOrder salesOrder, Order order) {
+        Optional.ofNullable(order.getOrderHeader().getCustomer().getCustomerEmail())
+                .filter(StringUtils::isNoneBlank)
+                .ifPresent(salesOrder::setCustomerEmail);
+    }
+
+    private static void updatePaymentsAndOrderGroupId(SalesOrder salesOrder, Order order) {
         var orderNumber = salesOrder.getOrderNumber();
         var targetPaymentList = order.getOrderHeader().getPayments();
         var sourcePaymentList = salesOrder.getLatestJson().getOrderHeader().getPayments();
@@ -416,9 +425,10 @@ public class SalesOrderService {
                 .map(payment -> filterAndUpdatePayment(sourcePaymentList, payment, orderNumber))
                 .collect(Collectors.toList());
         order.getOrderHeader().setPayments(updatedPayments);
+        order.getOrderHeader().setOrderGroupId(orderNumber);
     }
 
-    private Payments filterAndUpdatePayment(List<Payments> sourcePaymentsList, Payments target, String orderNumber) {
+    private static Payments filterAndUpdatePayment(List<Payments> sourcePaymentsList, Payments target, String orderNumber) {
         return sourcePaymentsList.stream().filter(payment -> payment.getType().equals(target.getType()))
                 .map(payment -> updatePaymentProvider(payment, target))
                 .findFirst()

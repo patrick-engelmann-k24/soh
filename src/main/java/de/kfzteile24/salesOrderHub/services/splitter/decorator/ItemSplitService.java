@@ -227,10 +227,10 @@ public class ItemSplitService extends AbstractSplitDecorator {
 
     protected void recalculateUnitValuesForSetItems(List<OrderRows> setItems, String orderNumber, String setItemSku) {
 
-        log.info("Recalculating Sum Values for set items for order number: {} and sku: {}", orderNumber, setItemSku);
+        log.info("Recalculating unit Values for set items for order number: {} and sku: {}", orderNumber, setItemSku);
 
         for (OrderRows orderRow : setItems) {
-            log.info("calculating sum values for set item with sku: {}, sum values: {}, quantity: {}, orderNumber: {}",
+            log.info("calculating unit values for set item with sku: {}, sum values: {}, quantity: {}, orderNumber: {}",
                     orderRow.getSku(), orderRow.getSumValues(), orderRow.getQuantity(), orderNumber);
 
             SumValues sumValues = orderRow.getSumValues();
@@ -340,13 +340,15 @@ public class ItemSplitService extends AbstractSplitDecorator {
                     orderNumber, setItemSku);
 
             SumValues sumValues = orderRow.getSumValues();
-            BigDecimal sumGross = sumValues.getTotalDiscountedGross().multiply(setQuantity);
-            BigDecimal sumNet = sumValues.getTotalDiscountedNet().multiply(setQuantity);
+            BigDecimal sumGoodsValueGross = sumValues.getGoodsValueGross().multiply(setQuantity);
+            BigDecimal sumGoodsValueNet = sumValues.getGoodsValueNet().multiply(setQuantity);
+            BigDecimal sumDiscountedGross = sumValues.getTotalDiscountedGross().multiply(setQuantity);
+            BigDecimal sumDiscountedNet = sumValues.getTotalDiscountedNet().multiply(setQuantity);
 
-            sumValues.setGoodsValueGross(sumGross);
-            sumValues.setGoodsValueNet(sumNet);
-            sumValues.setTotalDiscountedGross(sumGross);
-            sumValues.setTotalDiscountedNet(sumNet);
+            sumValues.setGoodsValueGross(sumGoodsValueGross);
+            sumValues.setGoodsValueNet(sumGoodsValueNet);
+            sumValues.setTotalDiscountedGross(sumDiscountedGross);
+            sumValues.setTotalDiscountedNet(sumDiscountedNet);
             log.info("SumValues finally calculated for sku: {}, sum values: {}\n" +
                     "orderNumber: {}, set sku: {}", orderRow.getSku(), sumValues, orderNumber, setItemSku);
             orderRow.setQuantity(orderRow.getQuantity().multiply(setQuantity));
@@ -362,7 +364,7 @@ public class ItemSplitService extends AbstractSplitDecorator {
         /*
          * if the totalDiscountGrossDifference is not 0 we throw an exception
          */
-        if (totalDiscountGrossDifference.abs().compareTo(TWO_CENTS) != 0) {
+        if (totalDiscountGrossDifference.abs().compareTo(BigDecimal.ZERO) != 0) {
             log.error("Discounted Gross prices from Pricing Service do not add up for order number: {} and sku: {}.\n" +
                             "Initial set gross price: {}, set gross price from pricing: {}\n" +
                             "Set cannot be split.",
