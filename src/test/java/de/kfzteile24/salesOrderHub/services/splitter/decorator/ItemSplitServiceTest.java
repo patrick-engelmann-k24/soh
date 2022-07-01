@@ -80,8 +80,11 @@ class ItemSplitServiceTest {
 
         when(featureFlagConfig.getPreventSetProcessing()).thenReturn(false);
         when(pricingServiceClient.getSetPriceInfo(any(), any(), any())).thenReturn(Optional.of(SetUnitPriceAPIResponse.builder().setUnitPrices(List.of(PricingItem.builder().build())).build()));
-        doNothing().when(itemSplitService).recalculateSetItemPrices(any(), any(), any(), any(), any());
+        doNothing().when(itemSplitService).recalculateSumValuesForSetItemPrices(any(), any(), any(), any(), any());
+        doNothing().when(itemSplitService).recalculateUnitValuesForSetItems(any(), any(), any());
+        doNothing().when(itemSplitService).flattenDifference(any(), any(), any(), any());
         doNothing().when(itemSplitService).recalculateSumValues(any(), any(), any(), any(), any());
+        doNothing().when(itemSplitService).flattenSumValuesDifference(any(), any(), any(), any());
         when(orderUtil.getLastRowKey(any(Order.class))).thenReturn(3);
 
         itemSplitService.processOrderList(list);
@@ -128,8 +131,11 @@ class ItemSplitServiceTest {
 
         when(featureFlagConfig.getPreventSetProcessing()).thenReturn(false);
         when(pricingServiceClient.getSetPriceInfo(any(), any(), any())).thenReturn(Optional.of(SetUnitPriceAPIResponse.builder().setUnitPrices(List.of(PricingItem.builder().build())).build()));
-        doNothing().when(itemSplitService).recalculateSetItemPrices(any(), any(), any(), any(), any());
+        doNothing().when(itemSplitService).recalculateSumValuesForSetItemPrices(any(), any(), any(), any(), any());
+        doNothing().when(itemSplitService).recalculateUnitValuesForSetItems(any(), any(), any());
+        doNothing().when(itemSplitService).flattenDifference(any(), any(), any(), any());
         doNothing().when(itemSplitService).recalculateSumValues(any(), any(), any(), any(), any());
+        doNothing().when(itemSplitService).flattenSumValuesDifference(any(), any(), any(), any());
         when(orderUtil.getLastRowKey(any(Order.class))).thenReturn(3);
         itemSplitService.processOrder(order);
 
@@ -148,54 +154,6 @@ class ItemSplitServiceTest {
         final var secondReplacementItem = findRowBySku(rows, secondSetItemSku);
         assertThat(secondReplacementItem).isNotNull();
         assertThat(secondReplacementItem.getQuantity()).isEqualTo(BigDecimal.valueOf(2));
-        assertThat(secondReplacementItem.getRowKey()).isEqualTo(5);
-
-    }
-
-    @Test
-    void processOrderWithSetQuantityMoreThanOne() {
-
-        final var setSku = "2270-13013";
-        final var fakeProductJson = "DZN.json";
-
-        final var firstSetItemSku = "1410-4610";
-        final var secondSetItemSku = "1420-4355";
-        // "real" set item
-        getProductFromJson(setSku, "2270-13013.json");
-
-        // other products in the order (no sets; no need to replace them)
-        getProductFromJson("2270-13012", fakeProductJson);
-        getProductFromJson("2270-13015", fakeProductJson);
-        // replacement products
-        getProductFromJson(firstSetItemSku, fakeProductJson);
-        getProductFromJson(secondSetItemSku, fakeProductJson);
-
-        final var order = getOrder(readResource("examples/splitterSalesOrderMessageWithTwoRows.json"));
-        OrderRows setOrderRow = order.getOrderRows().stream().filter(row -> row.getSku().equals(setSku)).findFirst().orElseThrow();
-        setOrderRow.setQuantity(new BigDecimal(2));
-
-        when(featureFlagConfig.getPreventSetProcessing()).thenReturn(false);
-        when(pricingServiceClient.getSetPriceInfo(any(), any(), any())).thenReturn(Optional.of(SetUnitPriceAPIResponse.builder().setUnitPrices(List.of(PricingItem.builder().build())).build()));
-        doNothing().when(itemSplitService).recalculateSetItemPrices(any(), any(), any(), any(), any());
-        doNothing().when(itemSplitService).recalculateSumValues(any(), any(), any(), any(), any());
-        when(orderUtil.getLastRowKey(any(Order.class))).thenReturn(3);
-        itemSplitService.processOrder(order);
-
-        final var rows = order.getOrderRows();
-
-        // check if setItem is NOT in the list
-        assertThat(getCountForSku(rows, setSku)).isEqualTo(0);
-
-        assertThat(getCountForSku(rows, firstSetItemSku)).isEqualTo(1);
-        final var firstReplacementItem = findRowBySku(rows, firstSetItemSku);
-        assertThat(firstReplacementItem).isNotNull();
-        assertThat(firstReplacementItem.getQuantity()).isEqualTo(BigDecimal.valueOf(2));
-        assertThat(firstReplacementItem.getRowKey()).isEqualTo(4);
-
-        assertThat(getCountForSku(rows, secondSetItemSku)).isEqualTo(1);
-        final var secondReplacementItem = findRowBySku(rows, secondSetItemSku);
-        assertThat(secondReplacementItem).isNotNull();
-        assertThat(secondReplacementItem.getQuantity()).isEqualTo(BigDecimal.valueOf(4));
         assertThat(secondReplacementItem.getRowKey()).isEqualTo(5);
 
     }
@@ -272,7 +230,8 @@ class ItemSplitServiceTest {
                 new BigDecimal("13.50"), new BigDecimal("13.00"), new BigDecimal("0.75"), "sku-2");
         List<PricingItem> pricingItems = List.of(pricingItem1, pricingItem2);
 
-        itemSplitService.recalculateSetItemPrices(setItems, setUnitValues, pricingItems, "orderNumber", "sku");
+        itemSplitService.recalculateSumValuesForSetItemPrices(setItems, setUnitValues, pricingItems, "orderNumber", "sku");
+        itemSplitService.recalculateUnitValuesForSetItems(setItems, "orderNumber", "sku");
 
         assertEquals(new BigDecimal("5.00"), orderRow1.getUnitValues().getGoodsValueGross());
         assertEquals(new BigDecimal("4.50"), orderRow1.getUnitValues().getGoodsValueNet());
@@ -318,7 +277,9 @@ class ItemSplitServiceTest {
                 new BigDecimal("42.19"), new BigDecimal("41.20"), new BigDecimal("0.33"), "sku-3");
         List<PricingItem> pricingItems = List.of(pricingItem1, pricingItem2, pricingItem3);
 
-        itemSplitService.recalculateSetItemPrices(setItems, setUnitValues, pricingItems, "orderNumber", "sku");
+        itemSplitService.recalculateSumValuesForSetItemPrices(setItems, setUnitValues, pricingItems, "orderNumber", "sku");
+        itemSplitService.recalculateUnitValuesForSetItems(setItems, "orderNumber", "sku");
+        itemSplitService.flattenDifference(setItems, setUnitValues, "orderNumber", "sku");
 
         assertEquals(new BigDecimal("0.99"), orderRow1.getUnitValues().getGoodsValueGross());
         assertEquals(new BigDecimal("0.65"), orderRow1.getUnitValues().getGoodsValueNet());
@@ -361,16 +322,9 @@ class ItemSplitServiceTest {
                 .goodsValueGross(new BigDecimal("20.00")).goodsValueNet(new BigDecimal("18.00"))
                 .discountedGross(new BigDecimal("20.00")).discountedNet(new BigDecimal("18.00")).build();
 
-        PricingItem pricingItem1 = createPricingItem(
-                new BigDecimal("3.50"), new BigDecimal("3.00"), new BigDecimal("0.20"), "sku-1");
-        PricingItem pricingItem2 = createPricingItem(
-                new BigDecimal("13.50"), new BigDecimal("13.00"), new BigDecimal("0.75"), "sku-2");
-        List<PricingItem> pricingItems = List.of(pricingItem1, pricingItem2);
-
-
-        assertThatThrownBy(() -> itemSplitService.recalculateSetItemPrices(setItems, setUnitValues, pricingItems, "orderNumber", "sku"))
+        assertThatThrownBy(() -> itemSplitService.flattenDifference(setItems, setUnitValues, "orderNumber", "sku"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Gross prices from Pricing Service do not add up.Set cannot be split.");
+                .hasMessage("Discounted Gross prices from Pricing Service do not add up.Set cannot be split.");
     }
 
     private OrderRows createEmptyOrderRows(String sku) {
