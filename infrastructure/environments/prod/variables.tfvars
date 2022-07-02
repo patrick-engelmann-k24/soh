@@ -1,6 +1,6 @@
 terraform_role_arn             = "arn:aws:iam::556221214774:role/K24.Terraform"
 source_repo_branch             = "master"
-db_instance_class              = "db.r4.2xlarge"
+db_instance_class              = "db.r5.8xlarge"
 domain_name                    = "prod.kfzteile24.io"
 environment                    = "prod"
 stage                          = "production"
