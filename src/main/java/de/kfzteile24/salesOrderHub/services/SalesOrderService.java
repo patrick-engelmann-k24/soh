@@ -453,10 +453,8 @@ public class SalesOrderService {
             }
         }
 
-        if (target.getType().equals("ec_cash")) {
-            if (sourcePaymentsList.get(0).getType().equals("self_pickup")) {
-                sourcePaymentsList.get(0).setType("ec_cash");
-            }
+        if (target.getType().equals("ec_cash") & sourcePaymentsList.get(0).getType().equals("self_pickup")) {
+            sourcePaymentsList.get(0).setType("ec_cash");
         }
 
         if (target.getType().equals("payment_in_advance")) {
