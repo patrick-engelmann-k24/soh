@@ -441,6 +441,36 @@ public class SalesOrderService {
             sourcePaymentsList.get(0).setType("b2b_cash_on_delivery");
         }
 
+        if (target.getType().equals("cc_filiale")) {
+            switch(sourcePaymentsList.get(0).getType()) {
+                case "self_pickup":
+                case "cash":
+                case "ec_cash":
+                    sourcePaymentsList.get(0).setType("cc_filiale");
+                    break;
+            }
+        }
+
+        if (target.getType().equals("ec_cash")) {
+            if (sourcePaymentsList.get(0).getType().equals("self_pickup")) {
+                sourcePaymentsList.get(0).setType("ec_cash");
+            }
+        }
+
+        if (target.getType().equals("payment_in_advance")) {
+            switch (sourcePaymentsList.get(0).getType()) {
+                case "credit_card":
+                case "stored_creditcard":
+                case "sofortuberweisung":
+                    sourcePaymentsList.get(0).setType("payment_in_advance");
+                    break;
+                case "paypal":
+                    sourcePaymentsList.get(0).setType("paypal");
+                    break;
+            }
+        }
+
+
         return sourcePaymentsList.stream().filter(payment -> payment.getType().equals(target.getType()))
                 .map(payment -> updatePaymentProvider(payment, target))
                 .findFirst()
