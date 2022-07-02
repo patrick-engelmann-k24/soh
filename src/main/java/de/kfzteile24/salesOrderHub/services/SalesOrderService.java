@@ -453,24 +453,40 @@ public class SalesOrderService {
             }
         }
 
-        if (target.getType().equals("ec_cash") & sourcePaymentsList.get(0).getType().equals("self_pickup")) {
+        if (target.getType().equals("ec_cash")) {
+            switch (sourcePaymentsList.get(0).getType()) {
+                case "self_pickup":
+                    sourcePaymentsList.get(0).setType("ec_cash");
+                    break;
+                case "cash":
+                    sourcePaymentsList.get(0).setType("ec_cash");
+                    break;
+                default:
+                    break;
+            }
             sourcePaymentsList.get(0).setType("ec_cash");
         }
 
         if (target.getType().equals("payment_in_advance")) {
             switch (sourcePaymentsList.get(0).getType()) {
-                case "credit_card":
+                case "creditcard":
                 case "stored_creditcard":
                 case "sofortuberweisung":
                     sourcePaymentsList.get(0).setType("payment_in_advance");
                     break;
                 case "paypal":
-                    sourcePaymentsList.get(0).setType("paypal");
+                    target.setType("paypal");
                     break;
                 default:
                     break;
             }
         }
+
+        if (target.getType().equals("none")) {
+            target.setType(sourcePaymentsList.get(0).getType());
+        }
+
+
 
 
         return sourcePaymentsList.stream().filter(payment -> payment.getType().equals(target.getType()))
