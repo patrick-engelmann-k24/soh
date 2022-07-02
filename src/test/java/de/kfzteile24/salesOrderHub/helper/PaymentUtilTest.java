@@ -39,6 +39,9 @@ class PaymentUtilTest {
     private final static UUID ANOTHER_TRANSACTIONALID  = UUID.randomUUID();
     private final static BigDecimal ANY_TRANSACTIONAMOUNT  = BigDecimal.ONE;
     private final static BigDecimal ANOTHER_TRANSACTIONAMOUNT  = BigDecimal.ONE;
+    private final static BigDecimal CASH_ON_DELIVERY_CHARGE  = BigDecimal.ONE;
+
+    private final static BigDecimal CASH_ON_DELIVERY_CHARGE  = BigDecimal.ONE;
 
     private final static Payments SOURCE = Payments.builder()
             .paymentProviderData(PaymentProviderData.builder()
@@ -118,6 +121,7 @@ class PaymentUtilTest {
                         .externalId(ANOTHER_EXTERNALID)
                         .transactionAmount(ANOTHER_TRANSACTIONAMOUNT)
                         .billingAgreement(false)
+                        .cashOnDeliveryCharge(CASH_ON_DELIVERY_CHARGE)
                         .build())
                 .paymentTransactionId(ANOTHER_TRANSACTIONALID)
                 .build();

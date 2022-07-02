@@ -18,7 +18,12 @@ import java.util.UUID;
 
 @UtilityClass
 public class PaymentUtil {
-    private final List<String> MIGRATION_FIELDS = List.of("externalId",
+    private final List<String> MIGRATION_FIELDS = List.of(
+            "externalId",
+            "transactionAmount",
+            "code",
+            "promotionIdentifier",
+            "remaingValue",
             "paymentProviderTransactionId",
             "paymentProviderPaymentId",
             "paymentProviderStatus",
@@ -27,6 +32,8 @@ public class PaymentUtil {
             "pseudoCardNumber",
             "cardExpiryDate",
             "cardBrand",
+            "merchantId",
+            "paymentProviderXid",
             "orderDescription",
             "externalTransactionId",
             "senderFirstName",
@@ -38,11 +45,24 @@ public class PaymentUtil {
             "bankCode",
             "bankName",
             "countryCode",
+            "request",
+            "response",
             "iban",
             "bic",
             "paymentProviderDescription",
             "matchingId",
-            "transactionAmount");
+            "accountBank",
+            "accountOwner",
+            "lastName",
+            "firstName",
+            "checkoutId",
+            "orderNumber",
+            "reservationId",
+            "customerNummber",
+            "expirationDate",
+            "billingCountry",
+            "bankAccount",
+            "cashOnDeliveryCharge");
 
     public static Payments updatePaymentProvider(Payments source, Payments target) {
         var targetProvider = target.getPaymentProviderData();
@@ -50,7 +70,10 @@ public class PaymentUtil {
             targetProvider = PaymentProviderData.builder().build();
         }
         var sourceProvider = source.getPaymentProviderData();
-        updateProviderDataFields(targetProvider, sourceProvider);
+        if (sourceProvider != null) {
+            updateProviderDataFields(targetProvider, sourceProvider);
+        }
+
         updatePaymentTransactionId(source, target);
         target.setPaymentProviderData(targetProvider);
         return target;
@@ -67,12 +90,13 @@ public class PaymentUtil {
         PropertyAccessor sourceAccessor = PropertyAccessorFactory.forDirectFieldAccess(sourceProvider);
 
         MIGRATION_FIELDS.forEach(field -> {
-            var filedType = targetAccessor.getPropertyType(field);
-            if (String.class.equals(filedType)) {
+            var fieldType = targetAccessor.getPropertyType(field);
+
+            if (String.class.equals(fieldType)) {
                 updateString(targetAccessor, sourceAccessor, field);
-            } else if (Boolean.class.equals(filedType)) {
+            } else if (Boolean.class.equals(fieldType)) {
                 updateBoolean(targetAccessor, sourceAccessor, field);
-            } else if (BigDecimal.class.equals(filedType)) {
+            } else if (BigDecimal.class.equals(fieldType)) {
                 updateBigDecimal(targetAccessor, sourceAccessor, field);
             }
         });
