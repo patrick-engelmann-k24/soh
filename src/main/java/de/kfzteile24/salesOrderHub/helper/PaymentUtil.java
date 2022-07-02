@@ -70,7 +70,10 @@ public class PaymentUtil {
             targetProvider = PaymentProviderData.builder().build();
         }
         var sourceProvider = source.getPaymentProviderData();
-        updateProviderDataFields(targetProvider, sourceProvider);
+        if (sourceProvider != null) {
+            updateProviderDataFields(targetProvider, sourceProvider);
+        }
+
         updatePaymentTransactionId(source, target);
         target.setPaymentProviderData(targetProvider);
         return target;

@@ -39,6 +39,7 @@ class PaymentUtilTest {
     private final static UUID ANOTHER_TRANSACTIONALID  = UUID.randomUUID();
     private final static BigDecimal ANY_TRANSACTIONAMOUNT  = BigDecimal.ONE;
     private final static BigDecimal ANOTHER_TRANSACTIONAMOUNT  = BigDecimal.ONE;
+    private final static BigDecimal CASH_ON_DELIVERY_CHARGE  = BigDecimal.ONE;
 
     private final static BigDecimal CASH_ON_DELIVERY_CHARGE  = BigDecimal.ONE;
 
