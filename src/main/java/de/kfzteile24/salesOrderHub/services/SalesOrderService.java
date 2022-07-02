@@ -448,6 +448,8 @@ public class SalesOrderService {
                 case "ec_cash":
                     sourcePaymentsList.get(0).setType("cc_filiale");
                     break;
+                default:
+                    break;
             }
         }
 
@@ -466,6 +468,8 @@ public class SalesOrderService {
                     break;
                 case "paypal":
                     sourcePaymentsList.get(0).setType("paypal");
+                    break;
+                default:
                     break;
             }
         }
