@@ -421,6 +421,7 @@ public class SalesOrderService {
         var orderNumber = salesOrder.getOrderNumber();
         var targetPaymentList = order.getOrderHeader().getPayments();
         var sourcePaymentList = salesOrder.getLatestJson().getOrderHeader().getPayments();
+
         var updatedPayments = targetPaymentList.stream()
                 .map(payment -> filterAndUpdatePayment(sourcePaymentList, payment, orderNumber))
                 .collect(Collectors.toList());
@@ -429,6 +430,17 @@ public class SalesOrderService {
     }
 
     private static Payments filterAndUpdatePayment(List<Payments> sourcePaymentsList, Payments target, String orderNumber) {
+
+        if (sourcePaymentsList.get(0).getType().equals("stored_creditcard") & target.getType().equals("creditcard"))
+        {
+            target.setType("stored_creditcard");
+        }
+
+        if (sourcePaymentsList.get(0).getType().equals("business_to_business_invoice") & target.getType().equals("b2b_cash_on_delivery"))
+        {
+            sourcePaymentsList.get(0).setType("b2b_cash_on_delivery");
+        }
+
         return sourcePaymentsList.stream().filter(payment -> payment.getType().equals(target.getType()))
                 .map(payment -> updatePaymentProvider(payment, target))
                 .findFirst()
