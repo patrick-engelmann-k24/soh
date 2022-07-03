@@ -260,7 +260,7 @@ public class SalesOrderRowService {
                 .findFirst()
                 .ifPresent(creditNoteLine -> {
                     totals.setShippingCostNet(creditNoteLine.getLineNetAmount());
-                    totals.setShippingCostGross(creditNoteLine.getUnitGrossAmount());
+                    totals.setShippingCostGross(creditNoteLine.getLineGrossAmount());
                     totals.setGrandTotalNet(totals.getGrandTotalNet().add(totals.getShippingCostNet()));
                     totals.setGrandTotalGross(totals.getGrandTotalGross().add(totals.getShippingCostGross()));
                     totals.setPaymentTotal(totals.getGrandTotalGross());
