@@ -16,10 +16,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.HistoryService;
 import org.camunda.bpm.engine.MismatchingMessageCorrelationException;
+import org.camunda.bpm.engine.RepositoryService;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.TaskService;
 import org.camunda.bpm.engine.history.HistoricActivityInstance;
 import org.camunda.bpm.engine.history.HistoricActivityInstanceQuery;
+import org.camunda.bpm.engine.repository.ProcessDefinition;
 import org.camunda.bpm.engine.runtime.Execution;
 import org.camunda.bpm.engine.runtime.MessageCorrelationBuilder;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
@@ -27,6 +29,8 @@ import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.variable.VariableMap;
 import org.camunda.bpm.engine.variable.Variables;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -66,6 +70,7 @@ public class CamundaHelper {
     private final HistoryService historyService;
     private final RuntimeService runtimeService;
     private final TaskService taskService;
+    private final RepositoryService repositoryService;
 
     @Value("${kfzteile.process-config.subsequent-order-process.publish-delay}")
     private String publishDelayForSubsequentOrders;
@@ -281,5 +286,40 @@ public class CamundaHelper {
 
     public void sendSignal(Signals signal) {
         runtimeService.signalEventReceived(signal.getName());
+    }
+
+    @EventListener(ApplicationReadyEvent.class)
+    public void runAfterStartup() {
+        deleteProcessInstancesByProcessDefinitionKeyAndVersionLesserThan(SALES_ORDER_ROW_FULFILLMENT_PROCESS, 11);
+    }
+
+    public void deleteProcessInstancesByProcessDefinitionKeyAndVersionLesserThan(
+            de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition processDefinition, int version) {
+
+       repositoryService.createProcessDefinitionQuery()
+                .processDefinitionKey(processDefinition.getName())
+                .list().stream()
+                .filter(pd -> pd.getVersion() < version)
+                .map(ProcessDefinition::getId)
+                .forEach(this::deleteProcessInstancesByProcessDefinitionId);
+    }
+
+    public void deleteProcessInstancesByProcessDefinitionId(String processDefinitionId) {
+
+            runtimeService.createProcessInstanceQuery()
+                    .processDefinitionId(processDefinitionId)
+                    .list().stream()
+                    .map(ProcessInstance::getProcessInstanceId)
+                    .forEach(this::deleteProcessInstance);
+
+    }
+
+    private void deleteProcessInstance(String processInstanceId) {
+        try {
+            runtimeService.deleteProcessInstanceIfExists(processInstanceId, "MIGRATION", true, false, true, false);
+            log.info("Process instance deleted successfully. ID: {}", processInstanceId);
+        } catch (Exception ex) {
+            log.error("An error occurred while deleting process instance. ID: {}. Error: {}", processInstanceId, ex.getLocalizedMessage());
+        }
     }
 }
