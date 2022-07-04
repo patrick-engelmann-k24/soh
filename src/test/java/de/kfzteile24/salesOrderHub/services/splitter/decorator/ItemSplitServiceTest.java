@@ -3,6 +3,7 @@ package de.kfzteile24.salesOrderHub.services.splitter.decorator;
 import de.kfzteile24.salesOrderHub.clients.PricingServiceClient;
 import de.kfzteile24.salesOrderHub.clients.ProductDataHubClient;
 import de.kfzteile24.salesOrderHub.configuration.FeatureFlagConfig;
+import de.kfzteile24.salesOrderHub.domain.pdh.product.ProductSet;
 import de.kfzteile24.salesOrderHub.dto.pricing.Prices;
 import de.kfzteile24.salesOrderHub.dto.pricing.PricingItem;
 import de.kfzteile24.salesOrderHub.dto.pricing.SetUnitPriceAPIResponse;
@@ -325,6 +326,30 @@ class ItemSplitServiceTest {
         assertThatThrownBy(() -> itemSplitService.flattenDifference(setItems, setUnitValues, "orderNumber", "sku"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Discounted Gross prices from Pricing Service do not add up.Set cannot be split.");
+    }
+
+    @Test
+    void testFallbackCalculationForValueShare() {
+
+
+        ProductSet productSet1 = new ProductSet();
+        ProductSet productSet2 = new ProductSet();
+        productSet1.setQuantity(new BigDecimal("1.0"));
+        productSet1.setSku("sku-1");
+        productSet2.setQuantity(new BigDecimal("2.0"));
+        productSet2.setSku("sku-2");
+        List<ProductSet> setItems = List.of(productSet1, productSet2);
+
+        when(pricingServiceClient.getSetPriceInfo(any(), any(), any())).thenReturn(Optional.empty());
+
+        List<PricingItem> setPrices = itemSplitService.getSetPrices("set-sku", "salesChannel", "orderNumber", setItems);
+        assertEquals(2, setPrices.size());
+
+        PricingItem pricingItem1 = setPrices.stream().filter(item -> item.getSku().equals("sku-1")).findFirst().orElseThrow();
+        assertEquals(new BigDecimal("0.3333333333"), pricingItem1.getValueShare());
+
+        PricingItem pricingItem2 = setPrices.stream().filter(item -> item.getSku().equals("sku-2")).findFirst().orElseThrow();
+        assertEquals(new BigDecimal("0.6666666667"), pricingItem2.getValueShare());
     }
 
     private OrderRows createEmptyOrderRows(String sku) {

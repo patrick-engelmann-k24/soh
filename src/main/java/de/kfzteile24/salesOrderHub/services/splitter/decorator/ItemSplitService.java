@@ -6,6 +6,7 @@ import de.kfzteile24.salesOrderHub.configuration.FeatureFlagConfig;
 import de.kfzteile24.salesOrderHub.domain.pdh.Product;
 import de.kfzteile24.salesOrderHub.domain.pdh.product.Country;
 import de.kfzteile24.salesOrderHub.domain.pdh.product.Localization;
+import de.kfzteile24.salesOrderHub.domain.pdh.product.ProductSet;
 import de.kfzteile24.salesOrderHub.dto.pricing.PricingItem;
 import de.kfzteile24.salesOrderHub.dto.pricing.SetUnitPriceAPIResponse;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
@@ -62,6 +63,7 @@ public class ItemSplitService extends AbstractSplitDecorator {
     public void processOrder(Order order) {
 
         final var orderNumber = order.getOrderHeader().getOrderNumber();
+        final var salesChannel = order.getOrderHeader().getSalesChannel();
         final var locale = order.getOrderHeader().getLocale();
         var rowKey = orderUtil.getLastRowKey(order) + 1;
         final var originItemsWhichGetReplaced = new ArrayList<OrderRows>();
@@ -77,7 +79,7 @@ public class ItemSplitService extends AbstractSplitDecorator {
                     throw new IllegalArgumentException("Order number " + orderNumber + " contains a setitem and cannot be processed");
                 } else {
                     final var setItems = new ArrayList<OrderRows>();
-                    List<PricingItem> itemPrices = getSetPrices(row.getSku(), order.getOrderHeader().getSalesChannel(), orderNumber);
+                    List<PricingItem> itemPrices = getSetPrices(row.getSku(), salesChannel, orderNumber, product.getSetProductCollection());
                     for (final var setItem : product.getSetProductCollection()) {
                         final BigDecimal qty = setItem.getQuantity();
                         final var pdhProduct = getProduct(setItem.getSku());
@@ -115,17 +117,28 @@ public class ItemSplitService extends AbstractSplitDecorator {
     /**
      * call pricing service to get prices for the items in the set
      *
-     * @param setSku - sku of the set product
+     * @param setSku           - sku of the set product
+     * @param salesChannelCode - sales channel for which to get the prices
+     * @param orderNumber      - order number
+     * @param setProducts      - list of product data from PDH for fallback calculation
      * @return get list of the prices for the items in the set
      */
-    protected List<PricingItem> getSetPrices(String setSku, String salesChannelCode, String orderNumber) {
+    protected List<PricingItem> getSetPrices(String setSku, String salesChannelCode, String orderNumber, List<ProductSet> setProducts) {
 
         Optional<SetUnitPriceAPIResponse> setPriceInfo = pricingServiceClient.getSetPriceInfo(setSku, salesChannelCode, orderNumber);
         if (setPriceInfo.isPresent()) {
             return setPriceInfo.get().getSetUnitPrices();
+        } else {
+            log.info("Pricing system does not have the set item prices for order number {} and sku {}, calculating the prices based on quantity",
+                    orderNumber, setSku);
+            final var quantitySum = setProducts.stream().map(ProductSet::getQuantity).reduce(BigDecimal.ZERO, BigDecimal::add);
+            return setProducts.stream().map(sp ->
+                            PricingItem.builder()
+                                    .valueShare(sp.getQuantity().divide(quantitySum, 10, RoundingMode.HALF_UP))
+                                    .sku(sp.getSku())
+                                    .build())
+                    .collect(Collectors.toList());
         }
-
-        throw new NotFoundException(String.format("Prices for order-number {} the items in the set are not found! Sku of set item: %s", orderNumber, setSku));
     }
 
     /**
