@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static de.kfzteile24.salesOrderHub.constants.CurrencyType.convert;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getMultipliedValue;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getSumValue;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.round;
@@ -63,7 +62,7 @@ public class ReturnOrderHelper {
         var salesCreditNoteHeader = SalesCreditNoteHeader.builder()
                 .creditNoteNumber(creditNoteNumber)
                 .creditNoteDate(now())
-                .currencyCode(convert(salesOrder.getLatestJson().getOrderHeader().getOrderCurrency()))
+                .currencyCode(salesOrder.getLatestJson().getOrderHeader().getOrderCurrency())
                 .billingAddress(Address.fromBillingAddress(salesOrder.getLatestJson().getOrderHeader().getBillingAddress()))
                 .creditNoteLines(creditNoteLines)
                 .orderGroupId(salesOrder.getLatestJson().getOrderHeader().getOrderGroupId())

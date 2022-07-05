@@ -1,7 +1,6 @@
 package de.kfzteile24.salesOrderHub.dto.shared.creditnote;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import de.kfzteile24.salesOrderHub.constants.CurrencyType;
 import de.kfzteile24.salesOrderHub.dto.sns.shared.Address;
 import lombok.Builder;
 import lombok.Value;
@@ -29,7 +28,7 @@ public class SalesCreditNoteHeader {
     LocalDateTime creditNoteDate;
 
     @JsonProperty("CurrencyCode")
-    CurrencyType currencyCode;
+    String currencyCode;
 
     @JsonProperty("NetAmount")
     BigDecimal netAmount;

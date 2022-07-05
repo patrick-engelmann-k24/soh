@@ -3,7 +3,6 @@ package de.kfzteile24.salesOrderHub.helper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
-import de.kfzteile24.salesOrderHub.constants.CurrencyType;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
@@ -51,8 +50,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static de.kfzteile24.salesOrderHub.constants.SOHConstants.ORDER_NUMBER_SEPARATOR;
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
+import static de.kfzteile24.salesOrderHub.constants.SOHConstants.ORDER_NUMBER_SEPARATOR;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.RECURRING;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
@@ -288,7 +287,7 @@ public class SalesOrderUtil {
         assertThat(salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getBillingAddress().getFirstName()).isEqualTo(salesOrder.getLatestJson().getOrderHeader().getBillingAddress().getFirstName());
         assertThat(salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getBillingAddress().getLastName()).isEqualTo(salesOrder.getLatestJson().getOrderHeader().getBillingAddress().getLastName());
         assertThat(salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getBillingAddress().getZipCode()).isEqualTo(salesOrder.getLatestJson().getOrderHeader().getBillingAddress().getZipCode());
-        assertThat(salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getCurrencyCode()).isEqualTo(CurrencyType.convert(salesOrder.getLatestJson().getOrderHeader().getOrderCurrency()));
+        assertThat(salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getCurrencyCode()).isEqualTo(salesOrder.getLatestJson().getOrderHeader().getOrderCurrency());
 
         List<CreditNoteLine> creditNoteLines = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteLines().stream().collect(Collectors.toList());
         assertThat(creditNoteLines.size()).isEqualTo(2);
