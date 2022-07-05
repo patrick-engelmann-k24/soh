@@ -21,7 +21,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.OrderPaymentSecuredMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
 import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ArticleItemsDto;
-import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ParcelShipped;
+import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ParcelShippedMessage;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.services.DropshipmentOrderService;
@@ -685,10 +685,12 @@ public class SqsReceiveService {
                                            @Header("SenderId") String senderId,
                                            @Header("ApproximateReceiveCount") Integer receiveCount) {
         String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-        var event = objectMapper.readValue(body, ParcelShipped.class);
+        var message = objectMapper.readValue(body, ParcelShippedMessage.class);
+        var event = message.getMessage();
         var orderNumber = event.getOrderNumber();
-        log.info("Parcel shipped received with order number {} and tracking link: {}",
+        log.info("Parcel shipped received with order number {}, delivery note number {} and tracking link: {}",
                 orderNumber,
+                event.getDeliveryNoteNumber(),
                 event.getTrackingLink());
 
         var itemList = event.getArticleItemsDtos();

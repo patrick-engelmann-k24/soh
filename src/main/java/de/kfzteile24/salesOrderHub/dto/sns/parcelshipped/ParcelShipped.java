@@ -37,6 +37,9 @@ public class ParcelShipped {
     @JsonProperty("OrderNumber")
     String orderNumber;
 
+    @JsonProperty("DeliveryNoteNumber")
+    String deliveryNoteNumber;
+
     @JsonProperty("TrackingNumber")
     String trackingNumber;
 
