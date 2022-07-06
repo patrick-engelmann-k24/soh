@@ -355,7 +355,7 @@ class ItemSplitServiceTest {
         assertEquals(new BigDecimal("0.33333333333333333"), pricingItem2.getValueShare());
 
         PricingItem pricingItem3 = setPrices.stream().filter(item -> item.getSku().equals("sku-3")).findFirst().orElseThrow();
-        assertEquals(new BigDecimal("0.33333333333333333"), pricingItem2.getValueShare());
+        assertEquals(new BigDecimal("0.33333333333333333"), pricingItem3.getValueShare());
     }
 
     private OrderRows createEmptyOrderRows(String sku) {
