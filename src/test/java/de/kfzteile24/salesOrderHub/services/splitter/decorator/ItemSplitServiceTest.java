@@ -3,6 +3,7 @@ package de.kfzteile24.salesOrderHub.services.splitter.decorator;
 import de.kfzteile24.salesOrderHub.clients.PricingServiceClient;
 import de.kfzteile24.salesOrderHub.clients.ProductDataHubClient;
 import de.kfzteile24.salesOrderHub.configuration.FeatureFlagConfig;
+import de.kfzteile24.salesOrderHub.domain.pdh.product.ProductSet;
 import de.kfzteile24.salesOrderHub.dto.pricing.Prices;
 import de.kfzteile24.salesOrderHub.dto.pricing.PricingItem;
 import de.kfzteile24.salesOrderHub.dto.pricing.SetUnitPriceAPIResponse;
@@ -325,6 +326,36 @@ class ItemSplitServiceTest {
         assertThatThrownBy(() -> itemSplitService.flattenDifference(setItems, setUnitValues, "orderNumber", "sku"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Discounted Gross prices from Pricing Service do not add up.Set cannot be split.");
+    }
+
+    @Test
+    void testFallbackCalculationForValueShare() {
+
+
+        ProductSet productSet1 = new ProductSet();
+        productSet1.setQuantity(new BigDecimal("1.0"));
+        productSet1.setSku("sku-1");
+        ProductSet productSet2 = new ProductSet();
+        productSet2.setQuantity(new BigDecimal("1.0"));
+        productSet2.setSku("sku-2");
+        ProductSet productSet3 = new ProductSet();
+        productSet3.setQuantity(new BigDecimal("1.0"));
+        productSet3.setSku("sku-3");
+        List<ProductSet> setItems = List.of(productSet1, productSet2, productSet3);
+
+        when(pricingServiceClient.getSetPriceInfo(any(), any(), any())).thenReturn(Optional.empty());
+
+        List<PricingItem> setPrices = itemSplitService.getSetPrices("set-sku", "salesChannel", "orderNumber", setItems);
+        assertEquals(3, setPrices.size());
+
+        PricingItem pricingItem1 = setPrices.stream().filter(item -> item.getSku().equals("sku-1")).findFirst().orElseThrow();
+        assertEquals(new BigDecimal("0.33333333333333333"), pricingItem1.getValueShare());
+
+        PricingItem pricingItem2 = setPrices.stream().filter(item -> item.getSku().equals("sku-2")).findFirst().orElseThrow();
+        assertEquals(new BigDecimal("0.33333333333333333"), pricingItem2.getValueShare());
+
+        PricingItem pricingItem3 = setPrices.stream().filter(item -> item.getSku().equals("sku-3")).findFirst().orElseThrow();
+        assertEquals(new BigDecimal("0.33333333333333333"), pricingItem2.getValueShare());
     }
 
     private OrderRows createEmptyOrderRows(String sku) {
