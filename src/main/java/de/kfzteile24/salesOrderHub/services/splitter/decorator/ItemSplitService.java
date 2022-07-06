@@ -134,7 +134,7 @@ public class ItemSplitService extends AbstractSplitDecorator {
             final var quantitySum = setProducts.stream().map(ProductSet::getQuantity).reduce(BigDecimal.ZERO, BigDecimal::add);
             return setProducts.stream().map(sp ->
                             PricingItem.builder()
-                                    .valueShare(sp.getQuantity().divide(quantitySum, 10, RoundingMode.HALF_UP))
+                                    .valueShare(sp.getQuantity().divide(quantitySum, 17, RoundingMode.HALF_UP))
                                     .sku(sp.getSku())
                                     .build())
                     .collect(Collectors.toList());

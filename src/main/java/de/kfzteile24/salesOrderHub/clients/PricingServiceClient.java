@@ -32,7 +32,7 @@ public class PricingServiceClient {
         return executeRequest((authHeaders) -> {
             var endpoint = new UriTemplate(pricingServiceConfig.getUrl() + GET_PRICE_ENDPOINT)
                     .expand(sku, salesChannelCode);
-            log.info("For order number {} Calling pricing service endpoint: {}",orderNumber, endpoint);
+            log.info("For order number {} Calling pricing service endpoint: {}", orderNumber, endpoint);
             final var httpEntity = new HttpEntity<>(null, authHeaders);
             try {
                 final SetUnitPriceAPIResponse response =
@@ -48,8 +48,8 @@ public class PricingServiceClient {
                                 null : response
                 );
             } catch (Exception e) {
-                log.error("Could not get pricing data from Pricing-Service for order number {} sku: {}",orderNumber, sku, e);
-                log.error(e.getMessage());
+                log.error("Could not get pricing data from Pricing-Service for order number {} sku: {}",
+                        orderNumber, sku, e);
                 return Optional.empty();
             }
         });

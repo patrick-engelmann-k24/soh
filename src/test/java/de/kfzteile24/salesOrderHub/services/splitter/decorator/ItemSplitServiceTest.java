@@ -333,23 +333,29 @@ class ItemSplitServiceTest {
 
 
         ProductSet productSet1 = new ProductSet();
-        ProductSet productSet2 = new ProductSet();
         productSet1.setQuantity(new BigDecimal("1.0"));
         productSet1.setSku("sku-1");
-        productSet2.setQuantity(new BigDecimal("2.0"));
+        ProductSet productSet2 = new ProductSet();
+        productSet2.setQuantity(new BigDecimal("1.0"));
         productSet2.setSku("sku-2");
-        List<ProductSet> setItems = List.of(productSet1, productSet2);
+        ProductSet productSet3 = new ProductSet();
+        productSet3.setQuantity(new BigDecimal("1.0"));
+        productSet3.setSku("sku-3");
+        List<ProductSet> setItems = List.of(productSet1, productSet2, productSet3);
 
         when(pricingServiceClient.getSetPriceInfo(any(), any(), any())).thenReturn(Optional.empty());
 
         List<PricingItem> setPrices = itemSplitService.getSetPrices("set-sku", "salesChannel", "orderNumber", setItems);
-        assertEquals(2, setPrices.size());
+        assertEquals(3, setPrices.size());
 
         PricingItem pricingItem1 = setPrices.stream().filter(item -> item.getSku().equals("sku-1")).findFirst().orElseThrow();
-        assertEquals(new BigDecimal("0.3333333333"), pricingItem1.getValueShare());
+        assertEquals(new BigDecimal("0.33333333333333333"), pricingItem1.getValueShare());
 
         PricingItem pricingItem2 = setPrices.stream().filter(item -> item.getSku().equals("sku-2")).findFirst().orElseThrow();
-        assertEquals(new BigDecimal("0.6666666667"), pricingItem2.getValueShare());
+        assertEquals(new BigDecimal("0.33333333333333333"), pricingItem2.getValueShare());
+
+        PricingItem pricingItem3 = setPrices.stream().filter(item -> item.getSku().equals("sku-3")).findFirst().orElseThrow();
+        assertEquals(new BigDecimal("0.33333333333333333"), pricingItem2.getValueShare());
     }
 
     private OrderRows createEmptyOrderRows(String sku) {
