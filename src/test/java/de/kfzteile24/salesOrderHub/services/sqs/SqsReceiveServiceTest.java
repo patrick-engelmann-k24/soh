@@ -113,6 +113,7 @@ class SqsReceiveServiceTest {
         String rawMessage = readResource("examples/ecpOrderMessage.json");
         SalesOrder salesOrder = getSalesOrder(rawMessage);
 
+        when(salesOrderService.checkOrderNotExists(any())).thenReturn(true);
         when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.of(salesOrder));
         when(salesOrderService.createSalesOrderForInvoice(any(), any(), any())).thenReturn(salesOrder);
         when(featureFlagConfig.getIgnoreCoreSalesInvoice()).thenReturn(false);
@@ -136,6 +137,7 @@ class SqsReceiveServiceTest {
         salesOrder.setInvoiceEvent(new CoreSalesInvoiceCreatedMessage(new CoreSalesInvoice(new CoreSalesInvoiceHeader(), Collections.emptyList())));
 
         when(featureFlagConfig.getIgnoreCoreSalesInvoice()).thenReturn(false);
+        when(salesOrderService.checkOrderNotExists(any())).thenReturn(true);
         when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.of(salesOrder));
         when(salesOrderService.createSalesOrderForInvoice(any(), any(), any())).thenReturn(salesOrder);
         when(salesOrderService.createOrderNumberInSOH(any(), any())).thenReturn(salesOrder.getOrderNumber(), "10");

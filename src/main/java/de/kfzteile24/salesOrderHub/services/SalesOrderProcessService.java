@@ -34,11 +34,7 @@ public class SalesOrderProcessService {
     public void startSalesOrderProcess(SalesOrder salesOrder, MessageWrapper<Order> orderMessageWrapper) {
         var order = orderMessageWrapper.getMessage();
         try {
-            if (Platform.CORE.equals(order.getOrderHeader().getPlatform())
-                    && salesOrderService.getOrderByOrderNumber(order.getOrderHeader().getOrderNumber()).isPresent()) {
-                log.error("The following order won't be processed because it exists in SOH system already from another source. " +
-                        "Platform: {}, Order Number: {}", order.getOrderHeader().getPlatform(), order.getOrderHeader().getOrderNumber());
-            } else {
+            if (salesOrderService.checkOrderNotExists(order.getOrderHeader().getOrderNumber())) {
                 ProcessInstance result = camundaHelper.createOrderProcess(
                         salesOrderService.createSalesOrder(salesOrder), ORDER_RECEIVED_ECP);
 

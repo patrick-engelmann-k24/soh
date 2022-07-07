@@ -2,7 +2,6 @@ package de.kfzteile24.salesOrderHub.clients;
 
 import de.kfzteile24.salesOrderHub.configuration.PricingServiceConfig;
 import de.kfzteile24.salesOrderHub.dto.pricing.SetUnitPriceAPIResponse;
-import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import io.micrometer.core.annotation.Timed;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +32,7 @@ public class PricingServiceClient {
         return executeRequest((authHeaders) -> {
             var endpoint = new UriTemplate(pricingServiceConfig.getUrl() + GET_PRICE_ENDPOINT)
                     .expand(sku, salesChannelCode);
-            log.info("For order number {} Calling pricing service endpoint: {}",orderNumber, endpoint);
+            log.info("For order number {} Calling pricing service endpoint: {}", orderNumber, endpoint);
             final var httpEntity = new HttpEntity<>(null, authHeaders);
             try {
                 final SetUnitPriceAPIResponse response =
@@ -49,9 +48,9 @@ public class PricingServiceClient {
                                 null : response
                 );
             } catch (Exception e) {
-                log.error("Could not get pricing data from Pricing-Service for order number {} sku: {}",orderNumber, sku);
-                log.error(e.getMessage());
-                throw new NotFoundException("Could not get pricing data from Pricing-Service for order number " + orderNumber + " for sku: " + sku + " :: " + e.getMessage());
+                log.error("Could not get pricing data from Pricing-Service for order number {} sku: {}",
+                        orderNumber, sku, e);
+                return Optional.empty();
             }
         });
     }

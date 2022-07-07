@@ -2,6 +2,9 @@
 # Profile documentation: https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-profiles
 #
 
+server:
+  forward-headers-strategy: framework
+
 logging:
   level:
     com.zaxxer.hikari: DEBUG

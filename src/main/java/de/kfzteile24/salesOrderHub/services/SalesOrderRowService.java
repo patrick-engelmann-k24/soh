@@ -112,22 +112,25 @@ public class SalesOrderRowService {
         returnOrderJson = orderUtil.removeInvalidGrandTotalTaxes(returnOrderJson);
 
         String newOrderNumber = orderUtil.createOrderNumberInSOH(orderNumber, salesCreditNoteHeader.getCreditNoteNumber());
-        returnOrderJson.getOrderHeader().setOrderNumber(newOrderNumber);
-        returnOrderJson.getOrderHeader().setOrderDateTime(DATE_TIME_FORMATTER.format(LocalDateTime.now()));
 
-        var salesOrderReturn = SalesOrderReturn.builder()
-                .orderGroupId(orderNumber)
-                .orderNumber(newOrderNumber)
-                .returnOrderJson(returnOrderJson)
-                .salesOrder(salesOrder)
-                .salesCreditNoteCreatedMessage(updateByOrderNumber(salesCreditNoteCreatedMessage, newOrderNumber))
-                .build();
+        if (salesOrderReturnService.checkOrderNotExists(newOrderNumber)) {
+            returnOrderJson.getOrderHeader().setOrderNumber(newOrderNumber);
+            returnOrderJson.getOrderHeader().setOrderDateTime(DATE_TIME_FORMATTER.format(LocalDateTime.now()));
 
-        SalesOrderReturn savedSalesOrderReturn = salesOrderReturnService.save(salesOrderReturn, action);
-        ProcessInstance result = helper.createReturnOrderProcess(savedSalesOrderReturn, CORE_CREDIT_NOTE_CREATED);
-        if (result != null) {
-            log.info("New return order process started for order number: {}. Process-Instance-ID: {} ",
-                    orderNumber, result.getProcessInstanceId());
+            var salesOrderReturn = SalesOrderReturn.builder()
+                    .orderGroupId(orderNumber)
+                    .orderNumber(newOrderNumber)
+                    .returnOrderJson(returnOrderJson)
+                    .salesOrder(salesOrder)
+                    .salesCreditNoteCreatedMessage(updateByOrderNumber(salesCreditNoteCreatedMessage, newOrderNumber))
+                    .build();
+
+            SalesOrderReturn savedSalesOrderReturn = salesOrderReturnService.save(salesOrderReturn, action);
+            ProcessInstance result = helper.createReturnOrderProcess(savedSalesOrderReturn, CORE_CREDIT_NOTE_CREATED);
+            if (result != null) {
+                log.info("New return order process started for order number: {}. Process-Instance-ID: {} ",
+                        orderNumber, result.getProcessInstanceId());
+            }
         }
     }
 
