@@ -455,20 +455,22 @@ public class SqsReceiveService {
                     updateOriginalSalesOrder(salesInvoiceCreatedMessage, originalSalesOrder);
                     publishInvoiceEvent(originalSalesOrder);
                 } else {
-                    SalesOrder subsequentOrder = salesOrderService.createSalesOrderForInvoice(
-                            salesInvoiceCreatedMessage,
-                            originalSalesOrder,
-                            newOrderNumber);
-                    handleCancellationForOrderRows(originalSalesOrder, subsequentOrder.getLatestJson().getOrderRows());
-                    ProcessInstance result = camundaHelper.createOrderProcess(subsequentOrder, ORDER_CREATED_IN_SOH);
-                    if (result != null) {
-                        log.info("New soh order process started by core sales invoice created message with " +
-                                        "order number: {} and invoice number: {}. Process-Instance-ID: {} ",
-                                orderNumber,
-                                invoiceNumber,
-                                result.getProcessInstanceId());
+                    if (salesOrderService.checkOrderNotExists(newOrderNumber)) {
+                        SalesOrder subsequentOrder = salesOrderService.createSalesOrderForInvoice(
+                                salesInvoiceCreatedMessage,
+                                originalSalesOrder,
+                                newOrderNumber);
+                        handleCancellationForOrderRows(originalSalesOrder, subsequentOrder.getLatestJson().getOrderRows());
+                        ProcessInstance result = camundaHelper.createOrderProcess(subsequentOrder, ORDER_CREATED_IN_SOH);
+                        if (result != null) {
+                            log.info("New soh order process started by core sales invoice created message with " +
+                                            "order number: {} and invoice number: {}. Process-Instance-ID: {} ",
+                                    orderNumber,
+                                    invoiceNumber,
+                                    result.getProcessInstanceId());
+                        }
+                        publishInvoiceEvent(subsequentOrder);
                     }
-                    publishInvoiceEvent(subsequentOrder);
                 }
 
             } catch (Exception e) {

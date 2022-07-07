@@ -83,6 +83,16 @@ public class SalesOrderService {
         return orderRepository.getOrderByOrderNumber(orderNumber);
     }
 
+    @Transactional(readOnly = true)
+    public boolean checkOrderNotExists(final String orderNumber) {
+        if (getOrderByOrderNumber(orderNumber).isPresent()) {
+            log.warn("The following order won't be processed because it exists in SOH system already from another source. " +
+                    "Order Number: {}", orderNumber);
+            return false;
+        }
+        return true;
+    }
+
     public List<SalesOrder> getOrderByOrderGroupId(String orderGroupId) {
         return orderRepository.findAllByOrderGroupIdOrderByUpdatedAtDesc(orderGroupId);
     }

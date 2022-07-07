@@ -16,11 +16,11 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
-import java.util.Optional;
 
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.readResource;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -53,6 +53,7 @@ class SalesOrderProcessServiceTest {
                 .message(order)
                 .build();
 
+        when(salesOrderService.checkOrderNotExists(eq(salesOrder.getOrderNumber()))).thenReturn(true);
         when(salesOrderService.createSalesOrder(any())).thenReturn(salesOrder);
         when(splitterService.splitSalesOrder(any())).thenReturn(Collections.singletonList(salesOrder));
 
@@ -60,7 +61,7 @@ class SalesOrderProcessServiceTest {
 
         verify(camundaHelper).createOrderProcess(any(SalesOrder.class), any(Messages.class));
         verify(salesOrderService).createSalesOrder(salesOrder);
-        verify(salesOrderService).getOrderByOrderNumber(salesOrder.getOrderNumber());
+        verify(salesOrderService).checkOrderNotExists(salesOrder.getOrderNumber());
     }
 
     @Test
@@ -76,12 +77,12 @@ class SalesOrderProcessServiceTest {
                 .message(order)
                 .build();
 
-        when(salesOrderService.getOrderByOrderNumber("524001240")).thenReturn(Optional.of(salesOrder));
+        when(salesOrderService.checkOrderNotExists(eq("524001240"))).thenReturn(true);
         when(splitterService.splitSalesOrder(any())).thenReturn(Collections.singletonList(salesOrder));
 
         salesOrderProcessService.handleShopOrdersReceived(messageWrapper);
 
         verify(camundaHelper, never()).createOrderProcess(any(SalesOrder.class), any(Messages.class));
-        verify(salesOrderService).getOrderByOrderNumber("524001240");
+        verify(salesOrderService).checkOrderNotExists("524001240");
     }
 }

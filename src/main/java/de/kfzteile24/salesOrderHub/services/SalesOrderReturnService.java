@@ -33,6 +33,16 @@ public class SalesOrderReturnService {
         return salesOrderReturnRepository.save(salesOrderReturn);
     }
 
+    @Transactional(readOnly = true)
+    public boolean checkOrderNotExists(final String orderNumber) {
+        if (getByOrderNumber(orderNumber) != null) {
+            log.warn("The following order return won't be processed because it exists in SOH system already from another source. " +
+                    "Order Number: {}", orderNumber);
+            return false;
+        }
+        return true;
+    }
+
     public void updateUrl(String orderNumber, String url) {
         salesOrderReturnRepository.updateUrl(orderNumber, url);
     }
