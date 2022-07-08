@@ -1,5 +1,6 @@
 package de.kfzteile24.salesOrderHub.delegates.helper;
 
+import com.amazonaws.util.CollectionUtils;
 import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Signals;
@@ -9,6 +10,7 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMetho
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
+import de.kfzteile24.salesOrderHub.exception.NoProcessInstanceFoundException;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Payments;
@@ -16,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.HistoryService;
 import org.camunda.bpm.engine.MismatchingMessageCorrelationException;
+import org.camunda.bpm.engine.ProcessEngineException;
 import org.camunda.bpm.engine.RepositoryService;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.TaskService;
@@ -60,6 +63,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.VOUCHER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.DELIVERY_ADDRESS_CHANGE_POSSIBLE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.ORDER_ROW_ID;
+import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toList;
 
 @Component
@@ -286,6 +290,34 @@ public class CamundaHelper {
 
     public void sendSignal(Signals signal) {
         runtimeService.signalEventReceived(signal.getName());
+    }
+
+    public void sendSignal(Signals signal, VariableMap variableMap) {
+        var executionQuery = runtimeService.createExecutionQuery()
+                .signalEventSubscriptionName(signal.getName());
+
+        variableMap.forEach(executionQuery::processVariableValueEquals);
+
+        Optional.of(executionQuery.list())
+                .filter(not(CollectionUtils::isNullOrEmpty))
+                .ifPresentOrElse(execution -> {
+                        try {
+                            runtimeService.signalEventReceived(signal.getName(), execution.get(0).getId());
+                        } catch (ProcessEngineException ex) {
+                            log.error(ex.getLocalizedMessage(), ex);
+                            var errorMessage =
+                                    String.format("No active process instance based on %s found waiting for signal %s",
+                                            variableMap, signal.getName());
+                            throw new NoProcessInstanceFoundException(errorMessage);
+                        }
+                    },
+                        () -> {
+                            var errorMessage =
+                                    String.format("No active process instance based on %s found subscribed to the signal %s",
+                                            variableMap, signal.getName());
+                            log.error(errorMessage);
+                            throw new NoProcessInstanceFoundException(errorMessage);
+                        });
     }
 
     @EventListener(ApplicationReadyEvent.class)
