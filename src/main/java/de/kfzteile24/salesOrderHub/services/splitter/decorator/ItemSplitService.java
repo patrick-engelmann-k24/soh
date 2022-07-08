@@ -23,7 +23,9 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -375,9 +377,16 @@ public class ItemSplitService extends AbstractSplitDecorator {
         BigDecimal totalDiscountGrossDifference = setSumValues.getTotalDiscountedGross().subtract(totalDiscountedGrossSum);
 
         /*
+         * if the totalDiscountGrossDifference is less than or equal to 2 cents we add the difference to the highest sum values of the set items
          * if the totalDiscountGrossDifference is not 0 we throw an exception
          */
-        if (totalDiscountGrossDifference.abs().compareTo(BigDecimal.ZERO) != 0) {
+        if (totalDiscountGrossDifference.abs().compareTo(TWO_CENTS) < 0) {
+            OrderRows highestSetItems = setItems.stream()
+                    .max(Comparator.comparing(row -> row.getSumValues().getTotalDiscountedGross()))
+                    .orElseThrow(NoSuchElementException::new);
+            BigDecimal newGrossPrice = highestSetItems.getSumValues().getTotalDiscountedGross().add(totalDiscountGrossDifference);
+            highestSetItems.getSumValues().setTotalDiscountedGross(newGrossPrice);
+        } else if (totalDiscountGrossDifference.abs().compareTo(BigDecimal.ZERO) != 0) {
             log.error("Discounted Gross prices from Pricing Service do not add up for order number: {} and sku: {}.\n" +
                             "Initial set gross price: {}, set gross price from pricing: {}\n" +
                             "Set cannot be split.",
@@ -390,9 +399,16 @@ public class ItemSplitService extends AbstractSplitDecorator {
         BigDecimal totalDiscountNetDifference = setSumValues.getTotalDiscountedNet().subtract(totalDiscountedNetSum);
 
         /*
+         * if the totalDiscountNetDifference is less than or equal to 2 cents we add the difference to the highest sum values of the set items
          * if the totalDiscountNetDifference is not 0 greater we throw an exception
          */
-        if (totalDiscountNetDifference.compareTo(BigDecimal.ZERO) != 0) {
+        if (totalDiscountNetDifference.abs().compareTo(TWO_CENTS) < 0) {
+            OrderRows highestSetItems = setItems.stream()
+                    .max(Comparator.comparing(row -> row.getSumValues().getTotalDiscountedNet()))
+                    .orElseThrow(NoSuchElementException::new);
+            BigDecimal newNetPrice = highestSetItems.getSumValues().getTotalDiscountedNet().add(totalDiscountNetDifference);
+            highestSetItems.getSumValues().setTotalDiscountedNet(newNetPrice);
+        } else if (totalDiscountNetDifference.compareTo(BigDecimal.ZERO) != 0) {
             log.error("Discounted Net prices from Pricing Service do not add up for order number: {} and sku: {}.\n" +
                             "Initial set net price: {}, set net price from pricing: {}\n" +
                             "Set cannot be split.",
@@ -405,9 +421,16 @@ public class ItemSplitService extends AbstractSplitDecorator {
         BigDecimal goodsValueGrossDifference = setSumValues.getGoodsValueGross().subtract(goodsValueGrossSum);
 
         /*
+         * if the goodsValueGrossDifference is less than or equal to 2 cents we add the difference to the highest sum values of the set items
          * if the goodsValueGrossDifference is not 0 we throw an exception
          */
-        if (goodsValueGrossDifference.compareTo(BigDecimal.ZERO) != 0) {
+        if (goodsValueGrossDifference.abs().compareTo(TWO_CENTS) < 0) {
+            OrderRows highestSetItems = setItems.stream()
+                    .max(Comparator.comparing(row -> row.getSumValues().getGoodsValueGross()))
+                    .orElseThrow(NoSuchElementException::new);
+            BigDecimal newGrossPrice = highestSetItems.getSumValues().getGoodsValueGross().add(goodsValueGrossDifference);
+            highestSetItems.getSumValues().setGoodsValueGross(newGrossPrice);
+        } else if (goodsValueGrossDifference.compareTo(BigDecimal.ZERO) != 0) {
             log.error("Goods Value Gross prices from Pricing Service do not add up for order number: {} and sku: {}.\n" +
                             "Initial set gross price: {}, set gross price from pricing: {}\n" +
                             "Set cannot be split.",
@@ -420,9 +443,16 @@ public class ItemSplitService extends AbstractSplitDecorator {
         BigDecimal goodsValueNetDifference = setSumValues.getGoodsValueNet().subtract(goodsValueNetSum);
 
         /*
+         * if the goodsValueNetDifference is less than or equal to 2 cents we add the difference to the highest sum values of the set items
          * if the goodsValueNetDifference is not 0 we throw an exception
          */
-        if (goodsValueNetDifference.compareTo(BigDecimal.ZERO) != 0) {
+        if (goodsValueNetDifference.abs().compareTo(TWO_CENTS) < 0) {
+            OrderRows highestSetItems = setItems.stream()
+                    .max(Comparator.comparing(row -> row.getSumValues().getGoodsValueNet()))
+                    .orElseThrow(NoSuchElementException::new);
+            BigDecimal newNetPrice = highestSetItems.getSumValues().getGoodsValueNet().add(goodsValueNetDifference);
+            highestSetItems.getSumValues().setGoodsValueNet(newNetPrice);
+        } else if (goodsValueNetDifference.compareTo(BigDecimal.ZERO) != 0) {
             log.error("Goods Value Net prices from Pricing Service do not add up for order number: {} and sku: {}.\n" +
                             "Initial set net price: {}, set net price from pricing: {}\n" +
                             "Set cannot be split.",
