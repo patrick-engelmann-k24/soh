@@ -53,6 +53,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -221,6 +222,27 @@ class DropshipmentOrderServiceIntegrationTest {
         assertThat(updatedSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber()).isEqualTo(LocalDateTime.now().getYear() + "-1000000000002");
     }
 
+    @Test
+    void testHandleDropShipmentOrderTrackingInformationReceivedWhenTrackingNumberListIsNullAndMultipleParcelNumbersReceived() throws JsonProcessingException {
+
+        var salesOrder = createSalesOrder();
+        createSalesOrderInvoice(salesOrder);
+        var message = createShipmentConfirmedMessage(salesOrder);
+        message.getItems().add(ShipmentItem.builder()
+                        .productNumber("sku-1")
+                        .parcelNumber("00F8F0LT5")
+                        .trackingLink("http://abc5")
+                        .serviceProviderName("abc5")
+                        .build());
+        dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(message);
+
+        var optUpdatedSalesOrder = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber());
+        assertThat(optUpdatedSalesOrder).isNotEmpty();
+        var updatedSalesOrder = optUpdatedSalesOrder.get();
+
+        assertThat(updatedSalesOrder.getLatestJson().getOrderRows().get(0).getTrackingNumbers()).hasSize(2);
+    }
+
     private void createSalesOrderInvoice(SalesOrder salesOrder) {
         var currentYear = LocalDateTime.now().getYear();
         var salesOrderInvoice = SalesOrderInvoice.builder()
@@ -236,7 +258,7 @@ class DropshipmentOrderServiceIntegrationTest {
     private DropshipmentShipmentConfirmedMessage createShipmentConfirmedMessage(SalesOrder salesOrder) {
         var message = DropshipmentShipmentConfirmedMessage.builder()
                 .salesOrderNumber(salesOrder.getOrderNumber())
-                .items(Set.of(ShipmentItem.builder()
+                .items(new ArrayList<>(Set.of(ShipmentItem.builder()
                         .productNumber("sku-1")
                         .parcelNumber("00F8F0LT")
                         .trackingLink("http://abc1")
@@ -246,7 +268,7 @@ class DropshipmentOrderServiceIntegrationTest {
                         .parcelNumber("00F8F0LT2")
                         .trackingLink("http://abc2")
                         .serviceProviderName("abc2")
-                        .build()))
+                        .build())))
                 .build();
         return message;
     }

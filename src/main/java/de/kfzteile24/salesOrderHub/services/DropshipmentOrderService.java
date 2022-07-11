@@ -32,6 +32,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -140,7 +141,7 @@ public class DropshipmentOrderService {
             var value = item.getProductNumber();
             var valueList = skuMap.get(key);
             if (valueList == null) {
-                valueList = List.of(value);
+                valueList = new ArrayList<>(List.of(value));
             } else {
                 valueList.add(value);
             }
@@ -228,7 +229,7 @@ public class DropshipmentOrderService {
         var parcelNumber = item.getParcelNumber();
         Optional.ofNullable(row.getTrackingNumbers())
                 .ifPresentOrElse(trackingNumbers -> trackingNumbers.add(parcelNumber),
-                        () -> row.setTrackingNumbers(List.of(parcelNumber)));
+                        () -> row.setTrackingNumbers(new ArrayList<>(Collections.singleton(parcelNumber))));
     }
 
     private void addServiceProviderName(ShipmentItem item, OrderRows row) {
