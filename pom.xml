@@ -26,6 +26,7 @@
     <camunda-process-test-coverage-starter-platform8.version>1.0.3
     </camunda-process-test-coverage-starter-platform8.version>
     <springdoc-openapi-ui.version>1.6.9</springdoc-openapi-ui.version>
+    <camunda-bpm-migration.version>1.0</camunda-bpm-migration.version>
   </properties>
 
   <dependencyManagement>
@@ -120,8 +121,13 @@
       <artifactId>springdoc-openapi-ui</artifactId>
       <version>${springdoc-openapi-ui.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.camunda.bpm.extension.migration</groupId>
+      <artifactId>camunda-bpm-migration</artifactId>
+      <version>${camunda-bpm-migration.version}</version>
+    </dependency>
 
-    <!--Test dependencies    -->
+    <!-- Test dependencies -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-test</artifactId>
