@@ -125,22 +125,40 @@ public class ItemSplitService extends AbstractSplitDecorator {
      * @param setProducts      - list of product data from PDH for fallback calculation
      * @return get list of the prices for the items in the set
      */
-    protected List<PricingItem> getSetPrices(String setSku, String salesChannelCode, String orderNumber, List<ProductSet> setProducts) {
+    protected List<PricingItem> getSetPrices(
+            String setSku, String salesChannelCode, String orderNumber, List<ProductSet> setProducts) {
 
-        Optional<SetUnitPriceAPIResponse> setPriceInfo = pricingServiceClient.getSetPriceInfo(setSku, salesChannelCode, orderNumber);
+        Optional<SetUnitPriceAPIResponse> setPriceInfo =
+                pricingServiceClient.getSetPriceInfo(setSku, salesChannelCode, orderNumber);
         if (setPriceInfo.isPresent()) {
-            return setPriceInfo.get().getSetUnitPrices();
+            List<PricingItem> setUnitPrices = setPriceInfo.get().getSetUnitPrices();
+            List<String> setItemSkus = setUnitPrices.stream().map(PricingItem::getSku).collect(Collectors.toList());
+            for (ProductSet productSet : setProducts) {
+                if (!setItemSkus.contains(productSet.getSku())) {
+                    log.info("Pricing system does not have the set item prices for order number {} and sku {}, " +
+                            "missing sku is {} " +
+                            "calculating the prices based on quantity", orderNumber, setSku, productSet.getSku());
+                    return fallbackSetItemCalculation(setProducts);
+                }
+            }
+            return setUnitPrices;
         } else {
-            log.info("Pricing system does not have the set item prices for order number {} and sku {}, calculating the prices based on quantity",
-                    orderNumber, setSku);
-            final var quantitySum = setProducts.stream().map(ProductSet::getQuantity).reduce(BigDecimal.ZERO, BigDecimal::add);
-            return setProducts.stream().map(sp ->
-                            PricingItem.builder()
-                                    .valueShare(sp.getQuantity().divide(quantitySum, 17, RoundingMode.HALF_UP))
-                                    .sku(sp.getSku())
-                                    .build())
-                    .collect(Collectors.toList());
+            log.info("Pricing system does not have the set item prices for order number {} and sku {}, " +
+                    "calculating the prices based on quantity", orderNumber, setSku);
+            return fallbackSetItemCalculation(setProducts);
         }
+    }
+
+    private List<PricingItem> fallbackSetItemCalculation(List<ProductSet> setProducts) {
+
+        final var quantitySum = setProducts.stream()
+                .map(ProductSet::getQuantity).reduce(BigDecimal.ZERO, BigDecimal::add);
+        return setProducts.stream().map(sp ->
+                        PricingItem.builder()
+                                .valueShare(sp.getQuantity().divide(quantitySum, 17, RoundingMode.HALF_UP))
+                                .sku(sp.getSku())
+                                .build())
+                .collect(Collectors.toList());
     }
 
     /**
