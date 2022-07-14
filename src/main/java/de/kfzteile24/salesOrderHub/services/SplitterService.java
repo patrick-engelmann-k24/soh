@@ -2,6 +2,8 @@ package de.kfzteile24.salesOrderHub.services;
 
 import de.kfzteile24.salesOrderHub.configuration.FeatureFlagConfig;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.dto.split.OrderSplit;
+import de.kfzteile24.salesOrderHub.dto.split.SalesOrderSplit;
 import de.kfzteile24.salesOrderHub.services.splitter.decorator.ItemSplitService;
 import de.kfzteile24.salesOrderHub.services.splitter.decorator.OrderSplitService;
 import de.kfzteile24.salesOrderHub.services.splitter.decorator.SplitOrderRecalculationService;
@@ -13,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.services.splitter.decorator.OrderSplitService.ORDER_FULFILLMENT_K24;
 
@@ -37,33 +40,32 @@ public class SplitterService {
      * @param originOrder the initial order
      * @return list of split SalesOrders
      */
-    public List<SalesOrder> splitSalesOrder(final Order originOrder) {
+    public List<SalesOrderSplit> splitSalesOrder(final Order originOrder) {
         updateOriginalOrder(originOrder);
-        final var orderList = new ArrayList<Order>();
-        orderList.add(originOrder);
+        final var orderSplitList = new ArrayList<OrderSplit>();
+        orderSplitList.add(OrderSplit.regularOrder(originOrder));
         if (featureFlagConfig.getIgnoreSalesOrderSplitter()) {
             log.info("Sales Order Splitter is ignored");
         } else {
+
             // add further splitters here (all operations happening on the list object)
-            if (!featureFlagConfig.getIgnoreSetDissolvement()) {
-                Order order = orderList.stream().findFirst().orElseThrow();
-                if (order.getOrderHeader().getPlatform() != Platform.CORE) {
-                    itemSplitService.processOrderList(orderList);
-                }
+            if (!featureFlagConfig.getIgnoreSetDissolvement()
+                    && originOrder.getOrderHeader().getPlatform() != Platform.CORE) {
+                itemSplitService.processOrder(originOrder);
             }
 
-            Order order = orderList.stream().findFirst().orElseThrow();
-            if (order.getOrderHeader().getPlatform() == Platform.BRAINCRAFT) {
-                orderSplitService.processOrderList(orderList);
+            if (originOrder.getOrderHeader().getPlatform() == Platform.BRAINCRAFT) {
+                orderSplitService.processOrderList(orderSplitList);
             }
 
-            if (orderList.size() > 1) {
+            if (orderSplitList.size() > 1) {
+                var orderList = orderSplitList.stream().map(os -> os.getOrder()).collect(Collectors.toList());
                 //recalculate totals only if we added splitted order, which means we also changed original order
                 splitOrderRecalculationService.processOrderList(orderList);
             }
         }
 
-        return convert2SalesOrderList(originOrder, orderList);
+        return convert2SalesOrderList(originOrder, orderSplitList);
     }
 
     /**
@@ -72,16 +74,17 @@ public class SplitterService {
      * @param originOrder the initial order
      * @return list of split SalesOrders
      */
-    private List<SalesOrder> convert2SalesOrderList(final Order originOrder, final ArrayList<Order> splittedOrderList) {
-        List<SalesOrder> list = new ArrayList<>();
+    private List<SalesOrderSplit> convert2SalesOrderList(final Order originOrder, final ArrayList<OrderSplit> splittedOrderList) {
+        List<SalesOrderSplit> list = new ArrayList<>();
         for(final var splitOrder: splittedOrderList) {
             list.add(buildSalesOrder(splitOrder, originOrder));
         }
         return list;
     }
 
-    private SalesOrder buildSalesOrder(Order splitOrder, Order originOrder) {
-        return SalesOrder
+    private SalesOrderSplit buildSalesOrder(OrderSplit orderSplit, Order originOrder) {
+        var splitOrder = orderSplit.getOrder();
+        return new SalesOrderSplit(SalesOrder
                 .builder()
                 .orderNumber(splitOrder.getOrderHeader().getOrderNumber())
                 .orderGroupId(originOrder.getOrderHeader().getOrderGroupId())
@@ -89,7 +92,8 @@ public class SplitterService {
                 .customerEmail(splitOrder.getOrderHeader().getCustomer().getCustomerEmail())
                 .originalOrder(originOrder)
                 .latestJson(/*splitted order goes here */ splitOrder)
-                .build();
+                .build(),
+                orderSplit.isSplitted());
     }
 
     private Order updateOriginalOrder(Order originalOrder) {

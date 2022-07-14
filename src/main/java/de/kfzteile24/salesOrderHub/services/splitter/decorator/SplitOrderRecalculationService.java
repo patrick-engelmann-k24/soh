@@ -7,18 +7,17 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class SplitOrderRecalculationService extends AbstractSplitDecorator {
+public class SplitOrderRecalculationService {
 
     private final SalesOrderService salesOrderService;
 
     private final OrderUtil orderUtil;
 
-    @Override
-    public void processOrderList(ArrayList<Order> orderList) {
+    public void processOrderList(List<Order> orderList) {
         for (Order order: orderList) {
             if (orderUtil.containsDropShipmentItems(order)) {
                 //splitted order

@@ -3,6 +3,7 @@ package de.kfzteile24.salesOrderHub.services.splitter.decorator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.DropShipmentConfig;
 import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
+import de.kfzteile24.salesOrderHub.dto.split.OrderSplit;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import org.junit.jupiter.api.Test;
@@ -38,8 +39,8 @@ class OrderSplitServiceTest {
     void calculateOrderListWithDSOrder() {
 
         final var order = getOrder(readResource("examples/splitterSalesOrderMessageWithTwoRows.json"));
-        final var orderList = new ArrayList<Order>();
-        orderList.add(order);
+        final var orderList = new ArrayList<OrderSplit>();
+        orderList.add(OrderSplit.regularOrder(order));
 
         doReturn(false).when(orderUtil).containsOnlyDropShipmentItems(any());
         doReturn(true).when(orderUtil).containsDropShipmentItems(any());
@@ -47,13 +48,8 @@ class OrderSplitServiceTest {
         orderSplitService.processOrderList(orderList);
 
         assertThat(orderList.size()).isGreaterThanOrEqualTo(2);
-        final int originOrderIndex = orderList.indexOf(order);
-        Order dsOrder;
-        if (originOrderIndex == 0) {
-            dsOrder = orderList.get(1);
-        } else {
-            dsOrder = orderList.get(0);
-        }
+        Order dsOrder = orderList.stream().filter(OrderSplit::isSplitted).findFirst().orElseThrow().getOrder();
+
 
         assertThat(dsOrder.getOrderHeader().getOrderNumber()).isNotEmpty();
         assertThat(dsOrder.getOrderHeader().getOrderNumber()).isNotEqualTo(order.getOrderHeader().getOrderNumber());
@@ -64,8 +60,8 @@ class OrderSplitServiceTest {
     @Test
     void calculateOrderListWithoutDSOrder() {
         final var order = getOrder(readResource("examples/ecpOrderMessage.json"));
-        final var orderList = new ArrayList<Order>();
-        orderList.add(order);
+        final var orderList = new ArrayList<OrderSplit>();
+        orderList.add(OrderSplit.regularOrder(order));
         orderSplitService.processOrderList(orderList);
 
         assertThat(orderList.size()).isGreaterThanOrEqualTo(1);

@@ -88,7 +88,8 @@ class ItemSplitServiceTest {
         doNothing().when(itemSplitService).checkSumValuesDifference(any(), any(), any(), any());
         when(orderUtil.getLastRowKey(any(Order.class))).thenReturn(3);
 
-        itemSplitService.processOrderList(list);
+        itemSplitService.processOrder(order1);
+        itemSplitService.processOrder(order2);
 
         for (Order order : list) {
             final var rows = order.getOrderRows();

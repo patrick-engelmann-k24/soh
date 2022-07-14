@@ -22,6 +22,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
 import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ArticleItemsDto;
 import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ParcelShippedMessage;
+import de.kfzteile24.salesOrderHub.dto.split.SalesOrderSplit;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.services.DropshipmentOrderService;
@@ -579,7 +580,7 @@ public class SqsReceiveService {
                         .originalOrder(order)
                         .latestJson(order)
                         .build();
-                salesOrderCreateService.startSalesOrderProcess(newSalesOrder, orderMessageWrapper);
+                salesOrderCreateService.startSalesOrderProcess(SalesOrderSplit.regularOrder(newSalesOrder), orderMessageWrapper);
             }
         }
 

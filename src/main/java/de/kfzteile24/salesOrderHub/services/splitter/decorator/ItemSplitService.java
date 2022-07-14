@@ -40,7 +40,7 @@ import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.round;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ItemSplitService extends AbstractSplitDecorator {
+public class ItemSplitService {
 
     @Autowired
     private ProductDataHubClient productDataHubClient;
@@ -53,14 +53,6 @@ public class ItemSplitService extends AbstractSplitDecorator {
 
     @Autowired
     private FeatureFlagConfig featureFlagConfig;
-
-    @Override
-    public void processOrderList(ArrayList<Order> orderList) {
-
-        for (final var order : orderList) {
-            processOrder(order);
-        }
-    }
 
     public void processOrder(Order order) {
 

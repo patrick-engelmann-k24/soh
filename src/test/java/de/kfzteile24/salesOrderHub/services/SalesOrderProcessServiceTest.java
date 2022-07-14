@@ -5,6 +5,7 @@ import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.dto.split.SalesOrderSplit;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
@@ -55,7 +56,7 @@ class SalesOrderProcessServiceTest {
 
         when(salesOrderService.checkOrderNotExists(eq(salesOrder.getOrderNumber()))).thenReturn(true);
         when(salesOrderService.createSalesOrder(any())).thenReturn(salesOrder);
-        when(splitterService.splitSalesOrder(any())).thenReturn(Collections.singletonList(salesOrder));
+        when(splitterService.splitSalesOrder(any())).thenReturn(Collections.singletonList(SalesOrderSplit.regularOrder(salesOrder)));
 
         salesOrderProcessService.handleShopOrdersReceived(messageWrapper);
 
@@ -78,7 +79,7 @@ class SalesOrderProcessServiceTest {
                 .build();
 
         when(salesOrderService.checkOrderNotExists(eq("524001240"))).thenReturn(true);
-        when(splitterService.splitSalesOrder(any())).thenReturn(Collections.singletonList(salesOrder));
+        when(splitterService.splitSalesOrder(any())).thenReturn(Collections.singletonList(SalesOrderSplit.regularOrder(salesOrder)));
 
         salesOrderProcessService.handleShopOrdersReceived(messageWrapper);
 
