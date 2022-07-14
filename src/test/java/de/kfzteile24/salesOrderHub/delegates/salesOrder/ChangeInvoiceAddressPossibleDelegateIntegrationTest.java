@@ -30,9 +30,11 @@ import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import de.kfzteile24.soh.order.dto.BillingAddress;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
@@ -90,7 +92,7 @@ class ChangeInvoiceAddressPossibleDelegateIntegrationTest {
         util.sendMessage(Messages.ORDER_INVOICE_ADDRESS_CHANGE_RECEIVED, orderNumber,
                 Map.of(
                         Variables.INVOICE_ADDRESS_CHANGE_REQUEST.getName(), objectMapper.writeValueAsString(newAddress))
-                );
+        );
 
         // check if the delegate sets the variable
         final var invoiceExistsVariableHasBeenAdded = pollingService.pollWithDefaultTiming(() -> {
@@ -104,15 +106,17 @@ class ChangeInvoiceAddressPossibleDelegateIntegrationTest {
                 .getVariable(orderProcess.getProcessInstanceId(), Variables.INVOICE_EXISTS.getName());
         assertFalse(invoiceExists, "Variable invoice exists does not exist");
 
-        assertThat(orderProcess).hasPassedInOrder(
-                Events.START_MSG_INVOICE_ADDRESS_CHANGE_RECEIVED.getName(),
-                Activities.CHANGE_INVOICE_ADDRESS_POSSIBLE.getName(),
-                Gateways.XOR_INVOICE_EXIST.getName()
-        );
-        assertThat(orderProcess).hasPassed(
-                Activities.CHANGE_INVOICE_ADDRESS.getName(),
-                Activities.SUB_PROCESS_INVOICE_ADDRESS_CHANGE.getName()
-        );
+        final var correctActivityOrder = pollingService.pollWithDefaultTiming(() -> {
+            assertThat(orderProcess).hasPassedInOrder(
+                    Events.START_MSG_INVOICE_ADDRESS_CHANGE_RECEIVED.getName(),
+                    Activities.CHANGE_INVOICE_ADDRESS_POSSIBLE.getName(),
+                    Gateways.XOR_INVOICE_EXIST.getName(),
+                    Activities.CHANGE_INVOICE_ADDRESS.getName(),
+                    Activities.SUB_PROCESS_INVOICE_ADDRESS_CHANGE.getName()
+            );
+            return true;
+        });
+        assertTrue(correctActivityOrder);
 
         assertThat(orderProcess).hasNotPassed(Events.INVOICE_ADDRESS_NOT_CHANGED.getName());
 
