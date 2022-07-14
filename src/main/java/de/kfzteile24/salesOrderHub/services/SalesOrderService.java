@@ -10,6 +10,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesFinancialDocumentLin
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundCustomException;
+import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.OrderMapper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
@@ -71,6 +72,18 @@ public class SalesOrderService {
 
     @NonNull
     private final RuntimeService runtimeService;
+
+    @Transactional
+    public SalesOrder updateProcessInstanceId(String orderNumber, String processInstanceId) {
+        Optional<SalesOrder> salesOrderOptional = getOrderByOrderNumber(orderNumber);
+        if (salesOrderOptional.isPresent()) {
+            SalesOrder salesOrder = salesOrderOptional.get();
+
+            salesOrder.setProcessId(processInstanceId);
+            return updateOrder(salesOrder);
+        }
+        throw new SalesOrderNotFoundException(format("for order {}", orderNumber));
+    }
 
     @Transactional
     public SalesOrder updateOrder(final SalesOrder salesOrder) {

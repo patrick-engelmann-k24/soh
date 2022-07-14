@@ -1,17 +1,5 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder;
 
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.MSG_ORDER_PAYMENT_SECURED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_ORDER_CANCELLED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
-import static de.kfzteile24.salesOrderHub.domain.audit.Action.INVOICE_ADDRESS_CHANGED;
-import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
-import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
-import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities;
@@ -30,9 +18,6 @@ import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import de.kfzteile24.soh.order.dto.BillingAddress;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
@@ -41,6 +26,23 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
+
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.MSG_ORDER_PAYMENT_SECURED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_ORDER_CANCELLED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.INVOICE_ADDRESS_CHANGED;
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
+import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
+import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @SpringBootTest
@@ -90,10 +92,10 @@ class ChangeInvoiceAddressPossibleDelegateIntegrationTest {
         util.sendMessage(Messages.ORDER_INVOICE_ADDRESS_CHANGE_RECEIVED, orderNumber,
                 Map.of(
                         Variables.INVOICE_ADDRESS_CHANGE_REQUEST.getName(), objectMapper.writeValueAsString(newAddress))
-                );
+        );
 
         // check if the delegate sets the variable
-        final var invoiceExistsVariableHasBeenAdded = pollingService.pollWithDefaultTiming(() -> {
+        final var invoiceExistsVariableHasBeenAdded = pollingService.poll(Duration.ofSeconds(5), Duration.ofSeconds(10), () -> {
             assertThat(orderProcess)
                     .hasVariables(Variables.INVOICE_EXISTS.getName());
             return true;
@@ -104,15 +106,17 @@ class ChangeInvoiceAddressPossibleDelegateIntegrationTest {
                 .getVariable(orderProcess.getProcessInstanceId(), Variables.INVOICE_EXISTS.getName());
         assertFalse(invoiceExists, "Variable invoice exists does not exist");
 
-        assertThat(orderProcess).hasPassedInOrder(
-                Events.START_MSG_INVOICE_ADDRESS_CHANGE_RECEIVED.getName(),
-                Activities.CHANGE_INVOICE_ADDRESS_POSSIBLE.getName(),
-                Gateways.XOR_INVOICE_EXIST.getName()
-        );
-        assertThat(orderProcess).hasPassed(
-                Activities.CHANGE_INVOICE_ADDRESS.getName(),
-                Activities.SUB_PROCESS_INVOICE_ADDRESS_CHANGE.getName()
-        );
+        final var correctActivityOrder = pollingService.pollWithDefaultTiming(() -> {
+            assertThat(orderProcess).hasPassedInOrder(
+                    Events.START_MSG_INVOICE_ADDRESS_CHANGE_RECEIVED.getName(),
+                    Activities.CHANGE_INVOICE_ADDRESS_POSSIBLE.getName(),
+                    Gateways.XOR_INVOICE_EXIST.getName(),
+                    Activities.CHANGE_INVOICE_ADDRESS.getName(),
+                    Activities.SUB_PROCESS_INVOICE_ADDRESS_CHANGE.getName()
+            );
+            return true;
+        });
+        assertTrue(correctActivityOrder);
 
         assertThat(orderProcess).hasNotPassed(Events.INVOICE_ADDRESS_NOT_CHANGED.getName());
 

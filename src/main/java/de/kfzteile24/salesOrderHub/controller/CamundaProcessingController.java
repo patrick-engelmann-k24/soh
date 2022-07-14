@@ -1,10 +1,14 @@
 package de.kfzteile24.salesOrderHub.controller;
 
+import de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Signals;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.dto.mapper.KeyValuePropertyMapper;
 import de.kfzteile24.salesOrderHub.dto.property.PersistentProperty;
 import de.kfzteile24.salesOrderHub.services.DropshipmentOrderService;
+import de.kfzteile24.salesOrderHub.services.SalesOrderService;
+import de.kfzteile24.salesOrderHub.services.migration.ProcessMigrationService;
+import de.kfzteile24.salesOrderHub.services.migration.mapper.MigrationMapper;
 import de.kfzteile24.salesOrderHub.services.property.KeyValuePropertyService;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
@@ -18,13 +22,14 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.bpm.engine.variable.Variables;
+import org.camunda.bpm.engine.ProcessEngine;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -34,6 +39,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 
 @Slf4j
 @Tag(name = "Camunda processing")
@@ -46,6 +53,11 @@ public class CamundaProcessingController {
     private final DropshipmentOrderService dropshipmentOrderService;
     private final KeyValuePropertyMapper keyValuePropertyMapper;
     private final CamundaHelper camundaHelper;
+    private final ProcessMigrationService processMigrationService;
+    private final MigrationMapper migrationMapper;
+    private final SalesOrderService salesOrderService;
+    private final ProcessEngine processEngine;
+
 
     @Operation(summary = "Retrieve all persistent properties")
     @ApiResponses(value = {
@@ -123,7 +135,29 @@ public class CamundaProcessingController {
     @PutMapping("/dropshipment/release/{orderNumber}")
     public ResponseEntity<Void> continueDropshipmentProcessing(@PathVariable String orderNumber) {
         camundaHelper.sendSignal(Signals.CONTINUE_PROCESSING_DROPSHIPMENT_ORDERS,
-                Variables.putValue(de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER.getName(), orderNumber));
+                org.camunda.bpm.engine.variable.Variables.putValue(ORDER_NUMBER.getName(), orderNumber));
+        return ResponseEntity.ok().build();
+    }
+
+
+    @Operation(summary = "Migrate Camunda process from specific version to the latest version of process definition",
+            parameters = {
+                    @Parameter(in = ParameterIn.PATH, name = "processDefinition",
+                            description = "Camunda process definition enumeration", example = "SALES_ORDER_PROCESS"),
+                    @Parameter(in = ParameterIn.PATH, name = "version",
+                            description = "'Camunda process version", example = "1"),
+                    @Parameter(in = ParameterIn.QUERY, name = "migrateParent",
+                            description = "Flag indicating whether also to migrate the parent Camunda process, if any",
+                            example = "false")
+            })
+    @ApiResponses(value = {
+            @ApiResponse(responseCode  = "200", description  = "Migration started successfully")
+    })
+    @PostMapping("/process/{processDefinition}/{version}/migrate")
+    public ResponseEntity<Void> migrationProcess(@PathVariable ProcessDefinition processDefinition,
+                                                 @PathVariable int version,
+                                                 @RequestParam boolean migrateParent) {
+        processMigrationService.executeMigration(migrationMapper.map(processDefinition, version), migrateParent);
         return ResponseEntity.ok().build();
     }
 

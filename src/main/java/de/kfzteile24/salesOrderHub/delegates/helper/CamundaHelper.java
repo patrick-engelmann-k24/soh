@@ -136,6 +136,27 @@ public class CamundaHelper {
                              .correlateWithResult().getProcessInstance();
     }
 
+    public ProcessInstance createOrderProcess(SalesOrder salesOrder, Messages originChannel, Map<String, Object> variables) {
+
+        return runtimeService.createMessageCorrelation(originChannel.getName())
+                .processInstanceBusinessKey(salesOrder.getOrderNumber())
+                .setVariables(variables)
+                .correlateWithResult().getProcessInstance();
+    }
+
+    public ProcessInstance createOrderProcessByProcessVersion(SalesOrder salesOrder, Messages originChannel,
+                                                              Map<String, Object> variables, int processVersion) {
+
+        var processDefinitionId = repositoryService.createProcessDefinitionQuery()
+                .processDefinitionKey(SALES_ORDER_PROCESS.getName())
+                .processDefinitionVersion(processVersion)
+                .singleResult()
+                .getId();
+
+        return runtimeService.startProcessInstanceByMessageAndProcessDefinitionId(originChannel.getName(),
+                processDefinitionId, salesOrder.getOrderNumber(), variables);
+    }
+
     public ProcessInstance createReturnOrderProcess(SalesOrderReturn salesOrderReturn, Messages originChannel) {
 
         Map<String, Object> variables = Map.of(
@@ -147,7 +168,7 @@ public class CamundaHelper {
                 .correlateWithResult().getProcessInstance();
     }
 
-    protected Map<String, Object> createProcessVariables(SalesOrder salesOrder) {
+    public Map<String, Object> createProcessVariables(SalesOrder salesOrder) {
         final String orderNumber = salesOrder.getOrderNumber();
 
         List<String> orderRowSkus;

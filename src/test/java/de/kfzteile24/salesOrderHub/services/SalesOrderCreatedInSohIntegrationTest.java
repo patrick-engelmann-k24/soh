@@ -1,5 +1,6 @@
 package de.kfzteile24.salesOrderHub.services;
 
+import com.newrelic.api.agent.Insights;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
@@ -23,26 +24,33 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.DirtiesContext;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.ORDER_NUMBER_SEPARATOR;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.MSG_ORDER_PAYMENT_SECURED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_GROUP_ID;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createOrderNumberInSOH;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 
 /**
  * @author samet
@@ -72,6 +80,8 @@ class SalesOrderCreatedInSohIntegrationTest {
     private TimedPollingService timerService;
     @Autowired
     private BpmUtil util;
+    @MockBean
+    private Insights insights;
     @Autowired
     private ObjectUtil objectUtil;
 
@@ -113,6 +123,8 @@ class SalesOrderCreatedInSohIntegrationTest {
                 "12.95",
                 "0",
                 "0");
+
+        verifyThatNewRelicIsCalled(newOrderNumberCreatedInSoh);
     }
 
     @Test
@@ -394,6 +406,22 @@ class SalesOrderCreatedInSohIntegrationTest {
         assertEquals(expectedSumValues.getGoodsValueNet(), row.getSumValues().getGoodsValueNet());
         assertEquals(expectedSumValues.getTotalDiscountedGross(), row.getSumValues().getTotalDiscountedGross());
         assertEquals(expectedSumValues.getTotalDiscountedNet(), row.getSumValues().getTotalDiscountedNet());
+    }
+
+    private void verifyThatNewRelicIsCalled(String newOrderNumberCreatedInSoh) {
+        SalesOrder updatedOrder = salesOrderService.getOrderByOrderNumber(newOrderNumberCreatedInSoh).orElse(null);
+        Map<String, Object> eventAttributes = new HashMap<>();
+        assertThat(updatedOrder).isNotNull();
+        var latestJson = updatedOrder.getLatestJson();
+        eventAttributes.put("Platform", latestJson.getOrderHeader().getPlatform().name());
+        eventAttributes.put("SalesChannel", latestJson.getOrderHeader().getSalesChannel());
+        eventAttributes.put("SalesOrderNumber", latestJson.getOrderHeader().getOrderNumber());
+
+        verify(insights).recordCustomEvent(eq("SohSubsequentOrderGenerated"),
+                argThat(map -> {
+                    assertThat((Map<String, Object>)map).containsAllEntriesOf(eventAttributes);
+                    return true;
+                }));
     }
 
     @SneakyThrows({URISyntaxException.class, IOException.class})

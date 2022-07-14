@@ -1,6 +1,7 @@
 package de.kfzteile24.salesOrderHub.services.splitter.decorator;
 
 import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
+import de.kfzteile24.salesOrderHub.dto.split.OrderSplit;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
@@ -18,7 +19,7 @@ import java.util.UUID;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class OrderSplitService extends AbstractSplitDecorator {
+public class OrderSplitService {
     public static final String ORDER_FULFILLMENT_DELTICOM = "delticom";
 
     public static final String ORDER_FULFILLMENT_K24 = "K24";
@@ -27,17 +28,16 @@ public class OrderSplitService extends AbstractSplitDecorator {
 
     private final OrderUtil orderUtil;
 
-    @Override
-    public void processOrderList(ArrayList<Order> orderList) {
-        List<Order> splittedOrders = new ArrayList<>();
-        for (Order order: orderList) {
-           Order dsOrder = splitOrderIfNecessary(order);
+    public void processOrderList(List<OrderSplit> orderSplitList) {
+        List<OrderSplit> splittedOrders = new ArrayList<>();
+        for (OrderSplit orderSplit: orderSplitList) {
+           Order dsOrder = splitOrderIfNecessary(orderSplit.getOrder());
            if (dsOrder != null){
-               splittedOrders.add((dsOrder));
+               splittedOrders.add((OrderSplit.splittedOrder(dsOrder)));
            }
         }
-        for (Order order: splittedOrders) {
-            orderList.add(order);
+        for (OrderSplit orderSplit: splittedOrders) {
+            orderSplitList.add(orderSplit);
         }
     }
 

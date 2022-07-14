@@ -4,6 +4,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.Arrays;
 
 @Getter
 @RequiredArgsConstructor
@@ -18,5 +21,14 @@ public enum ProcessDefinition {
 
     @NonNull
     private String name;
+
+    public static ProcessDefinition fromName(String name) {
+        return Arrays.stream(ProcessDefinition.values())
+                .filter(processDefinition -> StringUtils.equals(processDefinition.getName(), name))
+                .findFirst()
+                .orElseThrow(() -> {
+                    throw new IllegalArgumentException("Process definition not found based on name " + name);
+                });
+    }
 
 }
