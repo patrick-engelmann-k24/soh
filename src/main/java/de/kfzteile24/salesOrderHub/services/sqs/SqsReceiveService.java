@@ -25,6 +25,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ParcelShippedMessage;
 import de.kfzteile24.salesOrderHub.dto.split.SalesOrderSplit;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
+import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
 import de.kfzteile24.salesOrderHub.services.DropshipmentOrderService;
 import de.kfzteile24.salesOrderHub.services.InvoiceUrlExtractor;
 import de.kfzteile24.salesOrderHub.services.SalesOrderPaymentSecuredService;
@@ -51,6 +52,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static de.kfzteile24.salesOrderHub.constants.CustomEventName.SUBSEQUENT_ORDER_GENERATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_CREATED_IN_SOH;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.RETURN_ORDER_CREATED;
 import static java.util.function.Predicate.not;
@@ -73,6 +75,7 @@ public class SqsReceiveService {
     private final DropshipmentOrderService dropshipmentOrderService;
     private final SalesOrderProcessService salesOrderCreateService;
     private final MessageWrapperUtil messageWrapperUtil;
+    private final MetricsHelper metricsHelper;
 
     /**
      * Consume sqs for new orders from ecp, bc and core shops
@@ -469,6 +472,7 @@ public class SqsReceiveService {
                                     orderNumber,
                                     invoiceNumber,
                                     result.getProcessInstanceId());
+                            metricsHelper.sendCustomEvent(subsequentOrder, SUBSEQUENT_ORDER_GENERATED);
                         }
                         publishInvoiceEvent(subsequentOrder);
                     }

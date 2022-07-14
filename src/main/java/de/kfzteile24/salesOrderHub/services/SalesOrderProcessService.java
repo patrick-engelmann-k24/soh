@@ -11,6 +11,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Service;
 
+import static de.kfzteile24.salesOrderHub.constants.CustomEventName.SALES_ORDER_CONSUMED;
+import static de.kfzteile24.salesOrderHub.constants.CustomEventName.SPLIT_ORDER_GENERATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_ECP;
 
 @Service
@@ -40,9 +42,9 @@ public class SalesOrderProcessService {
                 if (result != null) {
                     log.info("New ecp order process started for order number: {}. Process-Instance-ID: {} ",
                             salesOrder.getOrderNumber(), result.getProcessInstanceId());
-                    metricsHelper.salesOrderConsumed(salesOrder);
+                    metricsHelper.sendCustomEvent(salesOrder, SALES_ORDER_CONSUMED);
                     if (salesOrderSplit.isSplitted()) {
-                        metricsHelper.splittedOrderGenerated(salesOrder);
+                        metricsHelper.sendCustomEvent(salesOrder, SPLIT_ORDER_GENERATED);
                     }
                 }
             }
