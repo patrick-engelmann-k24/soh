@@ -11,8 +11,8 @@ import lombok.RequiredArgsConstructor;
 public enum CustomEventName {
     SALES_ORDER_CONSUMED("SohSalesOrderConsumed"),
     SPLIT_ORDER_GENERATED("SohSplitOrderGenerated"),
-    SUBSEQUENT_ORDER_GENERATED("SohSubsequentOrderGenerated");
-
+    SUBSEQUENT_ORDER_GENERATED("SohSubsequentOrderGenerated"),
+    SALES_ORDER_PUBLISHED("SohSalesOrderPublished");
     @NonNull
     private String name;
 }
