@@ -3,6 +3,7 @@ package de.kfzteile24.salesOrderHub.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.AwsSnsConfig;
+import de.kfzteile24.salesOrderHub.constants.CustomEventName;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.dto.events.CoreSalesInvoiceCreatedReceivedEvent;
@@ -22,6 +23,7 @@ import de.kfzteile24.salesOrderHub.dto.events.dropshipment.DropshipmentOrderPack
 import de.kfzteile24.salesOrderHub.dto.events.shipmentconfirmed.TrackingLink;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnNotifiedMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
+import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -46,9 +48,12 @@ public class SnsPublishService {
     private final ObjectMapper objectMapper;
     @NonNull
     private final AwsSnsConfig config;
+    @NonNull
+    private final MetricsHelper metricsHelper;
 
     public void publishOrderCreated(String orderNumber) {
-        sendLatestOrderJson(config.getSnsOrderCreatedTopicV2(), "Sales order created V2", orderNumber);
+        var salesOrder = sendLatestOrderJson(config.getSnsOrderCreatedTopicV2(), "Sales order created V2", orderNumber);
+        metricsHelper.sendCustomEvent(salesOrder, CustomEventName.SALES_ORDER_PUBLISHED);
     }
 
     public void publishInvoiceAddressChanged(String orderNumber) {
@@ -205,7 +210,7 @@ public class SnsPublishService {
                 returnOrderCreatedEvent, salesOrderReturn.getOrderNumber());
     }
 
-    protected void sendLatestOrderJson(String topic, String subject, String orderNumber) {
+    protected SalesOrder sendLatestOrderJson(String topic, String subject, String orderNumber) {
         final var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
 
@@ -215,6 +220,8 @@ public class SnsPublishService {
                 .build();
 
         publishEvent(topic, subject, salesOrderInfo, orderNumber);
+
+        return salesOrder;
     }
 
     @SneakyThrows({JsonProcessingException.class})

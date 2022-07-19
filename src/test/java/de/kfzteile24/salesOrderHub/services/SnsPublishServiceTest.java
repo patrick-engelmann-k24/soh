@@ -21,6 +21,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnNotifi
 import de.kfzteile24.salesOrderHub.dto.sns.dropshipment.DropshipmentPurchaseOrderPackage;
 import de.kfzteile24.salesOrderHub.dto.sns.dropshipment.DropshipmentPurchaseOrderPackageItemLine;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
+import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import lombok.SneakyThrows;
@@ -68,7 +69,8 @@ class SnsPublishServiceTest {
     private final ObjectMapper objectMapper = new ObjectMapperConfig().objectMapper();
     @Mock
     private AwsSnsConfig awsSnsConfig;
-
+    @Mock
+    private MetricsHelper metricsHelper;
     @InjectMocks
     private SnsPublishService snsPublishService;
 
