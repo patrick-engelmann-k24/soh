@@ -478,10 +478,10 @@ public class SqsReceiveService {
                                         result.getProcessInstanceId());
                                 metricsHelper.sendCustomEvent(subsequentOrder, SUBSEQUENT_ORDER_GENERATED);
                             }
-                            publishInvoiceEvent(subsequentOrder);
                         } else {
                             snsPublishService.publishOrderCreated(subsequentOrder.getOrderNumber());
                         }
+                        publishInvoiceEvent(subsequentOrder);
                     }
                 }
 
