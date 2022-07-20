@@ -10,12 +10,13 @@ import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Payments;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
-import org.camunda.bpm.extension.process_test_coverage.spring_test.ProcessEngineCoverageProperties;
+import org.camunda.bpm.extension.process_test_coverage.spring_test.ProcessEngineCoverageConfiguration;
 import org.camunda.bpm.extension.process_test_coverage.spring_test.ProcessEngineCoverageTestExecutionListener;
 import org.camunda.bpm.scenario.ProcessScenario;
 import org.camunda.bpm.scenario.Scenario;
 import org.camunda.bpm.scenario.act.MessageIntermediateCatchEventAction;
 import org.camunda.bpm.scenario.act.SignalIntermediateCatchEventAction;
+import org.camunda.bpm.scenario.delegate.EventSubscriptionDelegate;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,18 +48,25 @@ import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.ini
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.reset;
 
 @SpringBootTest
+@Import({
+        CoverageTestConfiguration.class,
+        ProcessEngineCoverageConfiguration.class
+})
 @TestExecutionListeners(value = ProcessEngineCoverageTestExecutionListener.class,
         mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 @MockBean({
         SimpleMessageListenerContainer.class,
         KeyValuePropertyService.class
 })
-@Import(ProcessEngineCoverageProperties.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public abstract class AbstractWorkflowTest {
 
-    public static final SignalIntermediateCatchEventAction EMPTY_SIGNAL_CATCH_EVENT_ACTION = action -> {};
-    public static final MessageIntermediateCatchEventAction EMPTY_MESSAGE_CATCH_EVENT_ACTION = action -> {};
+    public static final SignalIntermediateCatchEventAction WAIT_SIGNAL_CATCH_EVENT_ACTION = action -> {};
+    public static final MessageIntermediateCatchEventAction WAIT_MESSAGE_CATCH_EVENT_ACTION = action -> {};
+    public static final MessageIntermediateCatchEventAction RECEIVED_MESSAGE_CATCH_EVENT_ACTION =
+            EventSubscriptionDelegate::receive;
+    public static final SignalIntermediateCatchEventAction RECEIVED_SIGNAL_CATCH_EVENT_ACTION =
+            EventSubscriptionDelegate::receive;
 
     @Mock
     protected ProcessScenario processScenario;
@@ -69,8 +77,12 @@ public abstract class AbstractWorkflowTest {
     @Autowired
     protected ProcessEngine processEngine;
 
+    protected Map<String, Object> processVariables;
+
+    protected String businessKey;
+
     @BeforeEach
-    void setUp() {
+    protected void setUp() {
         reset();
         init(processEngine);
     }

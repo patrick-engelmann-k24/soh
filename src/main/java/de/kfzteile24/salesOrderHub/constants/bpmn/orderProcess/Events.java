@@ -30,7 +30,9 @@ public enum Events implements BpmItem {
 
     THROW_MSG_ORDER_CREATED("eventThrowMsgOrderCreated"),
     THROW_MSG_DELIVERY_ADDRESS_CHANGED("eventThrowMsgDeliveryAddressChanged"),
-    THROW_MSG_ORDER_VALIDATED("eventThrowMsgOrderValidated")
+    THROW_MSG_ORDER_VALIDATED("eventThrowMsgOrderValidated"),
+    THROW_MSG_PUBLISH_TRACKING_INFORMATION("eventThrowMsgPublishTrackingInformation"),
+    THROW_MSG_PUBLISH_INVOICE_DATA("eventThrowMsgPublishInvoiceData")
     ;
 
     private final String name;
