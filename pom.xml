@@ -7,8 +7,8 @@
   <description>Run the core sales order hub BPMN processes</description>
 
   <properties>
-    <camunda.spring-boot.version>7.16.0</camunda.spring-boot.version>
-    <spring-boot.version>2.5.14</spring-boot.version>
+    <camunda.spring-boot.version>7.17.0</camunda.spring-boot.version>
+    <spring-boot.version>2.7.1</spring-boot.version>
     <maven.compiler.source>11</maven.compiler.source>
     <maven.compiler.target>11</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
