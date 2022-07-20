@@ -465,16 +465,24 @@ public class SqsReceiveService {
                                 originalSalesOrder,
                                 newOrderNumber);
                         handleCancellationForOrderRows(originalSalesOrder, subsequentOrder.getLatestJson().getOrderRows());
-                        ProcessInstance result = camundaHelper.createOrderProcess(subsequentOrder, ORDER_CREATED_IN_SOH);
-                        if (result != null) {
-                            log.info("New soh order process started by core sales invoice created message with " +
-                                            "order number: {} and invoice number: {}. Process-Instance-ID: {} ",
-                                    orderNumber,
-                                    invoiceNumber,
-                                    result.getProcessInstanceId());
-                            metricsHelper.sendCustomEvent(subsequentOrder, SUBSEQUENT_ORDER_GENERATED);
+                        Order order = subsequentOrder.getLatestJson();
+                        if (order.getOrderRows() == null || order.getOrderRows().isEmpty()) {
+                            log.info("Sales order with order number {} has no order rows. Camunda process is not created!",
+                                    subsequentOrder.getOrderNumber());
+                            snsPublishService.publishOrderCreated(subsequentOrder.getOrderNumber());
+                        } else {
+
+                            ProcessInstance result = camundaHelper.createOrderProcess(subsequentOrder, ORDER_CREATED_IN_SOH);
+                            if (result != null) {
+                                log.info("New soh order process started by core sales invoice created message with " +
+                                                "order number: {} and invoice number: {}. Process-Instance-ID: {} ",
+                                        orderNumber,
+                                        invoiceNumber,
+                                        result.getProcessInstanceId());
+                                metricsHelper.sendCustomEvent(subsequentOrder, SUBSEQUENT_ORDER_GENERATED);
+                            }
+                            publishInvoiceEvent(subsequentOrder);
                         }
-                        publishInvoiceEvent(subsequentOrder);
                     }
                 }
 
