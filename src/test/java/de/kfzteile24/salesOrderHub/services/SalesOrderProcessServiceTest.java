@@ -7,6 +7,7 @@ import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.split.SalesOrderSplit;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
+import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
 import org.junit.jupiter.api.Test;
@@ -41,6 +42,8 @@ class SalesOrderProcessServiceTest {
     @Mock
     private SplitterService splitterService;
     @Mock
+    private OrderUtil orderUtil;
+    @Mock
     private SnsPublishService snsPublishService;
     @InjectMocks
     @Spy
@@ -59,6 +62,7 @@ class SalesOrderProcessServiceTest {
                 .message(order)
                 .build();
 
+        when(orderUtil.checkIfOrderHasOrderRows(any())).thenReturn(true);
         when(salesOrderService.checkOrderNotExists(eq(salesOrder.getOrderNumber()))).thenReturn(true);
         when(salesOrderService.createSalesOrder(any())).thenReturn(salesOrder);
         when(splitterService.splitSalesOrder(any())).thenReturn(Collections.singletonList(SalesOrderSplit.regularOrder(salesOrder)));
@@ -108,6 +112,7 @@ class SalesOrderProcessServiceTest {
                 .message(order)
                 .build();
 
+        when(orderUtil.checkIfOrderHasOrderRows(any())).thenReturn(false);
         doNothing().when(snsPublishService).publishOrderCreated(anyString());
         when(salesOrderService.checkOrderNotExists(eq(salesOrder.getOrderNumber()))).thenReturn(true);
         when(salesOrderService.createSalesOrder(any())).thenReturn(salesOrder);

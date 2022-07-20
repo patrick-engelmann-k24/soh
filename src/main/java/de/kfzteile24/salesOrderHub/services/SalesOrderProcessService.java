@@ -4,6 +4,7 @@ import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.split.SalesOrderSplit;
 import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
+import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ public class SalesOrderProcessService {
     private final SplitterService splitterService;
     private final MetricsHelper metricsHelper;
     private final SnsPublishService snsPublishService;
+    private final OrderUtil orderUtil;
 
     public void handleShopOrdersReceived(MessageWrapper<Order> orderMessageWrapper) {
         setOrderGroupIdIfEmpty(orderMessageWrapper.getMessage());
@@ -39,11 +41,7 @@ public class SalesOrderProcessService {
             if (salesOrderService.checkOrderNotExists(salesOrder.getOrderNumber())) {
                 SalesOrder createdSalesOrder = salesOrderService.createSalesOrder(salesOrder);
                 Order order = createdSalesOrder.getLatestJson();
-                if (order.getOrderRows() == null || order.getOrderRows().isEmpty()) {
-                    log.info("Sales order with order number {} has no order rows. Camunda process is not created!",
-                            createdSalesOrder.getOrderNumber());
-                    snsPublishService.publishOrderCreated(createdSalesOrder.getOrderNumber());
-                } else {
+                if (orderUtil.checkIfOrderHasOrderRows(order)) {
                     ProcessInstance result = camundaHelper.createOrderProcess(createdSalesOrder, ORDER_RECEIVED_ECP);
 
                     if (result != null) {
@@ -54,6 +52,8 @@ public class SalesOrderProcessService {
                             metricsHelper.sendCustomEvent(salesOrder, SPLIT_ORDER_GENERATED);
                         }
                     }
+                } else {
+                    snsPublishService.publishOrderCreated(createdSalesOrder.getOrderNumber());
                 }
             }
         } catch (Exception e) {
