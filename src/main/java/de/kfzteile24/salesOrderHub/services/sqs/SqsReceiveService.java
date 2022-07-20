@@ -26,6 +26,7 @@ import de.kfzteile24.salesOrderHub.dto.split.SalesOrderSplit;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
+import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.services.DropshipmentOrderService;
 import de.kfzteile24.salesOrderHub.services.InvoiceUrlExtractor;
 import de.kfzteile24.salesOrderHub.services.SalesOrderPaymentSecuredService;
@@ -76,6 +77,7 @@ public class SqsReceiveService {
     private final SalesOrderProcessService salesOrderCreateService;
     private final MessageWrapperUtil messageWrapperUtil;
     private final MetricsHelper metricsHelper;
+    private final OrderUtil orderUtil;
 
     /**
      * Consume sqs for new orders from ecp, bc and core shops
@@ -466,12 +468,7 @@ public class SqsReceiveService {
                                 newOrderNumber);
                         handleCancellationForOrderRows(originalSalesOrder, subsequentOrder.getLatestJson().getOrderRows());
                         Order order = subsequentOrder.getLatestJson();
-                        if (order.getOrderRows() == null || order.getOrderRows().isEmpty()) {
-                            log.info("Sales order with order number {} has no order rows. Camunda process is not created!",
-                                    subsequentOrder.getOrderNumber());
-                            snsPublishService.publishOrderCreated(subsequentOrder.getOrderNumber());
-                        } else {
-
+                        if(orderUtil.checkIfOrderHasOrderRows(order)){
                             ProcessInstance result = camundaHelper.createOrderProcess(subsequentOrder, ORDER_CREATED_IN_SOH);
                             if (result != null) {
                                 log.info("New soh order process started by core sales invoice created message with " +
@@ -482,6 +479,8 @@ public class SqsReceiveService {
                                 metricsHelper.sendCustomEvent(subsequentOrder, SUBSEQUENT_ORDER_GENERATED);
                             }
                             publishInvoiceEvent(subsequentOrder);
+                        } else {
+                            snsPublishService.publishOrderCreated(subsequentOrder.getOrderNumber());
                         }
                     }
                 }

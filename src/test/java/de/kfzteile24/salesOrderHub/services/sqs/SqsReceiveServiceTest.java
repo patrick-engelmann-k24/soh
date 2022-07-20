@@ -15,6 +15,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.FileUtil;
+import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.services.DropshipmentOrderService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderPaymentSecuredService;
@@ -101,6 +102,8 @@ class SqsReceiveServiceTest {
     @Mock
     private SnsPublishService snsPublishService;
     @Mock
+    private OrderUtil orderUtil;
+    @Mock
     private DropshipmentOrderService dropshipmentOrderService;
     @Mock
     private CreditNoteEventMapper creditNoteEventMapper;
@@ -118,6 +121,7 @@ class SqsReceiveServiceTest {
         when(salesOrderService.createSalesOrderForInvoice(any(), any(), any())).thenReturn(salesOrder);
         when(featureFlagConfig.getIgnoreCoreSalesInvoice()).thenReturn(false);
         when(salesOrderService.createOrderNumberInSOH(any(), any())).thenReturn(salesOrder.getOrderNumber(), "10");
+        when(orderUtil.checkIfOrderHasOrderRows(any())).thenReturn(true);
 
         String coreSalesInvoiceCreatedMessage = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
         sqsReceiveService.queueListenerCoreSalesInvoiceCreated(coreSalesInvoiceCreatedMessage, ANY_SENDER_ID,
@@ -141,6 +145,7 @@ class SqsReceiveServiceTest {
         when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.of(salesOrder));
         when(salesOrderService.createSalesOrderForInvoice(any(), any(), any())).thenReturn(salesOrder);
         when(salesOrderService.createOrderNumberInSOH(any(), any())).thenReturn(salesOrder.getOrderNumber(), "10");
+        when(orderUtil.checkIfOrderHasOrderRows(any())).thenReturn(true);
 
         String coreSalesInvoiceCreatedMessage = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
         sqsReceiveService.queueListenerCoreSalesInvoiceCreated(coreSalesInvoiceCreatedMessage, ANY_SENDER_ID,

@@ -191,4 +191,15 @@ public class OrderUtil {
         grandTotalTaxes.removeIf(tax -> Objects.equals(tax.getValue(), BigDecimal.ZERO));
         return order;
     }
+
+    public boolean checkIfOrderHasOrderRows(Order order) {
+
+        if (order.getOrderRows() == null || order.getOrderRows().isEmpty()) {
+            String orderNumber = order.getOrderHeader().getOrderNumber();
+            log.info("Sales order with order number {} has no order rows. Camunda process is not created!", orderNumber);
+            return false;
+        } else {
+            return true;
+        }
+    }
 }
