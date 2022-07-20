@@ -1,6 +1,7 @@
 package de.kfzteile24.salesOrderHub.services;
 
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
+import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.split.SalesOrderSplit;
 import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
@@ -23,8 +24,8 @@ public class SalesOrderProcessService {
     private final SalesOrderService salesOrderService;
     private final CamundaHelper camundaHelper;
     private final SplitterService splitterService;
-
     private final MetricsHelper metricsHelper;
+    private final SnsPublishService snsPublishService;
 
     public void handleShopOrdersReceived(MessageWrapper<Order> orderMessageWrapper) {
         setOrderGroupIdIfEmpty(orderMessageWrapper.getMessage());
@@ -36,15 +37,22 @@ public class SalesOrderProcessService {
         var salesOrder = salesOrderSplit.getOrder();
         try {
             if (salesOrderService.checkOrderNotExists(salesOrder.getOrderNumber())) {
-                ProcessInstance result = camundaHelper.createOrderProcess(
-                        salesOrderService.createSalesOrder(salesOrder), ORDER_RECEIVED_ECP);
+                SalesOrder createdSalesOrder = salesOrderService.createSalesOrder(salesOrder);
+                Order order = createdSalesOrder.getLatestJson();
+                if (order.getOrderRows() == null || order.getOrderRows().isEmpty()) {
+                    log.info("Sales order with order number {} has no order rows. Camunda process is not created!",
+                            createdSalesOrder.getOrderNumber());
+                    snsPublishService.publishOrderCreated(createdSalesOrder.getOrderNumber());
+                } else {
+                    ProcessInstance result = camundaHelper.createOrderProcess(createdSalesOrder, ORDER_RECEIVED_ECP);
 
-                if (result != null) {
-                    log.info("New ecp order process started for order number: {}. Process-Instance-ID: {} ",
-                            salesOrder.getOrderNumber(), result.getProcessInstanceId());
-                    metricsHelper.sendCustomEvent(salesOrder, SALES_ORDER_CONSUMED);
-                    if (salesOrderSplit.isSplitted()) {
-                        metricsHelper.sendCustomEvent(salesOrder, SPLIT_ORDER_GENERATED);
+                    if (result != null) {
+                        log.info("New ecp order process started for order number: {}. Process-Instance-ID: {} ",
+                                salesOrder.getOrderNumber(), result.getProcessInstanceId());
+                        metricsHelper.sendCustomEvent(salesOrder, SALES_ORDER_CONSUMED);
+                        if (salesOrderSplit.isSplitted()) {
+                            metricsHelper.sendCustomEvent(salesOrder, SPLIT_ORDER_GENERATED);
+                        }
                     }
                 }
             }

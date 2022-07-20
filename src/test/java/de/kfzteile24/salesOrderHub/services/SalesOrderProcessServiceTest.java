@@ -17,11 +17,14 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
+import java.util.List;
 
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.readResource;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -37,6 +40,8 @@ class SalesOrderProcessServiceTest {
     private CamundaHelper camundaHelper;
     @Mock
     private SplitterService splitterService;
+    @Mock
+    private SnsPublishService snsPublishService;
     @InjectMocks
     @Spy
     private SalesOrderProcessService salesOrderProcessService;
@@ -78,12 +83,40 @@ class SalesOrderProcessServiceTest {
                 .message(order)
                 .build();
 
-        when(salesOrderService.checkOrderNotExists(eq("524001240"))).thenReturn(true);
+        when(salesOrderService.checkOrderNotExists(eq("524001240"))).thenReturn(false);
         when(splitterService.splitSalesOrder(any())).thenReturn(Collections.singletonList(SalesOrderSplit.regularOrder(salesOrder)));
 
         salesOrderProcessService.handleShopOrdersReceived(messageWrapper);
 
         verify(camundaHelper, never()).createOrderProcess(any(SalesOrder.class), any(Messages.class));
         verify(salesOrderService).checkOrderNotExists("524001240");
+    }
+
+    @Test
+    void testHandleShopOrdersReceivedNoOrderRows() throws JsonProcessingException {
+
+        String rawMessage = readResource("examples/coreOrderMessage.json");
+        var sqsMessage = objectMapperConfig.objectMapper().readValue(rawMessage, SqsMessage.class);
+        var order = objectMapperConfig.objectMapper().readValue(sqsMessage.getBody(), Order.class);
+        order.setOrderRows(List.of());
+        SalesOrder salesOrder = getSalesOrder(rawMessage);
+        salesOrder.setLatestJson(order);
+        salesOrder.setRecurringOrder(false);
+
+        MessageWrapper<Order> messageWrapper = MessageWrapper.<Order>builder()
+                .rawMessage(rawMessage)
+                .message(order)
+                .build();
+
+        doNothing().when(snsPublishService).publishOrderCreated(anyString());
+        when(salesOrderService.checkOrderNotExists(eq(salesOrder.getOrderNumber()))).thenReturn(true);
+        when(salesOrderService.createSalesOrder(any())).thenReturn(salesOrder);
+        when(splitterService.splitSalesOrder(any())).thenReturn(Collections.singletonList(SalesOrderSplit.regularOrder(salesOrder)));
+
+        salesOrderProcessService.handleShopOrdersReceived(messageWrapper);
+
+        verify(camundaHelper, never()).createOrderProcess(any(SalesOrder.class), any(Messages.class));
+        verify(salesOrderService).createSalesOrder(salesOrder);
+        verify(salesOrderService).checkOrderNotExists(salesOrder.getOrderNumber());
     }
 }
