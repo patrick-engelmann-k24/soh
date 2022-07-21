@@ -17,6 +17,8 @@ import org.camunda.bpm.scenario.Scenario;
 import org.camunda.bpm.scenario.act.MessageIntermediateCatchEventAction;
 import org.camunda.bpm.scenario.act.SignalIntermediateCatchEventAction;
 import org.camunda.bpm.scenario.delegate.EventSubscriptionDelegate;
+import org.camunda.bpm.scenario.impl.ProcessRunnerImpl;
+import org.camunda.bpm.scenario.run.Runner;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -126,6 +128,10 @@ public abstract class AbstractWorkflowTest {
                         .execute())
                 .engine(processEngine)
                 .execute();
+    }
+
+    protected Runner executeCallActivity() {
+        return new ProcessRunnerImpl(null, processScenario);
     }
 
     protected Map<String, Object> createProcessVariables(SalesOrder salesOrder) {
