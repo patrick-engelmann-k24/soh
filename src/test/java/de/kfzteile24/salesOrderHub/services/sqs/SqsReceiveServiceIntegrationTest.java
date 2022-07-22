@@ -9,8 +9,10 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
+import de.kfzteile24.salesOrderHub.domain.converter.InvoiceSource;
 import de.kfzteile24.salesOrderHub.dto.shared.creditnote.SalesCreditNoteHeader;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
@@ -36,6 +38,7 @@ import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -53,6 +56,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -314,8 +318,72 @@ class SqsReceiveServiceIntegrationTest {
 
         log.info(testInfo.getDisplayName());
 
+        SalesOrder salesOrder = createSalesOrderWithRandomOrderNumber();
+        callQueueListenerDropshipmentShipmentConfirmed(salesOrder);
+
+        var savedSalesOrder = salesOrderRepository.getOrderByOrderNumber(salesOrder.getOrderNumber());
+        LocalDateTime now = LocalDateTime.now();
+        assertTrue(savedSalesOrder.isPresent());
+        assertEquals(now.getYear() + "-1000000000001", savedSalesOrder.get().getLatestJson().getOrderHeader().getDocumentRefNumber());
+        assertEquals(now.getYear() + "-1000000000001", savedSalesOrder.get().getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber());
+    }
+
+    @Test
+    @DisplayName("IT testing dropshipment shipment confirmed event handling multiple time to see the increment on invoice number")
+    void testQueueListenerDropshipmentShipmentConfirmedMultipleTime(TestInfo testInfo) {
+
+        log.info(testInfo.getDisplayName());
+        salesOrderInvoiceRepository.save(SalesOrderInvoice.builder()
+                .url("abc")
+                .invoiceNumber("724035785")
+                .orderNumber(bpmUtil.getRandomOrderNumber())
+                .source(InvoiceSource.SOH)
+                .build());
+
+        SalesOrder salesOrder1 = createSalesOrderWithRandomOrderNumber();
+        callQueueListenerDropshipmentShipmentConfirmed(salesOrder1);
+
+        var savedSalesOrder1 = salesOrderRepository.getOrderByOrderNumber(salesOrder1.getOrderNumber());
+        LocalDateTime now = LocalDateTime.now();
+        assertTrue(savedSalesOrder1.isPresent());
+        assertEquals(now.getYear() + "-1000000000001", savedSalesOrder1.get().getLatestJson().getOrderHeader().getDocumentRefNumber());
+        assertEquals(now.getYear() + "-1000000000001", savedSalesOrder1.get().getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber());
+        salesOrderInvoiceRepository.save(SalesOrderInvoice.builder()
+                .url("abc")
+                .invoiceNumber(now.getYear() + "-1000000000001")
+                .orderNumber(savedSalesOrder1.get().getOrderNumber())
+                .source(InvoiceSource.SOH)
+                .build());
+
+        SalesOrder salesOrder2 = createSalesOrderWithRandomOrderNumber();
+        callQueueListenerDropshipmentShipmentConfirmed(salesOrder2);
+
+        var savedSalesOrder2 = salesOrderRepository.getOrderByOrderNumber(salesOrder2.getOrderNumber());
+        assertTrue(savedSalesOrder2.isPresent());
+        assertEquals(now.getYear() + "-1000000000002", savedSalesOrder2.get().getLatestJson().getOrderHeader().getDocumentRefNumber());
+        assertEquals(now.getYear() + "-1000000000002", savedSalesOrder2.get().getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber());
+        salesOrderInvoiceRepository.save(SalesOrderInvoice.builder()
+                .url("abc")
+                .invoiceNumber(now.getYear() + "-1000000000002")
+                .orderNumber(savedSalesOrder1.get().getOrderNumber())
+                .source(InvoiceSource.SOH)
+                .build());
+
+        SalesOrder salesOrder3 = createSalesOrderWithRandomOrderNumber();
+        callQueueListenerDropshipmentShipmentConfirmed(salesOrder3);
+
+        var savedSalesOrder3 = salesOrderRepository.getOrderByOrderNumber(salesOrder3.getOrderNumber());
+        assertTrue(savedSalesOrder3.isPresent());
+        assertEquals(now.getYear() + "-1000000000003", savedSalesOrder3.get().getLatestJson().getOrderHeader().getDocumentRefNumber());
+        assertEquals(now.getYear() + "-1000000000003", savedSalesOrder3.get().getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber());
+    }
+
+    private SalesOrder createSalesOrderWithRandomOrderNumber() {
         String orderRawMessage = readResource("examples/ecpOrderMessageWithTwoRows.json");
         Order order = getOrder(orderRawMessage);
+        String randomOrderNumber = bpmUtil.getRandomOrderNumber();
+        order.getOrderHeader().setOrderNumber(randomOrderNumber);
+        order.getOrderHeader().setOrderGroupId(randomOrderNumber);
         var orderRows = List.of(
                 createOrderRow("sku-1", NONE),
                 createOrderRow("sku-2", NONE),
@@ -323,7 +391,10 @@ class SqsReceiveServiceIntegrationTest {
         );
         order.setOrderRows(orderRows);
         order.getOrderHeader().setOrderFulfillment(DELTICOM.getName());
-        SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(order));
+        return salesOrderService.createSalesOrder(createSalesOrderFromOrder(order));
+    }
+
+    private void callQueueListenerDropshipmentShipmentConfirmed(SalesOrder salesOrder) {
         camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
 
         assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
@@ -338,15 +409,20 @@ class SqsReceiveServiceIntegrationTest {
         bpmUtil.sendMessage(Messages.DROPSHIPMENT_ORDER_CONFIRMED, salesOrder.getOrderNumber(),
                 Map.of(IS_DROPSHIPMENT_ORDER_CONFIRMED.getName(), true));
 
-        var dropshipmentShipmentConfirmed = readResource("examples/dropshipmentShipmentConfirmed.json");
-        dropshipmentShipmentConfirmed = dropshipmentShipmentConfirmed.replace("580309129", salesOrder.getOrderNumber());
-        sqsReceiveService.queueListenerDropshipmentShipmentConfirmed(dropshipmentShipmentConfirmed, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+        sqsReceiveService.queueListenerDropshipmentShipmentConfirmed(getDropshipmentShipmentConfirmed(salesOrder), ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
         assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
                 camundaHelper.hasPassed(salesOrder.getProcessId(), EVENT_THROW_MSG_PURCHASE_ORDER_SUCCESSFUL.getName())));
 
         assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
                 camundaHelper.hasPassed(salesOrder.getProcessId(), EVENT_MSG_DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED.getName())));
+    }
+
+    @NotNull
+    private String getDropshipmentShipmentConfirmed(SalesOrder salesOrder) {
+        var dropshipmentShipmentConfirmed = readResource("examples/dropshipmentShipmentConfirmed.json");
+        dropshipmentShipmentConfirmed = dropshipmentShipmentConfirmed.replace("580309129", salesOrder.getOrderNumber());
+        return dropshipmentShipmentConfirmed;
     }
 
     @Test

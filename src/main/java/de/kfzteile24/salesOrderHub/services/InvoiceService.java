@@ -79,9 +79,11 @@ public class InvoiceService {
     }
 
     private String getNextInvoiceCount(int currentYear) {
-        return invoiceRepository.findFirstBySourceOrderByInvoiceNumberDesc(InvoiceSource.SOH)
-                .filter(salesOrderInvoice -> salesOrderInvoice.getInvoiceNumber().startsWith(String.valueOf(currentYear)))
-                .map(this::createNextInvoiceNumberCounter).orElse("000000000001");
+        var found = invoiceRepository.findFirstBySourceAndInvoiceNumberStartsWithOrderByInvoiceNumberDesc(InvoiceSource.SOH, currentYear + "-1");
+        if (found.isPresent()) {
+            return createNextInvoiceNumberCounter(found.get());
+        }
+        return "000000000001";
     }
 
     private String createNextInvoiceNumberCounter(SalesOrderInvoice salesOrderInvoice) {
