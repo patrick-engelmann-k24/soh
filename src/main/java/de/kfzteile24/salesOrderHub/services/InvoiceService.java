@@ -79,9 +79,11 @@ public class InvoiceService {
     }
 
     private String getNextInvoiceCount(int currentYear) {
-        return invoiceRepository.findFirstBySourceOrderByInvoiceNumberDesc(InvoiceSource.SOH)
-                .filter(salesOrderInvoice -> salesOrderInvoice.getInvoiceNumber().startsWith(String.valueOf(currentYear)))
-                .map(this::createNextInvoiceNumberCounter).orElse("000000000001");
+        var found = invoiceRepository.findFirstBySourceAndInvoiceNumberStartsWithOrderByInvoiceNumberDesc(InvoiceSource.SOH, currentYear + "-1");
+        if (found.isPresent()) {
+            return createNextInvoiceNumberCounter(found.get());
+        }
+        return "000000000001";
     }
 
     private String createNextInvoiceNumberCounter(SalesOrderInvoice salesOrderInvoice) {
@@ -119,7 +121,7 @@ public class InvoiceService {
                 .salesInvoice(new CoreSalesInvoice(
                         new CoreSalesInvoiceHeader(
                                 orderHeader.getDocumentRefNumber(),
-                                getInvoiceDate(salesOrder),
+                                Date.from(LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant()),
                                 invoiceLines,
                                 salesOrder.getOrderGroupId(),
                                 salesOrder.getOrderNumber(),
@@ -138,18 +140,6 @@ public class InvoiceService {
                         ),
                         new ArrayList<>()))
                 .build();
-    }
-
-    private Date getInvoiceDate(SalesOrder salesOrder) {
-        SalesOrderInvoice invoice = findSalesOrderInvoice(salesOrder);
-        return invoice != null ? Date.from(invoice.getCreatedAt().atZone(ZoneId.systemDefault()).toInstant()) : null;
-    }
-
-    private SalesOrderInvoice findSalesOrderInvoice(SalesOrder salesOrder) {
-        var invoiceNumber = salesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber();
-        return getInvoicesByOrderNumber(salesOrder.getOrderNumber()).stream()
-                .filter(i -> i.getInvoiceNumber().equals(invoiceNumber))
-                .findFirst().orElse(null);
     }
 
     private String getStreet(BillingAddress address) {

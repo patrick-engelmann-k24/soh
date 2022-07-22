@@ -139,7 +139,10 @@ class StoreDropshipmentInvoiceDelegateIntegrationTest {
         var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
         invoiceEvent.getSalesInvoice().getSalesInvoiceHeader().setInvoiceNumber(null);
+        invoiceEvent.getSalesInvoice().getSalesInvoiceHeader().setInvoiceDate(
+                salesOrder.getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getInvoiceDate());
         org.assertj.core.api.Assertions.assertThat(salesOrder.getInvoiceEvent()).isEqualTo(invoiceEvent);
+
     }
 
     @AfterEach

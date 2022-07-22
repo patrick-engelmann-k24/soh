@@ -15,7 +15,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Set;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
@@ -27,7 +26,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class InvoiceServiceTest {
@@ -89,7 +87,6 @@ class InvoiceServiceTest {
                 .build());
         var invoice = createSalesOrderInvoice(salesOrder.getOrderNumber(), false);
         invoice.setCreatedAt(LocalDateTime.MIN);
-        when(invoiceRepository.getInvoicesByOrderNumber(salesOrder.getOrderNumber())).thenReturn(Set.of(invoice));
 
         var result = invoiceService.generateInvoiceMessage(salesOrder);
 
@@ -104,6 +101,7 @@ class InvoiceServiceTest {
         var totalDiscountedGross = row.getSumValues().getTotalDiscountedGross().doubleValue();
         var totalDiscountedNet = row.getSumValues().getTotalDiscountedNet().doubleValue();
         assertThat(itemLine.getLineTaxAmount()).isEqualTo(BigDecimal.valueOf(totalDiscountedGross - totalDiscountedNet).setScale(0));
+        assertThat(result.getSalesInvoice().getSalesInvoiceHeader().getInvoiceDate()).isEqualTo(result.getSalesInvoice().getSalesInvoiceHeader().getInvoiceDate());
     }
 
 }

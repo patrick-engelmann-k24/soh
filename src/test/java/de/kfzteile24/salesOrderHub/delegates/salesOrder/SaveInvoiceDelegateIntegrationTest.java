@@ -4,12 +4,14 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
+import de.kfzteile24.salesOrderHub.domain.converter.InvoiceSource;
 import de.kfzteile24.salesOrderHub.helper.AuditLogUtil;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
+import de.kfzteile24.salesOrderHub.services.DropshipmentOrderService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import org.camunda.bpm.engine.ProcessEngine;
@@ -51,6 +53,7 @@ import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.ini
 import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
@@ -88,6 +91,9 @@ class SaveInvoiceDelegateIntegrationTest {
 
     @Autowired
     private TimedPollingService pollingService;
+
+    @Autowired
+    private DropshipmentOrderService dropshipmentOrderService;
 
     @BeforeEach
     public void setUp() {
@@ -222,6 +228,11 @@ class SaveInvoiceDelegateIntegrationTest {
                     assertNotNull(actual.getCreatedAt());
                     assertNotNull(actual.getUpdatedAt());
                     assertEquals(salesOrder.getOrderNumber(), actual.getOrderNumber());
+                    if (dropshipmentOrderService.isDropShipmentOrder(salesOrder.getOrderNumber())) {
+                        assertEquals(InvoiceSource.SOH, actual.getSource());
+                    } else {
+                        assertNull(actual.getSource());
+                    }
                 });
             }
         });

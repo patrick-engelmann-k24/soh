@@ -14,8 +14,8 @@ class InvoiceUrlExtractorTest {
         "987654321-1234-1123456789012",
         "987654321-1-1234-1123456789012",
         "987654321-900009-1234-1123456789012",
-        "987654321--1234-1123456789012",
-        "987654321-------------------1234-1123456789012"
+        "987654321-1234-1123456789012",
+        "987654321-1234-1123456789012"
     })
     void testExtractInvoiceNumberMatchingPattern(String docRefPart) {
         var invoiceUrl = String.format("s3://production-k24-invoices/app_android-kfzteile24-de/2021/06/04/%s.pdf", docRefPart);
@@ -25,16 +25,44 @@ class InvoiceUrlExtractorTest {
 
     @ParameterizedTest
     @ValueSource(strings = {
+            "987654321--1234-1123456789012",
+            "987654321-1--1234-1123456789012",
+            "987654321-900009--1234-1123456789012",
+            "987654321--1234-1123456789012",
+            "987654321-------------------1234-1123456789012"
+    })
+    void testExtractInvoiceNumberMatchingPatternWithTwoDots(String docRefPart) {
+        var invoiceUrl = String.format("s3://production-k24-invoices/app_android-kfzteile24-de/2021/06/04/%s.pdf", docRefPart);
+        var invoiceNumber = InvoiceUrlExtractor.extractInvoiceNumber(invoiceUrl);
+        assertThat(invoiceNumber).isEqualTo("-1234-1123456789012");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
         "987654321-1123456789012",
         "987654321-1-1123456789012",
         "987654321-900009-1123456789012",
-        "987654321--1123456789012",
-        "987654321-------------------1123456789012"
+        "987654321-1123456789012",
+        "987654321--1-1123456789012"
     })
     void testExtractInvoiceNumberNotMatchingPattern(String docRefPart) {
         var invoiceUrl = String.format("s3://production-k24-invoices/app_android-kfzteile24-de/2021/06/04/%s.pdf", docRefPart);
         var invoiceNumber = InvoiceUrlExtractor.extractInvoiceNumber(invoiceUrl);
         assertThat(invoiceNumber).isEqualTo("1123456789012");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "987654321--1123456789012",
+            "987654321-1--1123456789012",
+            "987654321-900009--1123456789012",
+            "987654321--1123456789012",
+            "987654321-------------------1123456789012"
+    })
+    void testExtractInvoiceNumberNotMatchingPatternWithTwoDots(String docRefPart) {
+        var invoiceUrl = String.format("s3://production-k24-invoices/app_android-kfzteile24-de/2021/06/04/%s.pdf", docRefPart);
+        var invoiceNumber = InvoiceUrlExtractor.extractInvoiceNumber(invoiceUrl);
+        assertThat(invoiceNumber).isEqualTo("-1123456789012");
     }
 
     @ParameterizedTest

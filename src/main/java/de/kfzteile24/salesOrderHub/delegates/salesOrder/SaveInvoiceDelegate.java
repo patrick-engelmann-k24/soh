@@ -3,6 +3,7 @@ package de.kfzteile24.salesOrderHub.delegates.salesOrder;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.domain.converter.InvoiceSource;
+import de.kfzteile24.salesOrderHub.services.DropshipmentOrderService;
 import de.kfzteile24.salesOrderHub.services.InvoiceService;
 import de.kfzteile24.salesOrderHub.services.InvoiceUrlExtractor;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
@@ -22,6 +23,8 @@ class SaveInvoiceDelegate implements JavaDelegate {
     private final SalesOrderService salesOrderService;
     private final InvoiceService invoiceService;
 
+    private final DropshipmentOrderService dropshipmentOrderService;
+
     @Override
     @Transactional
     public void execute(DelegateExecution delegateExecution) throws Exception {
@@ -38,11 +41,13 @@ class SaveInvoiceDelegate implements JavaDelegate {
 
         final var invoiceNumber = InvoiceUrlExtractor.extractInvoiceNumber(invoiceUrl);
 
+        var invoiceSource = dropshipmentOrderService.isDropShipmentOrder(orderNumber) ? InvoiceSource.SOH : null;
+
         var salesOrderInvoice = SalesOrderInvoice.builder()
                 .orderNumber(orderNumber)
                 .invoiceNumber(invoiceNumber)
                 .url(invoiceUrl)
-                .source(InvoiceSource.SOH)
+                .source(invoiceSource)
                 .build();
 
         return invoiceService.saveInvoice(salesOrderInvoice);
