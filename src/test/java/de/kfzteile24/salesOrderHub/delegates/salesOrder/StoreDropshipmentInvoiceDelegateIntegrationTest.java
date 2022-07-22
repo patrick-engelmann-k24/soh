@@ -35,6 +35,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.STA
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_DROPSHIPMENT_ORDER_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.TRACKING_LINKS;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getExpectedDateTime;
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
 import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -139,6 +140,8 @@ class StoreDropshipmentInvoiceDelegateIntegrationTest {
         var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
         invoiceEvent.getSalesInvoice().getSalesInvoiceHeader().setInvoiceNumber(null);
+        invoiceEvent.getSalesInvoice().getSalesInvoiceHeader().setInvoiceDate(
+                getExpectedDateTime(salesOrder.getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getInvoiceDate()));
         org.assertj.core.api.Assertions.assertThat(salesOrder.getInvoiceEvent()).isEqualTo(invoiceEvent);
     }
 

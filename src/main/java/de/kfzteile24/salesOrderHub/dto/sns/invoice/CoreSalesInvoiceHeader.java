@@ -1,13 +1,13 @@
 package de.kfzteile24.salesOrderHub.dto.sns.invoice;
 
-import java.util.Date;
-import java.util.List;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 import de.kfzteile24.salesOrderHub.dto.sns.shared.Address;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -18,7 +18,7 @@ public class CoreSalesInvoiceHeader {
     private String invoiceNumber;
 
     @JsonProperty("InvoiceDate")
-    private Date invoiceDate;
+    private LocalDateTime invoiceDate;
 
     @JsonProperty("InvoiceLines")
     private List<CoreSalesFinancialDocumentLine> invoiceLines;

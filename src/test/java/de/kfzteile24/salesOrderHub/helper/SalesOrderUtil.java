@@ -43,6 +43,7 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -488,5 +489,17 @@ public class SalesOrderUtil {
         message.getSalesInvoice().getSalesInvoiceHeader().setOrderNumber(orderNumber);
         message.getSalesInvoice().getSalesInvoiceHeader().setOrderGroupId(orderNumber);
         return message;
+    }
+
+    public static LocalDateTime getExpectedDateTime(LocalDateTime source) {
+        var now = LocalDateTime.now();
+        return LocalDateTime.of(
+                now.getYear(),
+                now.getMonth(),
+                now.getDayOfMonth(),
+                now.getHour(),
+                source.getMinute(),
+                source.getSecond(),
+                source.getNano());
     }
 }

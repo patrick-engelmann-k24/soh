@@ -91,7 +91,7 @@ class SalesOrderCreatedInSohIntegrationTest {
     }
 
     @Test
-    public void testQueueListenerCoreSalesInvoiceCreated() {
+    void testQueueListenerCoreSalesInvoiceCreated() {
 
         var senderId = "Delivery";
         var receiveCount = 1;
@@ -128,7 +128,7 @@ class SalesOrderCreatedInSohIntegrationTest {
     }
 
     @Test
-    public void testQueueListenerCoreSalesInvoiceCreatedWithMultipleItems() {
+    void testQueueListenerCoreSalesInvoiceCreatedWithMultipleItems() {
 
         var senderId = "Delivery";
         var receiveCount = 1;
@@ -168,7 +168,7 @@ class SalesOrderCreatedInSohIntegrationTest {
     }
 
     @Test
-    public void testQueueListenerCoreSalesInvoiceCreatedWithNotConsolidatedDuplicateItems() {
+    void testQueueListenerCoreSalesInvoiceCreatedWithNotConsolidatedDuplicateItems() {
 
         var senderId = "Delivery";
         var receiveCount = 1;
@@ -219,7 +219,7 @@ class SalesOrderCreatedInSohIntegrationTest {
     }
 
     @Test
-    public void testQueueListenerCoreSalesInvoiceCreatedWithConsolidatedItems() {
+    void testQueueListenerCoreSalesInvoiceCreatedWithConsolidatedItems() {
 
         var senderId = "Delivery";
         var receiveCount = 1;
