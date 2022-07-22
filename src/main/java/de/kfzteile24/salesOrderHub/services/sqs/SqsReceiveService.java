@@ -26,6 +26,7 @@ import de.kfzteile24.salesOrderHub.dto.split.SalesOrderSplit;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
+import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.services.DropshipmentOrderService;
 import de.kfzteile24.salesOrderHub.services.InvoiceUrlExtractor;
 import de.kfzteile24.salesOrderHub.services.SalesOrderPaymentSecuredService;
@@ -76,6 +77,7 @@ public class SqsReceiveService {
     private final SalesOrderProcessService salesOrderCreateService;
     private final MessageWrapperUtil messageWrapperUtil;
     private final MetricsHelper metricsHelper;
+    private final OrderUtil orderUtil;
 
     /**
      * Consume sqs for new orders from ecp, bc and core shops
@@ -465,14 +467,19 @@ public class SqsReceiveService {
                                 originalSalesOrder,
                                 newOrderNumber);
                         handleCancellationForOrderRows(originalSalesOrder, subsequentOrder.getLatestJson().getOrderRows());
-                        ProcessInstance result = camundaHelper.createOrderProcess(subsequentOrder, ORDER_CREATED_IN_SOH);
-                        if (result != null) {
-                            log.info("New soh order process started by core sales invoice created message with " +
-                                            "order number: {} and invoice number: {}. Process-Instance-ID: {} ",
-                                    orderNumber,
-                                    invoiceNumber,
-                                    result.getProcessInstanceId());
-                            metricsHelper.sendCustomEvent(subsequentOrder, SUBSEQUENT_ORDER_GENERATED);
+                        Order order = subsequentOrder.getLatestJson();
+                        if(orderUtil.checkIfOrderHasOrderRows(order)){
+                            ProcessInstance result = camundaHelper.createOrderProcess(subsequentOrder, ORDER_CREATED_IN_SOH);
+                            if (result != null) {
+                                log.info("New soh order process started by core sales invoice created message with " +
+                                                "order number: {} and invoice number: {}. Process-Instance-ID: {} ",
+                                        orderNumber,
+                                        invoiceNumber,
+                                        result.getProcessInstanceId());
+                                metricsHelper.sendCustomEvent(subsequentOrder, SUBSEQUENT_ORDER_GENERATED);
+                            }
+                        } else {
+                            snsPublishService.publishOrderCreated(subsequentOrder.getOrderNumber());
                         }
                         publishInvoiceEvent(subsequentOrder);
                     }
