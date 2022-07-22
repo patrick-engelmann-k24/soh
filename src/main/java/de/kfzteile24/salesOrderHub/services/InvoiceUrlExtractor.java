@@ -22,17 +22,22 @@ public class InvoiceUrlExtractor {
             if (matchesInvoiceNumberPattern(invoiceUrl)) {
                 var invoiceNumber = getYearPartBeforeLastDash(invoiceUrl) + "-" + getAfterLastDash(invoiceUrl);
                 if (invoiceNumber.matches(PATTERN_INVOICE_NUMBER)) {
-                    return invoiceNumber;
+                    return addLeadingDashIfNeeded(invoiceUrl, invoiceNumber);
                 }
             } else {
                 var invoiceNumber = getAfterLastDash(invoiceUrl);
                 if (!invoiceNumber.isEmpty()) {
-                    return invoiceNumber;
+                    return addLeadingDashIfNeeded(invoiceUrl, invoiceNumber);
                 }
             }
         }
 
         throw new IllegalArgumentException("Cannot parse InvoiceNumber from invoice url: " + invoiceUrl);
+    }
+
+    private String addLeadingDashIfNeeded(String invoiceUrl, String invoiceNumber) {
+        String invoiceUrlWithoutFileExtension = invoiceUrl.substring(0, invoiceUrl.lastIndexOf("."));
+        return invoiceUrlWithoutFileExtension.endsWith("--" + invoiceNumber) ? ("-" + invoiceNumber) : invoiceNumber;
     }
 
     public String extractCreditNoteNumber(final String invoiceUrl) {
