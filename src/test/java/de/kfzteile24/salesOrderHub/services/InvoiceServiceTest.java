@@ -22,7 +22,6 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Shipme
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.INVOICE_RECEIVED;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createNewSalesOrderV3;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrderInvoice;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getExpectedDateTime;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -102,7 +101,7 @@ class InvoiceServiceTest {
         var totalDiscountedGross = row.getSumValues().getTotalDiscountedGross().doubleValue();
         var totalDiscountedNet = row.getSumValues().getTotalDiscountedNet().doubleValue();
         assertThat(itemLine.getLineTaxAmount()).isEqualTo(BigDecimal.valueOf(totalDiscountedGross - totalDiscountedNet).setScale(0));
-        assertThat(result.getSalesInvoice().getSalesInvoiceHeader().getInvoiceDate()).isEqualTo(getExpectedDateTime(result.getSalesInvoice().getSalesInvoiceHeader().getInvoiceDate()));
+        assertThat(result.getSalesInvoice().getSalesInvoiceHeader().getInvoiceDate()).isEqualTo(result.getSalesInvoice().getSalesInvoiceHeader().getInvoiceDate());
     }
 
 }

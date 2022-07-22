@@ -20,7 +20,9 @@ import org.springframework.stereotype.Service;
 import javax.transaction.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -119,7 +121,7 @@ public class InvoiceService {
                 .salesInvoice(new CoreSalesInvoice(
                         new CoreSalesInvoiceHeader(
                                 orderHeader.getDocumentRefNumber(),
-                                LocalDateTime.now(),
+                                Date.from(LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant()),
                                 invoiceLines,
                                 salesOrder.getOrderGroupId(),
                                 salesOrder.getOrderNumber(),

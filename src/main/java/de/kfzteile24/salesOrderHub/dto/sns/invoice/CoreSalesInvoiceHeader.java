@@ -6,7 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 
 @Data
@@ -18,7 +18,7 @@ public class CoreSalesInvoiceHeader {
     private String invoiceNumber;
 
     @JsonProperty("InvoiceDate")
-    private LocalDateTime invoiceDate;
+    private Date invoiceDate;
 
     @JsonProperty("InvoiceLines")
     private List<CoreSalesFinancialDocumentLine> invoiceLines;
