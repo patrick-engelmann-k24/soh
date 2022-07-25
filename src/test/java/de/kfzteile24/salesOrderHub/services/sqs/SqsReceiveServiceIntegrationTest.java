@@ -69,10 +69,10 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.DROPSHIPMENT_ORDER_ROWS_CANCELLATION;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_DROPSHIPMENT_ORDER_CREATED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_ORDER_CREATED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_PURCHASE_ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_PURCHASE_ORDER_SUCCESSFUL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.THROW_MSG_DROPSHIPMENT_ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_ECP;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_PAYMENT_SECURED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_DROPSHIPMENT_ORDER_CONFIRMED;
@@ -401,13 +401,13 @@ class SqsReceiveServiceIntegrationTest {
                 camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
 
         assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
-                camundaHelper.hasPassed(salesOrder.getProcessId(), EVENT_THROW_MSG_ORDER_CREATED.getName())));
-
-        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
-                camundaHelper.hasPassed(salesOrder.getProcessId(), EVENT_THROW_MSG_DROPSHIPMENT_ORDER_CREATED.getName())));
+                camundaHelper.hasPassed(salesOrder.getProcessId(), EVENT_THROW_MSG_PURCHASE_ORDER_CREATED.getName())));
 
         bpmUtil.sendMessage(Messages.DROPSHIPMENT_ORDER_CONFIRMED, salesOrder.getOrderNumber(),
                 Map.of(IS_DROPSHIPMENT_ORDER_CONFIRMED.getName(), true));
+
+        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+                camundaHelper.hasPassed(salesOrder.getProcessId(), THROW_MSG_DROPSHIPMENT_ORDER_CREATED.getName())));
 
         sqsReceiveService.queueListenerDropshipmentShipmentConfirmed(getDropshipmentShipmentConfirmed(salesOrder), ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 

@@ -29,9 +29,11 @@ import java.util.Map;
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_ORDER_CREATED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_PURCHASE_ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_PURCHASE_ORDER_SUCCESSFUL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.START_MSG_ORDER_RECEIVED_FROM_ECP;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Gateways.XOR_CHECK_DROPSHIPMENT_ORDER;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Gateways.XOR_CHECK_DROPSHIPMENT_ORDER_SUCCESSFUL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_DROPSHIPMENT_ORDER_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.TRACKING_LINKS;
@@ -96,9 +98,8 @@ class StoreDropshipmentInvoiceDelegateIntegrationTest {
         assertTrue(pollingService.poll(Duration.ofSeconds(5), Duration.ofSeconds(10), () -> {
             assertThat(orderProcess).hasPassedInOrder(
                     START_MSG_ORDER_RECEIVED_FROM_ECP.getName(),
-                    EVENT_THROW_MSG_ORDER_CREATED.getName(),
-                    "gwXORCheckDropShipmentOrder",
-                    "eventThrowMsgCreatePurchaseOrder"
+                    XOR_CHECK_DROPSHIPMENT_ORDER.getName(),
+                    EVENT_THROW_MSG_PURCHASE_ORDER_CREATED.getName()
             );
             return true;
         }));
@@ -112,7 +113,7 @@ class StoreDropshipmentInvoiceDelegateIntegrationTest {
         assertTrue(pollingService.poll(Duration.ofSeconds(5), Duration.ofSeconds(10), () -> {
             assertThat(orderProcess).hasPassedInOrder(
                     EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED.getName(),
-                    "gwXORCheckDropShipmentOrderSuccessful",
+                    XOR_CHECK_DROPSHIPMENT_ORDER_SUCCESSFUL.getName(),
                     EVENT_THROW_MSG_PURCHASE_ORDER_SUCCESSFUL.getName()
             );
             return true;

@@ -10,7 +10,7 @@ public enum Activities implements BpmItem {
     SAVE_INVOICE("activitySaveInvoice"),
     SAVE_CREDIT_NOTE("activitySaveCreditNoteUrl"),
     EVENT_THROW_MSG_ORDER_CREATED("eventThrowMsgOrderCreated"),
-    EVENT_THROW_MSG_DROPSHIPMENT_ORDER_CREATED("eventThrowMsgCreatePurchaseOrder"),
+    EVENT_THROW_MSG_PURCHASE_ORDER_CREATED("eventThrowMsgPurchaseOrderCreated"),
     EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED("eventMsgDropShipmentOrderConfirmed"),
     EVENT_END_MSG_DROPSHIPMENT_ORDER_CANCELLED("eventEndMsgDropShipmentOrderCancelled"),
     EVENT_THROW_MSG_PURCHASE_ORDER_SUCCESSFUL("eventThrowMsgPurchaseOrderSuccessful"),

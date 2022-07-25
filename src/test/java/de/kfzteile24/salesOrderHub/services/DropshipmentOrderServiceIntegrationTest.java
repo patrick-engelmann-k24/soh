@@ -64,7 +64,7 @@ import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_END_MSG_DROPSHIPMENT_ORDER_ROW_CANCELLED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_SIGNAL_PAUSE_PROCESSING_DROPSHIPMENT_ORDER;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_DROPSHIPMENT_ORDER_CREATED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_PURCHASE_ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Gateways.XOR_CHECK_PAUSE_PROCESSING_DROPSHIPMENT_ORDER_FLAG;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED;
@@ -353,7 +353,7 @@ class DropshipmentOrderServiceIntegrationTest {
                 camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
 
         assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
-                camundaHelper.hasPassed(processInstance.getId(), EVENT_THROW_MSG_DROPSHIPMENT_ORDER_CREATED.getName())));
+                camundaHelper.hasPassed(processInstance.getId(), EVENT_THROW_MSG_PURCHASE_ORDER_CREATED.getName())));
 
         var messageCorrelationResult = bpmUtil.sendMessage(Messages.DROPSHIPMENT_ORDER_CONFIRMED, salesOrder.getOrderNumber(),
                 Variables.putValue(IS_DROPSHIPMENT_ORDER_CONFIRMED.getName(), false));
@@ -398,7 +398,7 @@ class DropshipmentOrderServiceIntegrationTest {
                     camundaHelper.hasPassed(processInstance.getId(), XOR_CHECK_PAUSE_PROCESSING_DROPSHIPMENT_ORDER_FLAG.getName())));
 
             assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
-                    camundaHelper.hasNotPassed(processInstance.getId(), EVENT_THROW_MSG_DROPSHIPMENT_ORDER_CREATED.getName())));
+                    camundaHelper.hasNotPassed(processInstance.getId(), EVENT_THROW_MSG_PURCHASE_ORDER_CREATED.getName())));
 
             bpmUtil.isProcessWaitingAtExpectedToken(processInstance, EVENT_SIGNAL_PAUSE_PROCESSING_DROPSHIPMENT_ORDER.getName());
         });
@@ -422,7 +422,7 @@ class DropshipmentOrderServiceIntegrationTest {
                     camundaHelper.hasPassed(processInstance.getId(), EVENT_SIGNAL_PAUSE_PROCESSING_DROPSHIPMENT_ORDER.getName())));
 
             assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(5), () ->
-                    camundaHelper.hasPassed(processInstance.getId(), EVENT_THROW_MSG_DROPSHIPMENT_ORDER_CREATED.getName())));
+                    camundaHelper.hasPassed(processInstance.getId(), EVENT_THROW_MSG_PURCHASE_ORDER_CREATED.getName())));
         });
 
     }
@@ -442,7 +442,7 @@ class DropshipmentOrderServiceIntegrationTest {
         bpmUtil.isProcessWaitingAtExpectedToken(processInstance, EVENT_SIGNAL_PAUSE_PROCESSING_DROPSHIPMENT_ORDER.getName());
 
         assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
-                camundaHelper.hasNotPassed(processInstance.getId(), EVENT_THROW_MSG_DROPSHIPMENT_ORDER_CREATED.getName())));
+                camundaHelper.hasNotPassed(processInstance.getId(), EVENT_THROW_MSG_PURCHASE_ORDER_CREATED.getName())));
 
     }
 
@@ -460,7 +460,7 @@ class DropshipmentOrderServiceIntegrationTest {
                 camundaHelper.hasNotPassed(processInstance.getId(), EVENT_SIGNAL_PAUSE_PROCESSING_DROPSHIPMENT_ORDER.getName())));
 
         assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(5), () ->
-                camundaHelper.hasPassed(processInstance.getId(), EVENT_THROW_MSG_DROPSHIPMENT_ORDER_CREATED.getName())));
+                camundaHelper.hasPassed(processInstance.getId(), EVENT_THROW_MSG_PURCHASE_ORDER_CREATED.getName())));
 
     }
 
