@@ -19,7 +19,7 @@ import javax.persistence.Table;
 public class InvoiceNumberCounter {
 
     @Id
-    @Column(name = "year", columnDefinition = "smallint", updatable = false)
+    @Column(name = "year", columnDefinition = "int", updatable = false)
     private Integer year;
 
     private Long counter;
