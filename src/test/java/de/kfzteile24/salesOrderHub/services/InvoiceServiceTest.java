@@ -34,6 +34,9 @@ class InvoiceServiceTest {
     private SalesOrderInvoiceRepository invoiceRepository;
 
     @Mock
+    private InvoiceNumberCounterService invoiceNumberCounterService;
+
+    @Mock
     private AuditLogRepository auditLogRepository;
 
     @InjectMocks
