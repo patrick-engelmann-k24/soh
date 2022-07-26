@@ -1,7 +1,10 @@
 package de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 public enum Events implements BpmItem {
     CATCH_ESCALATION_ORDER_ITEM_ORDER_CANCELLED("eventCatchEscalationOrderItemOrderCancelled"),
 
@@ -32,16 +35,10 @@ public enum Events implements BpmItem {
     THROW_MSG_DELIVERY_ADDRESS_CHANGED("eventThrowMsgDeliveryAddressChanged"),
     THROW_MSG_ORDER_VALIDATED("eventThrowMsgOrderValidated"),
     THROW_MSG_PUBLISH_TRACKING_INFORMATION("eventThrowMsgPublishTrackingInformation"),
-    THROW_MSG_PUBLISH_INVOICE_DATA("eventThrowMsgPublishInvoiceData")
+    THROW_MSG_PUBLISH_INVOICE_DATA("eventThrowMsgPublishInvoiceData"),
+    THROW_MSG_DROPSHIPMENT_ORDER_CREATED("eventThrowMsgDropshipmentOrderCreated")
     ;
 
+    @Getter
     private final String name;
-
-    Events(final String name) {
-        this.name = name;
-    }
-
-    public String getName() {
-        return name;
-    }
 }

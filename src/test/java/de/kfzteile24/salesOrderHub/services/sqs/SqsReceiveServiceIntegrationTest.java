@@ -9,18 +9,17 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
-import de.kfzteile24.salesOrderHub.domain.converter.InvoiceSource;
 import de.kfzteile24.salesOrderHub.dto.shared.creditnote.SalesCreditNoteHeader;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
-import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
+import de.kfzteile24.salesOrderHub.repositories.InvoiceNumberCounterRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
+import de.kfzteile24.salesOrderHub.services.InvoiceNumberCounterService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderRowService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
@@ -56,11 +55,14 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeSet;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
@@ -69,10 +71,10 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.DROPSHIPMENT_ORDER_ROWS_CANCELLATION;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_DROPSHIPMENT_ORDER_CREATED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_ORDER_CREATED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_PURCHASE_ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_PURCHASE_ORDER_SUCCESSFUL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.THROW_MSG_DROPSHIPMENT_ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_ECP;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_PAYMENT_SECURED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_DROPSHIPMENT_ORDER_CONFIRMED;
@@ -122,7 +124,9 @@ class SqsReceiveServiceIntegrationTest {
     @Autowired
     private AuditLogRepository auditLogRepository;
     @Autowired
-    private SalesOrderInvoiceRepository salesOrderInvoiceRepository;
+    private InvoiceNumberCounterRepository invoiceNumberCounterRepository;
+    @Autowired
+    private InvoiceNumberCounterService invoiceNumberCounterService;
     @Autowired
     private RuntimeService runtimeService;
     @Autowired
@@ -145,6 +149,8 @@ class SqsReceiveServiceIntegrationTest {
         reset();
         init(processEngine);
         bpmUtil.cleanUp();
+        invoiceNumberCounterRepository.deleteAll();
+        invoiceNumberCounterService.init();
     }
 
     @Test
@@ -333,41 +339,21 @@ class SqsReceiveServiceIntegrationTest {
     void testQueueListenerDropshipmentShipmentConfirmedMultipleTime(TestInfo testInfo) {
 
         log.info(testInfo.getDisplayName());
-        salesOrderInvoiceRepository.save(SalesOrderInvoice.builder()
-                .url("abc")
-                .invoiceNumber("724035785")
-                .orderNumber(bpmUtil.getRandomOrderNumber())
-                .source(InvoiceSource.SOH)
-                .build());
-
         SalesOrder salesOrder1 = createSalesOrderWithRandomOrderNumber();
-        callQueueListenerDropshipmentShipmentConfirmed(salesOrder1);
+            callQueueListenerDropshipmentShipmentConfirmed(salesOrder1);
 
         var savedSalesOrder1 = salesOrderRepository.getOrderByOrderNumber(salesOrder1.getOrderNumber());
         LocalDateTime now = LocalDateTime.now();
         assertTrue(savedSalesOrder1.isPresent());
         assertEquals(now.getYear() + "-1000000000001", savedSalesOrder1.get().getLatestJson().getOrderHeader().getDocumentRefNumber());
         assertEquals(now.getYear() + "-1000000000001", savedSalesOrder1.get().getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber());
-        salesOrderInvoiceRepository.save(SalesOrderInvoice.builder()
-                .url("abc")
-                .invoiceNumber(now.getYear() + "-1000000000001")
-                .orderNumber(savedSalesOrder1.get().getOrderNumber())
-                .source(InvoiceSource.SOH)
-                .build());
 
         SalesOrder salesOrder2 = createSalesOrderWithRandomOrderNumber();
         callQueueListenerDropshipmentShipmentConfirmed(salesOrder2);
-
         var savedSalesOrder2 = salesOrderRepository.getOrderByOrderNumber(salesOrder2.getOrderNumber());
         assertTrue(savedSalesOrder2.isPresent());
         assertEquals(now.getYear() + "-1000000000002", savedSalesOrder2.get().getLatestJson().getOrderHeader().getDocumentRefNumber());
         assertEquals(now.getYear() + "-1000000000002", savedSalesOrder2.get().getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber());
-        salesOrderInvoiceRepository.save(SalesOrderInvoice.builder()
-                .url("abc")
-                .invoiceNumber(now.getYear() + "-1000000000002")
-                .orderNumber(savedSalesOrder1.get().getOrderNumber())
-                .source(InvoiceSource.SOH)
-                .build());
 
         SalesOrder salesOrder3 = createSalesOrderWithRandomOrderNumber();
         callQueueListenerDropshipmentShipmentConfirmed(salesOrder3);
@@ -376,6 +362,47 @@ class SqsReceiveServiceIntegrationTest {
         assertTrue(savedSalesOrder3.isPresent());
         assertEquals(now.getYear() + "-1000000000003", savedSalesOrder3.get().getLatestJson().getOrderHeader().getDocumentRefNumber());
         assertEquals(now.getYear() + "-1000000000003", savedSalesOrder3.get().getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber());
+    }
+
+    @Test
+    @DisplayName("IT testing dropshipment shipment confirmed event handling multiple time in threadsto see the increment on invoice number")
+    void testQueueListenerDropshipmentShipmentConfirmedMultipleTimeInThreads(TestInfo testInfo) {
+
+        log.info(testInfo.getDisplayName());
+        int numberOfOrders = 10;
+        List<SalesOrder> orders = new ArrayList<>();
+        for (int i = 0; i < numberOfOrders; i++) {
+            orders.add(createSalesOrderWithRandomOrderNumber());
+        }
+
+        long start = Instant.now().toEpochMilli();
+        for (SalesOrder order : orders) {
+
+            Thread thread = new Thread(() -> {
+                callQueueListenerDropshipmentShipmentConfirmed(order);
+            });
+
+            thread.start();
+        }
+        System.out.println("Test Info: Multithread calls are finished in : " + (Instant.now().toEpochMilli() - start) + " milliseconds");
+        SalesOrder salesOrder11 = createSalesOrderWithRandomOrderNumber();
+
+        long start2 = Instant.now().toEpochMilli();
+        callQueueListenerDropshipmentShipmentConfirmed(salesOrder11);
+        System.out.println("Test Info: One dropshipment method time is : " + (Instant.now().toEpochMilli() - start2) + " milliseconds");
+
+        orders.add(salesOrder11);
+        var invoiceNumbers = new TreeSet<Long>();
+        for (SalesOrder order : orders) {
+            var savedSalesOrder = salesOrderRepository.getOrderByOrderNumber(order.getOrderNumber());
+            assertTrue(savedSalesOrder.isPresent());
+            invoiceNumbers.add(Long.valueOf(savedSalesOrder.get().getLatestJson().getOrderHeader().getDocumentRefNumber().substring(6)));
+        }
+        int counter = 1;
+        for (Long number : invoiceNumbers) {
+            assertEquals(counter, number);
+            counter++;
+        }
     }
 
     private SalesOrder createSalesOrderWithRandomOrderNumber() {
@@ -401,13 +428,13 @@ class SqsReceiveServiceIntegrationTest {
                 camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
 
         assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
-                camundaHelper.hasPassed(salesOrder.getProcessId(), EVENT_THROW_MSG_ORDER_CREATED.getName())));
-
-        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
-                camundaHelper.hasPassed(salesOrder.getProcessId(), EVENT_THROW_MSG_DROPSHIPMENT_ORDER_CREATED.getName())));
+                camundaHelper.hasPassed(salesOrder.getProcessId(), EVENT_THROW_MSG_PURCHASE_ORDER_CREATED.getName())));
 
         bpmUtil.sendMessage(Messages.DROPSHIPMENT_ORDER_CONFIRMED, salesOrder.getOrderNumber(),
                 Map.of(IS_DROPSHIPMENT_ORDER_CONFIRMED.getName(), true));
+
+        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+                camundaHelper.hasPassed(salesOrder.getProcessId(), THROW_MSG_DROPSHIPMENT_ORDER_CREATED.getName())));
 
         sqsReceiveService.queueListenerDropshipmentShipmentConfirmed(getDropshipmentShipmentConfirmed(salesOrder), ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
@@ -744,7 +771,8 @@ class SqsReceiveServiceIntegrationTest {
     public void cleanup() {
         salesOrderRepository.deleteAll();
         auditLogRepository.deleteAll();
-        salesOrderInvoiceRepository.deleteAll();
         bpmUtil.cleanUp();
+        invoiceNumberCounterRepository.deleteAll();
+        invoiceNumberCounterService.init();
     }
 }

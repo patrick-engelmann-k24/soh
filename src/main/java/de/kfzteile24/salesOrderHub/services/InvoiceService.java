@@ -3,7 +3,6 @@ package de.kfzteile24.salesOrderHub.services;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.domain.audit.AuditLog;
-import de.kfzteile24.salesOrderHub.domain.converter.InvoiceSource;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesFinancialDocumentLine;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoice;
@@ -27,7 +26,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import static de.kfzteile24.salesOrderHub.constants.SOHConstants.INVOICE_NUMBER_SEPARATOR;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.INVOICE_RECEIVED;
 
 @Service
@@ -36,6 +34,9 @@ public class InvoiceService {
 
     @NonNull
     private final SalesOrderInvoiceRepository invoiceRepository;
+
+    @NonNull
+    private final InvoiceNumberCounterService invoiceNumberCounterService;
 
     @NonNull
     private final AuditLogRepository auditLogRepository;
@@ -79,24 +80,8 @@ public class InvoiceService {
     }
 
     private String getNextInvoiceCount(int currentYear) {
-        var found = invoiceRepository.findFirstBySourceAndInvoiceNumberStartsWithOrderByInvoiceNumberDesc(InvoiceSource.SOH, currentYear + "-1");
-        if (found.isPresent()) {
-            return createNextInvoiceNumberCounter(found.get());
-        }
-        return "000000000001";
-    }
-
-    private String createNextInvoiceNumberCounter(SalesOrderInvoice salesOrderInvoice) {
-        var counter = Long.valueOf(extractInvoiceCounterNumber(salesOrderInvoice));
-        counter++;
-        return String.format("%012d", counter);
-    }
-
-    private String extractInvoiceCounterNumber(SalesOrderInvoice salesOrderInvoice) {
-        if (!salesOrderInvoice.getInvoiceNumber().contains(INVOICE_NUMBER_SEPARATOR))
-            throw new IllegalArgumentException("Last sales order invoice in DB does not contain '-' in the invoice number");
-        String[] split = salesOrderInvoice.getInvoiceNumber().split(INVOICE_NUMBER_SEPARATOR);
-        return split[split.length - 1].substring(1);
+        Long invoiceNumber = invoiceNumberCounterService.getNextCounter(currentYear);
+        return String.format("%012d", invoiceNumber);
     }
 
     public CoreSalesInvoiceCreatedMessage generateInvoiceMessage(SalesOrder salesOrder) {

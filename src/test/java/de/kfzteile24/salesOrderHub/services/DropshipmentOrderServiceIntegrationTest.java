@@ -25,7 +25,7 @@ import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.EventType;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
-import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
+import de.kfzteile24.salesOrderHub.repositories.InvoiceNumberCounterRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.services.property.KeyValuePropertyService;
 import de.kfzteile24.soh.order.dto.Order;
@@ -36,6 +36,7 @@ import org.camunda.bpm.engine.runtime.EventSubscription;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.variable.Variables;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -64,7 +65,7 @@ import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_END_MSG_DROPSHIPMENT_ORDER_ROW_CANCELLED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_SIGNAL_PAUSE_PROCESSING_DROPSHIPMENT_ORDER;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_DROPSHIPMENT_ORDER_CREATED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_PURCHASE_ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Gateways.XOR_CHECK_PAUSE_PROCESSING_DROPSHIPMENT_ORDER_FLAG;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED;
@@ -101,7 +102,9 @@ class DropshipmentOrderServiceIntegrationTest {
     @Autowired
     private AuditLogRepository auditLogRepository;
     @Autowired
-    private SalesOrderInvoiceRepository salesOrderInvoiceRepository;
+    private InvoiceNumberCounterService invoiceNumberCounterService;
+    @Autowired
+    private InvoiceNumberCounterRepository invoiceNumberCounterRepository;
     @Autowired
     private InvoiceService invoiceService;
     @Autowired
@@ -120,6 +123,12 @@ class DropshipmentOrderServiceIntegrationTest {
 
     @Spy
     private final ObjectMapper objectMapper = new ObjectMapperConfig().objectMapper();
+
+    @BeforeEach
+    public void setup() {
+        invoiceNumberCounterRepository.deleteAll();
+        invoiceNumberCounterService.init();
+    }
 
     @Test
     void testHandleDropShipmentOrderConfirmed() {
@@ -209,12 +218,15 @@ class DropshipmentOrderServiceIntegrationTest {
     @Test
     void testHandleDropShipmentOrderTrackingInformationReceivedWhenThereIsAnotherInvoiceForSameYear() throws JsonProcessingException {
 
-        var salesOrder = createSalesOrder();
-        createSalesOrderInvoice(salesOrder);
-        var message = createShipmentConfirmedMessage(salesOrder);
-        dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(message);
+        var salesOrder1 = createSalesOrder();
+        createSalesOrderInvoice(salesOrder1);
+        var salesOrder2 = createSalesOrder();
+        createSalesOrderInvoice(salesOrder2);
 
-        var optUpdatedSalesOrder = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber());
+        dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(createShipmentConfirmedMessage(salesOrder1));
+        dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(createShipmentConfirmedMessage(salesOrder2));
+
+        var optUpdatedSalesOrder = salesOrderService.getOrderByOrderNumber(salesOrder2.getOrderNumber());
         assertThat(optUpdatedSalesOrder).isNotEmpty();
         var updatedSalesOrder = optUpdatedSalesOrder.get();
 
@@ -353,7 +365,7 @@ class DropshipmentOrderServiceIntegrationTest {
                 camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
 
         assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
-                camundaHelper.hasPassed(processInstance.getId(), EVENT_THROW_MSG_DROPSHIPMENT_ORDER_CREATED.getName())));
+                camundaHelper.hasPassed(processInstance.getId(), EVENT_THROW_MSG_PURCHASE_ORDER_CREATED.getName())));
 
         var messageCorrelationResult = bpmUtil.sendMessage(Messages.DROPSHIPMENT_ORDER_CONFIRMED, salesOrder.getOrderNumber(),
                 Variables.putValue(IS_DROPSHIPMENT_ORDER_CONFIRMED.getName(), false));
@@ -398,7 +410,7 @@ class DropshipmentOrderServiceIntegrationTest {
                     camundaHelper.hasPassed(processInstance.getId(), XOR_CHECK_PAUSE_PROCESSING_DROPSHIPMENT_ORDER_FLAG.getName())));
 
             assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
-                    camundaHelper.hasNotPassed(processInstance.getId(), EVENT_THROW_MSG_DROPSHIPMENT_ORDER_CREATED.getName())));
+                    camundaHelper.hasNotPassed(processInstance.getId(), EVENT_THROW_MSG_PURCHASE_ORDER_CREATED.getName())));
 
             bpmUtil.isProcessWaitingAtExpectedToken(processInstance, EVENT_SIGNAL_PAUSE_PROCESSING_DROPSHIPMENT_ORDER.getName());
         });
@@ -422,7 +434,7 @@ class DropshipmentOrderServiceIntegrationTest {
                     camundaHelper.hasPassed(processInstance.getId(), EVENT_SIGNAL_PAUSE_PROCESSING_DROPSHIPMENT_ORDER.getName())));
 
             assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(5), () ->
-                    camundaHelper.hasPassed(processInstance.getId(), EVENT_THROW_MSG_DROPSHIPMENT_ORDER_CREATED.getName())));
+                    camundaHelper.hasPassed(processInstance.getId(), EVENT_THROW_MSG_PURCHASE_ORDER_CREATED.getName())));
         });
 
     }
@@ -442,7 +454,7 @@ class DropshipmentOrderServiceIntegrationTest {
         bpmUtil.isProcessWaitingAtExpectedToken(processInstance, EVENT_SIGNAL_PAUSE_PROCESSING_DROPSHIPMENT_ORDER.getName());
 
         assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
-                camundaHelper.hasNotPassed(processInstance.getId(), EVENT_THROW_MSG_DROPSHIPMENT_ORDER_CREATED.getName())));
+                camundaHelper.hasNotPassed(processInstance.getId(), EVENT_THROW_MSG_PURCHASE_ORDER_CREATED.getName())));
 
     }
 
@@ -460,7 +472,7 @@ class DropshipmentOrderServiceIntegrationTest {
                 camundaHelper.hasNotPassed(processInstance.getId(), EVENT_SIGNAL_PAUSE_PROCESSING_DROPSHIPMENT_ORDER.getName())));
 
         assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(5), () ->
-                camundaHelper.hasPassed(processInstance.getId(), EVENT_THROW_MSG_DROPSHIPMENT_ORDER_CREATED.getName())));
+                camundaHelper.hasPassed(processInstance.getId(), EVENT_THROW_MSG_PURCHASE_ORDER_CREATED.getName())));
 
     }
 
@@ -532,6 +544,7 @@ class DropshipmentOrderServiceIntegrationTest {
         setPauseDropshipmentProcessingFlag(false);
         auditLogRepository.deleteAll();
         salesOrderRepository.deleteAll();
-        salesOrderInvoiceRepository.deleteAll();
+        invoiceNumberCounterRepository.deleteAll();
+        invoiceNumberCounterService.init();
     }
 }
