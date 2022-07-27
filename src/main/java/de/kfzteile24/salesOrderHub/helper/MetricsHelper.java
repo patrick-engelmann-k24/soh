@@ -23,4 +23,13 @@ public class MetricsHelper {
         eventAttributes.put("SalesOrderNumber", order.getOrderHeader().getOrderNumber());
         insights.recordCustomEvent(customEventName.getName(), eventAttributes);
     }
+
+    public void sendCustomEventForInvoices(SalesOrder salesOrder, CustomEventName customEventName) {
+        var invoiceEvent = salesOrder.getInvoiceEvent();
+        Map<String, Object> eventAttributes = new HashMap<>();
+        eventAttributes.put("OrderNumber", salesOrder.getOrderNumber());
+        eventAttributes.put("OrderGroupId", salesOrder.getOrderGroupId());
+        eventAttributes.put("InvoiceNumber", invoiceEvent.getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber());
+        insights.recordCustomEvent(customEventName.getName(), eventAttributes);
+    }
 }

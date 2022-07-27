@@ -12,7 +12,8 @@ public enum CustomEventName {
     SALES_ORDER_CONSUMED("SohSalesOrderConsumed"),
     SPLIT_ORDER_GENERATED("SohSplitOrderGenerated"),
     SUBSEQUENT_ORDER_GENERATED("SohSubsequentOrderGenerated"),
-    SALES_ORDER_PUBLISHED("SohSalesOrderPublished");
+    SALES_ORDER_PUBLISHED("SohSalesOrderPublished"),
+    CORE_INVOICE_PUBLISHED("SohCoreInvoicePublished");
     @NonNull
     private String name;
 }

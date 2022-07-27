@@ -3,6 +3,8 @@ package de.kfzteile24.salesOrderHub.delegates.salesOrder;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundCustomException;
 import de.kfzteile24.salesOrderHub.helper.EventMapper;
+import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
+import de.kfzteile24.salesOrderHub.services.DropshipmentOrderService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import lombok.NonNull;
@@ -15,6 +17,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
+import static de.kfzteile24.salesOrderHub.constants.CustomEventName.CORE_INVOICE_PUBLISHED;
+import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
+import static org.apache.commons.lang3.StringUtils.equalsIgnoreCase;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -26,6 +32,12 @@ public class PublishCoreSalesInvoiceCreatedReceivedDelegate implements JavaDeleg
     @NonNull
     private final SalesOrderService salesOrderService;
 
+    @NonNull
+    private final MetricsHelper metricsHelper;
+
+    @NonNull
+    private final DropshipmentOrderService dropshipmentOrderService;
+
     @Override
     @Transactional
     public void execute(DelegateExecution delegateExecution) throws Exception {
@@ -35,5 +47,10 @@ public class PublishCoreSalesInvoiceCreatedReceivedDelegate implements JavaDeleg
                         + " for publishing core sales invoice event"));
         snsPublishService.publishCoreInvoiceReceivedEvent(EventMapper.INSTANCE.toCoreSalesInvoiceCreatedReceivedEvent(salesOrder.getInvoiceEvent()));
         log.info("{} delegate invoked", PublishCoreSalesInvoiceCreatedReceivedDelegate.class.getSimpleName());
+
+        var orderFulfillment = salesOrder.getLatestJson().getOrderHeader().getOrderFulfillment();
+        if (!equalsIgnoreCase(orderFulfillment, DELTICOM.getName())) {
+            metricsHelper.sendCustomEventForInvoices(salesOrder, CORE_INVOICE_PUBLISHED);
+        }
     }
 }
