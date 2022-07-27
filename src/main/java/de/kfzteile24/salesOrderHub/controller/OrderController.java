@@ -1,7 +1,8 @@
 package de.kfzteile24.salesOrderHub.controller;
 
-import de.kfzteile24.salesOrderHub.controller.dto.RepublishError;
+import de.kfzteile24.salesOrderHub.controller.dto.ErrorResponse;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.services.DropshipmentOrderService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderAddressService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
@@ -20,7 +21,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections.CollectionUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -43,6 +43,10 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
+
+import static java.util.Collections.emptyList;
+import static org.apache.commons.collections.CollectionUtils.isEmpty;
 
 /**
  * Order Rest Controller Object
@@ -63,6 +67,7 @@ public class OrderController {
     private final SalesOrderService salesOrderService;
     private final SalesOrderAddressService orderAddressService;
     private final SnsPublishService snsPublishService;
+    private final DropshipmentOrderService dropshipmentOrderService;
 
     /**
      * Change billing address if there no invoice exists
@@ -186,30 +191,48 @@ public class OrderController {
             @ApiResponse(responseCode  = "200", description  = "Sales orders republished successfully"),
             @ApiResponse(responseCode  = "400", description  = "Republishing some of sales orders failed", content = {
                     @Content(mediaType = "application/json", array =
-                    @ArraySchema(schema = @Schema(implementation = RepublishError.class)))}),
+                    @ArraySchema(schema = @Schema(implementation = ErrorResponse.class)))}),
             @ApiResponse(responseCode  = "400", description  = "Invalid request", content = {
                     @Content(mediaType = "application/json", array =
-                    @ArraySchema(schema = @Schema(implementation = RepublishError.class)))})
+                    @ArraySchema(schema = @Schema(implementation = ErrorResponse.class)))})
     })
     @PostMapping("/republish")
     public ResponseEntity<Object> republishOrders(@RequestBody @NotEmpty Collection<@NotBlank String> orderNumbers) {
-        var republishErrors = new ArrayList<RepublishError>();
+        return executeActionOnOrderNumbers(orderNumbers, snsPublishService::publishMigrationOrderCreated);
+    }
+
+    @Operation(summary = "Start the creation process of invoices again for a given list of orders")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode  = "200", description  = "Invoices are recreated successfully"),
+            @ApiResponse(responseCode  = "400", description  = "Invoice recreation of some sales orders failed", content = {
+                    @Content(mediaType = "application/json", array =
+                    @ArraySchema(schema = @Schema(implementation = ErrorResponse.class)))}),
+            @ApiResponse(responseCode  = "400", description  = "Invalid request", content = {
+                    @Content(mediaType = "application/json", array =
+                    @ArraySchema(schema = @Schema(implementation = ErrorResponse.class)))})
+    })
+    @PostMapping("/invoice/recreate")
+    public ResponseEntity<Object> recreateInvoice(@RequestBody @NotEmpty Collection<@NotBlank String> orderNumbers) {
+        return executeActionOnOrderNumbers(orderNumbers, orderNumber -> {
+            var salesOrder = dropshipmentOrderService.recreateSalesOrderInvoice(orderNumber);
+            snsPublishService.publishSalesOrderShipmentConfirmedEvent(salesOrder, emptyList());
+        });
+    }
+
+    private static ResponseEntity<Object> executeActionOnOrderNumbers(Collection<String> orderNumbers,
+                                                                      Consumer<String> action) {
+        var errors = new ArrayList<ErrorResponse>();
         orderNumbers.forEach(orderNumber -> {
             try {
-                snsPublishService.publishMigrationOrderCreated(orderNumber);
+                action.accept(orderNumber);
             } catch (Exception e) {
-                republishErrors.add(RepublishError.builder()
+                errors.add(ErrorResponse.builder()
                         .orderNumber(orderNumber)
                         .errorMessage(e.getLocalizedMessage())
                         .build());
             }
         });
-
-        if (CollectionUtils.isEmpty(republishErrors)) {
-            return ResponseEntity.ok().build();
-        }
-
-        return ResponseEntity.badRequest().body(republishErrors);
+        return isEmpty(errors) ? ResponseEntity.ok().build() : ResponseEntity.badRequest().body(errors);
     }
 
     @Hidden

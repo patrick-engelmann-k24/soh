@@ -2,9 +2,12 @@ package de.kfzteile24.salesOrderHub.services;
 
 import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnNotifiedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoice;
+import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.helper.FileUtil;
 import de.kfzteile24.salesOrderHub.helper.ReturnOrderHelper;
@@ -12,6 +15,7 @@ import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,12 +37,14 @@ import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.K24;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_INVOICE_STORED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.assertSalesCreditNoteCreatedMessage;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
@@ -46,6 +52,8 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class DropshipmentOrderServiceTest {
+
+    public static final String ANY_INVOICE_NUMBER = RandomStringUtils.randomNumeric(10);
 
     @InjectMocks
     @Spy
@@ -62,6 +70,9 @@ class DropshipmentOrderServiceTest {
 
     @Mock
     private SnsPublishService snsPublishService;
+
+    @Mock
+    private InvoiceService invoiceService;
 
     @Spy
     private ObjectMapperConfig objectMapperConfig;
@@ -126,6 +137,37 @@ class DropshipmentOrderServiceTest {
         dropshipmentOrderService.handleDropshipmentPurchaseOrderReturnNotified(messageWrapper);
 
         verify(snsPublishService).publishDropshipmentOrderReturnNotifiedEvent(salesOrder, message);
+    }
+
+    @Test
+    void testRecreateSalesOrderInvoice() {
+        String rawMessage =  readResource("examples/testmessage.json");
+
+        var salesOrder = getSalesOrder(rawMessage);
+        assertThat(salesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber()).isNull();
+        assertThat(salesOrder.getInvoiceEvent()).isNull();
+
+        var coreSalesInvoiceCreatedMessage = CoreSalesInvoiceCreatedMessage.builder()
+                .salesInvoice(CoreSalesInvoice.builder()
+                        .salesInvoiceHeader(CoreSalesInvoiceHeader.builder()
+                                .invoiceNumber(ANY_INVOICE_NUMBER)
+                                .build())
+                        .build())
+                .build();
+
+        when(salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber())).thenReturn(Optional.of(salesOrder));
+        when(invoiceService.createInvoiceNumber()).thenReturn(ANY_INVOICE_NUMBER);
+        when(invoiceService.generateInvoiceMessage(any())).thenReturn(coreSalesInvoiceCreatedMessage);
+        when(salesOrderService.save(any(), any())).thenReturn(salesOrder);
+        dropshipmentOrderService.recreateSalesOrderInvoice(salesOrder.getOrderNumber());
+
+        verify(salesOrderService).save(argThat(correctlyUpdatedSalesOrder -> {
+            assertThat(correctlyUpdatedSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber())
+                    .isEqualTo(ANY_INVOICE_NUMBER);
+            assertThat(correctlyUpdatedSalesOrder.getInvoiceEvent()
+                    .getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber()).isEqualTo(ANY_INVOICE_NUMBER);
+            return true;
+        }), eq(DROPSHIPMENT_INVOICE_STORED));
     }
 
     @SneakyThrows({URISyntaxException.class, IOException.class})

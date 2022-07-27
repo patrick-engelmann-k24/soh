@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class RepublishError {
+public class ErrorResponse {
 
     private String orderNumber;
     private String errorMessage;
