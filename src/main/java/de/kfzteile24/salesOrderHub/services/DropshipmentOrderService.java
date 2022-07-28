@@ -44,6 +44,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.D
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_DROPSHIPMENT_ORDER_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.TRACKING_LINKS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.ORDER_ROW_ID;
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_INVOICE_STORED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_BOOKED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ITEM_SHIPPED;
@@ -219,6 +220,17 @@ public class DropshipmentOrderService {
                     e.getMessage());
             throw e;
         }
+    }
+
+    @Transactional
+    public SalesOrder recreateSalesOrderInvoice(String orderNumber) {
+        return salesOrderService.getOrderByOrderNumber(orderNumber)
+                .map(salesOrder -> {
+                    setDocumentRefNumber(salesOrder);
+                    salesOrder.setInvoiceEvent(invoiceService.generateInvoiceMessage(salesOrder));
+                    return salesOrderService.save(salesOrder, DROPSHIPMENT_INVOICE_STORED);
+                })
+                .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
     }
 
     private void continueProcessingDropShipmentOrder() {

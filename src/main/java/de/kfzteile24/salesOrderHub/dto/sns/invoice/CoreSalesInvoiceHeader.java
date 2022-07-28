@@ -3,6 +3,7 @@ package de.kfzteile24.salesOrderHub.dto.sns.invoice;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import de.kfzteile24.salesOrderHub.dto.sns.shared.Address;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -12,6 +13,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class CoreSalesInvoiceHeader {
 
     @JsonProperty("InvoiceNumber")
