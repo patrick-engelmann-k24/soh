@@ -10,6 +10,8 @@ import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
+import lombok.SneakyThrows;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -20,8 +22,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Collections;
 import java.util.List;
 
+import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
+import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.K24;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.readResource;
+import static de.kfzteile24.soh.order.dto.Platform.BRAINCRAFT;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -74,6 +80,45 @@ class SalesOrderProcessServiceTest {
         verify(salesOrderService).checkOrderNotExists(salesOrder.getOrderNumber());
     }
 
+    @DisplayName("Test Handle Shop Orders Received Splitted Orders")
+    @Test
+    @SneakyThrows
+    void testHandleShopOrdersReceivedSplittedOrders() {
+        String orderRawMessage = readResource("examples/ecpOrderMessageWithTwoRows.json");
+        var sqsMessage = objectMapperConfig.objectMapper().readValue(orderRawMessage, SqsMessage.class);
+        Order order = getOrder(orderRawMessage);
+        order.getOrderHeader().setOrderFulfillment(DELTICOM.getName());
+        order.getOrderHeader().setPlatform(BRAINCRAFT);
+        order.getOrderRows().get(0).setGenart("10040");
+        order.getOrderRows().get(1).setGenart("test");
+
+        var regularOrder = getSalesOrder((createRegularOrder()));
+        var splittedOrder = getSalesOrder(createSplittedOrder());
+
+        MessageWrapper<Order> messageWrapper = MessageWrapper.<Order>builder()
+                .rawMessage(orderRawMessage)
+                .message(order)
+                .sqsMessage(sqsMessage)
+                .build();
+
+        when(orderUtil.checkIfOrderHasOrderRows(any())).thenReturn(true);
+        when(salesOrderService.checkOrderNotExists(eq(regularOrder.getLatestJson().getOrderHeader().getOrderNumber()))).thenReturn(true);
+        when(salesOrderService.checkOrderNotExists(eq(splittedOrder.getLatestJson().getOrderHeader().getOrderNumber()))).thenReturn(true);
+        when(salesOrderService.createSalesOrder(eq(regularOrder))).thenReturn(regularOrder);
+        when(salesOrderService.createSalesOrder(eq(splittedOrder))).thenReturn(splittedOrder);
+        when(splitterService.splitSalesOrder(any())).thenReturn(
+                List.of(SalesOrderSplit.regularOrder(regularOrder), SalesOrderSplit.regularOrder(splittedOrder)));
+
+        salesOrderProcessService.handleShopOrdersReceived(messageWrapper);
+
+        verify(camundaHelper).createOrderProcess(eq(regularOrder), any(Messages.class));
+        verify(camundaHelper).createOrderProcess(eq(splittedOrder), any(Messages.class));
+        verify(salesOrderService).createSalesOrder(regularOrder);
+        verify(salesOrderService).createSalesOrder(splittedOrder);
+        verify(salesOrderService).checkOrderNotExists(regularOrder.getOrderNumber());
+        verify(salesOrderService).checkOrderNotExists(splittedOrder.getOrderNumber());
+    }
+
     @Test
     void testHandleShopOrdersReceivedDuplicatedOrder() throws JsonProcessingException {
         String rawMessage = readResource("examples/coreOrderMessage.json");
@@ -123,5 +168,27 @@ class SalesOrderProcessServiceTest {
         verify(camundaHelper, never()).createOrderProcess(any(SalesOrder.class), any(Messages.class));
         verify(salesOrderService).createSalesOrder(salesOrder);
         verify(salesOrderService).checkOrderNotExists(salesOrder.getOrderNumber());
+    }
+
+    private Order createRegularOrder() {
+        String orderRawMessage = readResource("examples/ecpOrderMessageWithTwoRows.json");
+        Order order = getOrder(orderRawMessage);
+        order.getOrderHeader().setOrderFulfillment(K24.getName());
+        order.getOrderHeader().setPlatform(BRAINCRAFT);
+        order.getOrderRows().get(0).setGenart("test");
+        order.getOrderRows().remove(1);
+
+        return order;
+    }
+
+    private Order createSplittedOrder() {
+        String orderRawMessage = readResource("examples/ecpOrderMessageWithTwoRows.json");
+        Order order = getOrder(orderRawMessage);
+        order.getOrderHeader().setOrderNumber(order.getOrderHeader().getOrderNumber() + "-1");
+        order.getOrderHeader().setOrderFulfillment(DELTICOM.getName());
+        order.getOrderHeader().setPlatform(BRAINCRAFT);
+        order.getOrderRows().get(0).setGenart("10040");
+        order.getOrderRows().remove(1);
+        return order;
     }
 }
