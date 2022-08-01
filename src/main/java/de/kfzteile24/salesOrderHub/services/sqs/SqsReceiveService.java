@@ -26,6 +26,7 @@ import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
+import de.kfzteile24.salesOrderHub.helper.SleuthHelper;
 import de.kfzteile24.salesOrderHub.services.DropshipmentOrderService;
 import de.kfzteile24.salesOrderHub.services.InvoiceUrlExtractor;
 import de.kfzteile24.salesOrderHub.services.SalesOrderPaymentSecuredService;
@@ -77,6 +78,7 @@ public class SqsReceiveService {
     private final MessageWrapperUtil messageWrapperUtil;
     private final MetricsHelper metricsHelper;
     private final OrderUtil orderUtil;
+    private final SleuthHelper sleuthHelper;
 
     /**
      * Consume sqs for new orders from ecp, bc and core shops
@@ -92,6 +94,8 @@ public class SqsReceiveService {
 
         var orderMessageWrapper = messageWrapperUtil.create(rawMessage, Order.class);
         var order = orderMessageWrapper.getMessage();
+
+        sleuthHelper.updateTraceId(order.getOrderHeader().getOrderNumber());
 
         log.info("Received shop order message with order number: {}. Platform: {}. Receive count: {}. Sender ID: {}",
                 order.getOrderHeader().getOrderNumber(),

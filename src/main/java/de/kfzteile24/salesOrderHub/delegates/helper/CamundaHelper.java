@@ -9,8 +9,9 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
-import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.NoProcessInstanceFoundException;
+import de.kfzteile24.salesOrderHub.exception.NotFoundException;
+import de.kfzteile24.salesOrderHub.helper.SleuthHelper;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Payments;
@@ -75,6 +76,7 @@ public class CamundaHelper {
     private final RuntimeService runtimeService;
     private final TaskService taskService;
     private final RepositoryService repositoryService;
+    private final SleuthHelper sleuthHelper;
 
     @Value("${kfzteile.process-config.subsequent-order-process.publish-delay}")
     private String publishDelayForSubsequentOrders;
@@ -129,6 +131,7 @@ public class CamundaHelper {
     }
 
     public ProcessInstance createOrderProcess(SalesOrder salesOrder, Messages originChannel) {
+        sleuthHelper.updateTraceId(salesOrder.getOrderNumber());
 
         return runtimeService.createMessageCorrelation(originChannel.getName())
                              .processInstanceBusinessKey(salesOrder.getOrderNumber())
@@ -137,7 +140,7 @@ public class CamundaHelper {
     }
 
     public ProcessInstance createOrderProcess(SalesOrder salesOrder, Messages originChannel, Map<String, Object> variables) {
-
+        sleuthHelper.updateTraceId(salesOrder.getOrderNumber());
         return runtimeService.createMessageCorrelation(originChannel.getName())
                 .processInstanceBusinessKey(salesOrder.getOrderNumber())
                 .setVariables(variables)
