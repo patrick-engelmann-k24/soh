@@ -43,6 +43,8 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -488,5 +490,52 @@ public class SalesOrderUtil {
         message.getSalesInvoice().getSalesInvoiceHeader().setOrderNumber(orderNumber);
         message.getSalesInvoice().getSalesInvoiceHeader().setOrderGroupId(orderNumber);
         return message;
+    }
+
+    public SalesOrder createPersistedSalesOrder(LocalDateTime createdAt, String... skuList) {
+        SalesOrder salesOrder = createSalesOrder(createdAt, skuList);
+
+        return salesOrderService.save(salesOrder, ORDER_CREATED);
+    }
+
+    public SalesOrder createPersistedSalesOrder(String orderGroupId, LocalDateTime createdAt, String... skuList) {
+        SalesOrder salesOrder = createSalesOrder(orderGroupId, createdAt, skuList);
+
+        return salesOrderService.save(salesOrder, ORDER_CREATED);
+    }
+
+    public static SalesOrder createSalesOrder(LocalDateTime createdAt, String... skuList) {
+        return createSalesOrder(null, createdAt, skuList);
+    }
+
+    public static SalesOrder createSalesOrder(String orderGroupId, LocalDateTime createdAt, String... skuList) {
+        final String orderNumber = UUID.randomUUID().toString();
+        List<OrderRows> orderRows = new ArrayList<>();
+        for (String sku : skuList) {
+            orderRows.add(createOrderRow(sku, REGULAR));
+        }
+
+        final OrderHeader orderHeader = OrderHeader.builder()
+                .orderNumber(orderNumber)
+                .orderGroupId(orderGroupId != null ? orderGroupId : orderNumber)
+                .salesChannel("www-k24-at")
+                .platform(Platform.ECP)
+                .build();
+
+        final Order order = Order.builder()
+                .version("3.0")
+                .orderHeader(orderHeader)
+                .orderRows(orderRows)
+                .build();
+        SalesOrder salesOrder = SalesOrder.builder()
+                .orderNumber(orderNumber)
+                .orderGroupId(orderGroupId != null ? orderGroupId : orderNumber)
+                .salesChannel(order.getOrderHeader().getSalesChannel())
+                .originalOrder(order)
+                .latestJson(order)
+                .recurringOrder(false)
+                .build();
+        salesOrder.setCreatedAt(createdAt);
+        return salesOrder;
     }
 }

@@ -8,7 +8,6 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.dto.events.shipmentconfirmed.TrackingLink;
 import de.kfzteile24.salesOrderHub.dto.mapper.CreditNoteEventMapper;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
@@ -702,27 +701,15 @@ public class SqsReceiveService {
         var message = objectMapper.readValue(body, ParcelShippedMessage.class);
         var event = message.getMessage();
         var orderNumber = event.getOrderNumber();
-        log.info("Parcel shipped received with order number {}, delivery note number {} and tracking link: {}",
+        log.info("Parcel shipped received with order number {}, delivery note number {}, " +
+                        "tracking link: {} and order items: {}",
                 orderNumber,
                 event.getDeliveryNoteNumber(),
-                event.getTrackingLink());
+                event.getTrackingLink(),
+                event.getArticleItemsDtos().stream()
+                        .map(ArticleItemsDto::getNumber)
+                        .collect(Collectors.toList()));
 
-        var itemList = event.getArticleItemsDtos();
-        if (itemList == null || itemList.isEmpty()) {
-            throw new IllegalArgumentException("The provided event does not contain order item");
-        }
-        var trackingLink = TrackingLink.builder()
-                .url(event.getTrackingLink())
-                .orderItems(itemList.stream().map(ArticleItemsDto::getNumber).collect(Collectors.toList()))
-                .build();
-
-        try {
-            var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
-                    .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
-            snsPublishService.publishSalesOrderShipmentConfirmedEvent(salesOrder, List.of(trackingLink));
-        } catch (Exception e) {
-            log.error("Parcel shipped received message error - order_number: {}\r\nErrorMessage: {}", orderNumber, e);
-            throw e;
-        }
+        salesOrderRowService.handleParcelShippedEvent(event);
     }
 }
