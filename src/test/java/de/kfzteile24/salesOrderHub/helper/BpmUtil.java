@@ -146,9 +146,7 @@ public class BpmUtil {
                     .collect(toUnmodifiableList()))
                     .filter(CollectionUtils::isNotEmpty)
                     .ifPresent(historyService()::deleteHistoricProcessInstancesIfExists);
-        } catch (Throwable ignored) {
-            log.error(ignored.getMessage(), ignored);
-        }
+        } catch (Throwable ignored) {}
     }
 
     public List<EventSubscription> findEventSubscriptions(EventType eventType, String eventName) {

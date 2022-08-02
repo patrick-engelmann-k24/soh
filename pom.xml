@@ -8,7 +8,7 @@
 
   <properties>
     <camunda.spring-boot.version>7.16.0</camunda.spring-boot.version>
-    <spring-boot.version>2.5.14</spring-boot.version>
+    <spring-boot.version>2.6.2</spring-boot.version>
     <maven.compiler.source>11</maven.compiler.source>
     <maven.compiler.target>11</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -25,6 +25,8 @@
     </camunda-process-test-coverage-starter-platform8.version>
     <springdoc-openapi-ui.version>1.6.9</springdoc-openapi-ui.version>
     <camunda-bpm-migration.version>1.0</camunda-bpm-migration.version>
+    <spring-cloud-starter-sleuth.version>3.1.0</spring-cloud-starter-sleuth.version>
+    <camunda-bpm-reactor-spring-starter.version>2.1.2</camunda-bpm-reactor-spring-starter.version>
   </properties>
 
   <dependencyManagement>
@@ -112,7 +114,7 @@
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
-      <version>42.3.6</version>
+      <version>42.4.0</version>
     </dependency>
     <dependency>
       <groupId>org.springdoc</groupId>
@@ -128,6 +130,16 @@
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
       <version>3.12.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.cloud</groupId>
+      <artifactId>spring-cloud-starter-sleuth</artifactId>
+      <version>${spring-cloud-starter-sleuth.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.camunda.bpm.extension.reactor</groupId>
+      <artifactId>camunda-bpm-reactor-spring-starter</artifactId>
+      <version>${camunda-bpm-reactor-spring-starter.version}</version>
     </dependency>
 
     <!-- Test dependencies -->
@@ -146,18 +158,12 @@
     <dependency>
       <groupId>org.camunda.bpm.assert</groupId>
       <artifactId>camunda-bpm-assert</artifactId>
-      <version>8.0.0</version>
+      <version>15.0.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.camunda.bpm.extension.mockito</groupId>
-      <artifactId>camunda-bpm-mockito</artifactId>
-      <version>4.12.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -170,6 +176,18 @@
       <groupId>org.camunda.bpm.extension</groupId>
       <artifactId>camunda-bpm-assert-scenario</artifactId>
       <version>${camunda-bpm-assert-scenario.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.camunda.bpm.springboot</groupId>
+      <artifactId>camunda-bpm-spring-boot-starter-test</artifactId>
+      <version>7.16.0</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.camunda.bpm.assert</groupId>
+          <artifactId>camunda-bpm-assert-assertj3-11-1</artifactId>
+        </exclusion>
+      </exclusions>
       <scope>test</scope>
     </dependency>
     <dependency>

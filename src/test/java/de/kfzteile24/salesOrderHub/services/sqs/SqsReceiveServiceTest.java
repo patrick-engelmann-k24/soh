@@ -390,19 +390,6 @@ class SqsReceiveServiceTest {
         verify(salesOrderRowService).handleSalesOrderReturn(eq(creditNoteMsg), eq(RETURN_ORDER_CREATED));
     }
 
-    @Test
-    void testQueueListenerParcelShipping() {
-
-        String rawMessage = readResource("examples/parcelShipped.json");
-        SalesOrder salesOrder = getSalesOrder(readResource("examples/ecpOrderMessage.json"));
-
-        when(salesOrderService.getOrderByOrderNumber(eq(salesOrder.getOrderNumber()))).thenReturn(Optional.of(salesOrder));
-
-        sqsReceiveService.queueListenerParcelShipped(rawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
-
-        verify(snsPublishService).publishSalesOrderShipmentConfirmedEvent(any(), any());
-    }
-
     private SalesOrder createSalesOrder(String orderNumber) {
         String rawOrderMessage = readResource("examples/ecpOrderMessage.json");
         Order order = getOrder(rawOrderMessage);
