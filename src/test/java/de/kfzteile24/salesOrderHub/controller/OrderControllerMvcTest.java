@@ -11,6 +11,9 @@ import org.springframework.http.MediaType;
 
 import java.util.List;
 
+import static de.kfzteile24.salesOrderHub.controller.dto.ActionType.RECREATE_ORDER_INVOICE;
+import static de.kfzteile24.salesOrderHub.controller.dto.ActionType.REPUBLISH_ORDER;
+import static de.kfzteile24.salesOrderHub.controller.dto.ActionType.REPUBLISH_RETURN_ORDER;
 import static java.util.Collections.emptyList;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -29,6 +32,9 @@ class OrderControllerMvcTest extends AbstractControllerMvcTest {
 
     public static final String ORDER_NUMBER_1 = "2345235";
     public static final String ORDER_NUMBER_2 = "3454235";
+    public static final String API_V_1_ORDER_APPLY_ACTION = "/api/v1/order/apply-action";
+    public static final String QUERY_PARAM_ACTION_TYPE = "actionType";
+
     @MockBean
     private SnsPublishService snsPublishService;
 
@@ -41,7 +47,8 @@ class OrderControllerMvcTest extends AbstractControllerMvcTest {
         var orderNumbers = List.of("2345235", "3454235");
         var requestBody = objectMapper.writeValueAsString(orderNumbers);
 
-        mvc.perform(post("/api/v1/order/republish")
+        mvc.perform(post(API_V_1_ORDER_APPLY_ACTION)
+                .param(QUERY_PARAM_ACTION_TYPE, REPUBLISH_ORDER.name())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
                 .andDo(print())
@@ -57,7 +64,8 @@ class OrderControllerMvcTest extends AbstractControllerMvcTest {
         var orderNumbers = List.of();
         var requestBody = objectMapper.writeValueAsString(orderNumbers);
 
-        mvc.perform(post("/api/v1/order/republish")
+        mvc.perform(post(API_V_1_ORDER_APPLY_ACTION)
+                .param(QUERY_PARAM_ACTION_TYPE, REPUBLISH_ORDER.name())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
                 .andDo(print())
@@ -72,7 +80,8 @@ class OrderControllerMvcTest extends AbstractControllerMvcTest {
         var orderNumbers = List.of("");
         var requestBody = objectMapper.writeValueAsString(orderNumbers);
 
-        mvc.perform(post("/api/v1/order/republish")
+        mvc.perform(post(API_V_1_ORDER_APPLY_ACTION)
+                .param(QUERY_PARAM_ACTION_TYPE, REPUBLISH_ORDER.name())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
                 .andDo(print())
@@ -90,7 +99,8 @@ class OrderControllerMvcTest extends AbstractControllerMvcTest {
         doThrow(new SalesOrderNotFoundException("3454235")).when(snsPublishService)
                 .publishMigrationOrderCreated("3454235");
 
-        mvc.perform(post("/api/v1/order/republish")
+        mvc.perform(post(API_V_1_ORDER_APPLY_ACTION)
+                .param(QUERY_PARAM_ACTION_TYPE, REPUBLISH_ORDER.name())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
                 .andDo(print())
@@ -118,7 +128,8 @@ class OrderControllerMvcTest extends AbstractControllerMvcTest {
         when(dropshipmentOrderService.recreateSalesOrderInvoice(ORDER_NUMBER_1)).thenReturn(salesOrder1);
         when(dropshipmentOrderService.recreateSalesOrderInvoice(ORDER_NUMBER_2)).thenReturn(salesOrder2);
 
-        mvc.perform(post("/api/v1/order/invoice/recreate")
+        mvc.perform(post(API_V_1_ORDER_APPLY_ACTION)
+                .param(QUERY_PARAM_ACTION_TYPE, RECREATE_ORDER_INVOICE.name())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
                 .andDo(print())
@@ -138,7 +149,8 @@ class OrderControllerMvcTest extends AbstractControllerMvcTest {
         var orderNumbers = List.of();
         var requestBody = objectMapper.writeValueAsString(orderNumbers);
 
-        mvc.perform(post("/api/v1/order/invoice/recreate")
+        mvc.perform(post(API_V_1_ORDER_APPLY_ACTION)
+                .param(QUERY_PARAM_ACTION_TYPE, RECREATE_ORDER_INVOICE.name())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
                 .andDo(print())
@@ -154,7 +166,8 @@ class OrderControllerMvcTest extends AbstractControllerMvcTest {
         var orderNumbers = List.of(StringUtils.EMPTY);
         var requestBody = objectMapper.writeValueAsString(orderNumbers);
 
-        mvc.perform(post("/api/v1/order/invoice/recreate")
+        mvc.perform(post(API_V_1_ORDER_APPLY_ACTION)
+                .param(QUERY_PARAM_ACTION_TYPE, RECREATE_ORDER_INVOICE.name())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
                 .andDo(print())
@@ -179,7 +192,8 @@ class OrderControllerMvcTest extends AbstractControllerMvcTest {
         doThrow(new SalesOrderNotFoundException(ORDER_NUMBER_2)).when(dropshipmentOrderService)
                 .recreateSalesOrderInvoice(ORDER_NUMBER_2);
 
-        mvc.perform(post("/api/v1/order/invoice/recreate")
+        mvc.perform(post(API_V_1_ORDER_APPLY_ACTION)
+                .param(QUERY_PARAM_ACTION_TYPE, RECREATE_ORDER_INVOICE.name())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
                 .andDo(print())
@@ -193,5 +207,108 @@ class OrderControllerMvcTest extends AbstractControllerMvcTest {
                 StringUtils.equals(salesOrder.getOrderNumber(), ORDER_NUMBER_1)), eq(emptyList()));
         verify(snsPublishService, never()).publishSalesOrderShipmentConfirmedEvent(argThat(salesOrder ->
                 StringUtils.equals(salesOrder.getOrderNumber(), ORDER_NUMBER_2)), eq(emptyList()));
+    }
+
+    @Test
+    void testRepublishReturnOrders() throws Exception {
+
+        var orderNumbers = List.of("2345235", "3454235");
+        var requestBody = objectMapper.writeValueAsString(orderNumbers);
+
+        mvc.perform(post(API_V_1_ORDER_APPLY_ACTION)
+                .param(QUERY_PARAM_ACTION_TYPE, REPUBLISH_RETURN_ORDER.name())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        verify(snsPublishService).publishMigrationReturnOrderCreatedEvent("2345235");
+        verify(snsPublishService).publishMigrationReturnOrderCreatedEvent("3454235");
+    }
+
+    @Test
+    void testRepublishReturnOrdersEmptyOrderNumberList() throws Exception {
+
+        var orderNumbers = List.of();
+        var requestBody = objectMapper.writeValueAsString(orderNumbers);
+
+        mvc.perform(post(API_V_1_ORDER_APPLY_ACTION)
+                .param(QUERY_PARAM_ACTION_TYPE, REPUBLISH_RETURN_ORDER.name())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+
+        verify(snsPublishService, never()).publishMigrationReturnOrderCreatedEvent(anyString());
+    }
+
+    @Test
+    void testRepublishReturnOrdersEmptyOrderNumberWithinList() throws Exception {
+
+        var orderNumbers = List.of("");
+        var requestBody = objectMapper.writeValueAsString(orderNumbers);
+
+        mvc.perform(post(API_V_1_ORDER_APPLY_ACTION)
+                .param(QUERY_PARAM_ACTION_TYPE, REPUBLISH_RETURN_ORDER.name())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+
+        verify(snsPublishService, never()).publishMigrationReturnOrderCreatedEvent(anyString());
+    }
+
+    @Test
+    void testRepublishReturnOrdersFailedForSomeOrders() throws Exception {
+
+        var orderNumbers = List.of("2345235", "3454235");
+        var requestBody = objectMapper.writeValueAsString(orderNumbers);
+
+        doThrow(new SalesOrderNotFoundException("3454235")).when(snsPublishService)
+                .publishMigrationReturnOrderCreatedEvent("3454235");
+
+        mvc.perform(post(API_V_1_ORDER_APPLY_ACTION)
+                .param(QUERY_PARAM_ACTION_TYPE, REPUBLISH_RETURN_ORDER.name())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$[0].order_number").value("3454235"))
+                .andExpect(jsonPath("$[0].error_message").value("Sales order not found for the given order number 3454235 "));
+
+        verify(snsPublishService).publishMigrationReturnOrderCreatedEvent("2345235");
+        verify(snsPublishService).publishMigrationReturnOrderCreatedEvent("3454235");
+    }
+
+    @Test
+    void testRepublishReturnOrdersEmptyOrderNumberWithEmptyActionType() throws Exception {
+
+        var orderNumbers = List.of("2345235", "3454235");
+        var requestBody = objectMapper.writeValueAsString(orderNumbers);
+
+        mvc.perform(post(API_V_1_ORDER_APPLY_ACTION)
+                .param(QUERY_PARAM_ACTION_TYPE, StringUtils.EMPTY)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+
+        verify(snsPublishService, never()).publishMigrationReturnOrderCreatedEvent(anyString());
+    }
+
+    @Test
+    void testRepublishReturnOrdersEmptyOrderNumberWithActionTypeIsNull() throws Exception {
+
+        var orderNumbers = List.of("2345235", "3454235");
+        var requestBody = objectMapper.writeValueAsString(orderNumbers);
+
+        mvc.perform(post(API_V_1_ORDER_APPLY_ACTION)
+                .param(QUERY_PARAM_ACTION_TYPE, "null")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+
+        verify(snsPublishService, never()).publishMigrationReturnOrderCreatedEvent(anyString());
     }
 }

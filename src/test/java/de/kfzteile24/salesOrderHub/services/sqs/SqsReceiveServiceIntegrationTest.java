@@ -751,7 +751,7 @@ class SqsReceiveServiceIntegrationTest {
         sqsReceiveService.queueListenerMigrationCoreSalesCreditNoteCreated(coreReturnDeliveryNotePrinted, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
         verify(snsPublishService).publishMigrationReturnOrderCreatedEvent(argThat(
-                salesOrderReturn -> {
+                (SalesOrderReturn salesOrderReturn) -> {
                     assertThat(salesOrderReturn.getOrderNumber()).isEqualTo(createOrderNumberInSOH(orderNumber, creditNumber));
                     assertThat(salesOrderReturn.getOrderGroupId()).isEqualTo(orderNumber);
                     return true;
