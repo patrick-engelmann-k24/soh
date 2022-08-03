@@ -1,19 +1,25 @@
 package de.kfzteile24.salesOrderHub.controller;
 
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.EventMapper;
+import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.services.DropshipmentOrderService;
+import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 
 import java.util.List;
+import java.util.Optional;
 
 import static de.kfzteile24.salesOrderHub.controller.dto.ActionType.RECREATE_ORDER_INVOICE;
 import static de.kfzteile24.salesOrderHub.controller.dto.ActionType.REPUBLISH_ORDER;
+import static de.kfzteile24.salesOrderHub.controller.dto.ActionType.REPUBLISH_ORDER_INVOICE;
 import static de.kfzteile24.salesOrderHub.controller.dto.ActionType.REPUBLISH_RETURN_ORDER;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -40,6 +46,12 @@ class OrderControllerMvcTest extends AbstractControllerMvcTest {
 
     @MockBean
     private DropshipmentOrderService dropshipmentOrderService;
+
+    @MockBean
+    private SalesOrderService salesOrderService;
+
+    @Autowired
+    private SalesOrderUtil salesOrderUtil;
 
     @Test
     void testRepublishOrders() throws Exception {
@@ -304,5 +316,26 @@ class OrderControllerMvcTest extends AbstractControllerMvcTest {
                 .andExpect(status().isBadRequest());
 
         verify(snsPublishService, never()).publishMigrationReturnOrderCreatedEvent(anyString());
+    }
+
+    @Test
+    void testRepublishInvoices() throws Exception {
+
+        CoreSalesInvoiceCreatedMessage invoiceCreatedMsg = salesOrderUtil.createInvoiceCreatedMsg("2345235");
+        SalesOrder salesOrder = SalesOrder.builder().invoiceEvent(invoiceCreatedMsg).build();
+        when(salesOrderService.getOrderByOrderNumber(eq("2345235"))).thenReturn(Optional.of(salesOrder));
+
+        var orderNumbers = List.of("2345235");
+        var requestBody = objectMapper.writeValueAsString(orderNumbers);
+
+        mvc.perform(post(API_V_1_ORDER_APPLY_ACTION)
+                        .param(QUERY_PARAM_ACTION_TYPE, REPUBLISH_ORDER_INVOICE.name())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        verify(snsPublishService).publishCoreInvoiceReceivedEvent(
+                eq(EventMapper.INSTANCE.toCoreSalesInvoiceCreatedReceivedEvent(invoiceCreatedMsg)));
     }
 }
