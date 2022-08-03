@@ -1,13 +1,16 @@
 package de.kfzteile24.salesOrderHub.controller;
 
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.EventMapper;
+import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.services.DropshipmentOrderService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 
@@ -46,6 +49,9 @@ class OrderControllerMvcTest extends AbstractControllerMvcTest {
 
     @MockBean
     private SalesOrderService salesOrderService;
+
+    @Autowired
+    private SalesOrderUtil salesOrderUtil;
 
     @Test
     void testRepublishOrders() throws Exception {
@@ -315,7 +321,8 @@ class OrderControllerMvcTest extends AbstractControllerMvcTest {
     @Test
     void testRepublishInvoices() throws Exception {
 
-        SalesOrder salesOrder = SalesOrder.builder().build();
+        CoreSalesInvoiceCreatedMessage invoiceCreatedMsg = salesOrderUtil.createInvoiceCreatedMsg("2345235");
+        SalesOrder salesOrder = SalesOrder.builder().invoiceEvent(invoiceCreatedMsg).build();
         when(salesOrderService.getOrderByOrderNumber(eq("2345235"))).thenReturn(Optional.of(salesOrder));
 
         var orderNumbers = List.of("2345235");
@@ -329,6 +336,6 @@ class OrderControllerMvcTest extends AbstractControllerMvcTest {
                 .andExpect(status().isOk());
 
         verify(snsPublishService).publishCoreInvoiceReceivedEvent(
-                eq(EventMapper.INSTANCE.toCoreSalesInvoiceCreatedReceivedEvent(salesOrder.getInvoiceEvent())));
+                eq(EventMapper.INSTANCE.toCoreSalesInvoiceCreatedReceivedEvent(invoiceCreatedMsg)));
     }
 }
