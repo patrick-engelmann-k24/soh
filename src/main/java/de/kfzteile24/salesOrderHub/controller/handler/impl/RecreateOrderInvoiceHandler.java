@@ -21,7 +21,6 @@ public class RecreateOrderInvoiceHandler extends AbstractActionHandler {
     protected Consumer<String> getAction() {
         return orderNumber -> {
             var salesOrder = dropshipmentOrderService.recreateSalesOrderInvoice(orderNumber);
-            snsPublishService.publishSalesOrderShipmentConfirmedEvent(salesOrder, emptyList());
             snsPublishService.publishCoreInvoiceReceivedEvent(EventMapper.INSTANCE.toCoreSalesInvoiceCreatedReceivedEvent(salesOrder.getInvoiceEvent()));
         };
     }
