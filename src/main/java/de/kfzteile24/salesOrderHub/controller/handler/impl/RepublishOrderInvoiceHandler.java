@@ -27,6 +27,6 @@ public class RepublishOrderInvoiceHandler extends AbstractActionHandler {
 
     @Override
     public boolean supports(ActionType orderType) {
-        return orderType == ActionType.RECREATE_ORDER_INVOICE;
+        return orderType == ActionType.REPUBLISH_ORDER_INVOICE;
     }
 }
