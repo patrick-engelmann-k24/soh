@@ -1,5 +1,6 @@
 package de.kfzteile24.salesOrderHub.services;
 
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
@@ -105,7 +106,7 @@ public class SalesOrderRowService {
     }
 
     @Transactional
-    public void handleSalesOrderReturn(SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage, Action action) {
+    public void handleSalesOrderReturn(SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage, Action action, Messages message) {
         var salesCreditNoteHeader = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader();
         var orderNumber = salesCreditNoteHeader.getOrderNumber();
         var creditNoteLines = salesCreditNoteHeader.getCreditNoteLines();
@@ -130,7 +131,7 @@ public class SalesOrderRowService {
                     .build();
 
             SalesOrderReturn savedSalesOrderReturn = salesOrderReturnService.save(salesOrderReturn, action);
-            ProcessInstance result = helper.createReturnOrderProcess(savedSalesOrderReturn, CORE_CREDIT_NOTE_CREATED);
+            ProcessInstance result = helper.createReturnOrderProcess(savedSalesOrderReturn, message);
             if (result != null) {
                 log.info("New return order process started for order number: {}. Process-Instance-ID: {} ",
                         orderNumber, result.getProcessInstanceId());

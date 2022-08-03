@@ -36,7 +36,12 @@ public enum Events implements BpmItem {
     THROW_MSG_ORDER_VALIDATED("eventThrowMsgOrderValidated"),
     THROW_MSG_PUBLISH_TRACKING_INFORMATION("eventThrowMsgPublishTrackingInformation"),
     THROW_MSG_PUBLISH_INVOICE_DATA("eventThrowMsgPublishInvoiceData"),
-    THROW_MSG_DROPSHIPMENT_ORDER_CREATED("eventThrowMsgDropshipmentOrderCreated")
+    THROW_MSG_DROPSHIPMENT_ORDER_CREATED("eventThrowMsgDropshipmentOrderCreated"),
+
+    THROW_MSG_PUBLISH_RETURN_ORDER_CREATED("eventThrowMsgPublishReturnOrderCreated"),
+    END_MSG_CORE_CREDIT_NOTE_RECEIVED("eventEndMsgCoreCreditNoteReceived"),
+    START_MSG_CORE_CREDIT_NOTE_CREATED("eventStartMsgCoreCreditNoteCreated"),
+    START_MSG_DROPSHIPMENT_ORDER_RETURN_CONFIRMED("eventStartMsgDropshipmentOrderReturnConfirmed")
     ;
 
     @Getter

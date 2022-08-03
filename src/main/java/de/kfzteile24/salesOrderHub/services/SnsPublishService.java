@@ -17,15 +17,14 @@ import de.kfzteile24.salesOrderHub.dto.events.SalesCreditNoteReceivedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderCompletedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInfoEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInvoiceCreatedEvent;
-import de.kfzteile24.salesOrderHub.dto.events.shipmentconfirmed.SalesOrderShipmentConfirmedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.dropshipment.DropshipmentOrderPackage;
 import de.kfzteile24.salesOrderHub.dto.events.dropshipment.DropshipmentOrderPackageItemLine;
+import de.kfzteile24.salesOrderHub.dto.events.shipmentconfirmed.SalesOrderShipmentConfirmedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.shipmentconfirmed.TrackingLink;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnNotifiedMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
 import de.kfzteile24.soh.order.dto.Order;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +32,7 @@ import org.springframework.cloud.aws.messaging.core.NotificationMessagingTemplat
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -40,16 +40,12 @@ import java.util.stream.Collectors;
 @Slf4j
 public class SnsPublishService {
 
-    @NonNull
     private final NotificationMessagingTemplate notificationMessagingTemplate;
-    @NonNull
     private final SalesOrderService salesOrderService;
-    @NonNull
     private final ObjectMapper objectMapper;
-    @NonNull
     private final AwsSnsConfig config;
-    @NonNull
     private final MetricsHelper metricsHelper;
+    private final SalesOrderReturnService salesOrderReturnService;
 
     public void publishOrderCreated(String orderNumber) {
         var salesOrder = sendLatestOrderJson(config.getSnsOrderCreatedTopicV2(), "Sales order created V2", orderNumber);
@@ -208,6 +204,13 @@ public class SnsPublishService {
 
         publishEvent(config.getSnsMigrationReturnOrderCreatedV1(), "Return Order Created V1",
                 returnOrderCreatedEvent, salesOrderReturn.getOrderNumber());
+    }
+
+    public void publishMigrationReturnOrderCreatedEvent(String returnOrderNumber) {
+        Optional.ofNullable(salesOrderReturnService.getByOrderNumber(returnOrderNumber))
+                .ifPresentOrElse(this::publishMigrationReturnOrderCreatedEvent, () -> {
+                    throw new SalesOrderNotFoundException(returnOrderNumber);
+                });
     }
 
     protected SalesOrder sendLatestOrderJson(String topic, String subject, String orderNumber) {

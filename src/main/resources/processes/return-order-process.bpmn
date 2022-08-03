@@ -1,127 +1,191 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1ej4vps" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.12.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.15.0">
-  <bpmn:message id="Message_0k05b9j" name="msgCoreCreditNoteCreated" />
-  <bpmn:collaboration id="Collaboration_19pm6dq">
-    <bpmn:participant id="Soh" name="SOH" processRef="ReturnOrderProcess" />
-    <bpmn:participant id="Core" name="CORE" processRef="Process_1a4ut5n" />
-    <bpmn:participant id="Erp" name="ERP" processRef="Process_0fkhbk5" />
-    <bpmn:messageFlow id="Flow_0j2q3qd" name="core-sales-credit-note-created-v1" sourceRef="Core" targetRef="eventStartMsgCoreCreditNoteCreated" />
-    <bpmn:messageFlow id="Flow_0y20rrr" name="soh-credit-note-received-v1" sourceRef="eventEndMsgCoreCreditNoteReceived" targetRef="Erp" />
-    <bpmn:messageFlow id="Flow_09h08yk" name="soh-return-order-created-v1" sourceRef="eventInterMsgReturnOrderCreated" targetRef="Erp" />
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_17s6jig" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.12.0">
+  <bpmn:message id="msgDropshipmentOrderReturnConfirmed" name="msgDropshipmentOrderReturnConfirmed" />
+  <bpmn:message id="msgCoreCreditNoteCreated" name="msgCoreCreditNoteCreated" />
+  <bpmn:collaboration id="Collaboration_0oat5o3">
+    <bpmn:participant id="Participant_0jdylob" name="SOH" processRef="ReturnOrderProcess" />
+    <bpmn:participant id="Participant_0lqlkmg" name="CORE" processRef="Process_16q9iny" />
+    <bpmn:participant id="Participant_0mbbde9" name="ERP" processRef="Process_0wpbm79" />
+    <bpmn:participant id="Participant_0uu0yrd" name="SCM" processRef="Process_1ox15am" />
+    <bpmn:messageFlow id="Flow_0r0n43i" name="soh-credit-note-received-v1" sourceRef="eventEndMsgCoreCreditNoteReceived" targetRef="Participant_0mbbde9" />
+    <bpmn:messageFlow id="Flow_1b2uu6i" name="core-sales-credit-note-created-v1" sourceRef="Participant_0lqlkmg" targetRef="eventStartMsgCoreCreditNoteCreated" />
+    <bpmn:messageFlow id="Flow_0vm256l" name="soh-return-order-created-v1" sourceRef="eventThrowMsgPublishReturnOrderCreated" targetRef="Participant_0mbbde9" />
+    <bpmn:messageFlow id="Flow_09v5pij" name="dropshipment-purchase-order-return-confirmed-v1" sourceRef="Participant_0uu0yrd" targetRef="eventStartMsgDropshipmentOrderReturnConfirmed" />
   </bpmn:collaboration>
-  <bpmn:process id="ReturnOrderProcess" name="Return order process" isExecutable="true">
-    <bpmn:laneSet id="LaneSet_1seutye" />
-    <bpmn:endEvent id="eventEndMsgCoreCreditNoteReceived" name="Publish credit note received">
-      <bpmn:incoming>Flow_09ysqxu</bpmn:incoming>
-      <bpmn:messageEventDefinition id="MessageEventDefinition_0rnirb3" camunda:delegateExpression="${publishCreditNoteReceivedDelegate}" />
-    </bpmn:endEvent>
+  <bpmn:process id="ReturnOrderProcess" isExecutable="true">
     <bpmn:startEvent id="eventStartMsgCoreCreditNoteCreated" name="Core credit note created">
-      <bpmn:outgoing>Flow_0run8bt</bpmn:outgoing>
-      <bpmn:messageEventDefinition id="MessageEventDefinition_0n3j2tt" messageRef="Message_0k05b9j" />
+      <bpmn:outgoing>Flow_0maduui</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_0nfi0tt" messageRef="msgCoreCreditNoteCreated" />
     </bpmn:startEvent>
-    <bpmn:sequenceFlow id="Flow_0r17qyv" sourceRef="eventInterMsgReturnOrderCreated" targetRef="Event_13s33zk" />
-    <bpmn:sequenceFlow id="Flow_09ysqxu" sourceRef="Event_13s33zk" targetRef="eventEndMsgCoreCreditNoteReceived" />
-    <bpmn:sequenceFlow id="Flow_0run8bt" sourceRef="eventStartMsgCoreCreditNoteCreated" targetRef="eventInterMsgReturnOrderCreated" />
-    <bpmn:intermediateThrowEvent id="eventInterMsgReturnOrderCreated" name="Publish return order created">
-      <bpmn:incoming>Flow_0run8bt</bpmn:incoming>
-      <bpmn:outgoing>Flow_0r17qyv</bpmn:outgoing>
-      <bpmn:messageEventDefinition id="MessageEventDefinition_0jt2ph2" camunda:delegateExpression="${publishReturnOrderCreatedDelegate}" />
+    <bpmn:intermediateThrowEvent id="eventThrowMsgPublishReturnOrderCreated" name="Publish return order created">
+      <bpmn:incoming>Flow_0b64ptf</bpmn:incoming>
+      <bpmn:outgoing>Flow_14h19rw</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_19iou76" camunda:delegateExpression="${publishReturnOrderCreatedDelegate}" />
     </bpmn:intermediateThrowEvent>
-    <bpmn:intermediateCatchEvent id="Event_13s33zk">
-      <bpmn:incoming>Flow_0r17qyv</bpmn:incoming>
-      <bpmn:outgoing>Flow_09ysqxu</bpmn:outgoing>
-      <bpmn:timerEventDefinition id="TimerEventDefinition_0eef5hm">
+    <bpmn:intermediateCatchEvent id="Event_16ktds3">
+      <bpmn:incoming>Flow_14h19rw</bpmn:incoming>
+      <bpmn:outgoing>Flow_1dkg0tb</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_1ch4vtt">
         <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">#{publishDelay}</bpmn:timeDuration>
       </bpmn:timerEventDefinition>
     </bpmn:intermediateCatchEvent>
-    <bpmn:textAnnotation id="TextAnnotation_18tghkc">
+    <bpmn:startEvent id="eventStartMsgDropshipmentOrderReturnConfirmed" name="dropshipment return confirmed">
+      <bpmn:outgoing>Flow_16sbavk</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_0stc3w1" messageRef="msgDropshipmentOrderReturnConfirmed" />
+    </bpmn:startEvent>
+    <bpmn:exclusiveGateway id="returnOrderMainGateway">
+      <bpmn:incoming>Flow_0maduui</bpmn:incoming>
+      <bpmn:incoming>Flow_16sbavk</bpmn:incoming>
+      <bpmn:outgoing>Flow_0b64ptf</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="eventEndMsgCoreCreditNoteReceived" name="Publish credit note received">
+      <bpmn:incoming>Flow_1dkg0tb</bpmn:incoming>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_0t3ctu1" camunda:delegateExpression="${publishCreditNoteReceivedDelegate}" />
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0maduui" sourceRef="eventStartMsgCoreCreditNoteCreated" targetRef="returnOrderMainGateway" />
+    <bpmn:sequenceFlow id="Flow_1dkg0tb" sourceRef="Event_16ktds3" targetRef="eventEndMsgCoreCreditNoteReceived" />
+    <bpmn:sequenceFlow id="Flow_14h19rw" sourceRef="eventThrowMsgPublishReturnOrderCreated" targetRef="Event_16ktds3" />
+    <bpmn:sequenceFlow id="Flow_16sbavk" sourceRef="eventStartMsgDropshipmentOrderReturnConfirmed" targetRef="returnOrderMainGateway" />
+    <bpmn:sequenceFlow id="Flow_0b64ptf" sourceRef="returnOrderMainGateway" targetRef="eventThrowMsgPublishReturnOrderCreated" />
+    <bpmn:textAnnotation id="TextAnnotation_1axl3zg">
       <bpmn:text>Re-publish core credit note created event</bpmn:text>
     </bpmn:textAnnotation>
-    <bpmn:association id="Association_0x530n9" sourceRef="eventEndMsgCoreCreditNoteReceived" targetRef="TextAnnotation_18tghkc" />
-    <bpmn:textAnnotation id="TextAnnotation_0u1aom7">
+    <bpmn:textAnnotation id="TextAnnotation_13gpsm7">
       <bpmn:text>Optional, configurable delay between event publishing</bpmn:text>
     </bpmn:textAnnotation>
-    <bpmn:association id="Association_1b1rxs0" sourceRef="Event_13s33zk" targetRef="TextAnnotation_0u1aom7" />
+    <bpmn:textAnnotation id="TextAnnotation_07t0b48">
+      <bpmn:text>creation of return-order plus credit-note event</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:textAnnotation id="TextAnnotation_0si31wj">
+      <bpmn:text>creation of return-order plus credit-note event</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_0mq8e3a" sourceRef="eventEndMsgCoreCreditNoteReceived" targetRef="TextAnnotation_1axl3zg" />
+    <bpmn:association id="Association_1ftxjjm" sourceRef="Event_16ktds3" targetRef="TextAnnotation_13gpsm7" />
+    <bpmn:association id="Association_1xqqi68" sourceRef="eventStartMsgDropshipmentOrderReturnConfirmed" targetRef="TextAnnotation_07t0b48" />
+    <bpmn:association id="Association_16phgyw" sourceRef="eventStartMsgCoreCreditNoteCreated" targetRef="TextAnnotation_0si31wj" />
   </bpmn:process>
-  <bpmn:process id="Process_1a4ut5n" isExecutable="false" />
-  <bpmn:process id="Process_0fkhbk5" isExecutable="false" />
+  <bpmn:process id="Process_16q9iny" isExecutable="false" />
+  <bpmn:process id="Process_0wpbm79" isExecutable="false" />
+  <bpmn:process id="Process_1ox15am" isExecutable="false" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
-    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_19pm6dq">
-      <bpmndi:BPMNShape id="Participant_0081t5k_di" bpmnElement="Soh" isHorizontal="true">
-        <dc:Bounds x="125" y="218" width="650" height="302" />
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_0oat5o3">
+      <bpmndi:BPMNShape id="Participant_0jdylob_di" bpmnElement="Participant_0jdylob" isHorizontal="true">
+        <dc:Bounds x="160" y="349" width="1080" height="310" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="TextAnnotation_0u1aom7_di" bpmnElement="TextAnnotation_0u1aom7">
-        <dc:Bounds x="520" y="240" width="100" height="68" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="Flow_09ysqxu_di" bpmnElement="Flow_09ysqxu">
-        <di:waypoint x="518" y="347" />
-        <di:waypoint x="612" y="347" />
+      <bpmndi:BPMNEdge id="Flow_0b64ptf_di" bpmnElement="Flow_0b64ptf">
+        <di:waypoint x="685" y="482" />
+        <di:waypoint x="726" y="482" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0r17qyv_di" bpmnElement="Flow_0r17qyv">
-        <di:waypoint x="378" y="347" />
-        <di:waypoint x="482" y="347" />
+      <bpmndi:BPMNEdge id="Flow_16sbavk_di" bpmnElement="Flow_16sbavk">
+        <di:waypoint x="258" y="600" />
+        <di:waypoint x="660" y="600" />
+        <di:waypoint x="660" y="507" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0run8bt_di" bpmnElement="Flow_0run8bt">
-        <di:waypoint x="215" y="347" />
-        <di:waypoint x="342" y="347" />
+      <bpmndi:BPMNEdge id="Flow_14h19rw_di" bpmnElement="Flow_14h19rw">
+        <di:waypoint x="762" y="482" />
+        <di:waypoint x="866" y="482" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="Event_1jy27xs_di" bpmnElement="eventEndMsgCoreCreditNoteReceived">
-        <dc:Bounds x="612" y="329" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="601" y="372" width="67" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1dkg0tb_di" bpmnElement="Flow_1dkg0tb">
+        <di:waypoint x="902" y="482" />
+        <di:waypoint x="996" y="482" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0maduui_di" bpmnElement="Flow_0maduui">
+        <di:waypoint x="599" y="482" />
+        <di:waypoint x="635" y="482" />
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="Event_0uj7mam_di" bpmnElement="eventStartMsgCoreCreditNoteCreated">
-        <dc:Bounds x="179" y="329" width="36" height="36" />
+        <dc:Bounds x="563" y="464" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="158" y="372" width="79" height="27" />
+          <dc:Bounds x="542" y="507" width="79" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="TextAnnotation_18tghkc_di" bpmnElement="TextAnnotation_18tghkc">
-        <dc:Bounds x="650" y="240" width="100" height="54" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_1xihl1z_di" bpmnElement="eventInterMsgReturnOrderCreated">
-        <dc:Bounds x="342" y="329" width="36" height="36" />
+      <bpmndi:BPMNShape id="eventThrowMsgPublishReturnOrderCreated_di" bpmnElement="eventThrowMsgPublishReturnOrderCreated">
+        <dc:Bounds x="726" y="464" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="324" y="291.5" width="71" height="27" />
+          <dc:Bounds x="710" y="427" width="68" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_1rtlnyf_di" bpmnElement="Event_13s33zk">
-        <dc:Bounds x="482" y="329" width="36" height="36" />
+      <bpmndi:BPMNShape id="Event_16ktds3_di" bpmnElement="Event_16ktds3">
+        <dc:Bounds x="866" y="464" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="Association_0x530n9_di" bpmnElement="Association_0x530n9">
-        <di:waypoint x="641" y="333" />
-        <di:waypoint x="670" y="294" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Association_1b1rxs0_di" bpmnElement="Association_1b1rxs0">
-        <di:waypoint x="511" y="333" />
-        <di:waypoint x="530" y="308" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="Participant_0iuo2jh_di" bpmnElement="Core" isHorizontal="true">
-        <dc:Bounds x="125" y="80" width="650" height="60" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Participant_06nsh9o_di" bpmnElement="Erp" isHorizontal="true">
-        <dc:Bounds x="125" y="590" width="650" height="60" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="Flow_0j2q3qd_di" bpmnElement="Flow_0j2q3qd">
-        <di:waypoint x="197" y="140" />
-        <di:waypoint x="197" y="329" />
+      <bpmndi:BPMNShape id="Event_1qz6z3r_di" bpmnElement="eventStartMsgDropshipmentOrderReturnConfirmed">
+        <dc:Bounds x="222" y="582" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="207" y="166" width="85" height="27" />
+          <dc:Bounds x="200" y="625" width="81" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="returnOrderMainGateway_di" bpmnElement="returnOrderMainGateway" isMarkerVisible="true">
+        <dc:Bounds x="635" y="457" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_068ebry_di" bpmnElement="eventEndMsgCoreCreditNoteReceived">
+        <dc:Bounds x="996" y="464" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="986" y="507" width="67" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_1axl3zg_di" bpmnElement="TextAnnotation_1axl3zg">
+        <dc:Bounds x="1034" y="375" width="100" height="54" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_13gpsm7_di" bpmnElement="TextAnnotation_13gpsm7">
+        <dc:Bounds x="904" y="375" width="100" height="68" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_07t0b48_di" bpmnElement="TextAnnotation_07t0b48">
+        <dc:Bounds x="260" y="500" width="100" height="68" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_0si31wj_di" bpmnElement="TextAnnotation_0si31wj">
+        <dc:Bounds x="600" y="361" width="100" height="68" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_0mq8e3a_di" bpmnElement="Association_0mq8e3a">
+        <di:waypoint x="1025" y="468" />
+        <di:waypoint x="1054" y="429" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_1ftxjjm_di" bpmnElement="Association_1ftxjjm">
+        <di:waypoint x="895" y="468" />
+        <di:waypoint x="914" y="443" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_1xqqi68_di" bpmnElement="Association_1xqqi68">
+        <di:waypoint x="251" y="586" />
+        <di:waypoint x="266" y="568" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_16phgyw_di" bpmnElement="Association_16phgyw">
+        <di:waypoint x="591" y="467" />
+        <di:waypoint x="616" y="429" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Participant_0lqlkmg_di" bpmnElement="Participant_0lqlkmg" isHorizontal="true">
+        <dc:Bounds x="160" y="215" width="1080" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_0mbbde9_di" bpmnElement="Participant_0mbbde9" isHorizontal="true">
+        <dc:Bounds x="160" y="725" width="1080" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_0uu0yrd_di" bpmnElement="Participant_0uu0yrd" isHorizontal="true">
+        <dc:Bounds x="160" y="85" width="1080" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0r0n43i_di" bpmnElement="Flow_0r0n43i">
+        <di:waypoint x="1014" y="500" />
+        <di:waypoint x="1014" y="725" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1025" y="671" width="78" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0y20rrr_di" bpmnElement="Flow_0y20rrr">
-        <di:waypoint x="630" y="365" />
-        <di:waypoint x="630" y="590" />
+      <bpmndi:BPMNEdge id="Flow_1b2uu6i_di" bpmnElement="Flow_1b2uu6i">
+        <di:waypoint x="581" y="275" />
+        <di:waypoint x="581" y="464" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="641" y="536" width="78" height="27" />
+          <dc:Bounds x="591" y="301" width="86" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_09h08yk_di" bpmnElement="Flow_09h08yk">
-        <di:waypoint x="360" y="365" />
-        <di:waypoint x="360" y="590" />
+      <bpmndi:BPMNEdge id="Flow_0vm256l_di" bpmnElement="Flow_0vm256l">
+        <di:waypoint x="744" y="500" />
+        <di:waypoint x="744" y="725" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="366" y="536" width="88" height="27" />
+          <dc:Bounds x="752" y="671" width="84" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_09v5pij_di" bpmnElement="Flow_09v5pij">
+        <di:waypoint x="240" y="145" />
+        <di:waypoint x="240" y="582" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="248" y="153" width="85" height="53" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>

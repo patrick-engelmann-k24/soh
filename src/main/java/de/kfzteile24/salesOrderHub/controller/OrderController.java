@@ -1,11 +1,12 @@
 package de.kfzteile24.salesOrderHub.controller;
 
+import de.kfzteile24.salesOrderHub.controller.dto.ActionType;
 import de.kfzteile24.salesOrderHub.controller.dto.ErrorResponse;
+import de.kfzteile24.salesOrderHub.controller.handler.AbstractActionHandler;
+import de.kfzteile24.salesOrderHub.controller.handler.exception.NoActionHandlerFoundException;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.services.DropshipmentOrderService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderAddressService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
-import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import de.kfzteile24.soh.order.dto.BillingAddress;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.ShippingAddress;
@@ -31,6 +32,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -38,15 +40,12 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.validation.ConstraintViolationException;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Consumer;
 
-import static java.util.Collections.emptyList;
-import static org.apache.commons.collections.CollectionUtils.isEmpty;
+import static org.springframework.util.CollectionUtils.isEmpty;
 
 /**
  * Order Rest Controller Object
@@ -66,8 +65,7 @@ public class OrderController {
 
     private final SalesOrderService salesOrderService;
     private final SalesOrderAddressService orderAddressService;
-    private final SnsPublishService snsPublishService;
-    private final DropshipmentOrderService dropshipmentOrderService;
+    private final Collection<AbstractActionHandler> republishHandlers;
 
     /**
      * Change billing address if there no invoice exists
@@ -186,52 +184,29 @@ public class OrderController {
         return ResponseEntity.ok(salesOrder.get().getLatestJson());
     }
 
-    @Operation(summary = "Republish sales orders by a list of order numbers")
+    @Operation(summary = "Apply an action for a given list of order numbers", parameters = {
+            @Parameter(in = ParameterIn.QUERY, name = "actionType",
+                    description = "Action to be applied to the list of order numbers", example = "REPUBLISH_ORDER")
+    })
     @ApiResponses(value = {
-            @ApiResponse(responseCode  = "200", description  = "Sales orders republished successfully"),
-            @ApiResponse(responseCode  = "400", description  = "Republishing some of sales orders failed", content = {
+            @ApiResponse(responseCode  = "200", description  = "Action applied successfully"),
+            @ApiResponse(responseCode  = "400", description  = "Applying action for some of orders failed", content = {
                     @Content(mediaType = "application/json", array =
                     @ArraySchema(schema = @Schema(implementation = ErrorResponse.class)))}),
             @ApiResponse(responseCode  = "400", description  = "Invalid request", content = {
                     @Content(mediaType = "application/json", array =
                     @ArraySchema(schema = @Schema(implementation = ErrorResponse.class)))})
     })
-    @PostMapping("/republish")
-    public ResponseEntity<Object> republishOrders(@RequestBody @NotEmpty Collection<@NotBlank String> orderNumbers) {
-        return executeActionOnOrderNumbers(orderNumbers, snsPublishService::publishMigrationOrderCreated);
-    }
-
-    @Operation(summary = "Start the creation process of invoices again for a given list of orders")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode  = "200", description  = "Invoices are recreated successfully"),
-            @ApiResponse(responseCode  = "400", description  = "Invoice recreation of some sales orders failed", content = {
-                    @Content(mediaType = "application/json", array =
-                    @ArraySchema(schema = @Schema(implementation = ErrorResponse.class)))}),
-            @ApiResponse(responseCode  = "400", description  = "Invalid request", content = {
-                    @Content(mediaType = "application/json", array =
-                    @ArraySchema(schema = @Schema(implementation = ErrorResponse.class)))})
-    })
-    @PostMapping("/invoice/recreate")
-    public ResponseEntity<Object> recreateInvoice(@RequestBody @NotEmpty Collection<@NotBlank String> orderNumbers) {
-        return executeActionOnOrderNumbers(orderNumbers, orderNumber -> {
-            var salesOrder = dropshipmentOrderService.recreateSalesOrderInvoice(orderNumber);
-            snsPublishService.publishSalesOrderShipmentConfirmedEvent(salesOrder, emptyList());
-        });
-    }
-
-    private static ResponseEntity<Object> executeActionOnOrderNumbers(Collection<String> orderNumbers,
-                                                                      Consumer<String> action) {
-        var errors = new ArrayList<ErrorResponse>();
-        orderNumbers.forEach(orderNumber -> {
-            try {
-                action.accept(orderNumber);
-            } catch (Exception e) {
-                errors.add(ErrorResponse.builder()
-                        .orderNumber(orderNumber)
-                        .errorMessage(e.getLocalizedMessage())
-                        .build());
-            }
-        });
+    @PostMapping("/apply-action")
+    public ResponseEntity<Object> applyAction(@RequestBody @NotEmpty Collection<@NotBlank String> orderNumbers,
+                                              @RequestParam ActionType actionType) {
+        var errors = republishHandlers.stream()
+                .filter(republishHandler -> republishHandler.supports(actionType))
+                .findFirst()
+                .map(republishHandler -> republishHandler.applyAction(orderNumbers))
+                .orElseThrow(() -> {
+                    throw new NoActionHandlerFoundException(actionType);
+                });
         return isEmpty(errors) ? ResponseEntity.ok().build() : ResponseEntity.badRequest().body(errors);
     }
 
@@ -246,5 +221,14 @@ public class OrderController {
             errors.put(fieldName, errorMessage);
         });
         return errors;
+    }
+
+    @Hidden
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(NoActionHandlerFoundException.class)
+    public ErrorResponse handleNoActionHandlerFoundExceptions(NoActionHandlerFoundException ex) {
+        return ErrorResponse.builder()
+                .errorMessage(ex.getLocalizedMessage())
+                .build();
     }
 }
