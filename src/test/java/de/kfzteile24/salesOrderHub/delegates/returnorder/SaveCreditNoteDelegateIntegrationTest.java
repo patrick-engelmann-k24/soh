@@ -26,7 +26,7 @@ import java.util.Map;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.SAVE_CREDIT_NOTE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.CREDIT_NOTE_SAVED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.START_MSG_CREDIT_NOTE_CREATED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CREDIT_NOTE_CREATED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_CREDIT_NOTE_CREATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.INVOICE_URL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.RETURN_ORDER_CREATED;
@@ -96,7 +96,7 @@ class SaveCreditNoteDelegateIntegrationTest extends AbstractWorkflowTest {
         processVariables.put(INVOICE_URL.getName(), expectedInvoiceUrl);
         processVariables.put(ORDER_NUMBER.getName(), orderNumber);
 
-        return runtimeService.createMessageCorrelation(CREDIT_NOTE_CREATED.getName())
+        return runtimeService.createMessageCorrelation(DROPSHIPMENT_CREDIT_NOTE_CREATED.getName())
                 .setVariables(processVariables)
                 .correlateWithResult()
                 .getProcessInstance();

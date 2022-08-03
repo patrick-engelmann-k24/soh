@@ -75,6 +75,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_PURCHASE_ORDER_SUCCESSFUL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.THROW_MSG_DROPSHIPMENT_ORDER_CREATED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_CREDIT_NOTE_CREATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_ECP;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_PAYMENT_SECURED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_DROPSHIPMENT_ORDER_CONFIRMED;
@@ -143,6 +144,8 @@ class SqsReceiveServiceIntegrationTest {
     private SnsPublishService snsPublishService;
     @SpyBean
     private SalesOrderRowService salesOrderRowService;
+    @Autowired
+    private TimedPollingService timedPollingService;
 
     @BeforeEach
     public void setup() {
@@ -598,7 +601,7 @@ class SqsReceiveServiceIntegrationTest {
     private void checkEventIsPublished(SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage) {
 
         verify(salesOrderService).getOrderByOrderNumber("580309129");
-        verify(salesOrderRowService).handleSalesOrderReturn(eq(salesCreditNoteCreatedMessage), eq(RETURN_ORDER_CREATED));
+        verify(salesOrderRowService).handleSalesOrderReturn(eq(salesCreditNoteCreatedMessage), eq(RETURN_ORDER_CREATED), eq(CORE_CREDIT_NOTE_CREATED));
         verify(snsPublishService).publishReturnOrderCreatedEvent(argThat(
                 salesOrderReturn -> {
                     assertThat(salesOrderReturn.getOrderNumber()).isEqualTo("580309129-876130");
@@ -769,10 +772,10 @@ class SqsReceiveServiceIntegrationTest {
     @AfterEach
     @SneakyThrows
     public void cleanup() {
-        salesOrderRepository.deleteAll();
-        auditLogRepository.deleteAll();
-        bpmUtil.cleanUp();
-        invoiceNumberCounterRepository.deleteAll();
+        timedPollingService.retry(() -> salesOrderRepository.deleteAll());
+        timedPollingService.retry(() -> auditLogRepository.deleteAll());
+        timedPollingService.retry(() -> bpmUtil.cleanUp());
+        timedPollingService.retry(() -> invoiceNumberCounterRepository.deleteAll());
         invoiceNumberCounterService.init();
     }
 }

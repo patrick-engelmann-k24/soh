@@ -15,7 +15,7 @@ import java.util.Optional;
 
 @Component
 @Slf4j
-class PublishReturnOrderCreatedDelegate implements JavaDelegate {
+public class PublishReturnOrderCreatedDelegate implements JavaDelegate {
 
     @Autowired
     private SnsPublishService snsPublishService;

@@ -44,6 +44,7 @@ import java.util.Collections;
 import java.util.Optional;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.*;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.PAYPAL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
@@ -152,7 +153,7 @@ class SqsReceiveServiceTest {
                 ANY_RECEIVE_COUNT);
 
         verify(salesOrderService).createSalesOrderForInvoice(any(CoreSalesInvoiceCreatedMessage.class), any(SalesOrder.class), any(String.class));
-        verify(camundaHelper).createOrderProcess(any(SalesOrder.class), eq(Messages.ORDER_CREATED_IN_SOH));
+        verify(camundaHelper).createOrderProcess(any(SalesOrder.class), eq(ORDER_CREATED_IN_SOH));
         verify(camundaHelper).startInvoiceCreatedReceivedProcess(salesOrder);
     }
 
@@ -387,7 +388,7 @@ class SqsReceiveServiceTest {
 
         sqsReceiveService.queueListenerMigrationCoreSalesCreditNoteCreated(rawEventMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
-        verify(salesOrderRowService).handleSalesOrderReturn(eq(creditNoteMsg), eq(RETURN_ORDER_CREATED));
+        verify(salesOrderRowService).handleSalesOrderReturn(eq(creditNoteMsg), eq(RETURN_ORDER_CREATED), eq(CORE_CREDIT_NOTE_CREATED));
     }
 
     private SalesOrder createSalesOrder(String orderNumber) {

@@ -16,7 +16,7 @@ import java.util.Optional;
 
 @Component
 @Slf4j
-class PublishCreditNoteReceivedDelegate implements JavaDelegate {
+public class PublishCreditNoteReceivedDelegate implements JavaDelegate {
 
     @Autowired
     private SnsPublishService snsPublishService;

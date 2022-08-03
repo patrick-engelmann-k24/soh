@@ -34,4 +34,21 @@ public class TimedPollingService {
     public boolean pollWithDefaultTiming(Supplier<Boolean> test) {
         return poll(DELAY, TIMEOUT, test);
     }
+
+    public void retry(Runnable runnable) {
+        retry(DELAY, TIMEOUT, runnable);
+    }
+
+    public void retry(Duration delay, Duration timeout, Runnable runnable) {
+        final var startTime = System.currentTimeMillis();
+        while (System.currentTimeMillis() - startTime < timeout.toMillis()) {
+            try {
+                runnable.run();
+                return;
+            } catch (Throwable t) {
+                log.error(t.getMessage(), t);
+                //continue
+            }
+        }
+    }
 }
