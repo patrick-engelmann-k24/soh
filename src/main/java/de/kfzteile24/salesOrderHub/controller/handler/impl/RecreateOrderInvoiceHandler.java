@@ -2,6 +2,7 @@ package de.kfzteile24.salesOrderHub.controller.handler.impl;
 
 import de.kfzteile24.salesOrderHub.controller.dto.ActionType;
 import de.kfzteile24.salesOrderHub.controller.handler.AbstractActionHandler;
+import de.kfzteile24.salesOrderHub.helper.EventMapper;
 import de.kfzteile24.salesOrderHub.services.DropshipmentOrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -20,7 +21,7 @@ public class RecreateOrderInvoiceHandler extends AbstractActionHandler {
     protected Consumer<String> getAction() {
         return orderNumber -> {
             var salesOrder = dropshipmentOrderService.recreateSalesOrderInvoice(orderNumber);
-            snsPublishService.publishSalesOrderShipmentConfirmedEvent(salesOrder, emptyList());
+            snsPublishService.publishCoreInvoiceReceivedEvent(EventMapper.INSTANCE.toCoreSalesInvoiceCreatedReceivedEvent(salesOrder.getInvoiceEvent()));
         };
     }
 

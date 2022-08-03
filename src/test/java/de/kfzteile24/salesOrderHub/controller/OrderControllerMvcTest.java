@@ -2,6 +2,7 @@ package de.kfzteile24.salesOrderHub.controller;
 
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
+import de.kfzteile24.salesOrderHub.helper.EventMapper;
 import de.kfzteile24.salesOrderHub.services.DropshipmentOrderService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import org.apache.commons.lang3.StringUtils;
@@ -14,13 +15,12 @@ import java.util.List;
 import static de.kfzteile24.salesOrderHub.controller.dto.ActionType.RECREATE_ORDER_INVOICE;
 import static de.kfzteile24.salesOrderHub.controller.dto.ActionType.REPUBLISH_ORDER;
 import static de.kfzteile24.salesOrderHub.controller.dto.ActionType.REPUBLISH_RETURN_ORDER;
-import static java.util.Collections.emptyList;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -137,10 +137,7 @@ class OrderControllerMvcTest extends AbstractControllerMvcTest {
 
         verify(dropshipmentOrderService).recreateSalesOrderInvoice(ORDER_NUMBER_1);
         verify(dropshipmentOrderService).recreateSalesOrderInvoice(ORDER_NUMBER_2);
-        verify(snsPublishService).publishSalesOrderShipmentConfirmedEvent(argThat(salesOrder ->
-                StringUtils.equals(salesOrder.getOrderNumber(), ORDER_NUMBER_1)), eq(emptyList()));
-        verify(snsPublishService).publishSalesOrderShipmentConfirmedEvent(argThat(salesOrder ->
-                StringUtils.equals(salesOrder.getOrderNumber(), ORDER_NUMBER_2)), eq(emptyList()));
+        verify(snsPublishService, times(2)).publishCoreInvoiceReceivedEvent(eq(EventMapper.INSTANCE.toCoreSalesInvoiceCreatedReceivedEvent(salesOrder1.getInvoiceEvent())));
     }
 
     @Test
@@ -203,10 +200,7 @@ class OrderControllerMvcTest extends AbstractControllerMvcTest {
 
         verify(dropshipmentOrderService).recreateSalesOrderInvoice(ORDER_NUMBER_1);
         verify(dropshipmentOrderService).recreateSalesOrderInvoice(ORDER_NUMBER_2);
-        verify(snsPublishService).publishSalesOrderShipmentConfirmedEvent(argThat(salesOrder ->
-                StringUtils.equals(salesOrder.getOrderNumber(), ORDER_NUMBER_1)), eq(emptyList()));
-        verify(snsPublishService, never()).publishSalesOrderShipmentConfirmedEvent(argThat(salesOrder ->
-                StringUtils.equals(salesOrder.getOrderNumber(), ORDER_NUMBER_2)), eq(emptyList()));
+        verify(snsPublishService).publishCoreInvoiceReceivedEvent(eq(EventMapper.INSTANCE.toCoreSalesInvoiceCreatedReceivedEvent(salesOrder1.getInvoiceEvent())));
     }
 
     @Test
