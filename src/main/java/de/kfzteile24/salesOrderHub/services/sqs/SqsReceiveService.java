@@ -460,8 +460,8 @@ public class SqsReceiveService {
                 var originalSalesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                         .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
 
-                if (!isInvoicePublished(originalSalesOrder, invoiceNumber)
-                        && salesOrderService.isFullyMatchedWithOriginalOrder(originalSalesOrder, itemList)) {
+                boolean invoicePublished = isInvoicePublished(originalSalesOrder, invoiceNumber);
+                if (!invoicePublished && salesOrderService.isFullyMatchedWithOriginalOrder(originalSalesOrder, itemList)) {
                     updateOriginalSalesOrder(salesInvoiceCreatedMessage, originalSalesOrder);
                     publishInvoiceEvent(originalSalesOrder);
                 } else {
@@ -470,7 +470,9 @@ public class SqsReceiveService {
                                 salesInvoiceCreatedMessage,
                                 originalSalesOrder,
                                 newOrderNumber);
-                        handleCancellationForOrderRows(originalSalesOrder, subsequentOrder.getLatestJson().getOrderRows());
+                        if(!invoicePublished) {
+                            handleCancellationForOrderRows(originalSalesOrder, subsequentOrder.getLatestJson().getOrderRows());
+                        }
                         Order order = subsequentOrder.getLatestJson();
                         if(orderUtil.checkIfOrderHasOrderRows(order)){
                             ProcessInstance result = camundaHelper.createOrderProcess(subsequentOrder, ORDER_CREATED_IN_SOH);
