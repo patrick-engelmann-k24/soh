@@ -19,6 +19,8 @@ import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.K24;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.readResource;
+import static de.kfzteile24.soh.order.dto.Platform.BRAINCRAFT;
+import static de.kfzteile24.soh.order.dto.Platform.ECP;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -46,7 +48,7 @@ public class SalesOrderProcessServiceIntegrationTest {
         String orderRawMessage = readResource("examples/ecpOrderMessageWithTwoRows.json");
         Order order = getOrder(orderRawMessage);
         order.getOrderHeader().setOrderFulfillment(DELTICOM.getName());
-        order.getOrderHeader().setPlatform(Platform.BRAINCRAFT);
+        order.getOrderHeader().setPlatform(BRAINCRAFT);
         order.getOrderRows().get(0).setGenart("10040");
         order.getOrderRows().get(1).setGenart("test");
 
@@ -62,8 +64,17 @@ public class SalesOrderProcessServiceIntegrationTest {
         assertEquals(order.getOrderHeader().getOrderNumber(), regularOrder.getOrderNumber());
         assertEquals(order.getOrderHeader().getOrderNumber(), regularOrder.getLatestJson().getOrderHeader().getOrderNumber());
         assertEquals(K24.getName(), regularOrder.getLatestJson().getOrderHeader().getOrderFulfillment());
+        assertEquals(BRAINCRAFT, regularOrder.getLatestJson().getOrderHeader().getPlatform());
         assertEquals(1, regularOrder.getLatestJson().getOrderRows().size());
         assertEquals("test", regularOrder.getLatestJson().getOrderRows().get(0).getGenart());
+
+        Order originalRegularOrder = (Order)regularOrder.getOriginalOrder();
+        assertEquals(order.getOrderHeader().getOrderNumber(), originalRegularOrder.getOrderHeader().getOrderNumber());
+        assertEquals(K24.getName(), originalRegularOrder.getOrderHeader().getOrderFulfillment());
+        assertEquals(ECP, originalRegularOrder.getOrderHeader().getPlatform());
+        assertEquals(2, originalRegularOrder.getOrderRows().size());
+        assertEquals("816", originalRegularOrder.getOrderRows().get(0).getGenart());
+        assertEquals("816", originalRegularOrder.getOrderRows().get(1).getGenart());
 
         var optional = salesOrderService.getOrderByOrderNumber(regularOrder.getOrderNumber() + "-1");
         assertTrue(optional.isPresent());
@@ -71,8 +82,17 @@ public class SalesOrderProcessServiceIntegrationTest {
         assertEquals(order.getOrderHeader().getOrderNumber() + "-1", splittedOrder.getOrderNumber());
         assertEquals(order.getOrderHeader().getOrderNumber() + "-1", splittedOrder.getLatestJson().getOrderHeader().getOrderNumber());
         assertEquals(DELTICOM.getName(), splittedOrder.getLatestJson().getOrderHeader().getOrderFulfillment());
+        assertEquals(BRAINCRAFT, splittedOrder.getLatestJson().getOrderHeader().getPlatform());
         assertEquals(1, splittedOrder.getLatestJson().getOrderRows().size());
         assertEquals("10040", splittedOrder.getLatestJson().getOrderRows().get(0).getGenart());
+
+        var originalSplittedOrder = (Order)splittedOrder.getOriginalOrder();
+        assertEquals(order.getOrderHeader().getOrderNumber(), originalSplittedOrder.getOrderHeader().getOrderNumber());
+        assertEquals(K24.getName(), originalSplittedOrder.getOrderHeader().getOrderFulfillment());
+        assertEquals(ECP, originalSplittedOrder.getOrderHeader().getPlatform());
+        assertEquals(2, originalSplittedOrder.getOrderRows().size());
+        assertEquals("816", originalSplittedOrder.getOrderRows().get(0).getGenart());
+        assertEquals("816", originalSplittedOrder.getOrderRows().get(1).getGenart());
     }
 
     @AfterEach

@@ -6,6 +6,7 @@ import de.kfzteile24.salesOrderHub.dto.split.SalesOrderSplit;
 import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapperUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,9 +30,12 @@ public class SalesOrderProcessService {
     private final SnsPublishService snsPublishService;
     private final OrderUtil orderUtil;
 
+    private final MessageWrapperUtil messageWrapperUtil;
+
     public void handleShopOrdersReceived(MessageWrapper<Order> orderMessageWrapper) {
+        var orderCopy = messageWrapperUtil.createMessage(orderMessageWrapper.getRawMessage(), Order.class);
         setOrderGroupIdIfEmpty(orderMessageWrapper.getMessage());
-        splitterService.splitSalesOrder(orderMessageWrapper.getMessage())
+        splitterService.splitSalesOrder(orderMessageWrapper.getMessage(), orderCopy)
                 .forEach(salesOrderSplit -> startSalesOrderProcess(salesOrderSplit, orderMessageWrapper));
     }
 

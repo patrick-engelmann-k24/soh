@@ -47,7 +47,8 @@ public class SplitterServiceTest {
         var sqsMessage = objectMapperConfig.objectMapper().readValue(rawMessage, SqsMessage.class);
         var order = objectMapperConfig.objectMapper().readValue(sqsMessage.getBody(), Order.class);
         order.getOrderHeader().setOrderFulfillment(null);
-        splitterService.splitSalesOrder(order);
+
+        splitterService.splitSalesOrder(order, order);
         assertEquals(ORDER_FULFILLMENT_K24, order.getOrderHeader().getOrderFulfillment());
     }
 }

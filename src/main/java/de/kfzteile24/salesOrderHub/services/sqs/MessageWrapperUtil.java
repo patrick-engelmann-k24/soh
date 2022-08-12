@@ -22,4 +22,8 @@ public class MessageWrapperUtil {
                 .rawMessage(rawMessage)
                 .build();
     }
+
+    public <T> T createMessage(String rawMessage, Class<T> messageType) {
+        return create(rawMessage, messageType).getMessage();
+    }
 }

@@ -167,7 +167,9 @@ class SalesOrderServiceTest {
         var originalOrderGroupId = salesOrder.getOrderGroupId();
         updateRowIsCancelledFieldAsTrue(salesOrder); //In order to observe change
         String newOrderNumber = "22222";
+        String oldOrderNumber = salesOrder.getOrderNumber();
         OrderRows orderRow = salesOrder.getLatestJson().getOrderRows().get(0);
+        OrderRows orderRow2 = salesOrder.getLatestJson().getOrderRows().get(1);
 
         // Prepare sub-sequent delivery note obj
         var invoiceCreatedMessage = createCoreSalesInvoiceCreatedMessage(
@@ -191,14 +193,22 @@ class SalesOrderServiceTest {
                 salesOrder,
                 newOrderNumber);
 
+        invoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader().setOrderNumber(newOrderNumber);
+
         assertThat(createdSalesOrder.getOrderNumber()).isEqualTo(newOrderNumber);
         assertThat(createdSalesOrder.getOrderGroupId()).isEqualTo(originalOrderGroupId);
-        assertThat(createdSalesOrder.getOriginalOrder()).isNotNull();
         assertThat(createdSalesOrder.getLatestJson()).isNotNull();
         assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getPlatform()).isNotNull();
         assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getPlatform()).isEqualTo(Platform.SOH);
         assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getOrderNumber()).isEqualTo(newOrderNumber);
         assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber()).isEqualTo(invoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber());
+
+        assertThat(createdSalesOrder.getOriginalOrder()).isNotNull();
+        var originalOrder = (Order)createdSalesOrder.getOriginalOrder();
+        assertThat(originalOrder.getOrderHeader().getPlatform()).isEqualTo(Platform.ECP);
+        assertThat(originalOrder.getOrderHeader().getOrderNumber()).isEqualTo(oldOrderNumber);
+        assertThat(originalOrder.getOrderHeader().getDocumentRefNumber()).isNull();
+
         assertThat(createdSalesOrder.getId()).isNull();
         assertThat(createdSalesOrder.getLatestJson().getOrderRows()).hasSize(1);
         assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getTotals().getGoodsTotalGross()).isEqualTo(orderRow.getSumValues().getGoodsValueGross());
@@ -211,7 +221,20 @@ class SalesOrderServiceTest {
                         .value(new BigDecimal("28.48"))
                         .build())
         );
-        invoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader().setOrderNumber(newOrderNumber);
+
+        assertThat(originalOrder.getOrderRows()).hasSize(2);
+        assertThat(originalOrder.getOrderHeader().getTotals().getGoodsTotalGross()).isEqualTo(orderRow.getSumValues().getGoodsValueGross().add(orderRow2.getSumValues().getGoodsValueGross()));
+        assertThat(originalOrder.getOrderHeader().getTotals().getGoodsTotalNet()).isEqualTo(orderRow.getSumValues().getGoodsValueNet().add(orderRow2.getSumValues().getGoodsValueNet()));
+        assertThat(originalOrder.getOrderHeader().getTotals().getTotalDiscountGross()).isEqualTo(orderRow.getSumValues().getDiscountGross().add(orderRow2.getSumValues().getDiscountGross()));
+        assertThat(originalOrder.getOrderHeader().getTotals().getGrandTotalGross()).isEqualTo(orderRow.getSumValues().getGoodsValueGross().subtract(orderRow.getSumValues().getDiscountGross())
+                .add(orderRow2.getSumValues().getGoodsValueGross().subtract(orderRow2.getSumValues().getDiscountGross())));
+        assertThat(originalOrder.getOrderHeader().getTotals().getGrandTotalTaxes()).isEqualTo(
+                List.of(GrandTotalTaxes.builder()
+                        .rate(salesOrder.getLatestJson().getOrderHeader().getTotals().getGrandTotalTaxes().get(0).getRate())
+                        .value(salesOrder.getLatestJson().getOrderHeader().getTotals().getGrandTotalTaxes().get(0).getValue())
+                        .build())
+        );
+
         assertThat(createdSalesOrder.getInvoiceEvent()).isEqualTo(invoiceCreatedMessage);
     }
 
