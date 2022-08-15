@@ -248,7 +248,8 @@ class SalesOrderServiceTest {
         assertEquals(2, salesOrder.getLatestJson().getOrderRows().size());
 
         // Prepare sub-sequent delivery note obj
-        var invoiceCreatedMessage = createFullyMatchedItemsMessage(salesOrder, null, null, null);
+        var invoiceCreatedMessage =
+                createFullyMatchedItemsMessage(salesOrder, "2010-10183", BigDecimal.valueOf(1.00), BigDecimal.valueOf(1.19));
 
         CoreSalesInvoiceHeader salesInvoiceHeader = invoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
         assertTrue(salesOrderService.isFullyMatchedWithOriginalOrder(salesOrder, salesInvoiceHeader.getInvoiceLines()));
@@ -263,7 +264,8 @@ class SalesOrderServiceTest {
         assertEquals(2, salesOrder.getLatestJson().getOrderRows().size());
 
         // Prepare sub-sequent delivery note obj
-        var invoiceCreatedMessage = createFullyMatchedItemsMessage(salesOrder, "test", null, null);
+        var invoiceCreatedMessage =
+                createFullyMatchedItemsMessage(salesOrder, "test", BigDecimal.valueOf(1.00), BigDecimal.valueOf(1.19));
 
         CoreSalesInvoiceHeader salesInvoiceHeader = invoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
         assertTrue(salesOrderService.isFullyMatchedWithOriginalOrder(salesOrder, salesInvoiceHeader.getInvoiceLines()));
@@ -281,7 +283,7 @@ class SalesOrderServiceTest {
 
         // Prepare sub-sequent delivery note obj
         var invoiceCreatedMessage = createFullyMatchedItemsMessage(salesOrder,
-                orderRow.getSku(), null, null);
+                orderRow.getSku(), BigDecimal.valueOf(1.00), BigDecimal.valueOf(1.19));
 
         CoreSalesInvoiceHeader salesInvoiceHeader = invoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
         assertTrue(salesOrderService.isFullyMatchedWithOriginalOrder(salesOrder, salesInvoiceHeader.getInvoiceLines()));

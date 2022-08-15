@@ -29,7 +29,7 @@ public class OrderJsonVersionDetector {
     }
 
     @Data
-    private static class VersionExtractor {
+    public static class VersionExtractor {
         private String version;
     }
 

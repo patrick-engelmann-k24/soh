@@ -414,6 +414,7 @@ class SqsReceiveServiceIntegrationTest {
         String randomOrderNumber = bpmUtil.getRandomOrderNumber();
         order.getOrderHeader().setOrderNumber(randomOrderNumber);
         order.getOrderHeader().setOrderGroupId(randomOrderNumber);
+        order.getOrderHeader().setOrderNumberCore(RandomStringUtils.randomNumeric(9));
         var orderRows = List.of(
                 createOrderRow("sku-1", NONE),
                 createOrderRow("sku-2", NONE),

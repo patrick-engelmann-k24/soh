@@ -2,43 +2,45 @@ package de.kfzteile24.salesOrderHub.dto.shared.creditnote;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import de.kfzteile24.salesOrderHub.dto.sns.shared.Address;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Collection;
 
+@Data
 @Builder
-@Value
-@Jacksonized
+@AllArgsConstructor
+@NoArgsConstructor
 public class SalesCreditNoteHeader {
 
     @JsonProperty("OrderGroupId")
-    String orderGroupId;
+    private String orderGroupId;
 
     @JsonProperty("OrderNumber")
-    String orderNumber;
+    private String orderNumber;
 
     @JsonProperty("CreditNoteNumber")
-    String creditNoteNumber;
+    private String creditNoteNumber;
 
     @JsonProperty("CreditNoteDate")
-    LocalDateTime creditNoteDate;
+    private LocalDateTime creditNoteDate;
 
     @JsonProperty("CurrencyCode")
-    String currencyCode;
+    private String currencyCode;
 
     @JsonProperty("NetAmount")
-    BigDecimal netAmount;
+    private BigDecimal netAmount;
 
     @JsonProperty("GrossAmount")
-    BigDecimal grossAmount;
+    private BigDecimal grossAmount;
 
     @JsonProperty("BillingAddress")
-    Address billingAddress;
+    private Address billingAddress;
 
     @JsonProperty("CreditNoteLines")
-    Collection<CreditNoteLine> creditNoteLines;
+    private Collection<CreditNoteLine> creditNoteLines;
 }

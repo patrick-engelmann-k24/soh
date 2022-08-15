@@ -42,6 +42,8 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cloud.aws.messaging.listener.annotation.SqsListener;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
@@ -53,6 +55,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig.OBJECT_MAPPER_WITH_BEAN_VALIDATION;
 import static de.kfzteile24.salesOrderHub.constants.CustomEventName.SUBSEQUENT_ORDER_GENERATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_CREDIT_NOTE_CREATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_CREATED_IN_SOH;
@@ -69,7 +72,6 @@ public class SqsReceiveService {
     private final SalesOrderRowService salesOrderRowService;
     private final SalesOrderReturnService salesOrderReturnService;
     private final CamundaHelper camundaHelper;
-    private final ObjectMapper objectMapper;
     private final SalesOrderPaymentSecuredService salesOrderPaymentSecuredService;
     private final FeatureFlagConfig featureFlagConfig;
     private final SnsPublishService snsPublishService;
@@ -80,6 +82,8 @@ public class SqsReceiveService {
     private final MetricsHelper metricsHelper;
     private final OrderUtil orderUtil;
     private final SleuthHelper sleuthHelper;
+
+    private ObjectMapper objectMapper;
 
     /**
      * Consume sqs for new orders from ecp, bc and core shops
@@ -716,5 +720,10 @@ public class SqsReceiveService {
                         .collect(Collectors.toList()));
 
         salesOrderRowService.handleParcelShippedEvent(event);
+    }
+
+    @Autowired
+    public void setObjectMapper(@Qualifier(OBJECT_MAPPER_WITH_BEAN_VALIDATION) ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
     }
 }

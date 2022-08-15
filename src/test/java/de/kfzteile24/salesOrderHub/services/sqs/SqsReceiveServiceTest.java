@@ -30,6 +30,7 @@ import lombok.SneakyThrows;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,7 +45,8 @@ import java.util.Collections;
 import java.util.Optional;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.*;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_CREDIT_NOTE_CREATED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_CREATED_IN_SOH;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.PAYPAL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
@@ -80,7 +82,6 @@ class SqsReceiveServiceTest {
     private static final String ANY_SENDER_ID = RandomStringUtils.randomAlphabetic(10);
     private static final int ANY_RECEIVE_COUNT = RandomUtils.nextInt();
 
-    @Spy
     private final ObjectMapper objectMapper = new ObjectMapperConfig().objectMapper();
     @Mock
     private SalesOrderService salesOrderService;
@@ -111,6 +112,11 @@ class SqsReceiveServiceTest {
     @InjectMocks
     @Spy
     private SqsReceiveService sqsReceiveService;
+
+    @BeforeEach
+    void setUp() {
+        sqsReceiveService.setObjectMapper(objectMapper);
+    }
 
     @Test
     void testQueueListenerInvoiceCreatedMsgReceived() {

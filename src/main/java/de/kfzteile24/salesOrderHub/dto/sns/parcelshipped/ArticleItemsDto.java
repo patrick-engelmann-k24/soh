@@ -1,26 +1,28 @@
 package de.kfzteile24.salesOrderHub.dto.sns.parcelshipped;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
+@Data
 @Builder
-@Value
-@Jacksonized
+@AllArgsConstructor
+@NoArgsConstructor
 public class ArticleItemsDto {
 
     @JsonProperty("Number")
-    String number;
+    private String number;
 
     @JsonProperty("Description")
-    String description;
+    private String description;
 
     @JsonProperty("Quantity")
-    BigDecimal quantity;
+    private BigDecimal quantity;
 
     @JsonProperty("IsDeposit")
-    boolean isDeposit;
+    private boolean isDeposit;
 }

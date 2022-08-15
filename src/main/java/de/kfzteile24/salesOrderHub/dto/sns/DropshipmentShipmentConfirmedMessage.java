@@ -2,29 +2,31 @@ package de.kfzteile24.salesOrderHub.dto.sns;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Collection;
 
+@Data
 @Builder
-@Value
-@Jacksonized
+@AllArgsConstructor
+@NoArgsConstructor
 public class DropshipmentShipmentConfirmedMessage {
 
     @JsonProperty("SupplierInternalId")
-    Integer supplierInternalId;
+    private Integer supplierInternalId;
 
     @JsonProperty("PurchaseOrderNumber")
-    String purchaseOrderNumber;
+    private String purchaseOrderNumber;
 
     @JsonProperty("SalesOrderNumber")
-    String salesOrderNumber;
+    private String salesOrderNumber;
 
     @JsonProperty("ShipmentDate")
-    String shipmentDate;
+    private String shipmentDate;
 
     @JsonProperty("Items")
-    Collection<ShipmentItem> items;
+    private Collection<ShipmentItem> items;
 }
