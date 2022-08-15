@@ -2,6 +2,7 @@ package de.kfzteile24.salesOrderHub.helper;
 
 import de.kfzteile24.salesOrderHub.configuration.DropShipmentConfig;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesFinancialDocumentLine;
 import de.kfzteile24.salesOrderHub.dto.sns.shared.OrderItem;
 import de.kfzteile24.soh.order.dto.GrandTotalTaxes;
 import de.kfzteile24.soh.order.dto.Order;
@@ -33,6 +34,8 @@ import static java.math.RoundingMode.HALF_UP;
 @Slf4j
 @RequiredArgsConstructor
 public class OrderUtil {
+
+    public static final String SHIPPING_COST_ITEM_NUMBER = "shipping-cost";
 
     private final DropShipmentConfig config;
 
@@ -201,5 +204,25 @@ public class OrderUtil {
         } else {
             return true;
         }
+    }
+
+    public boolean hasShippingCost(SalesOrder salesOrder) {
+        return salesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostNet() != null
+                && salesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostNet().compareTo(BigDecimal.ZERO) > 0;
+    }
+
+    public CoreSalesFinancialDocumentLine createShippingCostLineFromSalesOrder(SalesOrder salesOrder) {
+        return CoreSalesFinancialDocumentLine.builder()
+                .itemNumber(SHIPPING_COST_ITEM_NUMBER)
+                .quantity(BigDecimal.valueOf(1))
+                .taxRate(salesOrder.getLatestJson().getOrderHeader().getTotals().getGrandTotalTaxes().get(0).getRate())
+                .unitNetAmount(salesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostNet())
+                .lineNetAmount(salesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostNet())
+                .unitGrossAmount(salesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostGross())
+                .lineGrossAmount(salesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostGross())
+                .lineTaxAmount(Optional.ofNullable(salesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostGross()).orElse(BigDecimal.ZERO)
+                        .subtract(Optional.ofNullable(salesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostNet()).orElse(BigDecimal.ZERO)))
+                .isShippingCost(true)
+                .build();
     }
 }
