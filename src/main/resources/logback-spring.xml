@@ -11,11 +11,11 @@
                     converterClass="org.springframework.boot.logging.logback.ExtendedWhitespaceThrowableProxyConverter" />
 
     <property name="CONSOLE_LOG_PATTERN" value="${CONSOLE_LOG_PATTERN:-%clr(%d{${LOG_DATEFORMAT_PATTERN:-yyyy-MM-dd HH:mm:ss.SSS}})
-[%-11X{x-business-key}] %-5level %-40.40logger{39}: %replace(%msg){'\n','&#xd;'} %replace(%exception){'\n','&#xd;'} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}}"/>
+[%-11X{x-business-key}] %-5level %-40.40logger{39}: %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}}"/>
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+            <pattern>%date{yyyy-MM-dd HH:mm:ss} %-5level - %logger{0}:%line: %replace(%msg){'\n','&#xd;'} %replace(%exception){'\n','&#xd;'} %nopexception %n</pattern>
         </encoder>
     </appender>
 
