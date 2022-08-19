@@ -61,6 +61,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.C
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_CREATED_IN_SOH;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.RETURN_ORDER_CREATED;
 import static java.util.function.Predicate.not;
+import static java.util.stream.Collectors.toSet;
 import static org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy.ON_SUCCESS;
 
 @Service
@@ -543,11 +544,13 @@ public class SqsReceiveService {
     protected void handleCancellationForOrderRows(SalesOrder originalSalesOrder, List<OrderRows> orderRows) {
 
         var originalOrderRowsNotCancelled = originalSalesOrder.getLatestJson().getOrderRows().stream()
-                .filter(row -> !row.getIsCancelled()).collect(Collectors.toSet());
+                .filter(not(OrderRows::getIsCancelled))
+                .collect(toSet());
 
         for (OrderRows orderRow : orderRows) {
 
             var originalSkusToCancel = originalOrderRowsNotCancelled.stream()
+                    .filter(not(OrderRows::getIsCancelled))
                     .filter(row -> row.getSku().equals(orderRow.getSku())).collect(Collectors.toList());
 
             if (!originalSkusToCancel.isEmpty()) {
