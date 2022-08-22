@@ -32,6 +32,8 @@ import java.util.stream.Collectors;
 import static de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig.OBJECT_MAPPER_WITH_BEAN_VALIDATION;
 import static de.kfzteile24.salesOrderHub.constants.CustomEventName.SUBSEQUENT_ORDER_GENERATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_CREATED_IN_SOH;
+import static java.util.function.Predicate.not;
+import static java.util.stream.Collectors.toSet;
 
 @Slf4j
 @Service
@@ -148,11 +150,13 @@ public class CoreSalesInvoiceCreatedService {
     protected void handleCancellationForOrderRows(SalesOrder originalSalesOrder, List<OrderRows> orderRows) {
 
         var originalOrderRowsNotCancelled = originalSalesOrder.getLatestJson().getOrderRows().stream()
-                .filter(row -> !row.getIsCancelled()).collect(Collectors.toSet());
+                .filter(not(OrderRows::getIsCancelled))
+                .collect(toSet());
 
         for (OrderRows orderRow : orderRows) {
 
             var originalSkusToCancel = originalOrderRowsNotCancelled.stream()
+                    .filter(not(OrderRows::getIsCancelled))
                     .filter(row -> row.getSku().equals(orderRow.getSku())).collect(Collectors.toList());
 
             if (!originalSkusToCancel.isEmpty()) {
