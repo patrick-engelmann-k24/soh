@@ -84,6 +84,7 @@ public class SalesOrderRowService {
                     orderRow.setIsCancelled(true);
                 }
             }
+            salesOrder.setCancelled(true);
             salesOrderService.save(salesOrder, Action.ORDER_CANCELLED);
             return true;
         } else {
