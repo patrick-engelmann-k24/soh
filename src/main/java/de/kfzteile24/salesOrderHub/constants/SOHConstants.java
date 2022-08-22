@@ -17,5 +17,7 @@ public final class SOHConstants {
     public static final int LENGTH_CREDIT_NOTE_NUMBER = 10;
     public static final int LENGTH_YEAR_DIGIT = 4;
 
+    public static final String COMBINED_ITEM_SEPARATOR = ",";
+
     private SOHConstants() {}
 }

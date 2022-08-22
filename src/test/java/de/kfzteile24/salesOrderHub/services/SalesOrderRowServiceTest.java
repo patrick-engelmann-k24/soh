@@ -19,6 +19,7 @@ import org.camunda.bpm.engine.impl.runtime.CorrelationHandlerResult;
 import org.camunda.bpm.engine.impl.runtime.MessageCorrelationResultImpl;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.runtime.ProcessInstanceQuery;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -260,6 +261,40 @@ class SalesOrderRowServiceTest {
         salesOrderRowService.handleParcelShippedEvent(event);
 
         verify(snsPublishService).publishSalesOrderShipmentConfirmedEvent(salesOrder2, getTrackingLinks(event));
+    }
+
+    @Test
+    @DisplayName("When parcel shipped event has combined items, then it should be ignored")
+    void whenParcelShippedEventHasCombinedItemsThenItShouldBeIgnored() {
+        final SalesOrder salesOrder1 = createSalesOrder(
+                null,
+                "sku1"
+        );
+        var orderNumber = salesOrder1.getOrderNumber();
+        var event = ParcelShipped.builder()
+                .orderNumber(orderNumber)
+                .trackingLink("http://tacking-link")
+                .articleItemsDtos(Collections.singleton(
+                        ArticleItemsDto.builder()
+                                .number("sku1")
+                                .isDeposit(false)
+                                .build()
+                ))
+                .build();
+
+        when(salesOrderService.getOrderByOrderGroupId(eq(orderNumber))).thenReturn(List.of(salesOrder1));
+
+        salesOrderRowService.handleParcelShippedEvent(event);
+
+        verify(snsPublishService).publishSalesOrderShipmentConfirmedEvent(salesOrder1, getTrackingLinks(event));
+
+        event.getArticleItemsDtos().iterator().next().setNumber("sku1,sku2");
+
+        salesOrderRowService.handleParcelShippedEvent(event);
+
+        verify(snsPublishService, never()).publishSalesOrderShipmentConfirmedEvent(salesOrder1, getTrackingLinks(event));
+
+
     }
 
     @Test

@@ -48,6 +48,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static de.kfzteile24.salesOrderHub.constants.SOHConstants.COMBINED_ITEM_SEPARATOR;
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.DATE_TIME_FORMATTER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS;
@@ -456,6 +457,8 @@ public class SalesOrderRowService {
         List<SalesOrder> salesOrders = getSalesOrdersByGroupId(event, orderNumber);
         if (isCorePlatformOrder(salesOrders)) {
             log.info("Order: {} is a CORE Platform Order, so it would be ignored for ParcelShippedEvent Handling", orderNumber);
+        } else if (hasAnyCombinedItem(event)) {
+            log.info("Order: {} has combined items, so it would be ignored for ParcelShippedEvent Handling", orderNumber);
         } else {
             var itemList = event.getArticleItemsDtos();
             if (itemList == null || itemList.isEmpty()) {
@@ -517,5 +520,10 @@ public class SalesOrderRowService {
 
     private boolean isAllIncludedInSkuList(ParcelShipped event, List<String> skuListFromOrderJson) {
         return event.getArticleItemsDtos().stream().allMatch(item -> skuListFromOrderJson.contains(item.getNumber()));
+    }
+
+    private boolean hasAnyCombinedItem(ParcelShipped event) {
+        return event.getArticleItemsDtos().stream().anyMatch(item
+                -> item.getNumber() != null && item.getNumber().contains(COMBINED_ITEM_SEPARATOR));
     }
 }
