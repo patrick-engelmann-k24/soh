@@ -11,11 +11,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.reflect.MethodSignature;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.springframework.context.annotation.Configuration;
 
-import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -47,12 +45,9 @@ class LoggingAdvice {
     }
 
     @SneakyThrows
-    @Around("@annotation(de.kfzteile24.salesOrderHub.services.sqs.EnrichMessageForDlq)")
-    Object moveMessageToDlq(ProceedingJoinPoint joinPoint) {
+    @Around("@annotation(enrichMessageForDlq)")
+    Object moveMessageToDlq(ProceedingJoinPoint joinPoint, EnrichMessageForDlq enrichMessageForDlq) {
 
-        MethodSignature signature = (MethodSignature) joinPoint.getSignature();
-        Method method = signature.getMethod();
-        EnrichMessageForDlq enrichMessageForDlq = method.getAnnotation(EnrichMessageForDlq.class);
         String rawMessage = (String) joinPoint.getArgs()[0];
         Integer receiveCount = (Integer) joinPoint.getArgs()[1];
         log.info("This is the logging advice with received count: {}", receiveCount);
