@@ -454,31 +454,33 @@ public class SalesOrderRowService {
 
     public void handleParcelShippedEvent(ParcelShipped event) {
         var orderNumber = event.getOrderNumber();
-        List<SalesOrder> salesOrders = getSalesOrdersByGroupId(event, orderNumber);
-        if (isCorePlatformOrder(salesOrders)) {
-            log.info("Order: {} is a CORE Platform Order, so it would be ignored for ParcelShippedEvent Handling", orderNumber);
-        } else if (hasAnyCombinedItem(event)) {
+        if (hasAnyCombinedItem(event)) {
             log.info("Order: {} has combined items, so it would be ignored for ParcelShippedEvent Handling", orderNumber);
         } else {
-            var itemList = event.getArticleItemsDtos();
-            if (itemList == null || itemList.isEmpty()) {
-                throw new IllegalArgumentException("The provided event does not contain order item");
-            }
+            List<SalesOrder> salesOrders = getSalesOrdersByGroupId(event, orderNumber);
+            if (isCorePlatformOrder(salesOrders)) {
+                log.info("Order: {} is a CORE Platform Order, so it would be ignored for ParcelShippedEvent Handling", orderNumber);
+            } else {
+                var itemList = event.getArticleItemsDtos();
+                if (itemList == null || itemList.isEmpty()) {
+                    throw new IllegalArgumentException("The provided event does not contain order item");
+                }
 
-            try {
-                SalesOrder salesOrder = getSalesOrderIncludesOrderItems(event, salesOrders).orElseThrow(() ->
-                        buildNotFoundException(event)
-                );
+                try {
+                    SalesOrder salesOrder = getSalesOrderIncludesOrderItems(event, salesOrders).orElseThrow(() ->
+                            buildNotFoundException(event)
+                    );
 
-                TrackingLink trackingLink = TrackingLink.builder()
-                        .url(event.getTrackingLink())
-                        .orderItems(itemList.stream().map(ArticleItemsDto::getNumber).collect(Collectors.toList()))
-                        .build();
+                    TrackingLink trackingLink = TrackingLink.builder()
+                            .url(event.getTrackingLink())
+                            .orderItems(itemList.stream().map(ArticleItemsDto::getNumber).collect(Collectors.toList()))
+                            .build();
 
-                snsPublishService.publishSalesOrderShipmentConfirmedEvent(salesOrder, List.of(trackingLink));
-            } catch (Exception e) {
-                log.error("Parcel shipped received message error - order_number: {}\r\nErrorMessage: {}", orderNumber, e);
-                throw e;
+                    snsPublishService.publishSalesOrderShipmentConfirmedEvent(salesOrder, List.of(trackingLink));
+                } catch (Exception e) {
+                    log.error("Parcel shipped received message error - order_number: {}\r\nErrorMessage: {}", orderNumber, e);
+                    throw e;
+                }
             }
         }
     }
