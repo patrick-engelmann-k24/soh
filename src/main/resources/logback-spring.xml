@@ -15,7 +15,7 @@
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%date{yyyy-MM-dd HH:mm:ss} %-5level - %logger{0}:%line: %replace(%msg){'\n','&#xd;'} %replace(%exception){'\n','&#xd;'} %nopexception %n</pattern>
+            <pattern>%date{yyyy-MM-dd HH:mm:ss} [%-11X{x-business-key}] %-5level - %logger{0}:%line: %replace(%msg){'\n','&#xd;'} %replace(%exception){'\n','&#xd;'} %nopexception %n</pattern>
         </encoder>
     </appender>
 
