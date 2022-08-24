@@ -162,9 +162,10 @@ public class ItemSplitService {
     protected OrderRows mapProductToOrderRows(
             final Product product, final OrderRows originItem, BigDecimal quantity, String locale) {
 
-        final var localeStr = getLocaleString(locale);
-        Country country = product.getCountries().getOrDefault(localeStr, Country.builder().build());
-        Localization localization = product.getLocalizations().getOrDefault(localeStr, Localization.builder().build());
+        final var languageCode = getLanguageCode(locale);
+        final var countryCode = getCountryCode(locale);
+        Country country = product.getCountries().getOrDefault(countryCode, Country.builder().build());
+        Localization localization = product.getLocalizations().getOrDefault(languageCode, Localization.builder().build());
         String genart = null;
         String ean = null;
         String productNumber = null;
@@ -471,10 +472,14 @@ public class ItemSplitService {
         }
     }
 
-    protected String getLocaleString(String locale) {
-
+    protected String getCountryCode(String locale) {
         String[] split = locale.split("_");
         return split[split.length - 1];
+    }
+
+    protected String getLanguageCode(String locale) {
+        String[] split = locale.split("_");
+        return split[0].toUpperCase();
     }
 
 }

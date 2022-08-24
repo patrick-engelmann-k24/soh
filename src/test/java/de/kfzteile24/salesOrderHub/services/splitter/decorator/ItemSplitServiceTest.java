@@ -209,8 +209,10 @@ class ItemSplitServiceTest {
 
         String locale = "de_DE";
         String otherLocale = "DE";
-        assertEquals("DE", itemSplitService.getLocaleString(locale));
-        assertEquals("DE", itemSplitService.getLocaleString(otherLocale));
+        assertEquals("DE", itemSplitService.getCountryCode(locale));
+        assertEquals("DE", itemSplitService.getCountryCode(otherLocale));
+        assertEquals("DE", itemSplitService.getLanguageCode(locale));
+        assertEquals("DE", itemSplitService.getLanguageCode(otherLocale));
     }
 
     @Test
