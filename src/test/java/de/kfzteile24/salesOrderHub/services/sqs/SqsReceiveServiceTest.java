@@ -3,15 +3,11 @@ package de.kfzteile24.salesOrderHub.services.sqs;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.FeatureFlagConfig;
 import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.dto.mapper.CreditNoteEventMapper;
-import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
-import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoice;
-import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.FileUtil;
@@ -31,7 +27,6 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -41,12 +36,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.Collections;
 import java.util.Optional;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_CREDIT_NOTE_CREATED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_CREATED_IN_SOH;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.PAYPAL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
@@ -58,9 +51,6 @@ import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrderReturn;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyString;
@@ -112,78 +102,12 @@ class SqsReceiveServiceTest {
     @InjectMocks
     @Spy
     private SqsReceiveService sqsReceiveService;
+    @Mock
+    private CoreSalesInvoiceCreatedService coreSalesInvoiceCreatedService;
 
     @BeforeEach
     void setUp() {
         sqsReceiveService.setObjectMapper(objectMapper);
-    }
-
-    @Test
-    void testQueueListenerInvoiceCreatedMsgReceived() {
-        String rawMessage = readResource("examples/ecpOrderMessage.json");
-        SalesOrder salesOrder = getSalesOrder(rawMessage);
-
-        when(salesOrderService.checkOrderNotExists(any())).thenReturn(true);
-        when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.of(salesOrder));
-        when(salesOrderService.createSalesOrderForInvoice(any(), any(), any())).thenReturn(salesOrder);
-        when(featureFlagConfig.getIgnoreCoreSalesInvoice()).thenReturn(false);
-        when(salesOrderService.createOrderNumberInSOH(any(), any())).thenReturn(salesOrder.getOrderNumber(), "10");
-        when(orderUtil.checkIfOrderHasOrderRows(any())).thenReturn(true);
-
-        String coreSalesInvoiceCreatedMessage = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
-        sqsReceiveService.queueListenerCoreSalesInvoiceCreated(coreSalesInvoiceCreatedMessage, ANY_SENDER_ID,
-                ANY_RECEIVE_COUNT);
-
-        verify(salesOrderService).createSalesOrderForInvoice(any(CoreSalesInvoiceCreatedMessage.class), any(SalesOrder.class),any(String.class));
-        verify(camundaHelper).createOrderProcess(any(SalesOrder.class), any(Messages.class));
-        verify(camundaHelper).startInvoiceCreatedReceivedProcess(salesOrder);
-    }
-
-    @Test
-    @DisplayName("Test That Subsequent Order should be created, even if Invoice is Fully Matched With Original Order, but sales invoice event was already published for the Original Order")
-    void testQueueListenerSubsequentOrderCreatedIfSalesInvoicePublished() {
-        String rawMessage = readResource("examples/ecpOrderMessage.json");
-        SalesOrder salesOrder = getSalesOrder(rawMessage);
-        salesOrder.getLatestJson().getOrderHeader().setDocumentRefNumber("not null");
-        salesOrder.setInvoiceEvent(new CoreSalesInvoiceCreatedMessage(new CoreSalesInvoice(new CoreSalesInvoiceHeader(), Collections.emptyList())));
-
-        when(featureFlagConfig.getIgnoreCoreSalesInvoice()).thenReturn(false);
-        when(salesOrderService.checkOrderNotExists(any())).thenReturn(true);
-        when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.of(salesOrder));
-        when(salesOrderService.createSalesOrderForInvoice(any(), any(), any())).thenReturn(salesOrder);
-        when(salesOrderService.createOrderNumberInSOH(any(), any())).thenReturn(salesOrder.getOrderNumber(), "10");
-        when(orderUtil.checkIfOrderHasOrderRows(any())).thenReturn(true);
-
-        String coreSalesInvoiceCreatedMessage = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
-        sqsReceiveService.queueListenerCoreSalesInvoiceCreated(coreSalesInvoiceCreatedMessage, ANY_SENDER_ID,
-                ANY_RECEIVE_COUNT);
-
-        verify(salesOrderService).createSalesOrderForInvoice(any(CoreSalesInvoiceCreatedMessage.class), any(SalesOrder.class), any(String.class));
-        verify(camundaHelper).createOrderProcess(any(SalesOrder.class), eq(ORDER_CREATED_IN_SOH));
-        verify(camundaHelper).startInvoiceCreatedReceivedProcess(salesOrder);
-    }
-
-    @Test
-    @DisplayName("Test That Original Order should be updated, if Invoice is Fully Matched With Original Order and sales invoice event was not published for the Original Order")
-    void testQueueListenerOriginalOrderUpdateIfSalesInvoiceNotPublished() {
-        String rawMessage = readResource("examples/ecpOrderMessage.json");
-        SalesOrder salesOrder = getSalesOrder(rawMessage);
-        String invoiceRawMessage = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
-        assertNotNull(salesOrder.getLatestJson().getOrderHeader().getOrderGroupId());
-        assertNull(salesOrder.getInvoiceEvent());
-
-        when(featureFlagConfig.getIgnoreCoreSalesInvoice()).thenReturn(false);
-        when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.of(salesOrder));
-        when(salesOrderService.isFullyMatchedWithOriginalOrder(eq(salesOrder), any())).thenReturn(true);
-
-        sqsReceiveService.queueListenerCoreSalesInvoiceCreated(invoiceRawMessage, ANY_SENDER_ID,
-                ANY_RECEIVE_COUNT);
-
-        verify(salesOrderService).updateOrder(eq(salesOrder));
-        verify(camundaHelper).startInvoiceCreatedReceivedProcess(salesOrder);
-
-        assertNotNull(salesOrder.getLatestJson().getOrderHeader().getOrderGroupId());
-        assertEquals(salesOrder.getLatestJson().getOrderHeader().getOrderGroupId(), salesOrder.getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getOrderGroupId());
     }
 
     @Test
