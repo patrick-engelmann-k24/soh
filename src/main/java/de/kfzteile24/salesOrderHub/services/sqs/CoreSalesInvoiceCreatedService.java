@@ -50,8 +50,8 @@ public class CoreSalesInvoiceCreatedService {
     private final SnsPublishService snsPublishService;
 
     @SneakyThrows
-    @EnrichMessageForDlq(deadLetterQueueName = "dev-soh-core-sales-invoice-created-v1-dlq")
-    public void handleCoreSalesInvoiceCreated(String rawMessage, Integer receiveCount) {
+    @EnrichMessageForDlq
+    public void handleCoreSalesInvoiceCreated(String rawMessage, Integer receiveCount, String queueName) {
 
         if (featureFlagConfig.getIgnoreCoreSalesInvoice()) {
             log.info("Core Sales Invoice is ignored");

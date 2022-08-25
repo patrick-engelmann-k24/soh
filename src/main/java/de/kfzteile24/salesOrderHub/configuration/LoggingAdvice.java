@@ -50,6 +50,7 @@ class LoggingAdvice {
 
         String rawMessage = (String) joinPoint.getArgs()[0];
         Integer receiveCount = (Integer) joinPoint.getArgs()[1];
+        String queueName = (String) joinPoint.getArgs()[2];
         log.info("This is the logging advice with received count: {}", receiveCount);
 
         try {
@@ -60,7 +61,7 @@ class LoggingAdvice {
             } else {
                 Map<String, MessageAttributeValue> messageAttributes = createStringMessageAttributeValueMap(e);
                 SendMessageRequest sendMessageRequest = new SendMessageRequest()
-                        .withQueueUrl(enrichMessageForDlq.deadLetterQueueName())
+                        .withQueueUrl(queueName + "-dlq")
                         .withMessageBody(rawMessage)
                         .withMessageAttributes(messageAttributes)
                         .withDelaySeconds(1);
