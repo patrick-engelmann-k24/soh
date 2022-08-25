@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.newrelic.api.agent.Trace;
 import de.kfzteile24.salesOrderHub.configuration.FeatureFlagConfig;
+import de.kfzteile24.salesOrderHub.configuration.SQSNamesConfig;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
@@ -23,9 +24,6 @@ import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ParcelShippedMessage;
 import de.kfzteile24.salesOrderHub.dto.split.SalesOrderSplit;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
-import de.kfzteile24.salesOrderHub.helper.SleuthHelper;
-import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
-import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.services.DropshipmentOrderService;
 import de.kfzteile24.salesOrderHub.services.InvoiceUrlExtractor;
 import de.kfzteile24.salesOrderHub.services.SalesOrderPaymentSecuredService;
@@ -52,7 +50,6 @@ import static de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig.OBJEC
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_CREDIT_NOTE_CREATED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.RETURN_ORDER_CREATED;
 import static java.util.function.Predicate.not;
-import static java.util.stream.Collectors.toSet;
 import static org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy.ON_SUCCESS;
 
 @Service
@@ -70,8 +67,8 @@ public class SqsReceiveService {
     private final DropshipmentOrderService dropshipmentOrderService;
     private final SalesOrderProcessService salesOrderCreateService;
     private final MessageWrapperUtil messageWrapperUtil;
-    private final SleuthHelper sleuthHelper;
     private final CoreSalesInvoiceCreatedService coreSalesInvoiceCreatedService;
+    private final SQSNamesConfig sqsNamesConfig;
     private ObjectMapper objectMapper;
 
     /**
@@ -424,6 +421,7 @@ public class SqsReceiveService {
     /**
      * Consume messages from sqs for core sales invoice created
      */
+    @SneakyThrows
     @Transactional
     @SqsListener(value = "${soh.sqs.queue.coreSalesInvoiceCreated}")
     @Trace(metricName = "Handling core sales invoice created message", dispatcher = true)
@@ -432,7 +430,8 @@ public class SqsReceiveService {
             @Header("SenderId") String senderId,
             @Header("ApproximateReceiveCount") Integer receiveCount) {
 
-        coreSalesInvoiceCreatedService.handleCoreSalesInvoiceCreated(rawMessage, receiveCount);
+        String sqsName = sqsNamesConfig.getCoreSalesInvoiceCreated();
+        coreSalesInvoiceCreatedService.handleCoreSalesInvoiceCreated(rawMessage, receiveCount, sqsName);
     }
 
     /**
