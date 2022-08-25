@@ -3,45 +3,47 @@ package de.kfzteile24.salesOrderHub.dto.sns.deliverynote;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import de.kfzteile24.salesOrderHub.dto.sns.shared.Address;
 import de.kfzteile24.salesOrderHub.dto.sns.shared.TrackingInformation;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
 
+@Data
 @Builder
-@Value
-@Jacksonized
+@AllArgsConstructor
+@NoArgsConstructor
 public class CoreDeliveryNote {
 
     @JsonProperty("OrderGroupId")
-    String orderGroupId;
+    private String orderGroupId;
 
     @JsonProperty("OrderNumber")
-    String orderNumber;
+    private String orderNumber;
 
     @JsonProperty("Number")
-    String number;
+    private String number;
 
     @JsonProperty("Date")
-    LocalDateTime date;
+    private LocalDateTime date;
 
     @JsonProperty("ShippingAddress")
-    Address shippingAddress;
+    private Address shippingAddress;
 
     @JsonProperty("InventoryLocationId")
-    String inventoryLocationId;
+    private String inventoryLocationId;
 
     @JsonProperty("Type")
-    String type;
+    private String type;
 
     @JsonProperty("IsCancelled")
-    Boolean isCancelled;
+    private Boolean isCancelled;
 
     @JsonProperty("TrackingInformations")
-    Collection<TrackingInformation> trackingInformations;
+    private Collection<TrackingInformation> trackingInformations;
 
     @JsonProperty("DeliveryNoteLines")
-    Collection<CoreDeliveryNoteLine> deliveryNoteLines;
+    private Collection<CoreDeliveryNoteLine> deliveryNoteLines;
 }

@@ -48,6 +48,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -220,6 +221,9 @@ public class SalesOrderUtil {
 
     public static OrderRows createOrderRow(String sku, ShipmentMethod shippingType) {
         return OrderRows.builder()
+                .rowKey(new Random().nextInt())
+                .isPriceHammer(false)
+                .name("name-" + sku)
                 .unitValues(UnitValues.builder()
                         .goodsValueGross(BigDecimal.valueOf(9))
                         .goodsValueNet(BigDecimal.valueOf(3))
@@ -237,6 +241,7 @@ public class SalesOrderUtil {
                         .totalDiscountedNet(BigDecimal.valueOf(2))
                         .build())
                 .shippingType(shippingType.getName())
+                .shippingAddressKey(1)
                 .isCancelled(false)
                 .taxRate(BigDecimal.valueOf(21))
                 .quantity(BigDecimal.ONE)

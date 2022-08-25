@@ -2,35 +2,37 @@ package de.kfzteile24.salesOrderHub.dto.sns.shared;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import de.kfzteile24.soh.order.dto.BillingAddress;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
+@Data
 @Builder
-@Value
-@Jacksonized
+@AllArgsConstructor
+@NoArgsConstructor
 public class Address {
 
     @JsonProperty("Salutation")
-    String salutation;
+    private String salutation;
 
     @JsonProperty("FirstName")
-    String firstName;
+    private String firstName;
 
     @JsonProperty("LastName")
-    String lastName;
+    private String lastName;
 
     @JsonProperty("Street")
-    String street;
+    private String street;
 
     @JsonProperty("City")
-    String city;
+    private String city;
 
     @JsonProperty("ZipCode")
-    String zipCode;
+    private String zipCode;
 
     @JsonProperty("CountryCode")
-    String countryCode;
+    private String countryCode;
 
     public static Address fromBillingAddress(BillingAddress billingAddress) {
         if (billingAddress == null) {

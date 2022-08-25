@@ -48,6 +48,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static de.kfzteile24.salesOrderHub.constants.SOHConstants.COMBINED_ITEM_SEPARATOR;
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.DATE_TIME_FORMATTER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS;
@@ -84,6 +85,7 @@ public class SalesOrderRowService {
                     orderRow.setIsCancelled(true);
                 }
             }
+            salesOrder.setCancelled(true);
             salesOrderService.save(salesOrder, Action.ORDER_CANCELLED);
             return true;
         } else {
@@ -452,29 +454,33 @@ public class SalesOrderRowService {
 
     public void handleParcelShippedEvent(ParcelShipped event) {
         var orderNumber = event.getOrderNumber();
-        List<SalesOrder> salesOrders = getSalesOrdersByGroupId(event, orderNumber);
-        if (isCorePlatformOrder(salesOrders)) {
-            log.info("Order: {} is a CORE Platform Order, so it would be ignored for ParcelShippedEvent Handling", orderNumber);
+        if (hasAnyCombinedItem(event)) {
+            log.info("Order: {} has combined items, so it would be ignored for ParcelShippedEvent Handling", orderNumber);
         } else {
-            var itemList = event.getArticleItemsDtos();
-            if (itemList == null || itemList.isEmpty()) {
-                throw new IllegalArgumentException("The provided event does not contain order item");
-            }
+            List<SalesOrder> salesOrders = getSalesOrdersByGroupId(event, orderNumber);
+            if (isCorePlatformOrder(salesOrders)) {
+                log.info("Order: {} is a CORE Platform Order, so it would be ignored for ParcelShippedEvent Handling", orderNumber);
+            } else {
+                var itemList = event.getArticleItemsDtos();
+                if (itemList == null || itemList.isEmpty()) {
+                    throw new IllegalArgumentException("The provided event does not contain order item");
+                }
 
-            try {
-                SalesOrder salesOrder = getSalesOrderIncludesOrderItems(event, salesOrders).orElseThrow(() ->
-                        buildNotFoundException(event)
-                );
+                try {
+                    SalesOrder salesOrder = getSalesOrderIncludesOrderItems(event, salesOrders).orElseThrow(() ->
+                            buildNotFoundException(event)
+                    );
 
-                TrackingLink trackingLink = TrackingLink.builder()
-                        .url(event.getTrackingLink())
-                        .orderItems(itemList.stream().map(ArticleItemsDto::getNumber).collect(Collectors.toList()))
-                        .build();
+                    TrackingLink trackingLink = TrackingLink.builder()
+                            .url(event.getTrackingLink())
+                            .orderItems(itemList.stream().map(ArticleItemsDto::getNumber).collect(Collectors.toList()))
+                            .build();
 
-                snsPublishService.publishSalesOrderShipmentConfirmedEvent(salesOrder, List.of(trackingLink));
-            } catch (Exception e) {
-                log.error("Parcel shipped received message error - order_number: {}\r\nErrorMessage: {}", orderNumber, e);
-                throw e;
+                    snsPublishService.publishSalesOrderShipmentConfirmedEvent(salesOrder, List.of(trackingLink));
+                } catch (Exception e) {
+                    log.error("Parcel shipped received message error - order_number: {}\r\nErrorMessage: {}", orderNumber, e);
+                    throw e;
+                }
             }
         }
     }
@@ -516,5 +522,10 @@ public class SalesOrderRowService {
 
     private boolean isAllIncludedInSkuList(ParcelShipped event, List<String> skuListFromOrderJson) {
         return event.getArticleItemsDtos().stream().allMatch(item -> skuListFromOrderJson.contains(item.getNumber()));
+    }
+
+    private boolean hasAnyCombinedItem(ParcelShipped event) {
+        return event.getArticleItemsDtos().stream().anyMatch(item
+                -> item.getNumber() != null && item.getNumber().contains(COMBINED_ITEM_SEPARATOR));
     }
 }

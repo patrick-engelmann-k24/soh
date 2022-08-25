@@ -6,6 +6,7 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
+import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
@@ -74,6 +75,9 @@ class StoreDropshipmentInvoiceDelegateIntegrationTest {
     @Autowired
     private BpmUtil bpmUtil;
 
+    @Autowired
+    private OrderUtil orderUtil;
+
     @BeforeEach
     public void setUp() {
         init(processEngine);
@@ -84,6 +88,7 @@ class StoreDropshipmentInvoiceDelegateIntegrationTest {
         var testOrder = salesOrderUtil.createNewDropshipmentSalesOrder();
         final var orderNumber = testOrder.getOrderNumber();
         var invoiceEvent = salesOrderUtil.createInvoiceCreatedMsg(orderNumber);
+        invoiceEvent.getSalesInvoice().getSalesInvoiceHeader().getInvoiceLines().add(orderUtil.createShippingCostLineFromSalesOrder(testOrder));
         ((Order) testOrder.getOriginalOrder()).getOrderHeader().setOrderFulfillment(DELTICOM.getName());
         salesOrderService.updateOrder(testOrder);
 
@@ -143,7 +148,6 @@ class StoreDropshipmentInvoiceDelegateIntegrationTest {
         invoiceEvent.getSalesInvoice().getSalesInvoiceHeader().setInvoiceDate(
                 salesOrder.getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getInvoiceDate());
         org.assertj.core.api.Assertions.assertThat(salesOrder.getInvoiceEvent()).isEqualTo(invoiceEvent);
-
     }
 
     @AfterEach

@@ -14,7 +14,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <spring-cloud-version>2.2.6.RELEASE</spring-cloud-version>
     <json-schema-java-bundle.version>1.0.43</json-schema-java-bundle.version>
-    <soh-order-json.version>1.0.26</soh-order-json.version>
+    <soh-order-json.version>1.0.36</soh-order-json.version>
     <surefire-version>3.0.0-M7</surefire-version>
     <newrelic.version>7.8.0</newrelic.version>
     <mapstruct.version>1.5.2.Final</mapstruct.version>
@@ -27,6 +27,7 @@
     <camunda-bpm-migration.version>1.0</camunda-bpm-migration.version>
     <spring-cloud-starter-sleuth.version>3.1.0</spring-cloud-starter-sleuth.version>
     <camunda-bpm-reactor-spring-starter.version>2.1.2</camunda-bpm-reactor-spring-starter.version>
+    <jackson-bean-validation.version>0.6.0</jackson-bean-validation.version>
   </properties>
 
   <dependencyManagement>
@@ -140,6 +141,11 @@
       <groupId>org.camunda.bpm.extension.reactor</groupId>
       <artifactId>camunda-bpm-reactor-spring-starter</artifactId>
       <version>${camunda-bpm-reactor-spring-starter.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.unbroken-dome.jackson-bean-validation</groupId>
+      <artifactId>jackson-bean-validation</artifactId>
+      <version>${jackson-bean-validation.version}</version>
     </dependency>
 
     <!-- Test dependencies -->

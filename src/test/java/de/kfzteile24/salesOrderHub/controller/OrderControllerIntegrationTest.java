@@ -115,7 +115,6 @@ class OrderControllerIntegrationTest {
     void updatingTheInvoiceAddressSuccessfullyReturnsTheStatusOK() {
         var testOrder = salesOrderUtil.createNewSalesOrder();
         final String orderNumber = testOrder.getOrderNumber();
-        final List<String> orderRows = util.getOrderRows(orderNumber, 5);
 
         final BillingAddress address = BillingAddress.builder()
                                         .street1("Unit")
@@ -123,9 +122,6 @@ class OrderControllerIntegrationTest {
                                         .city("Javaland")
                                         .zipCode("12345")
                                         .build();
-
-        final ProcessInstance processInstance = createProcessInstance(orderNumber, orderRows);
-        assertTrue(util.isProcessWaitingAtExpectedToken(processInstance, MSG_ORDER_PAYMENT_SECURED.getName()));
 
         final var result = controller.updateBillingAddress(orderNumber, address);
         assertThat(result.getStatusCode()).isEqualTo(OK);

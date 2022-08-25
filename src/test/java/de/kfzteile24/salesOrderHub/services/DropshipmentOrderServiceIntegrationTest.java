@@ -2,7 +2,6 @@ package de.kfzteile24.salesOrderHub.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
 import de.kfzteile24.salesOrderHub.constants.PersistentProperties;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
@@ -41,7 +40,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Spy;
 import org.mockito.verification.VerificationMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -121,8 +119,8 @@ class DropshipmentOrderServiceIntegrationTest {
     @SpyBean
     private SalesOrderReturnService salesOrderReturnService;
 
-    @Spy
-    private final ObjectMapper objectMapper = new ObjectMapperConfig().objectMapper();
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @BeforeEach
     public void setup() {

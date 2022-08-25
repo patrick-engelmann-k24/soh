@@ -11,7 +11,6 @@ import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.soh.order.dto.BillingAddress;
-import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.ShippingAddress;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -26,9 +25,16 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
 
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.INVOICE_ADDRESS_CHANGED;
+
 @Service
 @RequiredArgsConstructor
 public class SalesOrderAddressService {
+
+    private final SalesOrderService salesOrderService;
+
+    @NonNull
+    private final SnsPublishService snsPublishService;
 
     @NonNull
     private final CamundaHelper helper;
@@ -45,28 +51,23 @@ public class SalesOrderAddressService {
     @NonNull
     private final TimedPollingService timerService;
 
+    @NonNull
+    private final InvoiceService invoiceService;
+
     @SneakyThrows
     public ResponseEntity<String> updateBillingAddress(final String orderNumber, final BillingAddress newBillingAddress) {
         final Optional<SalesOrder> soOpt = orderRepository.getOrderByOrderNumber(orderNumber);
         if (soOpt.isPresent()) {
-            if (helper.checkIfActiveProcessExists(orderNumber)) {
-                sendMessageForUpdateBillingAddress(orderNumber, newBillingAddress);
-
-                final var addressChanged = timerService.pollWithDefaultTiming(() -> {
-                    final var newOrder = orderRepository.getOrderByOrderNumber(orderNumber);
-                    if (newOrder.isPresent()) {
-                        final var latestJson = (Order) newOrder.get().getLatestJson();
-                        return latestJson.getOrderHeader().getBillingAddress().equals(newBillingAddress);
-                    }
-                    return false;
-                });
-                if (addressChanged) {
-                    return new ResponseEntity<>("", HttpStatus.OK);
-                } else {
-                    return new ResponseEntity<>("The order was found but we could not change the billing address, because the order has already a invoice.", HttpStatus.CONFLICT);
-                }
+            if (invoiceService.checkInvoiceExistsForOrder(orderNumber)) {
+                return new ResponseEntity<>("The billing address cannot be changed anymore, because the order has already an invoice.", HttpStatus.CONFLICT);
             } else {
-                return new ResponseEntity<>("Order not found", HttpStatus.NOT_FOUND);
+
+                var salesOrder = soOpt.get();
+
+                salesOrder.getLatestJson().getOrderHeader().setBillingAddress(newBillingAddress);
+                salesOrderService.save(salesOrder, INVOICE_ADDRESS_CHANGED);
+                snsPublishService.publishInvoiceAddressChanged(orderNumber);
+                return new ResponseEntity<>("", HttpStatus.OK);
             }
         }
 

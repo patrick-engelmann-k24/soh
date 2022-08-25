@@ -40,7 +40,7 @@ public class SplitterService {
      * @param originOrder the initial order
      * @return list of split SalesOrders
      */
-    public List<SalesOrderSplit> splitSalesOrder(final Order originOrder) {
+    public List<SalesOrderSplit> splitSalesOrder(final Order originOrder, final Order originOrderCopy) {
         updateOriginalOrder(originOrder);
         final var orderSplitList = new ArrayList<OrderSplit>();
         orderSplitList.add(OrderSplit.regularOrder(originOrder));
@@ -65,7 +65,7 @@ public class SplitterService {
             }
         }
 
-        return convert2SalesOrderList(originOrder, orderSplitList);
+        return convert2SalesOrderList(originOrderCopy, orderSplitList);
     }
 
     /**

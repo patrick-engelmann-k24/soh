@@ -1,57 +1,59 @@
 package de.kfzteile24.salesOrderHub.dto.sns.parcelshipped;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.util.Collection;
 
+@Data
 @Builder
-@Value
-@Jacksonized
+@AllArgsConstructor
+@NoArgsConstructor
 public class ParcelShipped {
 
     @JsonProperty("FirstName")
-    String firstName;
+    private String firstName;
 
     @JsonProperty("LastName")
-    String lastName;
+    private String lastName;
 
     @JsonProperty("Street")
-    String street;
+    private String street;
 
     @JsonProperty("ZipCode")
-    String zipCode;
+    private String zipCode;
 
     @JsonProperty("CountryCode")
-    String countryCode;
+    private String countryCode;
 
     @JsonProperty("City")
-    String city;
+    private String city;
 
     @JsonProperty("Email")
-    String email;
+    private String email;
 
     @JsonProperty("OrderNumber")
-    String orderNumber;
+    private String orderNumber;
 
     @JsonProperty("DeliveryNoteNumber")
-    String deliveryNoteNumber;
+    private String deliveryNoteNumber;
 
     @JsonProperty("TrackingNumber")
-    String trackingNumber;
+    private String trackingNumber;
 
     @JsonProperty("TrackingLink")
-    String trackingLink;
+    private String trackingLink;
 
     @JsonProperty("AmountToBeCollected")
-    BigDecimal amountToBeCollected;
+    private BigDecimal amountToBeCollected;
 
     @JsonProperty("ArticleItemsDtos")
-    Collection<ArticleItemsDto> articleItemsDtos;
+    private Collection<ArticleItemsDto> articleItemsDtos;
 
     @JsonProperty("LogisticsPartnerName")
-    String logisticsPartnerName;
+    private String logisticsPartnerName;
 }

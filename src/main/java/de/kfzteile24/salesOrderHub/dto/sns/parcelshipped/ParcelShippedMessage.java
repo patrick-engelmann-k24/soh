@@ -1,20 +1,22 @@
 package de.kfzteile24.salesOrderHub.dto.sns.parcelshipped;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Collection;
 
+@Data
 @Builder
-@Value
-@Jacksonized
+@AllArgsConstructor
+@NoArgsConstructor
 public class ParcelShippedMessage {
 
     @JsonProperty("MessageType")
-    Collection<String> messageType;
+    private Collection<String> messageType;
 
     @JsonProperty("Message")
-    ParcelShipped message;
+    private ParcelShipped message;
 }

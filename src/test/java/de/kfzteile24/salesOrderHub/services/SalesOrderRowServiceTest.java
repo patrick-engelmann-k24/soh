@@ -9,7 +9,6 @@ import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ParcelShipped;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.helper.EventMapper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
-import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Totals;
@@ -20,6 +19,7 @@ import org.camunda.bpm.engine.impl.runtime.CorrelationHandlerResult;
 import org.camunda.bpm.engine.impl.runtime.MessageCorrelationResultImpl;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.runtime.ProcessInstanceQuery;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -44,6 +44,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.ROW_TRANSMITTED_TO_LOGISTICS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CANCELLED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ROW_CANCELLED;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createNewSalesOrderV3;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createOrderNumberInSOH;
@@ -94,9 +95,6 @@ class SalesOrderRowServiceTest {
 
     @Mock
     private OrderUtil orderUtil;
-
-
-    private SalesOrderUtil util;
 
     @InjectMocks
     private SalesOrderRowService salesOrderRowService;
@@ -266,6 +264,40 @@ class SalesOrderRowServiceTest {
     }
 
     @Test
+    @DisplayName("When parcel shipped event has combined items, then it should be ignored")
+    void whenParcelShippedEventHasCombinedItemsThenItShouldBeIgnored() {
+        final SalesOrder salesOrder1 = createSalesOrder(
+                null,
+                "sku1"
+        );
+        var orderNumber = salesOrder1.getOrderNumber();
+        var event = ParcelShipped.builder()
+                .orderNumber(orderNumber)
+                .trackingLink("http://tacking-link")
+                .articleItemsDtos(Collections.singleton(
+                        ArticleItemsDto.builder()
+                                .number("sku1")
+                                .isDeposit(false)
+                                .build()
+                ))
+                .build();
+
+        when(salesOrderService.getOrderByOrderGroupId(eq(orderNumber))).thenReturn(List.of(salesOrder1));
+
+        salesOrderRowService.handleParcelShippedEvent(event);
+
+        verify(snsPublishService).publishSalesOrderShipmentConfirmedEvent(salesOrder1, getTrackingLinks(event));
+
+        event.getArticleItemsDtos().iterator().next().setNumber("sku1,sku2");
+
+        salesOrderRowService.handleParcelShippedEvent(event);
+
+        verify(snsPublishService, never()).publishSalesOrderShipmentConfirmedEvent(salesOrder1, getTrackingLinks(event));
+
+
+    }
+
+    @Test
     void testHandleParcelShippedEventWhenNoSalesOrder() {
         var orderNumber = "123456789";
         var event = ParcelShipped.builder()
@@ -295,6 +327,30 @@ class SalesOrderRowServiceTest {
                         event.getOrderNumber(),
                         event.getDeliveryNoteNumber(),
                         "[sku1]"));
+    }
+
+    @Test
+    void testCancelOrderProcessIfFullyCancelled() {
+
+        var salesOrder = createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
+        salesOrder.getLatestJson().getOrderRows().forEach(orderRows -> orderRows.setIsCancelled(true));
+
+        when(camundaHelper.isShipped(anyString())).thenReturn(true);
+
+        salesOrderRowService.cancelOrderProcessIfFullyCancelled(salesOrder);
+
+        verify(salesOrderService).save(argThat(SalesOrder::isCancelled), eq(ORDER_CANCELLED));
+    }
+
+    @Test
+    void testCancelOrderProcessIfNotFullyCancelled() {
+
+        var salesOrder = createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
+        salesOrder.getLatestJson().getOrderRows().get(0).setIsCancelled(true);
+
+        salesOrderRowService.cancelOrderProcessIfFullyCancelled(salesOrder);
+
+        verify(salesOrderService, never()).save(argThat(SalesOrder::isCancelled), eq(ORDER_CANCELLED));
     }
 
     private List<TrackingLink> getTrackingLinks(ParcelShipped event) {

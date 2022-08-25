@@ -174,7 +174,7 @@ public class SalesOrderService {
                 .orderGroupId(originalSalesOrder.getOrderGroupId())
                 .salesChannel(order.getOrderHeader().getSalesChannel())
                 .customerEmail(customerEmail)
-                .originalOrder(order)
+                .originalOrder(originalSalesOrder.getLatestJson())
                 .latestJson(order)
                 .invoiceEvent(salesInvoiceCreatedMessage)
                 .build();

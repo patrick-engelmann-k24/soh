@@ -63,7 +63,9 @@ data "aws_iam_policy_document" "sns_sqs_access_policy" {
       aws_sqs_queue.soh_migration_core_sales_order_created.arn,
       aws_sqs_queue.soh_migration_core_sales_invoice_created.arn,
       aws_sqs_queue.soh_migration_core_sales_credit_note_created.arn,
-      aws_sqs_queue.soh_parcel_shipped.arn
+      aws_sqs_queue.soh_parcel_shipped.arn,
+
+      aws_sqs_queue.soh_core_sales_invoice_created_dlq.arn
     ]
   }
 }

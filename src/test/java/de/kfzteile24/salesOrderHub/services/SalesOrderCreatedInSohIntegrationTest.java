@@ -128,6 +128,50 @@ class SalesOrderCreatedInSohIntegrationTest {
     }
 
     @Test
+    void testQueueListenerCoreSalesInvoiceCreateWithMultipleItemsSameSkus() {
+
+        var senderId = "Delivery";
+        var receiveCount = 1;
+
+        String invoiceNumber = "10";
+        String rowSku1 = "1440-47378";
+        String rowSku2 = "2010-10183";
+        String rowSku3 = "2022-KBA";
+
+        var salesOrder = salesOrderUtil.createNewSalesOrder();
+        final ProcessInstance orderProcess = camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
+        assertTrue(util.isProcessWaitingAtExpectedToken(orderProcess, MSG_ORDER_PAYMENT_SECURED.getName()));
+        util.sendMessage(Messages.ORDER_RECEIVED_PAYMENT_SECURED.getName(), salesOrder.getOrderNumber());
+
+        String originalOrderNumber = salesOrder.getOrderNumber();
+        String invoiceEvent = readResource("examples/coreSalesInvoiceCreatedMultipleItemsSameSkus.json");
+
+        //Replace order number with randomly created order number as expected
+        invoiceEvent = invoiceEvent.replace("524001248", originalOrderNumber);
+
+        sqsReceiveService.queueListenerCoreSalesInvoiceCreated(invoiceEvent, senderId, receiveCount);
+
+        String newOrderNumberCreatedInSoh = createOrderNumberInSOH(originalOrderNumber, invoiceNumber);
+        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
+        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku1)));
+        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku2)));
+        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku3)));
+        assertTrue(timerService.pollWithDefaultTiming(() -> checkIfInvoiceCreatedReceivedProcessExists(newOrderNumberCreatedInSoh)));
+        checkTotalsValues(newOrderNumberCreatedInSoh,
+                "834.52",
+                "695.64",
+                "0",
+                "0",
+                "847.60",
+                "706.63",
+                "847.60",
+                "13.08",
+                "10.99");
+
+        verifyThatNewRelicIsCalled(newOrderNumberCreatedInSoh);
+    }
+
+    @Test
     void testQueueListenerCoreSalesInvoiceCreatedWithMultipleItems() {
 
         var senderId = "Delivery";

@@ -3,14 +3,20 @@ package de.kfzteile24.salesOrderHub.utils;
 import de.kfzteile24.salesOrderHub.configuration.DropShipmentConfig;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.soh.order.dto.OrderRows;
+import de.kfzteile24.soh.order.dto.UnitValues;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.util.List;
 
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createNewSalesOrderV3;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.readResource;
 import static de.kfzteile24.soh.order.dto.Platform.BRAINCRAFT;
@@ -19,8 +25,8 @@ import static de.kfzteile24.soh.order.dto.Platform.ECP;
 import static de.kfzteile24.soh.order.dto.Platform.EMIDA;
 import static de.kfzteile24.soh.order.dto.Platform.SOH;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -107,5 +113,36 @@ class OrderUtilTest {
         assertFalse(orderUtil.isDropShipmentItem(OrderRows.builder().genart("10042").build(), SOH));
 
 
+    }
+
+    @Test
+    void testCreateShippingCostLineFromSalesOrder() {
+        final var salesOrder = createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
+        salesOrder.getLatestJson().getOrderHeader().setDocumentRefNumber("invoice-number");
+        for (OrderRows row : salesOrder.getLatestJson().getOrderRows()) {
+            row.setUnitValues(UnitValues.builder()
+                    .goodsValueGross(BigDecimal.valueOf(9))
+                    .goodsValueNet(BigDecimal.valueOf(3))
+                    .discountGross(BigDecimal.valueOf(3))
+                    .discountNet(BigDecimal.valueOf(1))
+                    .discountedGross(BigDecimal.valueOf(6))
+                    .discountedNet(BigDecimal.valueOf(2))
+                    .build());
+        }
+
+        assertThat(orderUtil.hasShippingCost(salesOrder)).isTrue();
+
+        var shippingCostLine = orderUtil.createShippingCostLineFromSalesOrder(salesOrder);
+        assertThat(shippingCostLine.getIsShippingCost()).isTrue();
+        assertThat(shippingCostLine.getItemNumber()).isEqualTo(OrderUtil.SHIPPING_COST_ITEM_NUMBER);
+        assertThat(shippingCostLine.getQuantity()).isEqualTo(BigDecimal.valueOf(1));
+        assertThat(shippingCostLine.getUnitNetAmount()).isEqualTo(salesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostNet());
+        assertThat(shippingCostLine.getUnitGrossAmount()).isEqualTo(salesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostGross());
+        assertThat(shippingCostLine.getLineNetAmount()).isEqualTo(salesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostNet());
+        assertThat(shippingCostLine.getLineGrossAmount()).isEqualTo(salesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostGross());
+        assertThat(shippingCostLine.getLineTaxAmount()).isEqualTo(
+                salesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostGross()
+                .subtract(salesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostNet()));
+        assertThat(shippingCostLine.getTaxRate()).isEqualTo(salesOrder.getLatestJson().getOrderHeader().getTotals().getGrandTotalTaxes().get(0).getRate());
     }
 }

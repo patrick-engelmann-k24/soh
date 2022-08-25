@@ -2,6 +2,7 @@ package de.kfzteile24.salesOrderHub.services;
 
 
 import de.kfzteile24.salesOrderHub.domain.audit.AuditLog;
+import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
 import de.kfzteile24.soh.order.dto.BillingAddress;
@@ -38,6 +39,9 @@ class InvoiceServiceTest {
 
     @Mock
     private AuditLogRepository auditLogRepository;
+
+    @Mock
+    private OrderUtil orderUtil;
 
     @InjectMocks
     private InvoiceService invoiceService;
@@ -95,6 +99,8 @@ class InvoiceServiceTest {
 
         assertThat(result.getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber()).isEqualTo("invoice-number");
         assertThat(result.getSalesInvoice().getSalesInvoiceHeader().getOrderNumber()).isEqualTo(salesOrder.getOrderNumber());
+        assertThat(result.getSalesInvoice().getSalesInvoiceHeader().getInvoiceLines().size()).isEqualTo(3);
+
         var itemLine = result.getSalesInvoice().getSalesInvoiceHeader().getInvoiceLines().get(0);
         var itemNumber = itemLine.getItemNumber();
         var row = salesOrder.getLatestJson().getOrderRows().stream().filter(r -> r.getSku().equals(itemNumber)).findFirst().orElse(null);

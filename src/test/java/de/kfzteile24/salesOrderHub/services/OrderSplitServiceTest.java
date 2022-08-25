@@ -1,5 +1,6 @@
 package de.kfzteile24.salesOrderHub.services;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
@@ -25,7 +26,7 @@ import static org.mockito.Mockito.when;
 public class OrderSplitServiceTest {
 
     @Spy
-    private ObjectMapperConfig objectMapperConfig;
+    private ObjectMapper objectMapper = new ObjectMapperConfig().objectMapper();
 
     @Mock
     private OrderUtil orderUtil;
@@ -37,8 +38,8 @@ public class OrderSplitServiceTest {
     @SneakyThrows
     public void testSplitOrderIfNecessary() {
         String rawMessage = readResource("examples/coreOrderMessage.json");
-        var sqsMessage = objectMapperConfig.objectMapper().readValue(rawMessage, SqsMessage.class);
-        var order = objectMapperConfig.objectMapper().readValue(sqsMessage.getBody(), Order.class);
+        var sqsMessage = objectMapper.readValue(rawMessage, SqsMessage.class);
+        var order = objectMapper.readValue(sqsMessage.getBody(), Order.class);
 
         // Scenario 1: There are only dropshipment items (no split is needed, change fulfillment to delticom)
         order.getOrderHeader().setOrderFulfillment(ORDER_FULFILLMENT_K24);

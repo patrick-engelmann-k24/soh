@@ -8,6 +8,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesFinancialDocumentLin
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoice;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
 import de.kfzteile24.salesOrderHub.dto.sns.shared.Address;
+import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
 import de.kfzteile24.soh.order.dto.BillingAddress;
@@ -40,6 +41,9 @@ public class InvoiceService {
 
     @NonNull
     private final AuditLogRepository auditLogRepository;
+
+    @NonNull
+    private final OrderUtil orderUtil;
 
     /**
      * If we find an invoice, there are already invoice(s) created
@@ -101,6 +105,10 @@ public class InvoiceService {
                     .build());
         }
 
+        if (orderUtil.hasShippingCost(salesOrder)) {
+            invoiceLines.add(orderUtil.createShippingCostLineFromSalesOrder(salesOrder));
+        }
+
         var orderHeader = salesOrder.getLatestJson().getOrderHeader();
         return CoreSalesInvoiceCreatedMessage.builder()
                 .salesInvoice(new CoreSalesInvoice(
@@ -130,4 +138,5 @@ public class InvoiceService {
     private String getStreet(BillingAddress address) {
         return Address.getStreet(address);
     }
+
 }

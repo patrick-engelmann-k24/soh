@@ -1,7 +1,6 @@
 package de.kfzteile24.salesOrderHub.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnConfirmedMessage;
@@ -12,10 +11,10 @@ import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderReturnRepository;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Spy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
@@ -33,8 +32,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @SpringBootTest
 public class SalesOrderReturnServiceIntegrationTest {
 
-    @Spy
-    private final ObjectMapper objectMapper = new ObjectMapperConfig().objectMapper();
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Autowired
     private SalesOrderRepository salesOrderRepository;
@@ -59,6 +58,7 @@ public class SalesOrderReturnServiceIntegrationTest {
 
         String orderRawMessage = readResource("examples/ecpOrderMessageWithTwoRows.json");
         Order order = getOrder(orderRawMessage);
+        order.getOrderHeader().setOrderNumber(RandomStringUtils.randomNumeric(9));
         SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(order));
         SalesOrderReturn salesOrderReturn = getSalesOrderReturn(salesOrder, "123");
 

@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
@@ -23,8 +24,8 @@ import static org.mockito.Mockito.doReturn;
 @ExtendWith(MockitoExtension.class)
 class OrderSplitServiceTest {
 
-    @Mock
-    private ObjectMapperConfig objectMapperConfig;
+    @Spy
+    private ObjectMapper objectMapper = new ObjectMapperConfig().objectMapper();
 
     @Mock
     private DropShipmentConfig config;
@@ -44,7 +45,6 @@ class OrderSplitServiceTest {
 
         doReturn(false).when(orderUtil).containsOnlyDropShipmentItems(any());
         doReturn(true).when(orderUtil).containsDropShipmentItems(any());
-        doReturn(new ObjectMapper()).when(objectMapperConfig).objectMapper();
         orderSplitService.processOrderList(orderList);
 
         assertThat(orderList.size()).isGreaterThanOrEqualTo(2);

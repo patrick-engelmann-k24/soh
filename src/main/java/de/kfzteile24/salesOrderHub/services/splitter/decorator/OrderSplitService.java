@@ -1,6 +1,6 @@
 package de.kfzteile24.salesOrderHub.services.splitter.decorator;
 
-import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.dto.split.OrderSplit;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.soh.order.dto.Order;
@@ -24,7 +24,7 @@ public class OrderSplitService {
 
     public static final String ORDER_FULFILLMENT_K24 = "K24";
 
-    private final ObjectMapperConfig objectMapperConfig;
+    private final ObjectMapper objectMapper;
 
     private final OrderUtil orderUtil;
 
@@ -73,7 +73,7 @@ public class OrderSplitService {
      * @return the copied order
      */
     private Order copyDropshipmentOrderFromExistingOrder(Order originalOrder) {
-        Order copy = objectMapperConfig.objectMapper().convertValue(originalOrder, Order.class);
+        Order copy = objectMapper.convertValue(originalOrder, Order.class);
         updateDropshipmentOrder(copy);
         copy.getOrderHeader().setOrderNumber(originalOrder.getOrderHeader().getOrderNumber().concat("-1"));
         copy.getOrderHeader().setOrderId(UUID.randomUUID());

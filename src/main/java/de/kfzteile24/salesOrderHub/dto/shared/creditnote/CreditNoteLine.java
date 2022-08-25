@@ -2,41 +2,43 @@ package de.kfzteile24.salesOrderHub.dto.shared.creditnote;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import de.kfzteile24.salesOrderHub.dto.sns.shared.OrderItem;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
+@Data
 @Builder
-@Value
-@Jacksonized
+@AllArgsConstructor
+@NoArgsConstructor
 public class CreditNoteLine implements OrderItem {
 
     @JsonProperty("ItemNumber")
-    String itemNumber;
+    private String itemNumber;
 
     @JsonProperty("Quantity")
-    BigDecimal quantity;
+    private BigDecimal quantity;
 
     @JsonProperty("UnitNetAmount")
-    BigDecimal unitNetAmount;
+    private BigDecimal unitNetAmount;
 
     @JsonProperty("LineNetAmount")
-    BigDecimal lineNetAmount;
+    private BigDecimal lineNetAmount;
 
     @JsonProperty("UnitGrossAmount")
-    BigDecimal unitGrossAmount;
+    private BigDecimal unitGrossAmount;
 
     @JsonProperty("LineGrossAmount")
-    BigDecimal lineGrossAmount;
+    private BigDecimal lineGrossAmount;
 
     @JsonProperty("LineTaxAmount")
-    BigDecimal lineTaxAmount;
+    private BigDecimal lineTaxAmount;
 
     @JsonProperty("TaxRate")
-    BigDecimal taxRate;
+    private BigDecimal taxRate;
 
     @JsonProperty("IsShippingCost")
-    Boolean isShippingCost;
+    private Boolean isShippingCost;
 }

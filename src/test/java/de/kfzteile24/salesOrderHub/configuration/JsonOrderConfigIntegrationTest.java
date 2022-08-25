@@ -8,8 +8,6 @@ import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.io.IOException;
@@ -25,10 +23,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ExtendWith(SpringExtension.class)
-@Import(ObjectMapperConfig.class)
 class JsonOrderConfigIntegrationTest {
-    @Autowired
-    private ObjectMapper objectMapper;
+
+    private final ObjectMapper objectMapper = new ObjectMapperConfig().objectMapper();
 
     @Test
     @SneakyThrows(JsonProcessingException.class)

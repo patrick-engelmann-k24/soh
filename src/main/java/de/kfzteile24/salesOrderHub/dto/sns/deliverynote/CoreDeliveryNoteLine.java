@@ -1,23 +1,25 @@
 package de.kfzteile24.salesOrderHub.dto.sns.deliverynote;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
+@Data
 @Builder
-@Value
-@Jacksonized
+@AllArgsConstructor
+@NoArgsConstructor
 public class CoreDeliveryNoteLine {
 
     @JsonProperty("ItemNumber")
-    String itemNumber;
+    private String itemNumber;
 
     @JsonProperty("Quantity")
-    BigDecimal quantity;
+    private BigDecimal quantity;
 
     @JsonProperty("IsShippingCost")
-    Boolean isShippingCost;
+    private Boolean isShippingCost;
 }

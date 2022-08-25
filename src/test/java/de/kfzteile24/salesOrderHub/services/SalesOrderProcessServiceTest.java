@@ -9,6 +9,7 @@ import de.kfzteile24.salesOrderHub.dto.split.SalesOrderSplit;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapperUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.DisplayName;
@@ -51,6 +52,8 @@ class SalesOrderProcessServiceTest {
     private OrderUtil orderUtil;
     @Mock
     private SnsPublishService snsPublishService;
+    @Mock
+    private MessageWrapperUtil messageWrapperUtil;
     @InjectMocks
     @Spy
     private SalesOrderProcessService salesOrderProcessService;
@@ -71,7 +74,8 @@ class SalesOrderProcessServiceTest {
         when(orderUtil.checkIfOrderHasOrderRows(any())).thenReturn(true);
         when(salesOrderService.checkOrderNotExists(eq(salesOrder.getOrderNumber()))).thenReturn(true);
         when(salesOrderService.createSalesOrder(any())).thenReturn(salesOrder);
-        when(splitterService.splitSalesOrder(any())).thenReturn(Collections.singletonList(SalesOrderSplit.regularOrder(salesOrder)));
+        when(messageWrapperUtil.createMessage(eq(rawMessage), eq(Order.class))).thenReturn(order);
+        when(splitterService.splitSalesOrder(any(), any())).thenReturn(Collections.singletonList(SalesOrderSplit.regularOrder(salesOrder)));
 
         salesOrderProcessService.handleShopOrdersReceived(messageWrapper);
 
@@ -106,7 +110,7 @@ class SalesOrderProcessServiceTest {
         when(salesOrderService.checkOrderNotExists(eq(splittedOrder.getLatestJson().getOrderHeader().getOrderNumber()))).thenReturn(true);
         when(salesOrderService.createSalesOrder(eq(regularOrder))).thenReturn(regularOrder);
         when(salesOrderService.createSalesOrder(eq(splittedOrder))).thenReturn(splittedOrder);
-        when(splitterService.splitSalesOrder(any())).thenReturn(
+        when(splitterService.splitSalesOrder(any(), any())).thenReturn(
                 List.of(SalesOrderSplit.regularOrder(regularOrder), SalesOrderSplit.regularOrder(splittedOrder)));
 
         salesOrderProcessService.handleShopOrdersReceived(messageWrapper);
@@ -133,7 +137,7 @@ class SalesOrderProcessServiceTest {
                 .build();
 
         when(salesOrderService.checkOrderNotExists(eq("524001240"))).thenReturn(false);
-        when(splitterService.splitSalesOrder(any())).thenReturn(Collections.singletonList(SalesOrderSplit.regularOrder(salesOrder)));
+        when(splitterService.splitSalesOrder(any(), any())).thenReturn(Collections.singletonList(SalesOrderSplit.regularOrder(salesOrder)));
 
         salesOrderProcessService.handleShopOrdersReceived(messageWrapper);
 
@@ -161,7 +165,7 @@ class SalesOrderProcessServiceTest {
         doNothing().when(snsPublishService).publishOrderCreated(anyString());
         when(salesOrderService.checkOrderNotExists(eq(salesOrder.getOrderNumber()))).thenReturn(true);
         when(salesOrderService.createSalesOrder(any())).thenReturn(salesOrder);
-        when(splitterService.splitSalesOrder(any())).thenReturn(Collections.singletonList(SalesOrderSplit.regularOrder(salesOrder)));
+        when(splitterService.splitSalesOrder(any(), any())).thenReturn(Collections.singletonList(SalesOrderSplit.regularOrder(salesOrder)));
 
         salesOrderProcessService.handleShopOrdersReceived(messageWrapper);
 

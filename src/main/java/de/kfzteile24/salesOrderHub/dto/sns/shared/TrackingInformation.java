@@ -1,18 +1,20 @@
 package de.kfzteile24.salesOrderHub.dto.sns.shared;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
+@Data
 @Builder
-@Value
-@Jacksonized
+@AllArgsConstructor
+@NoArgsConstructor
 public class TrackingInformation {
 
     @JsonProperty("ShippingProvider")
-    String shippingProvider;
+    private String shippingProvider;
 
     @JsonProperty("TrackingNumber")
-    String trackingNumber;
+    private String trackingNumber;
 }

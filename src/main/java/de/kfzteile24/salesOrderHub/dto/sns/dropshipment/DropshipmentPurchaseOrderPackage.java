@@ -15,7 +15,7 @@ import java.util.List;
 public class DropshipmentPurchaseOrderPackage {
 
     @JsonProperty("TrackingLink")
-    String trackingLink;
+    private String trackingLink;
 
     @JsonProperty("Items")
     private List<DropshipmentPurchaseOrderPackageItemLine> items;

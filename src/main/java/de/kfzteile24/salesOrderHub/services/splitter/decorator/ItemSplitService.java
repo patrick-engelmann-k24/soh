@@ -162,9 +162,10 @@ public class ItemSplitService {
     protected OrderRows mapProductToOrderRows(
             final Product product, final OrderRows originItem, BigDecimal quantity, String locale) {
 
-        final var localeStr = getLocaleString(locale);
-        Country country = product.getCountries().getOrDefault(localeStr, Country.builder().build());
-        Localization localization = product.getLocalizations().getOrDefault(localeStr, Localization.builder().build());
+        final var languageCode = getLanguageCode(locale);
+        final var countryCode = getCountryCode(locale);
+        Country country = product.getCountries().getOrDefault(countryCode, Country.builder().build());
+        Localization localization = product.getLocalizations().getOrDefault(languageCode, Localization.builder().build());
         String genart = null;
         String ean = null;
         String productNumber = null;
@@ -282,7 +283,7 @@ public class ItemSplitService {
          * if the totalDiscountGrossDifference between the set price and the sum of the set items is less than 2 cents we add it to the first item
          * if the totalDiscountGrossDifference is greater we throw an exception
          */
-        if (totalDiscountGrossDifference.abs().compareTo(TWO_CENTS) < 0) {
+        if (totalDiscountGrossDifference.abs().compareTo(TWO_CENTS) <= 0) {
             SumValues firstSetItemSumValues = setItems.get(0).getSumValues();
             BigDecimal newGrossPrice = firstSetItemSumValues.getTotalDiscountedGross().add(totalDiscountGrossDifference);
             firstSetItemSumValues.setTotalDiscountedGross(newGrossPrice);
@@ -302,7 +303,7 @@ public class ItemSplitService {
          * if the totalDiscountNetDifference between the set price and the sum of the set items is less than 2 cents we add it to the first item
          * if the totalDiscountNetDifference is greater we throw an exception
          */
-        if (totalDiscountNetDifference.abs().compareTo(TWO_CENTS) < 0) {
+        if (totalDiscountNetDifference.abs().compareTo(TWO_CENTS) <= 0) {
             SumValues firstSetItemSumValues = setItems.get(0).getSumValues();
             BigDecimal newNetPrice = firstSetItemSumValues.getTotalDiscountedNet().add(totalDiscountNetDifference);
             firstSetItemSumValues.setTotalDiscountedNet(newNetPrice);
@@ -322,7 +323,7 @@ public class ItemSplitService {
          * if the goodsValueGrossDifference between the set price and the sum of the set items is less than 2 cents we add it to the first item
          * if the goodsValueGrossDifference is greater we throw an exception
          */
-        if (goodsValueGrossDifference.abs().compareTo(TWO_CENTS) < 0) {
+        if (goodsValueGrossDifference.abs().compareTo(TWO_CENTS) <= 0) {
             SumValues firstSetItemSumValues = setItems.get(0).getSumValues();
             BigDecimal newGrossPrice = firstSetItemSumValues.getGoodsValueGross().add(goodsValueGrossDifference);
             firstSetItemSumValues.setGoodsValueGross(newGrossPrice);
@@ -342,7 +343,7 @@ public class ItemSplitService {
          * if the goodsValueNetDifference between the set price and the sum of the set items is less than 2 cents we add it to the first item
          * if the goodsValueNetDifference is greater we throw an exception
          */
-        if (goodsValueNetDifference.abs().compareTo(TWO_CENTS) < 0) {
+        if (goodsValueNetDifference.abs().compareTo(TWO_CENTS) <= 0) {
             SumValues firstSetItemSumValues = setItems.get(0).getSumValues();
             BigDecimal newNetPrice = firstSetItemSumValues.getGoodsValueNet().add(goodsValueNetDifference);
             firstSetItemSumValues.setGoodsValueNet(newNetPrice);
@@ -390,7 +391,7 @@ public class ItemSplitService {
          * if the totalDiscountGrossDifference is less than or equal to 2 cents we add the difference to the highest sum values of the set items
          * if the totalDiscountGrossDifference is not 0 we throw an exception
          */
-        if (totalDiscountGrossDifference.abs().compareTo(TWO_CENTS) < 0) {
+        if (totalDiscountGrossDifference.abs().compareTo(TWO_CENTS) <= 0) {
             OrderRows highestSetItems = setItems.stream()
                     .max(Comparator.comparing(row -> row.getSumValues().getTotalDiscountedGross()))
                     .orElseThrow(NoSuchElementException::new);
@@ -412,7 +413,7 @@ public class ItemSplitService {
          * if the totalDiscountNetDifference is less than or equal to 2 cents we add the difference to the highest sum values of the set items
          * if the totalDiscountNetDifference is not 0 greater we throw an exception
          */
-        if (totalDiscountNetDifference.abs().compareTo(TWO_CENTS) < 0) {
+        if (totalDiscountNetDifference.abs().compareTo(TWO_CENTS) <= 0) {
             OrderRows highestSetItems = setItems.stream()
                     .max(Comparator.comparing(row -> row.getSumValues().getTotalDiscountedNet()))
                     .orElseThrow(NoSuchElementException::new);
@@ -434,7 +435,7 @@ public class ItemSplitService {
          * if the goodsValueGrossDifference is less than or equal to 2 cents we add the difference to the highest sum values of the set items
          * if the goodsValueGrossDifference is not 0 we throw an exception
          */
-        if (goodsValueGrossDifference.abs().compareTo(TWO_CENTS) < 0) {
+        if (goodsValueGrossDifference.abs().compareTo(TWO_CENTS) <= 0) {
             OrderRows highestSetItems = setItems.stream()
                     .max(Comparator.comparing(row -> row.getSumValues().getGoodsValueGross()))
                     .orElseThrow(NoSuchElementException::new);
@@ -456,7 +457,7 @@ public class ItemSplitService {
          * if the goodsValueNetDifference is less than or equal to 2 cents we add the difference to the highest sum values of the set items
          * if the goodsValueNetDifference is not 0 we throw an exception
          */
-        if (goodsValueNetDifference.abs().compareTo(TWO_CENTS) < 0) {
+        if (goodsValueNetDifference.abs().compareTo(TWO_CENTS) <= 0) {
             OrderRows highestSetItems = setItems.stream()
                     .max(Comparator.comparing(row -> row.getSumValues().getGoodsValueNet()))
                     .orElseThrow(NoSuchElementException::new);
@@ -471,10 +472,14 @@ public class ItemSplitService {
         }
     }
 
-    protected String getLocaleString(String locale) {
-
+    protected String getCountryCode(String locale) {
         String[] split = locale.split("_");
         return split[split.length - 1];
+    }
+
+    protected String getLanguageCode(String locale) {
+        String[] split = locale.split("_");
+        return split[0].toUpperCase();
     }
 
 }
