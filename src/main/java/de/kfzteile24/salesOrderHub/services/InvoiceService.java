@@ -93,6 +93,7 @@ public class InvoiceService {
         for (OrderRows row : salesOrder.getLatestJson().getOrderRows()) {
             invoiceLines.add(CoreSalesFinancialDocumentLine.builder()
                     .itemNumber(row.getSku())
+                    .description(row.getName())
                     .quantity(row.getQuantity())
                     .taxRate(row.getTaxRate())
                     .unitNetAmount(Optional.ofNullable(row.getUnitValues().getDiscountedNet()).orElse(BigDecimal.ZERO))

@@ -214,6 +214,7 @@ public class OrderUtil {
     public CoreSalesFinancialDocumentLine createShippingCostLineFromSalesOrder(SalesOrder salesOrder) {
         return CoreSalesFinancialDocumentLine.builder()
                 .itemNumber(SHIPPING_COST_ITEM_NUMBER)
+                .description(SHIPPING_COST_ITEM_NUMBER)
                 .quantity(BigDecimal.valueOf(1))
                 .taxRate(salesOrder.getLatestJson().getOrderHeader().getTotals().getGrandTotalTaxes().get(0).getRate())
                 .unitNetAmount(salesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostNet())

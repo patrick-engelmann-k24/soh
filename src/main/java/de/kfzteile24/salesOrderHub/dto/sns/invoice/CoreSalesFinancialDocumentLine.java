@@ -42,4 +42,7 @@ public class CoreSalesFinancialDocumentLine implements OrderItem {
     @JsonProperty("IsShippingCost")
     private Boolean isShippingCost;
 
+    @JsonProperty("Description")
+    private String description;
+
 }
