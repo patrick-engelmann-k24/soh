@@ -87,7 +87,7 @@ public class SplitterService {
         return new SalesOrderSplit(SalesOrder
                 .builder()
                 .orderNumber(splitOrder.getOrderHeader().getOrderNumber())
-                .orderGroupId(originOrder.getOrderHeader().getOrderGroupId())
+                .orderGroupId(originOrder.getOrderHeader().getOrderNumber())
                 .salesChannel(splitOrder.getOrderHeader().getSalesChannel())
                 .customerEmail(splitOrder.getOrderHeader().getCustomer().getCustomerEmail())
                 .originalOrder(originOrder)
