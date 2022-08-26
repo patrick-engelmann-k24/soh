@@ -21,6 +21,7 @@ import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import de.kfzteile24.salesOrderHub.services.SplitterService;
 import lombok.SneakyThrows;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -50,6 +51,7 @@ import static org.mockito.Mockito.when;
 public class CoreSalesInvoiceCreatedServiceTest {
 
     private static final int ANY_RECEIVE_COUNT = RandomUtils.nextInt();
+    private static final String ANY_SQS_NAME = RandomStringUtils.randomAlphabetic(10);
 
     private final ObjectMapper objectMapper = new ObjectMapperConfig().objectMapper();
 
@@ -104,7 +106,7 @@ public class CoreSalesInvoiceCreatedServiceTest {
         when(orderUtil.checkIfOrderHasOrderRows(any())).thenReturn(true);
 
         String coreSalesInvoiceCreatedMessage = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
-        coreSalesInvoiceCreatedService.handleCoreSalesInvoiceCreated(coreSalesInvoiceCreatedMessage, ANY_RECEIVE_COUNT);
+        coreSalesInvoiceCreatedService.handleCoreSalesInvoiceCreated(coreSalesInvoiceCreatedMessage, ANY_RECEIVE_COUNT, ANY_SQS_NAME);
 
         verify(salesOrderService).createSalesOrderForInvoice(any(CoreSalesInvoiceCreatedMessage.class), any(SalesOrder.class), any(String.class));
         verify(camundaHelper).createOrderProcess(any(SalesOrder.class), eq(ORDER_CREATED_IN_SOH));
@@ -124,7 +126,7 @@ public class CoreSalesInvoiceCreatedServiceTest {
         when(orderUtil.checkIfOrderHasOrderRows(any())).thenReturn(true);
 
         String coreSalesInvoiceCreatedMessage = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
-        coreSalesInvoiceCreatedService.handleCoreSalesInvoiceCreated(coreSalesInvoiceCreatedMessage, ANY_RECEIVE_COUNT);
+        coreSalesInvoiceCreatedService.handleCoreSalesInvoiceCreated(coreSalesInvoiceCreatedMessage, ANY_RECEIVE_COUNT, ANY_SQS_NAME);
 
         verify(salesOrderService).createSalesOrderForInvoice(any(CoreSalesInvoiceCreatedMessage.class), any(SalesOrder.class),any(String.class));
         verify(camundaHelper).createOrderProcess(any(SalesOrder.class), any(Messages.class));
@@ -144,7 +146,7 @@ public class CoreSalesInvoiceCreatedServiceTest {
         when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.of(salesOrder));
         when(salesOrderService.isFullyMatchedWithOriginalOrder(eq(salesOrder), any())).thenReturn(true);
 
-        coreSalesInvoiceCreatedService.handleCoreSalesInvoiceCreated(invoiceRawMessage, ANY_RECEIVE_COUNT);
+        coreSalesInvoiceCreatedService.handleCoreSalesInvoiceCreated(invoiceRawMessage, ANY_RECEIVE_COUNT, ANY_SQS_NAME);
 
         verify(salesOrderService).updateOrder(eq(salesOrder));
         verify(camundaHelper).startInvoiceCreatedReceivedProcess(salesOrder);
