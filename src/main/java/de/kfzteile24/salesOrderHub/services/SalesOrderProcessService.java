@@ -35,6 +35,7 @@ public class SalesOrderProcessService {
     public void handleShopOrdersReceived(MessageWrapper<Order> orderMessageWrapper) {
         setOrderGroupIdIfEmpty(orderMessageWrapper.getMessage());
         var orderCopy = messageWrapperUtil.createMessage(orderMessageWrapper.getRawMessage(), Order.class);
+        setOrderGroupIdIfEmpty(orderCopy);
         splitterService.splitSalesOrder(orderMessageWrapper.getMessage(), orderCopy)
                 .forEach(salesOrderSplit -> startSalesOrderProcess(salesOrderSplit, orderMessageWrapper));
     }
