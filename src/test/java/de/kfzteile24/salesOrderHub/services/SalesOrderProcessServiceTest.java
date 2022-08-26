@@ -105,6 +105,7 @@ class SalesOrderProcessServiceTest {
                 .sqsMessage(sqsMessage)
                 .build();
 
+        when(messageWrapperUtil.createMessage(eq(orderRawMessage), eq(Order.class))).thenReturn(order);
         when(orderUtil.checkIfOrderHasOrderRows(any())).thenReturn(true);
         when(salesOrderService.checkOrderNotExists(eq(regularOrder.getLatestJson().getOrderHeader().getOrderNumber()))).thenReturn(true);
         when(salesOrderService.checkOrderNotExists(eq(splittedOrder.getLatestJson().getOrderHeader().getOrderNumber()))).thenReturn(true);
@@ -136,6 +137,7 @@ class SalesOrderProcessServiceTest {
                 .message(order)
                 .build();
 
+        when(messageWrapperUtil.createMessage(eq(rawMessage), eq(Order.class))).thenReturn(order);
         when(salesOrderService.checkOrderNotExists(eq("524001240"))).thenReturn(false);
         when(splitterService.splitSalesOrder(any(), any())).thenReturn(Collections.singletonList(SalesOrderSplit.regularOrder(salesOrder)));
 
@@ -161,6 +163,7 @@ class SalesOrderProcessServiceTest {
                 .message(order)
                 .build();
 
+        when(messageWrapperUtil.createMessage(eq(rawMessage), eq(Order.class))).thenReturn(order);
         when(orderUtil.checkIfOrderHasOrderRows(any())).thenReturn(false);
         doNothing().when(snsPublishService).publishOrderCreated(anyString());
         when(salesOrderService.checkOrderNotExists(eq(salesOrder.getOrderNumber()))).thenReturn(true);
