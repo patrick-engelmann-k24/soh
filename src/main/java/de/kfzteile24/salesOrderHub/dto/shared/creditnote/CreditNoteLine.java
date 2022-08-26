@@ -41,4 +41,7 @@ public class CreditNoteLine implements OrderItem {
 
     @JsonProperty("IsShippingCost")
     private Boolean isShippingCost;
+
+    @JsonProperty("Description")
+    private String description;
 }

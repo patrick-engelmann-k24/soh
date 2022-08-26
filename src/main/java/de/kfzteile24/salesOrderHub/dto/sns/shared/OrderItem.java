@@ -19,4 +19,6 @@ public interface OrderItem {
     BigDecimal getTaxRate();
 
     Boolean getIsShippingCost();
+
+    String getDescription();
 }
