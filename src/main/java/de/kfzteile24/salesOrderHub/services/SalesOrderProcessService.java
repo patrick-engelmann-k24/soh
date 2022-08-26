@@ -33,8 +33,8 @@ public class SalesOrderProcessService {
     private final MessageWrapperUtil messageWrapperUtil;
 
     public void handleShopOrdersReceived(MessageWrapper<Order> orderMessageWrapper) {
-        var orderCopy = messageWrapperUtil.createMessage(orderMessageWrapper.getRawMessage(), Order.class);
         setOrderGroupIdIfEmpty(orderMessageWrapper.getMessage());
+        var orderCopy = messageWrapperUtil.createMessage(orderMessageWrapper.getRawMessage(), Order.class);
         splitterService.splitSalesOrder(orderMessageWrapper.getMessage(), orderCopy)
                 .forEach(salesOrderSplit -> startSalesOrderProcess(salesOrderSplit, orderMessageWrapper));
     }
