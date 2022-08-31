@@ -138,6 +138,9 @@ public class CoreSalesInvoiceCreatedServiceTest {
     void testQueueListenerOriginalOrderUpdateIfSalesInvoiceNotPublished() {
         String rawMessage = readResource("examples/ecpOrderMessage.json");
         SalesOrder salesOrder = getSalesOrder(rawMessage);
+        String orderNumber = salesOrder.getOrderNumber();
+        salesOrder.setOrderGroupId(orderNumber);
+        salesOrder.getLatestJson().getOrderHeader().setOrderGroupId(orderNumber);
         String invoiceRawMessage = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
         assertNotNull(salesOrder.getLatestJson().getOrderHeader().getOrderGroupId());
         assertNull(salesOrder.getInvoiceEvent());

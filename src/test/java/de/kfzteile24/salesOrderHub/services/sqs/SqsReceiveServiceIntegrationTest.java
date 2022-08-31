@@ -368,7 +368,7 @@ class SqsReceiveServiceIntegrationTest {
     }
 
     @Test
-    @DisplayName("IT testing dropshipment shipment confirmed event handling multiple time in threadsto see the increment on invoice number")
+    @DisplayName("IT testing dropshipment shipment confirmed event handling multiple time in threads to see the increment on invoice number")
     void testQueueListenerDropshipmentShipmentConfirmedMultipleTimeInThreads(TestInfo testInfo) {
 
         log.info(testInfo.getDisplayName());
@@ -381,9 +381,7 @@ class SqsReceiveServiceIntegrationTest {
         long start = Instant.now().toEpochMilli();
         for (SalesOrder order : orders) {
 
-            Thread thread = new Thread(() -> {
-                callQueueListenerDropshipmentShipmentConfirmed(order);
-            });
+            Thread thread = new Thread(() -> callQueueListenerDropshipmentShipmentConfirmed(order));
 
             thread.start();
         }
@@ -634,6 +632,7 @@ class SqsReceiveServiceIntegrationTest {
 
         SalesOrder updated = salesOrderService.getOrderByOrderNumber(order.getOrderHeader().getOrderNumber()).orElse(null);
         assertNotNull(updated);
+        order.getOrderHeader().setOrderGroupId(order.getOrderHeader().getOrderNumber());
         assertEquals(order, updated.getLatestJson());
         assertEquals(order, updated.getOriginalOrder());
 
@@ -659,6 +658,7 @@ class SqsReceiveServiceIntegrationTest {
 
         SalesOrder updated = salesOrderService.getOrderByOrderNumber(order.getOrderHeader().getOrderNumber()).orElse(null);
         assertNotNull(updated);
+        order.getOrderHeader().setOrderGroupId(order.getOrderHeader().getOrderNumber());
         assertEquals(order, updated.getLatestJson());
         assertEquals(order, updated.getOriginalOrder());
     }

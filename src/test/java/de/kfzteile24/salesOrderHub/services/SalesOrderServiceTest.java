@@ -38,6 +38,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.MIGRATION_SALES_ORDER_RECEIVED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.readResource;
@@ -501,11 +502,12 @@ class SalesOrderServiceTest {
 
         when(salesOrderRepository.save(any())).thenAnswer((Answer<SalesOrder>) invocation -> invocation.getArgument(0));
 
-        salesOrderService.updateSalesOrderByOrderJson(originalSalesOrder, orderJson);
+        salesOrderService.enrichSalesOrder(originalSalesOrder, orderJson);
+        salesOrderService.save(originalSalesOrder, MIGRATION_SALES_ORDER_RECEIVED);
         var orderHeader = ((Order) originalSalesOrder.getOriginalOrder()).getOrderHeader();
-        var paypalPayment = orderHeader.getPayments().stream().filter(p -> p.getType().equals(paypalType)).findFirst().get();
+        var paypalPayment = orderHeader.getPayments().stream().filter(p -> p.getType().equals(paypalType)).findFirst().orElseThrow();
         var paypalProviderData = paypalPayment.getPaymentProviderData();
-        var creditcardPayment = orderHeader.getPayments().stream().filter(p -> p.getType().equals(creditcardType)).findFirst().get();
+        var creditcardPayment = orderHeader.getPayments().stream().filter(p -> p.getType().equals(creditcardType)).findFirst().orElseThrow();
         var creditcardProviderData = creditcardPayment.getPaymentProviderData();
         assertThat(orderHeader.getOrderNumber()).contains(orderNumber);
         assertThat(orderHeader.getOrderGroupId()).contains(orderNumber);
@@ -546,7 +548,7 @@ class SalesOrderServiceTest {
         // Prepare new order json
         var orderJson = getOrderJson(orderNumber, true);
 
-        assertThatThrownBy(() -> salesOrderService.updateSalesOrderByOrderJson(originalSalesOrder, orderJson))
+        assertThatThrownBy(() -> salesOrderService.enrichSalesOrder(originalSalesOrder, orderJson))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Order does not contain a valid payment type. Order number: " +
                                 orderNumber);
