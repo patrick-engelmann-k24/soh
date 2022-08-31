@@ -64,8 +64,8 @@ class IsDropshipmentOrderCreatedGatewayModelTest extends AbstractWorkflowTest {
 
         processVariables.put(IS_DROPSHIPMENT_ORDER_CONFIRMED.getName(), true);
 
-        when(processScenario.waitsAtMessageIntermediateCatchEvent(EVENT_MSG_DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED.getName()))
-                .thenReturn(RECEIVED_MESSAGE_CATCH_EVENT_ACTION);
+        when(processScenario.waitsAtReceiveTask(EVENT_MSG_DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED.getName()))
+                .thenReturn(RECEIVED_RECEIVER_TASK_ACTION);
 
         scenario = startBeforeActivity(SALES_ORDER_PROCESS, XOR_CHECK_DROPSHIPMENT_ORDER_SUCCESSFUL.getName(),
                 businessKey, processVariables);

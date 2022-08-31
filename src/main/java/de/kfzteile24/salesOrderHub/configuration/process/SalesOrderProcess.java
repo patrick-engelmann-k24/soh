@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Configuration;
 @Getter
 @Setter
 @Configuration
-public class ProcessConfig {
-    private SalesOrderProcess salesOrderProcess;
-    private SubsequentOrderProcess subsequentOrderProcess;
+public class SalesOrderProcess {
+    private String dropshipmentOrderBookedTimer;
+    private String dropshipmentShipmentConfirmedTimer;
 }

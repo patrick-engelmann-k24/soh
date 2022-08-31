@@ -15,6 +15,7 @@ import org.camunda.bpm.extension.process_test_coverage.spring_test.ProcessEngine
 import org.camunda.bpm.scenario.ProcessScenario;
 import org.camunda.bpm.scenario.Scenario;
 import org.camunda.bpm.scenario.act.MessageIntermediateCatchEventAction;
+import org.camunda.bpm.scenario.act.ReceiveTaskAction;
 import org.camunda.bpm.scenario.act.SignalIntermediateCatchEventAction;
 import org.camunda.bpm.scenario.delegate.EventSubscriptionDelegate;
 import org.camunda.bpm.scenario.impl.ProcessRunnerImpl;
@@ -65,7 +66,10 @@ public abstract class AbstractWorkflowTest {
 
     public static final SignalIntermediateCatchEventAction WAIT_SIGNAL_CATCH_EVENT_ACTION = action -> {};
     public static final MessageIntermediateCatchEventAction WAIT_MESSAGE_CATCH_EVENT_ACTION = action -> {};
+    public static final ReceiveTaskAction WAIT_RECEIVER_TASK_ACTION = action -> {};
     public static final MessageIntermediateCatchEventAction RECEIVED_MESSAGE_CATCH_EVENT_ACTION =
+            EventSubscriptionDelegate::receive;
+    public static final ReceiveTaskAction RECEIVED_RECEIVER_TASK_ACTION =
             EventSubscriptionDelegate::receive;
     public static final SignalIntermediateCatchEventAction RECEIVED_SIGNAL_CATCH_EVENT_ACTION =
             EventSubscriptionDelegate::receive;
