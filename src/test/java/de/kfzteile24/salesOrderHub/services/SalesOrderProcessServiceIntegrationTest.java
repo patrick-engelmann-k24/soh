@@ -5,7 +5,6 @@ import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.services.splitter.decorator.ItemSplitService;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
-import de.kfzteile24.soh.order.dto.Platform;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -13,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.annotation.DirtiesContext;
 
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
@@ -24,6 +24,7 @@ import static de.kfzteile24.soh.order.dto.Platform.ECP;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.verify;
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @SpringBootTest
@@ -38,7 +39,7 @@ public class SalesOrderProcessServiceIntegrationTest {
     @Autowired
     private SalesOrderProcessService salesOrderProcessService;
 
-    @Autowired
+    @SpyBean
     private SalesOrderService salesOrderService;
 
     @Test
@@ -93,6 +94,8 @@ public class SalesOrderProcessServiceIntegrationTest {
         assertEquals(2, originalSplittedOrder.getOrderRows().size());
         assertEquals("816", originalSplittedOrder.getOrderRows().get(0).getGenart());
         assertEquals("816", originalSplittedOrder.getOrderRows().get(1).getGenart());
+
+        verify(salesOrderService).enrichInitialOrder(order);
     }
 
     @AfterEach

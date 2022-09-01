@@ -21,7 +21,7 @@ public class MetricsHelper {
         eventAttributes.put("Platform", order.getOrderHeader().getPlatform().name());
         eventAttributes.put("SalesChannel", order.getOrderHeader().getSalesChannel());
         eventAttributes.put("SalesOrderNumber", order.getOrderHeader().getOrderNumber());
-        insights.recordCustomEvent(customEventName.getName(), eventAttributes);
+        sendCustomEvent(customEventName, eventAttributes);
     }
 
     public void sendCustomEventForInvoices(SalesOrder salesOrder, CustomEventName customEventName) {
@@ -30,6 +30,10 @@ public class MetricsHelper {
         eventAttributes.put("OrderNumber", salesOrder.getOrderNumber());
         eventAttributes.put("OrderGroupId", salesOrder.getOrderGroupId());
         eventAttributes.put("InvoiceNumber", invoiceEvent.getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber());
+        sendCustomEvent(customEventName, eventAttributes);
+    }
+
+    public void sendCustomEvent(CustomEventName customEventName, Map<String, Object> eventAttributes) {
         insights.recordCustomEvent(customEventName.getName(), eventAttributes);
     }
 }

@@ -155,6 +155,9 @@ kfzteile:
   #
   deleteUnusedProcesses: true
   process-config:
+    sales-order-process:
+      dropshipment-order-booked-timer: R/PT10M
+      dropshipment-shipment-confirmed-timer: R/P5D
     subsequent-order-process:
       publish-delay: PT10S
   orderReturnProcess:

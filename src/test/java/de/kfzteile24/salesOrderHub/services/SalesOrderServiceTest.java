@@ -11,6 +11,7 @@ import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundCustomException;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
+import de.kfzteile24.soh.order.dto.CustomerType;
 import de.kfzteile24.soh.order.dto.GrandTotalTaxes;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
@@ -549,6 +550,46 @@ class SalesOrderServiceTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Order does not contain a valid payment type. Order number: " +
                                 orderNumber);
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideParamsForUpdateCustomSegmentTest")
+    void testUpdateCustomSegment(List<String> existingCustomerSegments,
+                                 CustomerType customerType,
+                                 String shippingType,
+                                 String[] expectedCustomerSegments) {
+        String rawMessage =  readResource("examples/ecpOrderMessage.json");
+        var salesOrder = getSalesOrder(rawMessage);
+
+        var order = (Order) salesOrder.getOriginalOrder();
+        order.getOrderHeader().getCustomer().setCustomerSegment(existingCustomerSegments);
+        order.getOrderHeader().getCustomer().setCustomerType(customerType);
+        order.getOrderRows().get(0).setShippingType(shippingType);
+
+        salesOrderService.updateCustomSegment(order);
+
+        assertThat(salesOrder.getLatestJson().getOrderHeader().getCustomer().getCustomerSegment())
+                .containsExactlyInAnyOrder(expectedCustomerSegments);
+
+    }
+
+    private static Stream<Arguments> provideParamsForUpdateCustomSegmentTest() {
+        return Stream.of(
+                Arguments.of(null, CustomerType.BUSINESS, "notRelevant", new String[] {"b2b"}),
+                Arguments.of(List.of(), CustomerType.BUSINESS, "notRelevant", new String[] {"b2b"}),
+                Arguments.of(null, CustomerType.UNKNOWN, "direct delivery", new String[] {"direct_delivery"}),
+                Arguments.of(List.of(), CustomerType.UNKNOWN, "direct delivery", new String[] {"direct_delivery"}),
+                Arguments.of(null, CustomerType.BUSINESS, "direct delivery", new String[] {"b2b", "direct_delivery"}),
+                Arguments.of(List.of(), CustomerType.BUSINESS, "direct delivery", new String[] {"b2b", "direct_delivery"}),
+                Arguments.of(null, null, "direct delivery", new String[] {"direct_delivery"}),
+                Arguments.of(List.of(), null, "direct delivery", new String[] {"direct_delivery"}),
+                Arguments.of(List.of("anyCustomerSegment"), CustomerType.BUSINESS, "direct delivery", new String[] {"anyCustomerSegment"}),
+                Arguments.of(List.of("anyCustomerSegment"), CustomerType.UNKNOWN, "direct delivery", new String[] {"anyCustomerSegment"}),
+                Arguments.of(null, CustomerType.UNKNOWN, "notRelevant", new String[] {}),
+                Arguments.of(List.of(), CustomerType.UNKNOWN, "notRelevant", new String[] {}),
+                Arguments.of(List.of("anyCustomerSegment"), CustomerType.UNKNOWN, "notRelevant", new String[] {"anyCustomerSegment"}),
+                Arguments.of(List.of("anyCustomerSegment"), CustomerType.UNKNOWN, "notRelevant", new String[] {"anyCustomerSegment"})
+        );
     }
 
     @NotNull

@@ -1,5 +1,6 @@
 package de.kfzteile24.salesOrderHub.services;
 
+import de.kfzteile24.salesOrderHub.constants.CustomerSegment;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
@@ -44,6 +45,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static de.kfzteile24.salesOrderHub.constants.CustomerSegment.B2B;
+import static de.kfzteile24.salesOrderHub.constants.CustomerSegment.DIRECT_DELIVERY;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.INVOICE_URL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.MIGRATION_SALES_ORDER_RECEIVED;
@@ -51,7 +54,9 @@ import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getSumValue;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.isNotNullAndEqual;
 import static de.kfzteile24.salesOrderHub.helper.PaymentUtil.updatePaymentProvider;
+import static de.kfzteile24.soh.order.dto.CustomerType.BUSINESS;
 import static java.text.MessageFormat.format;
+import static java.util.stream.Collectors.toUnmodifiableList;
 
 @Service
 @Slf4j
@@ -518,5 +523,38 @@ public class SalesOrderService {
                 .orElseThrow(() ->
                         new IllegalArgumentException("Order does not contain a valid payment type. Order number: " +
                                 orderNumber));
+    }
+
+    public void enrichInitialOrder(Order initialOrder) {
+        setOrderGroupIdIfEmpty(initialOrder);
+        updateCustomSegment(initialOrder);
+    }
+
+    public void updateCustomSegment(Order order) {
+        var customer = order.getOrderHeader().getCustomer();
+        if (com.amazonaws.util.CollectionUtils.isNullOrEmpty(customer.getCustomerSegment())) {
+            var customSegmentUpdate = new ArrayList<CustomerSegment>();
+
+            if (customer.getCustomerType() == BUSINESS) {
+                customSegmentUpdate.add(B2B);
+            }
+
+            if (order.getOrderRows().stream()
+                    .anyMatch(orderRow ->
+                            StringUtils.equalsIgnoreCase(orderRow.getShippingType(), "direct delivery"))) {
+                customSegmentUpdate.add(DIRECT_DELIVERY);
+            }
+
+            order.getOrderHeader().getCustomer().setCustomerSegment(customSegmentUpdate.stream()
+                    .map(CustomerSegment::getName)
+                    .collect(toUnmodifiableList()));
+        }
+    }
+
+    private void setOrderGroupIdIfEmpty(Order order) {
+        String orderNumber = order.getOrderHeader().getOrderNumber();
+        if (StringUtils.isBlank(order.getOrderHeader().getOrderGroupId())) {
+            order.getOrderHeader().setOrderGroupId(orderNumber);
+        }
     }
 }

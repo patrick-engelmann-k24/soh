@@ -14,7 +14,9 @@ public enum CustomEventName {
     SUBSEQUENT_ORDER_GENERATED("SohSubsequentOrderGenerated"),
     SALES_ORDER_PUBLISHED("SohSalesOrderPublished"),
     CORE_INVOICE_PUBLISHED("SohCoreInvoicePublished"),
-    DROPSHIPMENT_INVOICE_PUBLISHED("SohDropshipmentInvoicePublished");
+    DROPSHIPMENT_INVOICE_PUBLISHED("SohDropshipmentInvoicePublished"),
+    DROPSHIPMENT_ORDER_BOOKED_MISSING("DropshipmentOrderBookedMissing"),
+    DROPSHIPMENT_SHIPMENT_CONFIRMED_MISSING("DropshipmentShipmentConfirmedMissing");
     @NonNull
     private String name;
 }

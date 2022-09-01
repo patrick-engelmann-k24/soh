@@ -37,3 +37,9 @@ camunda:
     database:
       schema-update: true
       schema-name: public
+
+kfzteile:
+  process-config:
+    sales-order-process:
+      dropshipment-order-booked-timer: R/PT10S
+      dropshipment-shipment-confirmed-timer: R/PT10S
