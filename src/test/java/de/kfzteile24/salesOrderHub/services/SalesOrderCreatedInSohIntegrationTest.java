@@ -116,8 +116,6 @@ class SalesOrderCreatedInSohIntegrationTest {
         checkTotalsValues(newOrderNumberCreatedInSoh,
                 "12.95",
                 "10.79",
-                "0",
-                "0",
                 "12.95",
                 "10.79",
                 "12.95",
@@ -160,8 +158,6 @@ class SalesOrderCreatedInSohIntegrationTest {
         checkTotalsValues(newOrderNumberCreatedInSoh,
                 "834.52",
                 "695.64",
-                "0",
-                "0",
                 "847.60",
                 "706.63",
                 "847.60",
@@ -201,8 +197,6 @@ class SalesOrderCreatedInSohIntegrationTest {
         checkTotalsValues(newOrderNumberCreatedInSoh,
                 "432.52",
                 "360.64",
-                "0",
-                "0",
                 "445.60",
                 "371.63",
                 "445.60",
@@ -247,8 +241,6 @@ class SalesOrderCreatedInSohIntegrationTest {
         checkTotalsValues(newOrderNumberCreatedInSoh,
                 "432.52",
                 "360.64",
-                "0",
-                "0",
                 "445.60",
                 "371.63",
                 "445.60",
@@ -296,8 +288,6 @@ class SalesOrderCreatedInSohIntegrationTest {
         checkTotalsValues(newOrderNumberCreatedInSoh,
                 "432.52",
                 "360.64",
-                "0",
-                "0",
                 "445.60",
                 "371.63",
                 "445.60",
@@ -332,8 +322,6 @@ class SalesOrderCreatedInSohIntegrationTest {
     private void checkTotalsValues(String orderNumber,
                                    String goodsTotalGross,
                                    String goodsTotalNet,
-                                   String totalDiscountGross,
-                                   String totalDiscountNet,
                                    String grandTotalGross,
                                    String grandTotalNet,
                                    String paymentTotal,
@@ -345,8 +333,8 @@ class SalesOrderCreatedInSohIntegrationTest {
         Totals totals = updatedOrder.getLatestJson().getOrderHeader().getTotals();
         assertEquals(new BigDecimal(goodsTotalGross), totals.getGoodsTotalGross());
         assertEquals(new BigDecimal(goodsTotalNet), totals.getGoodsTotalNet());
-        assertEquals(new BigDecimal(totalDiscountGross), totals.getTotalDiscountGross());
-        assertEquals(new BigDecimal(totalDiscountNet), totals.getTotalDiscountNet());
+        assertEquals(new BigDecimal("0"), totals.getTotalDiscountGross());
+        assertEquals(new BigDecimal("0"), totals.getTotalDiscountNet());
         assertEquals(new BigDecimal(grandTotalGross), totals.getGrandTotalGross());
         assertEquals(new BigDecimal(grandTotalNet), totals.getGrandTotalNet());
         assertEquals(new BigDecimal(paymentTotal), totals.getPaymentTotal());
@@ -387,7 +375,8 @@ class SalesOrderCreatedInSohIntegrationTest {
                         .discountNet(BigDecimal.ZERO)
                         .totalDiscountedGross(new BigDecimal("402.0"))
                         .totalDiscountedNet(new BigDecimal("335.0"))
-                        .build());
+                        .build(),
+                "Unterdruckpumpe, Bremsanlage");
         checkOrderRowValues(
                 orderRows.get(1),
                 sku2,
@@ -408,7 +397,8 @@ class SalesOrderCreatedInSohIntegrationTest {
                         .discountNet(BigDecimal.ZERO)
                         .totalDiscountedGross(new BigDecimal("20.00"))
                         .totalDiscountedNet(new BigDecimal("16.8"))
-                        .build());
+                        .build(),
+                "Luftfilter");
         checkOrderRowValues(
                 orderRows.get(2),
                 sku3,
@@ -429,15 +419,12 @@ class SalesOrderCreatedInSohIntegrationTest {
                         .discountNet(BigDecimal.ZERO)
                         .totalDiscountedGross(new BigDecimal("10.52"))
                         .totalDiscountedNet(new BigDecimal("8.84"))
-                        .build());
+                        .build(),
+                sku3);
     }
 
-    private void checkOrderRowValues(OrderRows row,
-                                     String sku,
-                                     String quantity,
-                                     String taxRate,
-                                     UnitValues expectedUnitValues,
-                                     SumValues expectedSumValues) {
+    private void checkOrderRowValues(OrderRows row, String sku, String quantity, String taxRate,
+                                     UnitValues expectedUnitValues, SumValues expectedSumValues, String description) {
         assertEquals(sku, row.getSku());
         assertEquals(new BigDecimal(quantity), row.getQuantity());
         assertEquals(new BigDecimal(taxRate), row.getTaxRate());
@@ -450,6 +437,7 @@ class SalesOrderCreatedInSohIntegrationTest {
         assertEquals(expectedSumValues.getGoodsValueNet(), row.getSumValues().getGoodsValueNet());
         assertEquals(expectedSumValues.getTotalDiscountedGross(), row.getSumValues().getTotalDiscountedGross());
         assertEquals(expectedSumValues.getTotalDiscountedNet(), row.getSumValues().getTotalDiscountedNet());
+        assertEquals(description, row.getName());
     }
 
     private void verifyThatNewRelicIsCalled(String newOrderNumberCreatedInSoh) {
@@ -463,7 +451,7 @@ class SalesOrderCreatedInSohIntegrationTest {
 
         verify(insights).recordCustomEvent(eq("SohSubsequentOrderGenerated"),
                 argThat(map -> {
-                    assertThat((Map<String, Object>)map).containsAllEntriesOf(eventAttributes);
+                    assertThat((Map<String, Object>) map).containsAllEntriesOf(eventAttributes);
                     return true;
                 }));
     }
