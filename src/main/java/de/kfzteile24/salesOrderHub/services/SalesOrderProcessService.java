@@ -10,7 +10,6 @@ import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapperUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Service;
 
@@ -33,9 +32,9 @@ public class SalesOrderProcessService {
     private final MessageWrapperUtil messageWrapperUtil;
 
     public void handleShopOrdersReceived(MessageWrapper<Order> orderMessageWrapper) {
-        setOrderGroupIdIfEmpty(orderMessageWrapper.getMessage());
+        var orderJson = orderMessageWrapper.getMessage();
+        salesOrderService.enrichInitialOrder(orderJson);
         var orderCopy = messageWrapperUtil.createMessage(orderMessageWrapper.getRawMessage(), Order.class);
-        setOrderGroupIdIfEmpty(orderCopy);
         splitterService.splitSalesOrder(orderMessageWrapper.getMessage(), orderCopy)
                 .forEach(salesOrderSplit -> startSalesOrderProcess(salesOrderSplit, orderMessageWrapper));
     }
@@ -65,13 +64,6 @@ public class SalesOrderProcessService {
             log.error("New ecp order process is failed by message error:\r\nError-Message: {}, Message Body: {}",
                     e.getMessage(), orderMessageWrapper.getSqsMessage().getBody());
             throw e;
-        }
-    }
-
-    private void setOrderGroupIdIfEmpty(Order order) {
-        String orderNumber = order.getOrderHeader().getOrderNumber();
-        if (StringUtils.isBlank(order.getOrderHeader().getOrderGroupId())) {
-            order.getOrderHeader().setOrderGroupId(orderNumber);
         }
     }
 }
