@@ -538,30 +538,31 @@ class SqsReceiveServiceIntegrationTest {
         assertEquals(3, returnOrderRows.size());
 
         OrderRows orderRows = returnOrderRows.stream().filter(r -> r.getSku().equals("sku-1")).findFirst().orElse(null);
-        checkOrderRowValues(orderRows,
+        checkOrderRowValues(orderRows, "name-sku-1",
                 new BigDecimal("1"), new BigDecimal("19.0"),
                 new BigDecimal("-1.0"), new BigDecimal("-1.19"),
                 new BigDecimal("-1.0"), new BigDecimal("-1.19"));
 
         orderRows = returnOrderRows.stream().filter(r -> r.getSku().equals("new-sku")).findFirst().orElse(null);
-        checkOrderRowValues(orderRows,
+        checkOrderRowValues(orderRows, "new-sku",
                 new BigDecimal("1"), new BigDecimal("19.0"),
                 new BigDecimal("10.0"), new BigDecimal("11.90"),
                 new BigDecimal("10.0"), new BigDecimal("11.90"));
 
         orderRows = returnOrderRows.stream().filter(r -> r.getSku().equals("sku-2")).findFirst().orElse(null);
-        checkOrderRowValues(orderRows,
+        checkOrderRowValues(orderRows, "name-sku-2",
                 new BigDecimal("-2"), new BigDecimal("20.0"),
                 new BigDecimal("17.39"), new BigDecimal("20.87"),
                 new BigDecimal("-34.78"), new BigDecimal("-41.74"));
     }
 
-    private void checkOrderRowValues(OrderRows orderRows,
+    private void checkOrderRowValues(OrderRows orderRows, String itemDescription,
                                      BigDecimal quantity, BigDecimal taxRate,
                                      BigDecimal unitNetValue, BigDecimal unitGrossValue,
                                      BigDecimal sumNetValue, BigDecimal sumGrossValue) {
 
         assertNotNull(orderRows);
+        assertEquals(itemDescription, orderRows.getName());
         assertEquals(quantity, orderRows.getQuantity());
         assertEquals(taxRate, orderRows.getTaxRate());
         assertEquals("shipment_regular", orderRows.getShippingType());

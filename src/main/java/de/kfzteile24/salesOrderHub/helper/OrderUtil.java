@@ -84,7 +84,7 @@ public class OrderUtil {
                 .isCancelled(false)
                 .isPriceHammer(originalOrderRow.getIsPriceHammer())
                 .sku(item.getItemNumber())
-                .name(originalOrderRow.getName())
+                .name(Optional.ofNullable(originalOrderRow.getName()).orElse(item.getDescription()))
                 .dataSupplierNumber(originalOrderRow.getDataSupplierNumber())
                 .manufacturerProductNumber(originalOrderRow.getManufacturerProductNumber())
                 .ean(originalOrderRow.getEan())
