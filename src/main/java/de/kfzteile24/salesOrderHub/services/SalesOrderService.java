@@ -49,7 +49,6 @@ import static de.kfzteile24.salesOrderHub.constants.CustomerSegment.B2B;
 import static de.kfzteile24.salesOrderHub.constants.CustomerSegment.DIRECT_DELIVERY;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.INVOICE_URL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
-import static de.kfzteile24.salesOrderHub.domain.audit.Action.MIGRATION_SALES_ORDER_RECEIVED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getSumValue;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.isNotNullAndEqual;
@@ -250,7 +249,8 @@ public class SalesOrderService {
                 return false;
         }
 
-        var shippingCostDocumentLine = items.stream().filter(item -> item.getIsShippingCost()).findFirst().orElse(null);
+        var shippingCostDocumentLine = items.stream()
+                .filter(CoreSalesFinancialDocumentLine::getIsShippingCost).findFirst().orElse(null);
 
         return isShippingCostNetMatch(originalSalesOrder, shippingCostDocumentLine)
                 && isShippingCostGrossMatch(originalSalesOrder, shippingCostDocumentLine);
@@ -430,13 +430,12 @@ public class SalesOrderService {
     }
 
     @Transactional
-    public void updateSalesOrderByOrderJson(SalesOrder salesOrder, Order order) {
+    public void enrichSalesOrder(SalesOrder salesOrder, Order order) {
         updatePaymentsAndOrderGroupId(salesOrder, order);
         salesOrder.setOriginalOrder(order);
         salesOrder.setLatestJson(order);
         salesOrder.setOrderGroupId(salesOrder.getOrderNumber());
         mapCustomerEmailIfExists(salesOrder, order);
-        save(salesOrder, MIGRATION_SALES_ORDER_RECEIVED);
     }
 
     private static void mapCustomerEmailIfExists(SalesOrder salesOrder, Order order) {
