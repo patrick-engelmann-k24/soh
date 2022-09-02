@@ -59,6 +59,7 @@ import static java.text.MessageFormat.format;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.equalsIgnoreCase;
 
+
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -533,7 +534,6 @@ public class SalesOrderService {
 
     public void updateCustomSegment(Order order) {
         var customer = order.getOrderHeader().getCustomer();
-
         Predicate<String> customSegmentPredicate = cs -> equalsIgnoreCase(cs, B2B.getName())
                 || equalsIgnoreCase(cs, DIRECT_DELIVERY.getName());
 
@@ -546,8 +546,7 @@ public class SalesOrderService {
             }
 
             if (order.getOrderRows().stream()
-                    .anyMatch(orderRow ->
-                            equalsIgnoreCase(orderRow.getShippingType(), "direct delivery"))) {
+                    .anyMatch(orderRow -> equalsIgnoreCase(orderRow.getShippingType(), "direct delivery"))) {
                 customSegmentUpdate.add(DIRECT_DELIVERY);
             }
 

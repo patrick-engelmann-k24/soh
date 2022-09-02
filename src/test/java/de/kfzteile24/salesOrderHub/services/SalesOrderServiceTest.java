@@ -577,7 +577,6 @@ class SalesOrderServiceTest {
             assertThat(salesOrder.getLatestJson().getOrderHeader().getCustomer().getCustomerSegment())
                     .containsExactlyInAnyOrder(expectedCustomerSegments);
         }
-
     }
 
     private static Stream<Arguments> provideParamsForUpdateCustomSegmentTest() {
