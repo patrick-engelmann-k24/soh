@@ -43,6 +43,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.CustomerSegment.B2B;
@@ -55,7 +56,8 @@ import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.isNotNullAndEqu
 import static de.kfzteile24.salesOrderHub.helper.PaymentUtil.updatePaymentProvider;
 import static de.kfzteile24.soh.order.dto.CustomerType.BUSINESS;
 import static java.text.MessageFormat.format;
-import static java.util.stream.Collectors.toUnmodifiableList;
+import static java.util.stream.Collectors.toList;
+import static org.apache.commons.lang3.StringUtils.equalsIgnoreCase;
 
 @Service
 @Slf4j
@@ -207,7 +209,7 @@ public class SalesOrderService {
         }
         orderRows = orderRows.stream()
                 .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+                .collect(toList());
 
         var version = originalSalesOrder.getLatestJson().getVersion();
         var orderHeader = originalSalesOrder.getLatestJson().getOrderHeader();
@@ -296,7 +298,7 @@ public class SalesOrderService {
         var foundSalesOrders = fetchedSalesOrders.stream()
                 .filter(salesOrder -> salesOrder.getLatestJson().getOrderRows().stream()
                         .anyMatch(row -> row.getSku().equals(orderItemSku)))
-                .collect(Collectors.toList());
+                .collect(toList());
 
         if (foundSalesOrders.isEmpty()) {
             throw new SalesOrderNotFoundCustomException(
@@ -305,7 +307,7 @@ public class SalesOrderService {
                             orderItemSku));
         }
 
-        return foundSalesOrders.stream().map(SalesOrder::getOrderNumber).distinct().collect(Collectors.toList());
+        return foundSalesOrders.stream().map(SalesOrder::getOrderNumber).distinct().collect(toList());
     }
 
     protected List<String> filterBySkuAndIsCancelled(String orderGroupId, String orderItemSku, List<SalesOrder> fetchedSalesOrders) {
@@ -314,7 +316,7 @@ public class SalesOrderService {
                         .anyMatch(row -> row.getSku().equals(orderItemSku)))
                 .filter(salesOrder -> salesOrder.getLatestJson().getOrderRows().stream()
                         .noneMatch(OrderRows::getIsCancelled))
-                .collect(Collectors.toList());
+                .collect(toList());
 
         if (foundSalesOrders.isEmpty()) {
             throw new SalesOrderNotFoundCustomException(
@@ -323,7 +325,7 @@ public class SalesOrderService {
                             orderItemSku));
         }
 
-        return foundSalesOrders.stream().map(SalesOrder::getOrderNumber).distinct().collect(Collectors.toList());
+        return foundSalesOrders.stream().map(SalesOrder::getOrderNumber).distinct().collect(toList());
     }
 
     private void recalculateTotals(Order order, CoreSalesFinancialDocumentLine shippingCostLine) {
@@ -335,7 +337,7 @@ public class SalesOrderService {
     public void recalculateTotals(Order order, BigDecimal shippingCostNet, BigDecimal shippingCostGross, boolean shippingCostLine) {
 
         List<OrderRows> orderRows = order.getOrderRows();
-        List<SumValues> sumValues = orderRows.stream().map(OrderRows::getSumValues).collect(Collectors.toList());
+        List<SumValues> sumValues = orderRows.stream().map(OrderRows::getSumValues).collect(toList());
         BigDecimal goodsTotalGross = getSumValue(SumValues::getGoodsValueGross, sumValues);
         BigDecimal goodsTotalNet = getSumValue(SumValues::getGoodsValueNet, sumValues);
         BigDecimal totalDiscountGross = getSumValue(SumValues::getDiscountGross, sumValues);
@@ -371,7 +373,7 @@ public class SalesOrderService {
 
         List<GrandTotalTaxes> oldGrandTotalTaxesList = order.getOrderHeader().getTotals().getGrandTotalTaxes();
         List<GrandTotalTaxes> grandTotalTaxesList = order.getOrderRows().stream()
-                .map(this::createGrandTotalTaxesFromOrderRow).distinct().collect(Collectors.toList());
+                .map(this::createGrandTotalTaxesFromOrderRow).distinct().collect(toList());
 
         for (OrderRows orderRow : order.getOrderRows()) {
             BigDecimal taxValue = orderRow.getSumValues().getTotalDiscountedGross()
@@ -451,7 +453,7 @@ public class SalesOrderService {
 
         var updatedPayments = targetPaymentList.stream()
                 .map(payment -> filterAndUpdatePayment(sourcePaymentList, payment, orderNumber))
-                .collect(Collectors.toList());
+                .collect(toList());
         order.getOrderHeader().setPayments(updatedPayments);
         order.getOrderHeader().setOrderGroupId(orderNumber);
     }
@@ -531,7 +533,12 @@ public class SalesOrderService {
 
     public void updateCustomSegment(Order order) {
         var customer = order.getOrderHeader().getCustomer();
-        if (com.amazonaws.util.CollectionUtils.isNullOrEmpty(customer.getCustomerSegment())) {
+
+        Predicate<String> customSegmentPredicate = cs -> equalsIgnoreCase(cs, B2B.getName())
+                || equalsIgnoreCase(cs, DIRECT_DELIVERY.getName());
+
+        if (Objects.isNull(customer.getCustomerSegment()) ||
+                customer.getCustomerSegment().stream().noneMatch(customSegmentPredicate)) {
             var customSegmentUpdate = new ArrayList<CustomerSegment>();
 
             if (customer.getCustomerType() == BUSINESS) {
@@ -540,13 +547,20 @@ public class SalesOrderService {
 
             if (order.getOrderRows().stream()
                     .anyMatch(orderRow ->
-                            StringUtils.equalsIgnoreCase(orderRow.getShippingType(), "direct delivery"))) {
+                            equalsIgnoreCase(orderRow.getShippingType(), "direct delivery"))) {
                 customSegmentUpdate.add(DIRECT_DELIVERY);
             }
 
-            order.getOrderHeader().getCustomer().setCustomerSegment(customSegmentUpdate.stream()
+            var customSegmentUpdateNames = customSegmentUpdate.stream()
                     .map(CustomerSegment::getName)
-                    .collect(toUnmodifiableList()));
+                    .collect(toList());
+
+            if (!customSegmentUpdateNames.isEmpty()) {
+                if (Objects.isNull(customer.getCustomerSegment())) {
+                    customer.setCustomerSegment(new ArrayList<>());
+                }
+                customer.getCustomerSegment().addAll(customSegmentUpdateNames);
+            }
         }
     }
 

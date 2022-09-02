@@ -559,7 +559,8 @@ class SalesOrderServiceTest {
     void testUpdateCustomSegment(List<String> existingCustomerSegments,
                                  CustomerType customerType,
                                  String shippingType,
-                                 String[] expectedCustomerSegments) {
+                                 String[] expectedCustomerSegments,
+                                 boolean isExistingCustomerSegmentsNull) {
         String rawMessage =  readResource("examples/ecpOrderMessage.json");
         var salesOrder = getSalesOrder(rawMessage);
 
@@ -570,27 +571,48 @@ class SalesOrderServiceTest {
 
         salesOrderService.updateCustomSegment(order);
 
-        assertThat(salesOrder.getLatestJson().getOrderHeader().getCustomer().getCustomerSegment())
-                .containsExactlyInAnyOrder(expectedCustomerSegments);
+        if (isExistingCustomerSegmentsNull) {
+            assertThat(salesOrder.getLatestJson().getOrderHeader().getCustomer().getCustomerSegment()).isNull();
+        } else {
+            assertThat(salesOrder.getLatestJson().getOrderHeader().getCustomer().getCustomerSegment())
+                    .containsExactlyInAnyOrder(expectedCustomerSegments);
+        }
 
     }
 
     private static Stream<Arguments> provideParamsForUpdateCustomSegmentTest() {
         return Stream.of(
-                Arguments.of(null, CustomerType.BUSINESS, "notRelevant", new String[] {"b2b"}),
-                Arguments.of(List.of(), CustomerType.BUSINESS, "notRelevant", new String[] {"b2b"}),
-                Arguments.of(null, CustomerType.UNKNOWN, "direct delivery", new String[] {"direct_delivery"}),
-                Arguments.of(List.of(), CustomerType.UNKNOWN, "direct delivery", new String[] {"direct_delivery"}),
-                Arguments.of(null, CustomerType.BUSINESS, "direct delivery", new String[] {"b2b", "direct_delivery"}),
-                Arguments.of(List.of(), CustomerType.BUSINESS, "direct delivery", new String[] {"b2b", "direct_delivery"}),
-                Arguments.of(null, null, "direct delivery", new String[] {"direct_delivery"}),
-                Arguments.of(List.of(), null, "direct delivery", new String[] {"direct_delivery"}),
-                Arguments.of(List.of("anyCustomerSegment"), CustomerType.BUSINESS, "direct delivery", new String[] {"anyCustomerSegment"}),
-                Arguments.of(List.of("anyCustomerSegment"), CustomerType.UNKNOWN, "direct delivery", new String[] {"anyCustomerSegment"}),
-                Arguments.of(null, CustomerType.UNKNOWN, "notRelevant", new String[] {}),
-                Arguments.of(List.of(), CustomerType.UNKNOWN, "notRelevant", new String[] {}),
-                Arguments.of(List.of("anyCustomerSegment"), CustomerType.UNKNOWN, "notRelevant", new String[] {"anyCustomerSegment"}),
-                Arguments.of(List.of("anyCustomerSegment"), CustomerType.UNKNOWN, "notRelevant", new String[] {"anyCustomerSegment"})
+                Arguments.of(null, CustomerType.BUSINESS, "notRelevant", new String[] {"b2b"}, false),
+                Arguments.of(new ArrayList<>(), CustomerType.BUSINESS, "notRelevant", new String[] {"b2b"}, false),
+                Arguments.of(null, CustomerType.UNKNOWN, "direct delivery", new String[] {"direct_delivery"}, false),
+                Arguments.of(new ArrayList<>(), CustomerType.UNKNOWN, "direct delivery", new String[] {"direct_delivery"}, false),
+                Arguments.of(null, CustomerType.BUSINESS, "direct delivery", new String[] {"b2b", "direct_delivery"}, false),
+                Arguments.of(new ArrayList<>(), CustomerType.BUSINESS, "direct delivery", new String[] {"b2b", "direct_delivery"}, false),
+                Arguments.of(null, null, "direct delivery", new String[] {"direct_delivery"}, false),
+                Arguments.of(new ArrayList<>(), null, "direct delivery", new String[] {"direct_delivery"}, false),
+                Arguments.of(
+                        new ArrayList<>(){{
+                            add("anyCustomerSegment");
+                        }}, CustomerType.BUSINESS, "direct delivery", new String[] {"b2b", "direct_delivery", "anyCustomerSegment"}, false),
+                Arguments.of(
+                        new ArrayList<>(){{
+                            add("anyCustomerSegment");
+                        }}, CustomerType.UNKNOWN, "direct delivery", new String[] {"anyCustomerSegment", "direct_delivery"}, false),
+                Arguments.of(null, CustomerType.UNKNOWN, "notRelevant", new String[] {}, true),
+                Arguments.of(new ArrayList<>(), CustomerType.UNKNOWN, "notRelevant", new String[] {}, false),
+                Arguments.of(
+                        new ArrayList<>(){{
+                            add("anyCustomerSegment");
+                        }}, CustomerType.UNKNOWN, "notRelevant", new String[] {"anyCustomerSegment"}, false),
+                Arguments.of(
+                        new ArrayList<>(){{
+                            add("anyCustomerSegment");
+                        }}, CustomerType.UNKNOWN, "notRelevant", new String[] {"anyCustomerSegment"}, false),
+                Arguments.of(
+                        new ArrayList<>(){{
+                            add("b2b");
+                            add("direct_delivery");
+                        }}, CustomerType.UNKNOWN, "notRelevant", new String[] {"b2b", "direct_delivery"}, false)
         );
     }
 
