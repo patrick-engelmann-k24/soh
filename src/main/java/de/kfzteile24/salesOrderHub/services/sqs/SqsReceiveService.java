@@ -48,6 +48,7 @@ import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig.OBJECT_MAPPER_WITH_BEAN_VALIDATION;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_CREDIT_NOTE_CREATED;
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.MIGRATION_SALES_ORDER_RECEIVED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.RETURN_ORDER_CREATED;
 import static java.util.function.Predicate.not;
 import static org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy.ON_SUCCESS;
@@ -455,7 +456,8 @@ public class SqsReceiveService {
 
             final Optional<SalesOrder> salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber);
             if (salesOrder.isPresent()) {
-                salesOrderService.updateSalesOrderByOrderJson(salesOrder.get(), order);
+                salesOrderService.enrichSalesOrder(salesOrder.get(), order);
+                salesOrderService.save(salesOrder.get(), MIGRATION_SALES_ORDER_RECEIVED);
                 log.info("Order with order number: {} is duplicated for migration. Publishing event on migration topic", orderNumber);
                 snsPublishService.publishMigrationOrderCreated(orderNumber);
             } else {
@@ -464,12 +466,13 @@ public class SqsReceiveService {
                 var newSalesOrder = SalesOrder
                         .builder()
                         .orderNumber(order.getOrderHeader().getOrderNumber())
-                        .orderGroupId(order.getOrderHeader().getOrderGroupId())
+                        .orderGroupId(order.getOrderHeader().getOrderNumber())
                         .salesChannel(order.getOrderHeader().getSalesChannel())
                         .customerEmail(order.getOrderHeader().getCustomer().getCustomerEmail())
                         .originalOrder(order)
                         .latestJson(order)
                         .build();
+                salesOrderService.enrichSalesOrder(newSalesOrder, order);
                 salesOrderCreateService.startSalesOrderProcess(SalesOrderSplit.regularOrder(newSalesOrder), orderMessageWrapper);
             }
         }

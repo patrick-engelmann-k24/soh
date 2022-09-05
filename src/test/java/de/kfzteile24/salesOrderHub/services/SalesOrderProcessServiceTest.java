@@ -82,6 +82,7 @@ class SalesOrderProcessServiceTest {
         verify(camundaHelper).createOrderProcess(any(SalesOrder.class), any(Messages.class));
         verify(salesOrderService).createSalesOrder(salesOrder);
         verify(salesOrderService).checkOrderNotExists(salesOrder.getOrderNumber());
+        verify(salesOrderService).enrichInitialOrder(eq(order));
     }
 
     @DisplayName("Test Handle Shop Orders Received Splitted Orders")
@@ -122,6 +123,7 @@ class SalesOrderProcessServiceTest {
         verify(salesOrderService).createSalesOrder(splittedOrder);
         verify(salesOrderService).checkOrderNotExists(regularOrder.getOrderNumber());
         verify(salesOrderService).checkOrderNotExists(splittedOrder.getOrderNumber());
+        verify(salesOrderService).enrichInitialOrder(eq(order));
     }
 
     @Test
@@ -145,6 +147,7 @@ class SalesOrderProcessServiceTest {
 
         verify(camundaHelper, never()).createOrderProcess(any(SalesOrder.class), any(Messages.class));
         verify(salesOrderService).checkOrderNotExists("524001240");
+        verify(salesOrderService).enrichInitialOrder(eq(order));
     }
 
     @Test
@@ -175,6 +178,7 @@ class SalesOrderProcessServiceTest {
         verify(camundaHelper, never()).createOrderProcess(any(SalesOrder.class), any(Messages.class));
         verify(salesOrderService).createSalesOrder(salesOrder);
         verify(salesOrderService).checkOrderNotExists(salesOrder.getOrderNumber());
+        verify(salesOrderService).enrichInitialOrder(eq(order));
     }
 
     private Order createRegularOrder() {
