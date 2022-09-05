@@ -628,7 +628,7 @@ class SqsReceiveServiceIntegrationTest {
 
         sqsReceiveService.queueListenerMigrationCoreSalesOrderCreated(orderRawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
-        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(7),
+        assertFalse(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(7),
                 () -> camundaHelper.checkIfActiveProcessExists(order.getOrderHeader().getOrderNumber())));
 
         SalesOrder updated = salesOrderService.getOrderByOrderNumber(order.getOrderHeader().getOrderNumber()).orElse(null);

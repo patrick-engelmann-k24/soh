@@ -12,6 +12,8 @@ import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.FileUtil;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
+import de.kfzteile24.salesOrderHub.helper.SalesOrderMapper;
+import de.kfzteile24.salesOrderHub.helper.SalesOrderMapperImpl;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.services.DropshipmentOrderService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderPaymentSecuredService;
@@ -50,6 +52,7 @@ import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getCreditNoteMsg
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrderReturn;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.any;
@@ -104,6 +107,9 @@ class SqsReceiveServiceTest {
     private SqsReceiveService sqsReceiveService;
     @Mock
     private CoreSalesInvoiceCreatedService coreSalesInvoiceCreatedService;
+
+    @Spy
+    private final SalesOrderMapper salesOrderMapper = new SalesOrderMapperImpl();
 
     @BeforeEach
     void setUp() {
@@ -275,14 +281,25 @@ class SqsReceiveServiceTest {
                 .message(objectMapper.readValue(sqsMessage.getBody(), Order.class))
                 .rawMessage(rawMessage)
                 .build();
+        var order = messageWrapper.getMessage();
 
         when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.empty());
         when(featureFlagConfig.getIgnoreMigrationCoreSalesOrder()).thenReturn(false);
-        when(messageWrapperUtil.create(eq(rawMessage), eq(Order.class))).thenReturn(messageWrapper);
 
         sqsReceiveService.queueListenerMigrationCoreSalesOrderCreated(rawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
-        verify(salesOrderProcessService).startSalesOrderProcess(any(), any());
+        verify(salesOrderService).createSalesOrder(argThat(salesOrder -> {
+            assertThat(salesOrder.getOrderNumber()).isEqualTo(order.getOrderHeader().getOrderNumber());
+            assertThat(salesOrder.getLatestJson()).isEqualTo(order);
+            assertThat(salesOrder.getVersion()).isEqualTo(3L);
+            assertThat(salesOrder.getOriginalOrder()).isEqualTo(order);
+            assertThat(salesOrder.getCustomerEmail()).isEqualTo(order.getOrderHeader().getCustomer().getCustomerEmail());
+            assertThat(salesOrder.getOrderGroupId()).isEqualTo(order.getOrderHeader().getOrderGroupId());
+            assertThat(salesOrder.getSalesChannel()).isEqualTo(order.getOrderHeader().getSalesChannel());
+            return true;
+            }
+        ));
+        verify(snsPublishService).publishMigrationOrderCreated(order.getOrderHeader().getOrderNumber());
     }
 
     @Test

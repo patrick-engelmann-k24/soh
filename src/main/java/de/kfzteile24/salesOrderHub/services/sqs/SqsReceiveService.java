@@ -7,7 +7,6 @@ import de.kfzteile24.salesOrderHub.configuration.FeatureFlagConfig;
 import de.kfzteile24.salesOrderHub.configuration.SQSNamesConfig;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
-import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.mapper.CreditNoteEventMapper;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
@@ -21,9 +20,9 @@ import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
 import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ArticleItemsDto;
 import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ParcelShippedMessage;
-import de.kfzteile24.salesOrderHub.dto.split.SalesOrderSplit;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
+import de.kfzteile24.salesOrderHub.helper.SalesOrderMapper;
 import de.kfzteile24.salesOrderHub.services.DropshipmentOrderService;
 import de.kfzteile24.salesOrderHub.services.InvoiceUrlExtractor;
 import de.kfzteile24.salesOrderHub.services.SalesOrderPaymentSecuredService;
@@ -70,6 +69,7 @@ public class SqsReceiveService {
     private final MessageWrapperUtil messageWrapperUtil;
     private final CoreSalesInvoiceCreatedService coreSalesInvoiceCreatedService;
     private final SQSNamesConfig sqsNamesConfig;
+    private final SalesOrderMapper salesOrderMapper;
     private ObjectMapper objectMapper;
 
     /**
@@ -442,41 +442,32 @@ public class SqsReceiveService {
     @SneakyThrows(JsonProcessingException.class)
     @Trace(metricName = "Handling migration core sales order created message", dispatcher = true)
     @Transactional
-    public void queueListenerMigrationCoreSalesOrderCreated(
+    public void queueListenerMigrationCoreSalesOrderCreated (
             String rawMessage,
             @Header("SenderId") String senderId,
             @Header("ApproximateReceiveCount") Integer receiveCount) {
 
-        if (featureFlagConfig.getIgnoreMigrationCoreSalesOrder()) {
+        if (Boolean.TRUE.equals(featureFlagConfig.getIgnoreMigrationCoreSalesOrder())) {
             log.info("Migration Core Sales Order is ignored");
         } else {
             String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
             Order order = objectMapper.readValue(body, Order.class);
             String orderNumber = order.getOrderHeader().getOrderNumber();
 
-            final Optional<SalesOrder> salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber);
-            if (salesOrder.isPresent()) {
-                salesOrderService.enrichSalesOrder(salesOrder.get(), order);
-                salesOrderService.save(salesOrder.get(), MIGRATION_SALES_ORDER_RECEIVED);
-                log.info("Order with order number: {} is duplicated for migration. Publishing event on migration topic", orderNumber);
-                snsPublishService.publishMigrationOrderCreated(orderNumber);
-            } else {
-                log.info("Order with order number: {} is a new order. Call redirected to normal flow.", orderNumber);
-                MessageWrapper<Order> orderMessageWrapper = messageWrapperUtil.create(rawMessage, Order.class);
-                var newSalesOrder = SalesOrder
-                        .builder()
-                        .orderNumber(order.getOrderHeader().getOrderNumber())
-                        .orderGroupId(order.getOrderHeader().getOrderNumber())
-                        .salesChannel(order.getOrderHeader().getSalesChannel())
-                        .customerEmail(order.getOrderHeader().getCustomer().getCustomerEmail())
-                        .originalOrder(order)
-                        .latestJson(order)
-                        .build();
-                salesOrderService.enrichSalesOrder(newSalesOrder, order);
-                salesOrderCreateService.startSalesOrderProcess(SalesOrderSplit.regularOrder(newSalesOrder), orderMessageWrapper);
-            }
-        }
+            salesOrderService.getOrderByOrderNumber(orderNumber)
+                    .ifPresentOrElse(salesOrder -> {
+                        salesOrderService.enrichSalesOrder(salesOrder, order);
+                        salesOrderService.save(salesOrder, MIGRATION_SALES_ORDER_RECEIVED);
+                        log.info("Order with order number: {} is duplicated for migration. Publishing event on migration topic", orderNumber);
+                    }, () -> {
+                        var salesOrder = salesOrderMapper.map(order);
+                        salesOrderService.enrichSalesOrder(salesOrder, order);
+                        log.info("Order with order number: {} is a new migration order. No process will be created.", orderNumber);
+                        salesOrderService.createSalesOrder(salesOrder);
+                    });
 
+            snsPublishService.publishMigrationOrderCreated(orderNumber);
+        }
     }
 
     /**
