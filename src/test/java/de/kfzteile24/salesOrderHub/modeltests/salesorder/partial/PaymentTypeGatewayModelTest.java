@@ -1,7 +1,5 @@
 package de.kfzteile24.salesOrderHub.modeltests.salesorder.partial;
 
-import de.kfzteile24.salesOrderHub.delegates.salesOrder.OrderCompletedDelegate;
-import de.kfzteile24.salesOrderHub.delegates.salesOrder.listener.CheckPaymentTypeDelegate;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.modeltests.AbstractWorkflowTest;
 import lombok.extern.slf4j.Slf4j;
@@ -11,7 +9,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
-import org.springframework.boot.test.mock.mockito.MockBean;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.ORDER_ROW_FULFILLMENT_PROCESS;
@@ -29,10 +26,6 @@ import static org.mockito.Mockito.when;
 
 @DisplayName("PaymentTypeGateway model test")
 @Slf4j(topic = "PaymentTypeGateway model test")
-@MockBean({
-        CheckPaymentTypeDelegate.class,
-        OrderCompletedDelegate.class
-})
 class PaymentTypeGatewayModelTest extends AbstractWorkflowTest {
 
     @BeforeEach

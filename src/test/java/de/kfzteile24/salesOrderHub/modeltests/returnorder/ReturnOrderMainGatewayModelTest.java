@@ -1,7 +1,5 @@
 package de.kfzteile24.salesOrderHub.modeltests.returnorder;
 
-import de.kfzteile24.salesOrderHub.delegates.returnorder.PublishCreditNoteReceivedDelegate;
-import de.kfzteile24.salesOrderHub.delegates.returnorder.PublishReturnOrderCreatedDelegate;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.modeltests.AbstractWorkflowTest;
 import lombok.extern.slf4j.Slf4j;
@@ -11,7 +9,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
-import org.springframework.boot.test.mock.mockito.MockBean;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.RETURN_ORDER_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
@@ -29,10 +26,6 @@ import static org.mockito.Mockito.verify;
 
 @DisplayName("ReturnOrderMainGateway model test")
 @Slf4j(topic = "ReturnOrderMainGateway model test")
-@MockBean({
-        PublishReturnOrderCreatedDelegate.class,
-        PublishCreditNoteReceivedDelegate.class
-})
 class ReturnOrderMainGatewayModelTest extends AbstractWorkflowTest {
 
     @BeforeEach
