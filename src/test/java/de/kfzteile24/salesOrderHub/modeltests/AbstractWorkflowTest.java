@@ -52,6 +52,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.cloud.aws.messaging.listener.SimpleMessageListenerContainer;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestExecutionListeners;
 
@@ -107,7 +108,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Paymen
 
 })
 @Slf4j
-public abstract class AbstractWorkflowTest {
+public abstract class AbstractWorkflowTest implements ApplicationContextAware {
 
     public static final SignalIntermediateCatchEventAction WAIT_SIGNAL_CATCH_EVENT_ACTION = action -> {};
     public static final MessageIntermediateCatchEventAction WAIT_MESSAGE_CATCH_EVENT_ACTION = action -> {};
@@ -118,6 +119,10 @@ public abstract class AbstractWorkflowTest {
             EventSubscriptionDelegate::receive;
     public static final SignalIntermediateCatchEventAction RECEIVED_SIGNAL_CATCH_EVENT_ACTION =
             EventSubscriptionDelegate::receive;
+
+    protected static ProcessEngine processEngine;
+
+    protected static ApplicationContext applicationContext;
 
     @Mock
     protected ProcessScenario processScenario;
@@ -131,17 +136,24 @@ public abstract class AbstractWorkflowTest {
     @Autowired
     protected RuntimeService runtimeService;
 
-    protected static ProcessEngine processEngine;
-
-    @Autowired
-    protected ApplicationContext applicationContext;
-
     protected Map<String, Object> processVariables;
 
     protected String businessKey;
 
     /**
-     * The only process engine gets created only once for all the model tests
+     * The application context gets created only once for all the model tests
+     */
+    @Override
+    @SneakyThrows
+    public void setApplicationContext(ApplicationContext newApplicationContext) {
+        if (Objects.isNull(applicationContext)) {
+            applicationContext = newApplicationContext;
+            log.info(" ========== Application context created ==========");
+        }
+    }
+
+    /**
+     * The process engine gets created only once for all the model tests
      */
     @BeforeEach
     @SneakyThrows
