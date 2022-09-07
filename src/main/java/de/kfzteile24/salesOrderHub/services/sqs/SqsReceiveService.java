@@ -7,6 +7,8 @@ import de.kfzteile24.salesOrderHub.configuration.FeatureFlagConfig;
 import de.kfzteile24.salesOrderHub.configuration.SQSNamesConfig;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
+import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
+import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.mapper.CreditNoteEventMapper;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
@@ -68,6 +70,7 @@ public class SqsReceiveService {
     private final ParcelShippedService parcelShippedService;
     private final SQSNamesConfig sqsNamesConfig;
     private final SalesOrderMapper salesOrderMapper;
+    private final CamundaHelper camundaHelper;
     private ObjectMapper objectMapper;
 
     /**
@@ -262,9 +265,9 @@ public class SqsReceiveService {
 
         try {
             if (InvoiceUrlExtractor.matchesCreditNoteNumberPattern(invoiceUrl)) {
-                salesOrderService.handleCreditNoteFromDropshipmentOrderReturn(invoiceUrl);
+                camundaHelper.handleCreditNoteFromDropshipmentOrderReturn(invoiceUrl);
             } else {
-                salesOrderService.handleInvoiceFromCore(invoiceUrl);
+                camundaHelper.handleInvoiceFromCore(invoiceUrl);
             }
         } catch (Exception e) {
             log.error("Invoice received from core message error - invoice url: {}\r\nErrorMessage: {}", invoiceUrl, e);

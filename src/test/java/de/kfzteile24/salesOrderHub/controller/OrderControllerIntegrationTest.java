@@ -15,12 +15,12 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMes
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.http.HttpStatus.CONFLICT;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.OK;
 
+import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.domain.converter.InvoiceSource;
@@ -31,21 +31,14 @@ import de.kfzteile24.soh.order.dto.BillingAddress;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.ShippingAddress;
 import java.util.List;
-import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
 
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@SpringBootTest
-class OrderControllerIntegrationTest {
+class OrderControllerIntegrationTest extends AbstractIntegrationTest {
 
-    @Autowired
-    private ProcessEngine processEngine;
     @Autowired
     private RuntimeService runtimeService;
     @Autowired
@@ -61,7 +54,7 @@ class OrderControllerIntegrationTest {
 
     @BeforeEach
     public void setup() {
-        init(processEngine);
+        super.setUp();
         testOrder = salesOrderUtil.createNewSalesOrder();
     }
 

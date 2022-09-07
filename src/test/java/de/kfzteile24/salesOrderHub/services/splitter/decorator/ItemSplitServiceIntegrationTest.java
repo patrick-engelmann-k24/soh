@@ -2,12 +2,12 @@ package de.kfzteile24.salesOrderHub.services.splitter.decorator;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
+import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import de.kfzteile24.salesOrderHub.domain.pdh.Product;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -19,8 +19,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-@SpringBootTest
-class ItemSplitServiceIntegrationTest {
+class ItemSplitServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private ItemSplitService itemSplitService;

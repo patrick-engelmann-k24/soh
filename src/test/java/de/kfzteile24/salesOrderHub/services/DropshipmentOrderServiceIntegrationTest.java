@@ -2,12 +2,11 @@ package de.kfzteile24.salesOrderHub.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import de.kfzteile24.salesOrderHub.constants.PersistentProperties;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Signals;
-import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.PublishDropshipmentOrderCreatedDelegate;
-import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
@@ -26,7 +25,6 @@ import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.InvoiceNumberCounterRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
-import de.kfzteile24.salesOrderHub.services.property.KeyValuePropertyService;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.StringUtils;
@@ -42,10 +40,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.verification.VerificationMode;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.annotation.Commit;
-import org.springframework.test.annotation.DirtiesContext;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -85,16 +80,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@SpringBootTest
-class DropshipmentOrderServiceIntegrationTest {
+class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private DropshipmentOrderService dropshipmentOrderService;
-    @SpyBean
-    private CamundaHelper camundaHelper;
-    @SpyBean
-    private SalesOrderService salesOrderService;
     @Autowired
     private SalesOrderRepository salesOrderRepository;
     @Autowired
@@ -111,19 +100,13 @@ class DropshipmentOrderServiceIntegrationTest {
     private BpmUtil bpmUtil;
     @Autowired
     private TimedPollingService timerService;
-    @SpyBean
-    private KeyValuePropertyService keyValuePropertyService;
-    @SpyBean
-    private PublishDropshipmentOrderCreatedDelegate publishDropshipmentOrderCreatedDelegate;
-
-    @SpyBean
-    private SalesOrderReturnService salesOrderReturnService;
 
     @Autowired
     private ObjectMapper objectMapper;
 
     @BeforeEach
     public void setup() {
+        super.setUp();
         invoiceNumberCounterRepository.deleteAll();
         invoiceNumberCounterService.init();
     }
@@ -267,7 +250,7 @@ class DropshipmentOrderServiceIntegrationTest {
     }
 
     private DropshipmentShipmentConfirmedMessage createShipmentConfirmedMessage(SalesOrder salesOrder) {
-        var message = DropshipmentShipmentConfirmedMessage.builder()
+        return DropshipmentShipmentConfirmedMessage.builder()
                 .salesOrderNumber(salesOrder.getOrderNumber())
                 .items(new ArrayList<>(Set.of(ShipmentItem.builder()
                         .productNumber("sku-1")
@@ -281,7 +264,6 @@ class DropshipmentOrderServiceIntegrationTest {
                         .serviceProviderName("abc2")
                         .build())))
                 .build();
-        return message;
     }
 
     private SalesOrder createSalesOrder() {
@@ -458,7 +440,7 @@ class DropshipmentOrderServiceIntegrationTest {
     }
 
     @Test
-    void testModelPauseDropshipmentOrderProcessingFalse() throws Exception {
+    void testModelPauseDropshipmentOrderProcessingFalse() {
 
         var salesOrder = createAndSaveDropshipmentOrder("111111111");
 

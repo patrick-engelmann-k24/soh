@@ -1,17 +1,14 @@
 package de.kfzteile24.salesOrderHub.controller;
 
+import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.EventMapper;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
-import de.kfzteile24.salesOrderHub.services.DropshipmentOrderService;
-import de.kfzteile24.salesOrderHub.services.SalesOrderService;
-import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 
 import java.util.List;
@@ -21,11 +18,15 @@ import static de.kfzteile24.salesOrderHub.controller.dto.ActionType.RECREATE_ORD
 import static de.kfzteile24.salesOrderHub.controller.dto.ActionType.REPUBLISH_ORDER;
 import static de.kfzteile24.salesOrderHub.controller.dto.ActionType.REPUBLISH_ORDER_INVOICE;
 import static de.kfzteile24.salesOrderHub.controller.dto.ActionType.REPUBLISH_RETURN_ORDER;
+import static java.util.Collections.emptyList;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -34,21 +35,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-class OrderControllerMvcTest extends AbstractControllerMvcTest {
+class OrderControllerMvcTest extends AbstractIntegrationTest {
 
     public static final String ORDER_NUMBER_1 = "2345235";
     public static final String ORDER_NUMBER_2 = "3454235";
     public static final String API_V_1_ORDER_APPLY_ACTION = "/api/v1/order/apply-action";
     public static final String QUERY_PARAM_ACTION_TYPE = "actionType";
-
-    @MockBean
-    private SnsPublishService snsPublishService;
-
-    @MockBean
-    private DropshipmentOrderService dropshipmentOrderService;
-
-    @MockBean
-    private SalesOrderService salesOrderService;
 
     @Autowired
     private SalesOrderUtil salesOrderUtil;
@@ -56,8 +48,11 @@ class OrderControllerMvcTest extends AbstractControllerMvcTest {
     @Test
     void testRepublishOrders() throws Exception {
 
-        var orderNumbers = List.of("2345235", "3454235");
+        var orderNumbers = List.of(ORDER_NUMBER_1, ORDER_NUMBER_2);
         var requestBody = objectMapper.writeValueAsString(orderNumbers);
+
+        doNothing().when(snsPublishService).publishMigrationOrderCreated(ORDER_NUMBER_1);
+        doNothing().when(snsPublishService).publishMigrationOrderCreated(ORDER_NUMBER_2);
 
         mvc.perform(post(API_V_1_ORDER_APPLY_ACTION)
                 .param(QUERY_PARAM_ACTION_TYPE, REPUBLISH_ORDER.name())
@@ -66,8 +61,8 @@ class OrderControllerMvcTest extends AbstractControllerMvcTest {
                 .andDo(print())
                 .andExpect(status().isOk());
 
-        verify(snsPublishService).publishMigrationOrderCreated("2345235");
-        verify(snsPublishService).publishMigrationOrderCreated("3454235");
+        verify(snsPublishService).publishMigrationOrderCreated(ORDER_NUMBER_1);
+        verify(snsPublishService).publishMigrationOrderCreated(ORDER_NUMBER_2);
     }
 
     @Test
@@ -105,11 +100,12 @@ class OrderControllerMvcTest extends AbstractControllerMvcTest {
     @Test
     void testRepublishOrdersFailedForSomeOrders() throws Exception {
 
-        var orderNumbers = List.of("2345235", "3454235");
+        var orderNumbers = List.of(ORDER_NUMBER_1, ORDER_NUMBER_2);
         var requestBody = objectMapper.writeValueAsString(orderNumbers);
 
-        doThrow(new SalesOrderNotFoundException("3454235")).when(snsPublishService)
-                .publishMigrationOrderCreated("3454235");
+        doNothing().when(snsPublishService).publishMigrationOrderCreated(ORDER_NUMBER_1);
+        doThrow(new SalesOrderNotFoundException(ORDER_NUMBER_2)).when(snsPublishService)
+                .publishMigrationOrderCreated(ORDER_NUMBER_2);
 
         mvc.perform(post(API_V_1_ORDER_APPLY_ACTION)
                 .param(QUERY_PARAM_ACTION_TYPE, REPUBLISH_ORDER.name())
@@ -120,8 +116,8 @@ class OrderControllerMvcTest extends AbstractControllerMvcTest {
                 .andExpect(jsonPath("$[0].order_number").value("3454235"))
                 .andExpect(jsonPath("$[0].error_message").value("Sales order not found for the given order number 3454235 "));
 
-        verify(snsPublishService).publishMigrationOrderCreated("2345235");
-        verify(snsPublishService).publishMigrationOrderCreated("3454235");
+        verify(snsPublishService).publishMigrationOrderCreated(ORDER_NUMBER_1);
+        verify(snsPublishService).publishMigrationOrderCreated(ORDER_NUMBER_2);
     }
 
     @Test
@@ -132,13 +128,20 @@ class OrderControllerMvcTest extends AbstractControllerMvcTest {
 
         var salesOrder1 = SalesOrder.builder()
                 .orderNumber(ORDER_NUMBER_1)
+                .invoiceEvent(CoreSalesInvoiceCreatedMessage.builder().build())
                 .build();
         var salesOrder2 = SalesOrder.builder()
                 .orderNumber(ORDER_NUMBER_2)
+                .invoiceEvent(CoreSalesInvoiceCreatedMessage.builder().build())
                 .build();
+        reset(dropshipmentOrderService);
 
-        when(dropshipmentOrderService.recreateSalesOrderInvoice(ORDER_NUMBER_1)).thenReturn(salesOrder1);
-        when(dropshipmentOrderService.recreateSalesOrderInvoice(ORDER_NUMBER_2)).thenReturn(salesOrder2);
+        doReturn(salesOrder1).when(dropshipmentOrderService).recreateSalesOrderInvoice(ORDER_NUMBER_1);
+        doReturn(salesOrder2).when(dropshipmentOrderService).recreateSalesOrderInvoice(ORDER_NUMBER_2);
+        doNothing().when(snsPublishService).publishSalesOrderShipmentConfirmedEvent(salesOrder1, emptyList());
+        doNothing().when(snsPublishService).publishSalesOrderShipmentConfirmedEvent(salesOrder2, emptyList());
+        doNothing().when(snsPublishService).publishCoreInvoiceReceivedEvent(EventMapper.INSTANCE.toCoreSalesInvoiceCreatedReceivedEvent(salesOrder1.getInvoiceEvent()));
+        doNothing().when(snsPublishService).publishCoreInvoiceReceivedEvent(EventMapper.INSTANCE.toCoreSalesInvoiceCreatedReceivedEvent(salesOrder2.getInvoiceEvent()));
 
         mvc.perform(post(API_V_1_ORDER_APPLY_ACTION)
                 .param(QUERY_PARAM_ACTION_TYPE, RECREATE_ORDER_INVOICE.name())
@@ -149,6 +152,8 @@ class OrderControllerMvcTest extends AbstractControllerMvcTest {
 
         verify(dropshipmentOrderService).recreateSalesOrderInvoice(ORDER_NUMBER_1);
         verify(dropshipmentOrderService).recreateSalesOrderInvoice(ORDER_NUMBER_2);
+        verify(snsPublishService).publishSalesOrderShipmentConfirmedEvent(salesOrder1, emptyList());
+        verify(snsPublishService).publishSalesOrderShipmentConfirmedEvent(salesOrder2, emptyList());
         verify(snsPublishService, times(2)).publishCoreInvoiceReceivedEvent(eq(EventMapper.INSTANCE.toCoreSalesInvoiceCreatedReceivedEvent(salesOrder1.getInvoiceEvent())));
     }
 
@@ -196,10 +201,11 @@ class OrderControllerMvcTest extends AbstractControllerMvcTest {
                 .orderNumber(ORDER_NUMBER_1)
                 .build();
 
-        when(dropshipmentOrderService.recreateSalesOrderInvoice(ORDER_NUMBER_1)).thenReturn(salesOrder1);
-
+        doReturn(salesOrder1).when(dropshipmentOrderService).recreateSalesOrderInvoice(ORDER_NUMBER_1);
         doThrow(new SalesOrderNotFoundException(ORDER_NUMBER_2)).when(dropshipmentOrderService)
                 .recreateSalesOrderInvoice(ORDER_NUMBER_2);
+        doNothing().when(snsPublishService).publishSalesOrderShipmentConfirmedEvent(salesOrder1, emptyList());
+        doNothing().when(snsPublishService).publishCoreInvoiceReceivedEvent(EventMapper.INSTANCE.toCoreSalesInvoiceCreatedReceivedEvent(salesOrder1.getInvoiceEvent()));
 
         mvc.perform(post(API_V_1_ORDER_APPLY_ACTION)
                 .param(QUERY_PARAM_ACTION_TYPE, RECREATE_ORDER_INVOICE.name())
@@ -212,14 +218,18 @@ class OrderControllerMvcTest extends AbstractControllerMvcTest {
 
         verify(dropshipmentOrderService).recreateSalesOrderInvoice(ORDER_NUMBER_1);
         verify(dropshipmentOrderService).recreateSalesOrderInvoice(ORDER_NUMBER_2);
+        verify(snsPublishService).publishSalesOrderShipmentConfirmedEvent(salesOrder1, emptyList());
         verify(snsPublishService).publishCoreInvoiceReceivedEvent(eq(EventMapper.INSTANCE.toCoreSalesInvoiceCreatedReceivedEvent(salesOrder1.getInvoiceEvent())));
     }
 
     @Test
     void testRepublishReturnOrders() throws Exception {
 
-        var orderNumbers = List.of("2345235", "3454235");
+        var orderNumbers = List.of(ORDER_NUMBER_1, ORDER_NUMBER_2);
         var requestBody = objectMapper.writeValueAsString(orderNumbers);
+
+        doNothing().when(snsPublishService).publishMigrationReturnOrderCreatedEvent(ORDER_NUMBER_1);
+        doNothing().when(snsPublishService).publishMigrationReturnOrderCreatedEvent(ORDER_NUMBER_2);
 
         mvc.perform(post(API_V_1_ORDER_APPLY_ACTION)
                 .param(QUERY_PARAM_ACTION_TYPE, REPUBLISH_RETURN_ORDER.name())
@@ -228,8 +238,8 @@ class OrderControllerMvcTest extends AbstractControllerMvcTest {
                 .andDo(print())
                 .andExpect(status().isOk());
 
-        verify(snsPublishService).publishMigrationReturnOrderCreatedEvent("2345235");
-        verify(snsPublishService).publishMigrationReturnOrderCreatedEvent("3454235");
+        verify(snsPublishService).publishMigrationReturnOrderCreatedEvent(ORDER_NUMBER_1);
+        verify(snsPublishService).publishMigrationReturnOrderCreatedEvent(ORDER_NUMBER_2);
     }
 
     @Test
@@ -267,11 +277,12 @@ class OrderControllerMvcTest extends AbstractControllerMvcTest {
     @Test
     void testRepublishReturnOrdersFailedForSomeOrders() throws Exception {
 
-        var orderNumbers = List.of("2345235", "3454235");
+        var orderNumbers = List.of(ORDER_NUMBER_1, ORDER_NUMBER_2);
         var requestBody = objectMapper.writeValueAsString(orderNumbers);
 
-        doThrow(new SalesOrderNotFoundException("3454235")).when(snsPublishService)
-                .publishMigrationReturnOrderCreatedEvent("3454235");
+        doNothing().when(snsPublishService).publishMigrationReturnOrderCreatedEvent(ORDER_NUMBER_1);
+        doThrow(new SalesOrderNotFoundException(ORDER_NUMBER_2)).when(snsPublishService)
+                .publishMigrationReturnOrderCreatedEvent(ORDER_NUMBER_2);
 
         mvc.perform(post(API_V_1_ORDER_APPLY_ACTION)
                 .param(QUERY_PARAM_ACTION_TYPE, REPUBLISH_RETURN_ORDER.name())
@@ -282,14 +293,14 @@ class OrderControllerMvcTest extends AbstractControllerMvcTest {
                 .andExpect(jsonPath("$[0].order_number").value("3454235"))
                 .andExpect(jsonPath("$[0].error_message").value("Sales order not found for the given order number 3454235 "));
 
-        verify(snsPublishService).publishMigrationReturnOrderCreatedEvent("2345235");
-        verify(snsPublishService).publishMigrationReturnOrderCreatedEvent("3454235");
+        verify(snsPublishService).publishMigrationReturnOrderCreatedEvent(ORDER_NUMBER_1);
+        verify(snsPublishService).publishMigrationReturnOrderCreatedEvent(ORDER_NUMBER_2);
     }
 
     @Test
     void testRepublishReturnOrdersEmptyOrderNumberWithEmptyActionType() throws Exception {
 
-        var orderNumbers = List.of("2345235", "3454235");
+        var orderNumbers = List.of(ORDER_NUMBER_1, ORDER_NUMBER_2);
         var requestBody = objectMapper.writeValueAsString(orderNumbers);
 
         mvc.perform(post(API_V_1_ORDER_APPLY_ACTION)
@@ -305,7 +316,7 @@ class OrderControllerMvcTest extends AbstractControllerMvcTest {
     @Test
     void testRepublishReturnOrdersEmptyOrderNumberWithActionTypeIsNull() throws Exception {
 
-        var orderNumbers = List.of("2345235", "3454235");
+        var orderNumbers = List.of(ORDER_NUMBER_1, ORDER_NUMBER_2);
         var requestBody = objectMapper.writeValueAsString(orderNumbers);
 
         mvc.perform(post(API_V_1_ORDER_APPLY_ACTION)
@@ -321,12 +332,14 @@ class OrderControllerMvcTest extends AbstractControllerMvcTest {
     @Test
     void testRepublishInvoices() throws Exception {
 
-        CoreSalesInvoiceCreatedMessage invoiceCreatedMsg = salesOrderUtil.createInvoiceCreatedMsg("2345235");
+        CoreSalesInvoiceCreatedMessage invoiceCreatedMsg = salesOrderUtil.createInvoiceCreatedMsg(ORDER_NUMBER_1);
         SalesOrder salesOrder = SalesOrder.builder().invoiceEvent(invoiceCreatedMsg).build();
-        when(salesOrderService.getOrderByOrderNumber(eq("2345235"))).thenReturn(Optional.of(salesOrder));
 
-        var orderNumbers = List.of("2345235");
+        var orderNumbers = List.of(ORDER_NUMBER_1);
         var requestBody = objectMapper.writeValueAsString(orderNumbers);
+
+        doNothing().when(snsPublishService).publishCoreInvoiceReceivedEvent(any());
+        when(salesOrderService.getOrderByOrderNumber(eq(ORDER_NUMBER_1))).thenReturn(Optional.of(salesOrder));
 
         mvc.perform(post(API_V_1_ORDER_APPLY_ACTION)
                         .param(QUERY_PARAM_ACTION_TYPE, REPUBLISH_ORDER_INVOICE.name())
@@ -335,7 +348,6 @@ class OrderControllerMvcTest extends AbstractControllerMvcTest {
                 .andDo(print())
                 .andExpect(status().isOk());
 
-        verify(snsPublishService).publishCoreInvoiceReceivedEvent(
-                eq(EventMapper.INSTANCE.toCoreSalesInvoiceCreatedReceivedEvent(invoiceCreatedMsg)));
+        verify(snsPublishService).publishCoreInvoiceReceivedEvent(any());
     }
 }
