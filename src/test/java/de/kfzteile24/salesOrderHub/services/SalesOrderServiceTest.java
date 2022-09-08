@@ -499,12 +499,13 @@ class SalesOrderServiceTest {
 
         // Prepare new order json
         var orderJson = getOrderJson(orderNumber, false);
+        var originalOrderJson = getOrderJson(orderNumber, false);
 
         when(salesOrderRepository.save(any())).thenAnswer((Answer<SalesOrder>) invocation -> invocation.getArgument(0));
 
-        salesOrderService.enrichSalesOrder(originalSalesOrder, orderJson);
+        salesOrderService.enrichSalesOrder(originalSalesOrder, orderJson, originalOrderJson);
         salesOrderService.save(originalSalesOrder, MIGRATION_SALES_ORDER_RECEIVED);
-        var orderHeader = ((Order) originalSalesOrder.getOriginalOrder()).getOrderHeader();
+        var orderHeader = originalSalesOrder.getLatestJson().getOrderHeader();
         var paypalPayment = orderHeader.getPayments().stream().filter(p -> p.getType().equals(paypalType)).findFirst().orElseThrow();
         var paypalProviderData = paypalPayment.getPaymentProviderData();
         var creditcardPayment = orderHeader.getPayments().stream().filter(p -> p.getType().equals(creditcardType)).findFirst().orElseThrow();
@@ -548,7 +549,7 @@ class SalesOrderServiceTest {
         // Prepare new order json
         var orderJson = getOrderJson(orderNumber, true);
 
-        assertThatThrownBy(() -> salesOrderService.enrichSalesOrder(originalSalesOrder, orderJson))
+        assertThatThrownBy(() -> salesOrderService.enrichSalesOrder(originalSalesOrder, orderJson, orderJson))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Order does not contain a valid payment type. Order number: " +
                                 orderNumber);

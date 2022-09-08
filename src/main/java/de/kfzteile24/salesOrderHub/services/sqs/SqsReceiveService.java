@@ -452,16 +452,17 @@ public class SqsReceiveService {
         } else {
             String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
             Order order = objectMapper.readValue(body, Order.class);
+            Order originalOrder = objectMapper.readValue(body, Order.class);
             String orderNumber = order.getOrderHeader().getOrderNumber();
 
             salesOrderService.getOrderByOrderNumber(orderNumber)
                     .ifPresentOrElse(salesOrder -> {
-                        salesOrderService.enrichSalesOrder(salesOrder, order);
+                        salesOrderService.enrichSalesOrder(salesOrder, order, originalOrder);
                         salesOrderService.save(salesOrder, MIGRATION_SALES_ORDER_RECEIVED);
                         log.info("Order with order number: {} is duplicated for migration. Publishing event on migration topic", orderNumber);
                     }, () -> {
                         var salesOrder = salesOrderMapper.map(order);
-                        salesOrderService.enrichSalesOrder(salesOrder, order);
+                        salesOrderService.enrichSalesOrder(salesOrder, order, originalOrder);
                         log.info("Order with order number: {} is a new migration order. No process will be created.", orderNumber);
                         salesOrderService.createSalesOrder(salesOrder);
                     });

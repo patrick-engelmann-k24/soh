@@ -432,9 +432,9 @@ public class SalesOrderService {
     }
 
     @Transactional
-    public void enrichSalesOrder(SalesOrder salesOrder, Order order) {
+    public void enrichSalesOrder(SalesOrder salesOrder, Order order, Order originalOrder) {
         updatePaymentsAndOrderGroupId(salesOrder, order);
-        salesOrder.setOriginalOrder(order);
+        salesOrder.setOriginalOrder(originalOrder);
         salesOrder.setLatestJson(order);
         salesOrder.setOrderGroupId(salesOrder.getOrderNumber());
         mapCustomerEmailIfExists(salesOrder, order);
