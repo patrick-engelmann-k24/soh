@@ -69,6 +69,19 @@ data "aws_iam_policy_document" "sns_sqs_access_policy" {
       aws_sqs_queue.soh_parcel_shipped_dlq.arn
     ]
   }
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "s3:*",
+    ]
+
+    resources = [
+      data.aws_s3_bucket.ecp_invoice_bucket.arn,
+      "${data.aws_s3_bucket.ecp_invoice_bucket.arn}/*"
+    ]
+
+  }
 }
 
 resource "aws_iam_role_policy" "task_role_policy" {

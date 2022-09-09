@@ -1,10 +1,12 @@
 package de.kfzteile24.salesOrderHub.services;
 
 
+import com.amazonaws.services.s3.model.S3Object;
 import de.kfzteile24.salesOrderHub.domain.audit.AuditLog;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
+import de.kfzteile24.salesOrderHub.services.export.AmazonS3Service;
 import de.kfzteile24.soh.order.dto.BillingAddress;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.UnitValues;
@@ -14,8 +16,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Base64;
+import java.util.Collections;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
@@ -27,6 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class InvoiceServiceTest {
@@ -42,6 +48,10 @@ class InvoiceServiceTest {
 
     @Mock
     private OrderUtil orderUtil;
+
+
+    @Mock
+    private AmazonS3Service amazonS3Service;
 
     @InjectMocks
     private InvoiceService invoiceService;
@@ -112,5 +122,24 @@ class InvoiceServiceTest {
         assertThat(itemLine.getLineTaxAmount()).isEqualTo(BigDecimal.valueOf(totalDiscountedGross - totalDiscountedNet).setScale(0));
         assertThat(result.getSalesInvoice().getSalesInvoiceHeader().getInvoiceDate()).isEqualTo(result.getSalesInvoice().getSalesInvoiceHeader().getInvoiceDate());
     }
+
+    @Test
+    void testGetInvoiceDocument() {
+        var invoice = createSalesOrderInvoice("test", false);
+        var bytes = new byte[] { 77, 97, 114, 121 };
+        var inputStream =  new ByteArrayInputStream(bytes);
+        var encodedContent = Base64.getEncoder().encodeToString(bytes);
+        var s3Object = new S3Object();
+        s3Object.setObjectContent(inputStream);
+        s3Object.setKey(invoice.getInvoiceNumber());
+        when(invoiceRepository.getInvoicesByInvoiceNumber(eq(invoice.getInvoiceNumber()))).thenReturn(Collections.singleton(invoice));
+        when(amazonS3Service.downloadFile(eq(invoice.getUrl()))).thenReturn(s3Object);
+
+        var result = invoiceService.getInvoiceDocument(invoice.getInvoiceNumber());
+
+        assertThat(result.getInvoiceNumber()).isEqualTo(invoice.getInvoiceNumber());
+        assertThat(result.getContent()).isEqualTo(encodedContent);
+    }
+
 
 }

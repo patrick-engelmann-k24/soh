@@ -5,6 +5,8 @@ import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.client.builder.AwsClientBuilder;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.AmazonSNSClientBuilder;
 import com.amazonaws.services.sqs.AmazonSQSAsync;
@@ -46,6 +48,11 @@ public class AwsConfig {
 
     @Value("${soh.aws.config.waitTimeOut}")
     protected Integer waitTimeOut;
+
+    @Bean
+    AmazonS3 amazonS3() {
+       return AmazonS3ClientBuilder.standard().withRegion(awsRegion).build();
+    }
 
     @Bean
     public NotificationMessagingTemplate notificationMessagingTemplate(AmazonSNS amazonSns) {

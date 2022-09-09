@@ -21,3 +21,4 @@ ignore_sales_order_splitter              = false
 pricing_service_endpoint_url   = "https://2bqdw5i7yj.execute-api.eu-central-1.amazonaws.com/prod"
 ignore_set_dissolvement = false
 prevent_set_processing = false
+bucket_name                    = "production-k24-invoices"
