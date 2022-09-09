@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.FeatureFlagConfig;
 import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
+import de.kfzteile24.salesOrderHub.configuration.SQSNamesConfig;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.dto.mapper.CreditNoteEventMapper;
@@ -107,8 +108,9 @@ class SqsReceiveServiceTest {
     @Spy
     private SqsReceiveService sqsReceiveService;
     @Mock
-    private CoreSalesInvoiceCreatedService coreSalesInvoiceCreatedService;
-
+    private ParcelShippedService parcelShippedService;
+    @Mock
+    private SQSNamesConfig sqsNamesConfig;
     @Spy
     private final SalesOrderMapper salesOrderMapper = new SalesOrderMapperImpl();
 
@@ -345,6 +347,17 @@ class SqsReceiveServiceTest {
         verify(salesOrderRowService).handleSalesOrderReturn(eq(creditNoteMsg), eq(RETURN_ORDER_CREATED), eq(CORE_CREDIT_NOTE_CREATED));
     }
 
+    @Test
+    void testQueueListenerParcelShipped() {
+
+        String invoiceMsg = readResource("examples/parcelShipped.json");
+        String sqsName = sqsNamesConfig.getParcelShipped();
+
+        sqsReceiveService.queueListenerParcelShipped(invoiceMsg, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+
+        verify(parcelShippedService).handleParcelShipped(invoiceMsg, ANY_RECEIVE_COUNT, sqsName);
+
+    }
     private SalesOrder createSalesOrder(String orderNumber) {
         String rawOrderMessage = readResource("examples/ecpOrderMessage.json");
         Order order = getOrder(rawOrderMessage);

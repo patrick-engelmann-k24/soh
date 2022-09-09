@@ -1211,3 +1211,45 @@ resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_soh_core_sales_invoi
   queue_url = aws_sqs_queue.soh_core_sales_invoice_created_dlq.id
   policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_soh_core_sales_invoice_created_dlq.json
 }
+
+data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_soh_parcel_shipped_dlq" {
+  statement {
+    sid = "SNS-soh-parcel-shipped_dlq"
+    effect = "Allow"
+
+    actions = [
+      "sqs:SendMessage",
+    ]
+
+    principals {
+      identifiers = ["*"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_parcel_shipped_dlq.arn
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sqs:*",
+    ]
+
+    principals {
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_parcel_shipped_dlq.arn
+    ]
+  }
+}
+
+resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_soh_parcel_shipped_dlq" {
+  queue_url = aws_sqs_queue.soh_parcel_shipped_dlq.id
+  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_soh_parcel_shipped_dlq.json
+}

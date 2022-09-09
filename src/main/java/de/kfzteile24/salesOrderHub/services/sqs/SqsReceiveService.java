@@ -68,6 +68,7 @@ public class SqsReceiveService {
     private final SalesOrderProcessService salesOrderCreateService;
     private final MessageWrapperUtil messageWrapperUtil;
     private final CoreSalesInvoiceCreatedService coreSalesInvoiceCreatedService;
+    private final ParcelShippedService parcelShippedService;
     private final SQSNamesConfig sqsNamesConfig;
     private final SalesOrderMapper salesOrderMapper;
     private ObjectMapper objectMapper;
@@ -567,25 +568,12 @@ public class SqsReceiveService {
      * to trigger emails on soh-communication-service for regular orders
      */
     @SqsListener(value = "${soh.sqs.queue.parcelShipped}", deletionPolicy = ON_SUCCESS)
-    @SneakyThrows(JsonProcessingException.class)
     @Trace(metricName = "Handling ParcelShipped message", dispatcher = true)
     public void queueListenerParcelShipped(String rawMessage,
                                            @Header("SenderId") String senderId,
                                            @Header("ApproximateReceiveCount") Integer receiveCount) {
-        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-        var message = objectMapper.readValue(body, ParcelShippedMessage.class);
-        var event = message.getMessage();
-        var orderNumber = event.getOrderNumber();
-        log.info("Parcel shipped received with order number {}, delivery note number {}, " +
-                        "tracking link: {} and order items: {}",
-                orderNumber,
-                event.getDeliveryNoteNumber(),
-                event.getTrackingLink(),
-                event.getArticleItemsDtos().stream()
-                        .map(ArticleItemsDto::getNumber)
-                        .collect(Collectors.toList()));
-
-        salesOrderRowService.handleParcelShippedEvent(event);
+        String sqsName = sqsNamesConfig.getParcelShipped();
+        parcelShippedService.handleParcelShipped(rawMessage, receiveCount, sqsName);
     }
 
     @Autowired
