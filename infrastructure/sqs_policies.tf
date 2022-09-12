@@ -1253,3 +1253,129 @@ resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_soh_parcel_shipped_d
   queue_url = aws_sqs_queue.soh_parcel_shipped_dlq.id
   policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_soh_parcel_shipped_dlq.json
 }
+
+data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_soh_ecp_shop_orders_dlq" {
+  statement {
+    sid = "SNS-ecp-shop-orders-dlq"
+    effect = "Allow"
+
+    actions = [
+      "sqs:SendMessage",
+    ]
+
+    principals {
+      identifiers = ["*"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.ecp_shop_orders_dlq.arn
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sqs:*",
+    ]
+
+    principals {
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.ecp_shop_orders_dlq.arn
+    ]
+  }
+}
+
+resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_ecp_order_dlq" {
+  queue_url = aws_sqs_queue.ecp_shop_orders_dlq.id
+  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_soh_ecp_shop_orders_dlq.json
+}
+
+data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_soh_bc_shop_orders_dlq" {
+  statement {
+    sid = "SNS-bc-shop-orders-dlq"
+    effect = "Allow"
+
+    actions = [
+      "sqs:SendMessage",
+    ]
+
+    principals {
+      identifiers = ["*"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.bc_shop_orders_dlq.arn
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sqs:*",
+    ]
+
+    principals {
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.bc_shop_orders_dlq.arn
+    ]
+  }
+}
+
+resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_bc_order_dlq" {
+  queue_url = aws_sqs_queue.bc_shop_orders_dlq.id
+  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_soh_bc_shop_orders_dlq.json
+}
+
+data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_soh_core_shop_orders_dlq" {
+  statement {
+    sid = "SNS-core-shop-orders-dlq"
+    effect = "Allow"
+
+    actions = [
+      "sqs:SendMessage",
+    ]
+
+    principals {
+      identifiers = ["*"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.core_shop_orders_dlq.arn
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sqs:*",
+    ]
+
+    principals {
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.core_shop_orders_dlq.arn
+    ]
+  }
+}
+
+resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_core_order_dlq" {
+  queue_url = aws_sqs_queue.core_shop_orders_dlq.id
+  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_soh_core_shop_orders_dlq.json
+}

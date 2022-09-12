@@ -14,4 +14,13 @@ public class SQSNamesConfig {
     @Value("${soh.sqs.queue.parcelShipped}")
     private String parcelShipped;
 
+    @Value("${soh.sqs.queue.ecpShopOrders}")
+    private String ecpShopOrders;
+
+    @Value("${soh.sqs.queue.bcShopOrders}")
+    private String bcShopOrders;
+
+    @Value("${soh.sqs.queue.coreShopOrders}")
+    private String coreShopOrders;
+
 }

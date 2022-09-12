@@ -1,9 +1,11 @@
 package de.kfzteile24.salesOrderHub.services;
 
+import de.kfzteile24.salesOrderHub.configuration.SQSNamesConfig;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.services.splitter.decorator.ItemSplitService;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapperUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.AfterEach;
@@ -25,7 +27,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @SpringBootTest
@@ -40,6 +45,12 @@ public class SalesOrderProcessServiceIntegrationTest {
     @Autowired
     private SalesOrderProcessService salesOrderProcessService;
 
+    @Autowired
+    private SQSNamesConfig sqsNamesConfig;
+
+    @MockBean
+    private MessageWrapperUtil messageWrapperUtil;
+
     @SpyBean
     private SalesOrderService salesOrderService;
 
@@ -53,13 +64,14 @@ public class SalesOrderProcessServiceIntegrationTest {
         order.getOrderHeader().setPlatform(BRAINCRAFT);
         order.getOrderRows().get(0).setGenart("10040");
         order.getOrderRows().get(1).setGenart("test");
-
         MessageWrapper<Order> messageWrapper = MessageWrapper.<Order>builder()
                 .rawMessage(orderRawMessage)
                 .message(order)
                 .build();
+        when(messageWrapperUtil.create(any(), eq(Order.class))).thenReturn(messageWrapper);
+        when(messageWrapperUtil.createMessage(any(), eq(Order.class))).thenReturn(getOrder(orderRawMessage));
 
-        salesOrderProcessService.handleShopOrdersReceived(messageWrapper);
+        salesOrderProcessService.handleShopOrdersReceived(orderRawMessage, 4, sqsNamesConfig.getEcpShopOrders(), "senderId");
 
         SalesOrder regularOrder = salesOrderService.getOrderByOrderNumber(order.getOrderHeader().getOrderNumber()).orElseThrow();
         assertNotNull(regularOrder);
