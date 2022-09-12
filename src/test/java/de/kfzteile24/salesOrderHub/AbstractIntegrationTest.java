@@ -1,5 +1,6 @@
 package de.kfzteile24.salesOrderHub;
 
+import com.amazonaws.services.sqs.AmazonSQSAsync;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.newrelic.api.agent.Insights;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.PublishDropshipmentOrderCreatedDelegate;
@@ -12,6 +13,7 @@ import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import de.kfzteile24.salesOrderHub.services.property.KeyValuePropertyService;
 import de.kfzteile24.salesOrderHub.services.splitter.decorator.ItemSplitService;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapperUtil;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -51,11 +53,15 @@ public abstract class AbstractIntegrationTest implements ApplicationContextAware
     protected Insights insights;
 
     @SpyBean
+    protected AmazonSQSAsync amazonSQSAsync;
+    @SpyBean
     protected ItemSplitService itemSplitService;
     @SpyBean
     protected SalesOrderService salesOrderService;
     @SpyBean
     protected SnsPublishService snsPublishService;
+    @SpyBean
+    protected MessageWrapperUtil messageWrapperUtil;
     @SpyBean
     protected KeyValuePropertyService keyValuePropertyService;
     @SpyBean

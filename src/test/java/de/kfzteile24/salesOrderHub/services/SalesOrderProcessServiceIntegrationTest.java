@@ -5,7 +5,6 @@ import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
-import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapperUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.DisplayName;
@@ -24,10 +23,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 public class SalesOrderProcessServiceIntegrationTest extends AbstractIntegrationTest {
 
@@ -40,9 +38,6 @@ public class SalesOrderProcessServiceIntegrationTest extends AbstractIntegration
     @Autowired
     private SQSNamesConfig sqsNamesConfig;
 
-    @MockBean
-    private MessageWrapperUtil messageWrapperUtil;
-    
     @SneakyThrows
     protected void setUp() {
         super.setUp();
@@ -63,8 +58,8 @@ public class SalesOrderProcessServiceIntegrationTest extends AbstractIntegration
                 .rawMessage(orderRawMessage)
                 .message(order)
                 .build();
-        when(messageWrapperUtil.create(any(), eq(Order.class))).thenReturn(messageWrapper);
-        when(messageWrapperUtil.createMessage(any(), eq(Order.class))).thenReturn(getOrder(orderRawMessage));
+        doReturn(messageWrapper).when(messageWrapperUtil).create(any(), eq(Order.class));
+        doReturn(getOrder(orderRawMessage)).when(messageWrapperUtil).createMessage(any(), eq(Order.class));
 
         doNothing().when(itemSplitService).processOrder(any());
         salesOrderProcessService.handleShopOrdersReceived(orderRawMessage, 4, sqsNamesConfig.getEcpShopOrders(), "senderId");
