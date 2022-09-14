@@ -125,7 +125,7 @@ public class SalesOrderRowService {
             returnOrderJson.getOrderHeader().setOrderDateTime(DATE_TIME_FORMATTER.format(LocalDateTime.now()));
 
             var salesOrderReturn = SalesOrderReturn.builder()
-                    .orderGroupId(orderNumber)
+                    .orderGroupId(salesOrder.getOrderGroupId())
                     .orderNumber(newOrderNumber)
                     .returnOrderJson(returnOrderJson)
                     .salesOrder(salesOrder)
