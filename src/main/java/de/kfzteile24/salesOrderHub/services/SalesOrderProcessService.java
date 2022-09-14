@@ -5,6 +5,7 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.split.SalesOrderSplit;
 import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
+import de.kfzteile24.salesOrderHub.services.sqs.EnrichMessageForDlq;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapperUtil;
 import de.kfzteile24.soh.order.dto.Order;
@@ -31,7 +32,17 @@ public class SalesOrderProcessService {
 
     private final MessageWrapperUtil messageWrapperUtil;
 
-    public void handleShopOrdersReceived(MessageWrapper<Order> orderMessageWrapper) {
+    @EnrichMessageForDlq
+    public void handleShopOrdersReceived(String rawMessage, Integer receiveCount, String queueName, String senderId) {
+        var orderMessageWrapper = messageWrapperUtil.create(rawMessage, Order.class);
+        var order = orderMessageWrapper.getMessage();
+
+        log.info("Received shop order message with order number: {}. Platform: {}. Receive count: {}. Sender ID: {}",
+                order.getOrderHeader().getOrderNumber(),
+                order.getOrderHeader().getPlatform(),
+                receiveCount,
+                senderId);
+
         var orderJson = orderMessageWrapper.getMessage();
         salesOrderService.enrichInitialOrder(orderJson);
         var orderCopy = messageWrapperUtil.createMessage(orderMessageWrapper.getRawMessage(), Order.class);

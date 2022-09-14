@@ -343,7 +343,7 @@ class SqsReceiveServiceIntegrationTest {
 
         log.info(testInfo.getDisplayName());
         SalesOrder salesOrder1 = createSalesOrderWithRandomOrderNumber();
-            callQueueListenerDropshipmentShipmentConfirmed(salesOrder1);
+        callQueueListenerDropshipmentShipmentConfirmed(salesOrder1);
 
         var savedSalesOrder1 = salesOrderRepository.getOrderByOrderNumber(salesOrder1.getOrderNumber());
         LocalDateTime now = LocalDateTime.now();
@@ -625,17 +625,18 @@ class SqsReceiveServiceIntegrationTest {
 
         String orderRawMessage = readResource("examples/ecpOrderMessage.json");
         Order order = getOrder(orderRawMessage);
+        Order originalOrder = getOrder(orderRawMessage);
 
         sqsReceiveService.queueListenerMigrationCoreSalesOrderCreated(orderRawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
-        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(7),
+        assertFalse(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(7),
                 () -> camundaHelper.checkIfActiveProcessExists(order.getOrderHeader().getOrderNumber())));
 
         SalesOrder updated = salesOrderService.getOrderByOrderNumber(order.getOrderHeader().getOrderNumber()).orElse(null);
         assertNotNull(updated);
         order.getOrderHeader().setOrderGroupId(order.getOrderHeader().getOrderNumber());
         assertEquals(order, updated.getLatestJson());
-        assertEquals(order, updated.getOriginalOrder());
+        assertEquals(originalOrder, updated.getOriginalOrder());
 
         wireMockServer.stop();
     }
@@ -645,6 +646,7 @@ class SqsReceiveServiceIntegrationTest {
 
         String orderRawMessage = readResource("examples/ecpOrderMessageWithTwoRows.json");
         Order order = getOrder(orderRawMessage);
+        Order originalOrder = getOrder(orderRawMessage);
         SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(order));
         camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
 
@@ -661,7 +663,7 @@ class SqsReceiveServiceIntegrationTest {
         assertNotNull(updated);
         order.getOrderHeader().setOrderGroupId(order.getOrderHeader().getOrderNumber());
         assertEquals(order, updated.getLatestJson());
-        assertEquals(order, updated.getOriginalOrder());
+        assertEquals(originalOrder, updated.getOriginalOrder());
     }
 
     @Test

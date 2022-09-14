@@ -93,3 +93,7 @@ variable "ignore_set_dissolvement" {
 variable "prevent_set_processing" {
   type = bool
 }
+
+variable "bucket_name" {
+  type = string
+}

@@ -157,6 +157,7 @@ class DropshipmentOrderServiceIntegrationTest {
         String orderRawMessage = readResource("examples/ecpOrderMessageWithTwoRows.json");
         Order order = getOrder(orderRawMessage);
         order.getOrderHeader().setOrderFulfillment(DELTICOM.getName());
+        order.getOrderHeader().setOrderGroupId(order.getOrderHeader().getOrderNumber());
         SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(order));
 
         doNothing().when(camundaHelper).correlateMessage(any(), any(), any());

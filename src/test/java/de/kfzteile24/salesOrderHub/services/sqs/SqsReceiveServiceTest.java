@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.FeatureFlagConfig;
 import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
+import de.kfzteile24.salesOrderHub.configuration.SQSNamesConfig;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.dto.mapper.CreditNoteEventMapper;
@@ -12,6 +13,8 @@ import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.FileUtil;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
+import de.kfzteile24.salesOrderHub.helper.SalesOrderMapper;
+import de.kfzteile24.salesOrderHub.helper.SalesOrderMapperImpl;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.services.DropshipmentOrderService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderPaymentSecuredService;
@@ -43,6 +46,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.C
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.PAYPAL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.MIGRATION_SALES_ORDER_RECEIVED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.RETURN_ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createOrderNumberInSOH;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrderFromOrder;
@@ -50,6 +54,7 @@ import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getCreditNoteMsg
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrderReturn;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.any;
@@ -103,7 +108,11 @@ class SqsReceiveServiceTest {
     @Spy
     private SqsReceiveService sqsReceiveService;
     @Mock
-    private CoreSalesInvoiceCreatedService coreSalesInvoiceCreatedService;
+    private ParcelShippedService parcelShippedService;
+    @Mock
+    private SQSNamesConfig sqsNamesConfig;
+    @Spy
+    private final SalesOrderMapper salesOrderMapper = new SalesOrderMapperImpl();
 
     @BeforeEach
     void setUp() {
@@ -261,6 +270,12 @@ class SqsReceiveServiceTest {
 
         sqsReceiveService.queueListenerMigrationCoreSalesOrderCreated(rawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
+        verify(salesOrderService).enrichSalesOrder(salesOrder, salesOrder.getLatestJson(), (Order) salesOrder.getOriginalOrder());
+        verify(salesOrderService).save(argThat(so -> {
+                    assertThat(so).isEqualTo(salesOrder);
+                    return true;
+                }
+        ), eq(MIGRATION_SALES_ORDER_RECEIVED));
         verify(snsPublishService).publishMigrationOrderCreated(salesOrder.getOrderNumber());
     }
 
@@ -275,14 +290,25 @@ class SqsReceiveServiceTest {
                 .message(objectMapper.readValue(sqsMessage.getBody(), Order.class))
                 .rawMessage(rawMessage)
                 .build();
+        var order = messageWrapper.getMessage();
 
         when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.empty());
         when(featureFlagConfig.getIgnoreMigrationCoreSalesOrder()).thenReturn(false);
-        when(messageWrapperUtil.create(eq(rawMessage), eq(Order.class))).thenReturn(messageWrapper);
 
         sqsReceiveService.queueListenerMigrationCoreSalesOrderCreated(rawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
-        verify(salesOrderProcessService).startSalesOrderProcess(any(), any());
+        verify(salesOrderService).createSalesOrder(argThat(salesOrder -> {
+            assertThat(salesOrder.getOrderNumber()).isEqualTo(order.getOrderHeader().getOrderNumber());
+            assertThat(salesOrder.getLatestJson()).isEqualTo(order);
+            assertThat(salesOrder.getVersion()).isEqualTo(3L);
+            assertThat(salesOrder.getOriginalOrder()).isEqualTo(order);
+            assertThat(salesOrder.getCustomerEmail()).isEqualTo(order.getOrderHeader().getCustomer().getCustomerEmail());
+            assertThat(salesOrder.getOrderGroupId()).isEqualTo(order.getOrderHeader().getOrderGroupId());
+            assertThat(salesOrder.getSalesChannel()).isEqualTo(order.getOrderHeader().getSalesChannel());
+            return true;
+            }
+        ));
+        verify(snsPublishService).publishMigrationOrderCreated(order.getOrderHeader().getOrderNumber());
     }
 
     @Test
@@ -321,6 +347,17 @@ class SqsReceiveServiceTest {
         verify(salesOrderRowService).handleSalesOrderReturn(eq(creditNoteMsg), eq(RETURN_ORDER_CREATED), eq(CORE_CREDIT_NOTE_CREATED));
     }
 
+    @Test
+    void testQueueListenerParcelShipped() {
+
+        String invoiceMsg = readResource("examples/parcelShipped.json");
+        String sqsName = sqsNamesConfig.getParcelShipped();
+
+        sqsReceiveService.queueListenerParcelShipped(invoiceMsg, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+
+        verify(parcelShippedService).handleParcelShipped(invoiceMsg, ANY_RECEIVE_COUNT, sqsName);
+
+    }
     private SalesOrder createSalesOrder(String orderNumber) {
         String rawOrderMessage = readResource("examples/ecpOrderMessage.json");
         Order order = getOrder(rawOrderMessage);

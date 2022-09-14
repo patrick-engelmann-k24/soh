@@ -21,3 +21,4 @@ ignore_sales_order_splitter              = true
 pricing_service_endpoint_url    = "https://s8vlbhblll.execute-api.eu-central-1.amazonaws.com/stage"
 ignore_set_dissolvement = false
 prevent_set_processing = false
+bucket_name                    = "integration-1-k24-invoices"

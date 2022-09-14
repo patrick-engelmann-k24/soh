@@ -74,10 +74,11 @@ class SalesOrderProcessServiceTest {
         when(orderUtil.checkIfOrderHasOrderRows(any())).thenReturn(true);
         when(salesOrderService.checkOrderNotExists(eq(salesOrder.getOrderNumber()))).thenReturn(true);
         when(salesOrderService.createSalesOrder(any())).thenReturn(salesOrder);
+        when(messageWrapperUtil.create(eq(rawMessage), eq(Order.class))).thenReturn(messageWrapper);
         when(messageWrapperUtil.createMessage(eq(rawMessage), eq(Order.class))).thenReturn(order);
         when(splitterService.splitSalesOrder(any(), any())).thenReturn(Collections.singletonList(SalesOrderSplit.regularOrder(salesOrder)));
 
-        salesOrderProcessService.handleShopOrdersReceived(messageWrapper);
+        salesOrderProcessService.handleShopOrdersReceived(rawMessage, 1, "ecpShopOrders", "senderId");
 
         verify(camundaHelper).createOrderProcess(any(SalesOrder.class), any(Messages.class));
         verify(salesOrderService).createSalesOrder(salesOrder);
@@ -106,6 +107,7 @@ class SalesOrderProcessServiceTest {
                 .sqsMessage(sqsMessage)
                 .build();
 
+        when(messageWrapperUtil.create(eq(orderRawMessage), eq(Order.class))).thenReturn(messageWrapper);
         when(messageWrapperUtil.createMessage(eq(orderRawMessage), eq(Order.class))).thenReturn(order);
         when(orderUtil.checkIfOrderHasOrderRows(any())).thenReturn(true);
         when(salesOrderService.checkOrderNotExists(eq(regularOrder.getLatestJson().getOrderHeader().getOrderNumber()))).thenReturn(true);
@@ -115,7 +117,7 @@ class SalesOrderProcessServiceTest {
         when(splitterService.splitSalesOrder(any(), any())).thenReturn(
                 List.of(SalesOrderSplit.regularOrder(regularOrder), SalesOrderSplit.regularOrder(splittedOrder)));
 
-        salesOrderProcessService.handleShopOrdersReceived(messageWrapper);
+        salesOrderProcessService.handleShopOrdersReceived(orderRawMessage, 1, "ecpShopOrders", "senderId");
 
         verify(camundaHelper).createOrderProcess(eq(regularOrder), any(Messages.class));
         verify(camundaHelper).createOrderProcess(eq(splittedOrder), any(Messages.class));
@@ -139,11 +141,13 @@ class SalesOrderProcessServiceTest {
                 .message(order)
                 .build();
 
+
+        when(messageWrapperUtil.create(eq(rawMessage), eq(Order.class))).thenReturn(messageWrapper);
         when(messageWrapperUtil.createMessage(eq(rawMessage), eq(Order.class))).thenReturn(order);
         when(salesOrderService.checkOrderNotExists(eq("524001240"))).thenReturn(false);
         when(splitterService.splitSalesOrder(any(), any())).thenReturn(Collections.singletonList(SalesOrderSplit.regularOrder(salesOrder)));
 
-        salesOrderProcessService.handleShopOrdersReceived(messageWrapper);
+        salesOrderProcessService.handleShopOrdersReceived(rawMessage,  1, "ecpShopOrders", "senderId");
 
         verify(camundaHelper, never()).createOrderProcess(any(SalesOrder.class), any(Messages.class));
         verify(salesOrderService).checkOrderNotExists("524001240");
@@ -166,6 +170,7 @@ class SalesOrderProcessServiceTest {
                 .message(order)
                 .build();
 
+        when(messageWrapperUtil.create(eq(rawMessage), eq(Order.class))).thenReturn(messageWrapper);
         when(messageWrapperUtil.createMessage(eq(rawMessage), eq(Order.class))).thenReturn(order);
         when(orderUtil.checkIfOrderHasOrderRows(any())).thenReturn(false);
         doNothing().when(snsPublishService).publishOrderCreated(anyString());
@@ -173,7 +178,8 @@ class SalesOrderProcessServiceTest {
         when(salesOrderService.createSalesOrder(any())).thenReturn(salesOrder);
         when(splitterService.splitSalesOrder(any(), any())).thenReturn(Collections.singletonList(SalesOrderSplit.regularOrder(salesOrder)));
 
-        salesOrderProcessService.handleShopOrdersReceived(messageWrapper);
+
+        salesOrderProcessService.handleShopOrdersReceived(rawMessage,  1, "ecpShopOrders", "senderId");
 
         verify(camundaHelper, never()).createOrderProcess(any(SalesOrder.class), any(Messages.class));
         verify(salesOrderService).createSalesOrder(salesOrder);

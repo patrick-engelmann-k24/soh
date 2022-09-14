@@ -251,15 +251,10 @@ public class SalesOrderUtil {
 
     public static SalesOrder createSalesOrderFromOrder(Order order) {
         return SalesOrder.builder()
-                .orderNumber(order.getOrderHeader()
-                        .getOrderNumber())
-                .orderGroupId(order.getOrderHeader()
-                        .getOrderGroupId())
-                .salesChannel(order.getOrderHeader()
-                        .getSalesChannel())
-                .customerEmail(order.getOrderHeader()
-                        .getCustomer()
-                        .getCustomerEmail())
+                .orderNumber(order.getOrderHeader().getOrderNumber())
+                .orderGroupId(order.getOrderHeader().getOrderNumber())
+                .salesChannel(order.getOrderHeader().getSalesChannel())
+                .customerEmail(order.getOrderHeader().getCustomer().getCustomerEmail())
                 .originalOrder(order)
                 .latestJson(order)
                 .build();
