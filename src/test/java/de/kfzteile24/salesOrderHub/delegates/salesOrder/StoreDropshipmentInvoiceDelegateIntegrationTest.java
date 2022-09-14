@@ -1,5 +1,6 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder;
 
+import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
@@ -14,14 +15,10 @@ import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import de.kfzteile24.soh.order.dto.Order;
-import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
 
 import java.time.Duration;
 import java.util.List;
@@ -38,15 +35,10 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Gateways.X
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_DROPSHIPMENT_ORDER_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.TRACKING_LINKS;
-import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
 import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@SpringBootTest
-class StoreDropshipmentInvoiceDelegateIntegrationTest {
-    @Autowired
-    private ProcessEngine processEngine;
+class StoreDropshipmentInvoiceDelegateIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private BpmUtil util;
@@ -77,11 +69,6 @@ class StoreDropshipmentInvoiceDelegateIntegrationTest {
 
     @Autowired
     private OrderUtil orderUtil;
-
-    @BeforeEach
-    public void setUp() {
-        init(processEngine);
-    }
 
     @Test
     void testInvoiceIsStoredCorrectly() {

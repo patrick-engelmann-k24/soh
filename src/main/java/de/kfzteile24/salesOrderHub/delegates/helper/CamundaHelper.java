@@ -12,6 +12,7 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.exception.NoProcessInstanceFoundException;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.helper.SleuthHelper;
+import de.kfzteile24.salesOrderHub.services.InvoiceUrlExtractor;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Payments;
@@ -50,6 +51,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerTy
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.RECURRING;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_SALES_INVOICE_CREATED_RECEIVED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.CUSTOMER_TYPE;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.INVOICE_URL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_ORDER_CANCELLED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_GROUP_ID;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
@@ -147,17 +149,31 @@ public class CamundaHelper {
                 .correlateWithResult().getProcessInstance();
     }
 
-    public ProcessInstance createOrderProcessByProcessVersion(SalesOrder salesOrder, Messages originChannel,
-                                                              Map<String, Object> variables, int processVersion) {
+    public void handleInvoiceFromCore(String invoiceUrl) {
+        final var orderNumber = InvoiceUrlExtractor.extractOrderNumber(invoiceUrl);
 
-        var processDefinitionId = repositoryService.createProcessDefinitionQuery()
-                .processDefinitionKey(SALES_ORDER_PROCESS.getName())
-                .processDefinitionVersion(processVersion)
-                .singleResult()
-                .getId();
+        log.info("Received invoice from core with order number: {} ", orderNumber);
 
-        return runtimeService.startProcessInstanceByMessageAndProcessDefinitionId(originChannel.getName(),
-                processDefinitionId, salesOrder.getOrderNumber(), variables);
+        final Map<String, Object> processVariables = Map.of(
+                ORDER_NUMBER.getName(), orderNumber,
+                INVOICE_URL.getName(), invoiceUrl
+        );
+        runtimeService.startProcessInstanceByMessage(Messages.INVOICE_CREATED.getName(), orderNumber, processVariables);
+        log.info("Invoice {} from core for order-number {} successfully received", invoiceUrl, orderNumber);
+    }
+
+    public void handleCreditNoteFromDropshipmentOrderReturn(String invoiceUrl) {
+        final var returnOrderNumber = InvoiceUrlExtractor.extractOrderNumber(invoiceUrl);
+
+        log.info("Received credit note from dropshipment with return order number: {} ", returnOrderNumber);
+
+        final Map<String, Object> processVariables = Map.of(
+                ORDER_NUMBER.getName(), returnOrderNumber,
+                INVOICE_URL.getName(), invoiceUrl
+        );
+
+        runtimeService.startProcessInstanceByMessage(Messages.DROPSHIPMENT_CREDIT_NOTE_CREATED.getName(), returnOrderNumber, processVariables);
+        log.info("Invoice {} for credit note of dropshipment order return for order-number {} successfully received", invoiceUrl, returnOrderNumber);
     }
 
     public ProcessInstance createReturnOrderProcess(SalesOrderReturn salesOrderReturn, Messages originChannel) {

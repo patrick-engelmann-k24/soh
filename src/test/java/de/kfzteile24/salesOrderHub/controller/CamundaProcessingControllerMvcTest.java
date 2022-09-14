@@ -1,12 +1,10 @@
 package de.kfzteile24.salesOrderHub.controller;
 
+import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import de.kfzteile24.salesOrderHub.constants.PersistentProperties;
 import de.kfzteile24.salesOrderHub.domain.property.KeyValueProperty;
-import de.kfzteile24.salesOrderHub.services.DropshipmentOrderService;
-import de.kfzteile24.salesOrderHub.services.property.KeyValuePropertyService;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 
 import java.time.LocalDateTime;
@@ -15,15 +13,15 @@ import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-class CamundaProcessingControllerMvcTest extends AbstractControllerMvcTest {
+class CamundaProcessingControllerMvcTest extends AbstractIntegrationTest {
 
     private static final String ANY_PROPERTY_KEY = RandomStringUtils.randomAlphabetic(10);
     private static final String ANY_PROPERTY_VALUE = RandomStringUtils.randomAlphabetic(10);
@@ -33,12 +31,6 @@ class CamundaProcessingControllerMvcTest extends AbstractControllerMvcTest {
     private static final String ANY_UPDATED_AT_STR = "2022-12-31T19:34:50.63";
     private static final LocalDateTime ANY_CREATED_AT = LocalDateTime.parse(ANY_CREATED_AT_STR);
     private static final LocalDateTime ANY_UPDATED_AT = LocalDateTime.parse(ANY_UPDATED_AT_STR);
-
-    @MockBean
-    private KeyValuePropertyService keyValuePropertyService;
-
-    @MockBean
-    private DropshipmentOrderService dropshipmentOrderService;
 
     @Test
     void testStorePersistentProperty() throws Exception {
@@ -59,8 +51,8 @@ class CamundaProcessingControllerMvcTest extends AbstractControllerMvcTest {
                 .typedValue(ANY_PROPERTY_VALUE_2)
                 .build();
 
-        when(keyValuePropertyService.getPropertyByKey(anyString())).thenReturn(Optional.of(existingKeyValueProperty));
-        when(keyValuePropertyService.save(any())).thenReturn(modifiedKeyValueProperty);
+        doReturn(Optional.of(existingKeyValueProperty)).when(keyValuePropertyService).getPropertyByKey(anyString());
+        doReturn(modifiedKeyValueProperty).when(keyValuePropertyService).save(any());
 
         mvc.perform(put("/camunda-processing/property")
                 .param("key", ANY_PROPERTY_KEY)
@@ -88,7 +80,7 @@ class CamundaProcessingControllerMvcTest extends AbstractControllerMvcTest {
                 .typedValue(ANY_PROPERTY_VALUE)
                 .build();
 
-        when(keyValuePropertyService.getPropertyByKey(anyString())).thenReturn(Optional.of(keyValueProperty));
+        doReturn(Optional.of(keyValueProperty)).when(keyValuePropertyService).getPropertyByKey(anyString());
 
         mvc.perform(get("/camunda-processing/property/{key}", ANY_PROPERTY_KEY)
                 .contentType(MediaType.APPLICATION_JSON))
@@ -121,7 +113,7 @@ class CamundaProcessingControllerMvcTest extends AbstractControllerMvcTest {
                 .typedValue(ANY_PROPERTY_VALUE_2)
                 .build();
 
-        when(keyValuePropertyService.getAllProperties()).thenReturn(List.of(keyValueProperty1, keyValueProperty2));
+        doReturn(List.of(keyValueProperty1, keyValueProperty2)).when(keyValuePropertyService).getAllProperties();
 
         mvc.perform(get("/camunda-processing/property")
                 .contentType(MediaType.APPLICATION_JSON))
@@ -150,7 +142,7 @@ class CamundaProcessingControllerMvcTest extends AbstractControllerMvcTest {
                 .typedValue(Boolean.TRUE)
                 .build();
 
-        when(dropshipmentOrderService.setPauseDropshipmentProcessing(true)).thenReturn(savedKeyValueProperty);
+        doReturn(savedKeyValueProperty).when(dropshipmentOrderService).setPauseDropshipmentProcessing(true);
 
         mvc.perform(put("/camunda-processing/pause/dropshipment/{pauseDropshipmentProcessing}", true)
                 .contentType(MediaType.APPLICATION_JSON))
@@ -175,7 +167,7 @@ class CamundaProcessingControllerMvcTest extends AbstractControllerMvcTest {
                 .typedValue(Boolean.FALSE)
                 .build();
 
-        when(dropshipmentOrderService.setPauseDropshipmentProcessing(false)).thenReturn(savedKeyValueProperty);
+        doReturn(savedKeyValueProperty).when(dropshipmentOrderService).setPauseDropshipmentProcessing(false);
 
         mvc.perform(put("/camunda-processing/pause/dropshipment/{pauseDropshipmentProcessing}", false)
                 .contentType(MediaType.APPLICATION_JSON))

@@ -1,5 +1,6 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder;
 
+import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
@@ -14,15 +15,12 @@ import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.services.DropshipmentOrderService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
-import org.camunda.bpm.engine.ProcessEngine;
+import lombok.NonNull;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -49,18 +47,13 @@ import static de.kfzteile24.salesOrderHub.domain.audit.Action.INVOICE_RECEIVED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrderInvoice;
 import static java.util.Collections.singletonList;
-import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
 import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@SpringBootTest
-class SaveInvoiceDelegateIntegrationTest {
-    @Autowired
-    private ProcessEngine processEngine;
+class SaveInvoiceDelegateIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private RuntimeService runtimeService;
@@ -94,11 +87,6 @@ class SaveInvoiceDelegateIntegrationTest {
 
     @Autowired
     private DropshipmentOrderService dropshipmentOrderService;
-
-    @BeforeEach
-    public void setUp() {
-        init(processEngine);
-    }
 
     @Test
     void testInvoiceIsStoredCorrectlyWithSubsequentInvoice() {
@@ -209,7 +197,7 @@ class SaveInvoiceDelegateIntegrationTest {
         txTemplate.execute(new TransactionCallbackWithoutResult() {
 
             @Override
-            protected void doInTransactionWithoutResult(TransactionStatus status) {
+            protected void doInTransactionWithoutResult(@NonNull TransactionStatus status) {
                 final var salesOrderOpt = salesOrderRepository.getOrderByOrderNumber(orderNumber);
                 assertTrue(salesOrderOpt.isPresent(), "Sales order not found");
                 final var salesOrder = salesOrderOpt.get();

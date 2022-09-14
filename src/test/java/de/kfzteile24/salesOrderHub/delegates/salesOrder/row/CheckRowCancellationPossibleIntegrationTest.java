@@ -3,9 +3,9 @@ package de.kfzteile24.salesOrderHub.delegates.salesOrder.row;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SHIPMENT_METHOD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
-import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
 import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
 
+import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowGateways;
@@ -14,32 +14,18 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMetho
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import java.util.HashMap;
 import java.util.Map;
-import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
 
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@SpringBootTest
-class CheckRowCancellationPossibleIntegrationTest {
-
-    @Autowired
-    public ProcessEngine processEngine;
+class CheckRowCancellationPossibleIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private RuntimeService runtimeService;
 
     @Autowired
     private BpmUtil util;
-
-    @BeforeEach
-    public void setUp() {
-        init(processEngine);
-    }
 
     @Test
     void testPassThroughOnParcelShipmentRegular() {

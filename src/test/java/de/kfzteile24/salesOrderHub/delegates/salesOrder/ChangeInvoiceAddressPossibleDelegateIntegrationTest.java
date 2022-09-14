@@ -2,6 +2,7 @@ package de.kfzteile24.salesOrderHub.delegates.salesOrder;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Gateways;
@@ -18,14 +19,11 @@ import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import de.kfzteile24.soh.order.dto.BillingAddress;
-import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
 
 import java.time.Duration;
 import java.util.HashMap;
@@ -44,12 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@SpringBootTest
-class ChangeInvoiceAddressPossibleDelegateIntegrationTest {
-
-    @Autowired
-    private ProcessEngine processEngine;
+class ChangeInvoiceAddressPossibleDelegateIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private RuntimeService runtimeService;
@@ -74,11 +67,6 @@ class ChangeInvoiceAddressPossibleDelegateIntegrationTest {
 
     @Autowired
     private TimedPollingService pollingService;
-
-    @BeforeEach
-    public void setUp() {
-        init(processEngine);
-    }
 
     @Test
     void testChangeInvoiceAddressPossible() throws JsonProcessingException {

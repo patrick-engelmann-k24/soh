@@ -7,17 +7,15 @@ import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createNewSalesOr
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrderInvoice;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
 
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@SpringBootTest
-class InvoiceServiceIntegrationTest {
+class InvoiceServiceIntegrationTest extends AbstractIntegrationTest {
+
     @Autowired
     private SalesOrderRepository salesOrderRepository;
 

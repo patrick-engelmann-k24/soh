@@ -1,6 +1,6 @@
 package de.kfzteile24.salesOrderHub.configuration;
 
-import com.amazonaws.services.sqs.AmazonSQSAsync;
+import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import de.kfzteile24.salesOrderHub.services.sqs.SqsReceiveService;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -10,8 +10,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.SpyBean;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -24,18 +22,15 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 
-@SpringBootTest
 @Slf4j
-class LoggingAdviceIntegrationTest {
+class LoggingAdviceIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private SqsReceiveService sqsReceiveService;
 
-    @SpyBean
-    private AmazonSQSAsync amazonSQSAsync;
-
     @BeforeEach
-    void setUp() {
+    protected void setUp() {
+        super.setUp();
         doReturn(null).when(amazonSQSAsync).sendMessage(any());
     }
 

@@ -19,13 +19,13 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMes
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.TRACKING_ID_RECEIVED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DELIVERY_ADDRESS_CHANGED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
-import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
 import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
 import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.withVariables;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
@@ -38,21 +38,12 @@ import de.kfzteile24.soh.order.dto.ShippingAddress;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.SneakyThrows;
-import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
 
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@SpringBootTest
-class CheckRowDeliveryAddressChangePossibleIntegrationTest {
-
-    @Autowired
-    public ProcessEngine processEngine;
+class CheckRowDeliveryAddressChangePossibleIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private RuntimeService runtimeService;
@@ -71,11 +62,6 @@ class CheckRowDeliveryAddressChangePossibleIntegrationTest {
 
     @Autowired
     private TimedPollingService pollingService;
-
-    @BeforeEach
-    public void setUp() {
-        init(processEngine);
-    }
 
     @Test
     void testChangeAddressNotPossibleOnParcelShipmentAfterPackingStarted() {

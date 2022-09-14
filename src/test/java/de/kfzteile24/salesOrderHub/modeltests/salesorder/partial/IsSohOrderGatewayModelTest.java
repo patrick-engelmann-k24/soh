@@ -1,8 +1,5 @@
 package de.kfzteile24.salesOrderHub.modeltests.salesorder.partial;
 
-import de.kfzteile24.salesOrderHub.delegates.salesOrder.OrderCompletedDelegate;
-import de.kfzteile24.salesOrderHub.delegates.salesOrder.listener.CheckOrderTypeDelegate;
-import de.kfzteile24.salesOrderHub.delegates.salesOrder.listener.CheckPlatformTypeDelegate;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.modeltests.AbstractWorkflowTest;
 import lombok.extern.slf4j.Slf4j;
@@ -12,7 +9,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
-import org.springframework.boot.test.mock.mockito.MockBean;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.ORDER_ROW_FULFILLMENT_PROCESS;
@@ -33,11 +29,6 @@ import static org.mockito.Mockito.when;
 
 @DisplayName("IsSohOrderGateway model test")
 @Slf4j(topic = "IsSohOrderGateway model test")
-@MockBean({
-        CheckPlatformTypeDelegate.class,
-        CheckOrderTypeDelegate.class,
-        OrderCompletedDelegate.class
-})
 class IsSohOrderGatewayModelTest extends AbstractWorkflowTest {
 
     @BeforeEach
