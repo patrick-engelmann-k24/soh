@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.newrelic.api.agent.Insights;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.PublishDropshipmentOrderCreatedDelegate;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
+import de.kfzteile24.salesOrderHub.helper.MessageErrorHandler;
 import de.kfzteile24.salesOrderHub.helper.SleuthHelper;
 import de.kfzteile24.salesOrderHub.services.DropshipmentOrderService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
@@ -76,6 +77,8 @@ public abstract class AbstractIntegrationTest implements ApplicationContextAware
     protected SalesOrderReturnService salesOrderReturnService;
     @SpyBean
     protected PublishDropshipmentOrderCreatedDelegate publishDropshipmentOrderCreatedDelegate;
+    @SpyBean
+    protected MessageErrorHandler messageErrorHandler;
 
     /**
      * The application context gets created only once for all the model tests

@@ -81,7 +81,7 @@ public class SalesOrderService {
             salesOrder.setProcessId(processInstanceId);
             return updateOrder(salesOrder);
         }
-        throw new SalesOrderNotFoundException(format("for order {}", orderNumber));
+        throw new SalesOrderNotFoundException(format("for order {0}", orderNumber));
     }
 
     @Transactional

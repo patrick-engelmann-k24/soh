@@ -12,6 +12,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessag
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.FileUtil;
+import de.kfzteile24.salesOrderHub.helper.MessageErrorHandler;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderMapper;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderMapperImpl;
@@ -102,6 +103,8 @@ class SqsReceiveServiceTest {
     private OrderUtil orderUtil;
     @Mock
     private DropshipmentOrderService dropshipmentOrderService;
+    @Spy
+    private MessageErrorHandler messageErrorHandler;
     @Mock
     private CreditNoteEventMapper creditNoteEventMapper;
     @InjectMocks
