@@ -136,7 +136,7 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
     @SneakyThrows
     void testHandleDropShipmentPurchaseOrderReturnConfirmed() {
 
-        String nextCreditNoteNumber = salesOrderReturnService.createCreditNoteNumber();
+        String nextCreditNoteNumber = createNextCreditNoteNumberCounter(salesOrderReturnService.createCreditNoteNumber());
         String orderRawMessage = readResource("examples/ecpOrderMessageWithTwoRows.json");
         Order order = getOrder(orderRawMessage);
         order.getOrderHeader().setOrderFulfillment(DELTICOM.getName());
@@ -160,6 +160,15 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
 
         assertThat(salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber()).isEqualTo(salesOrder.getOrderNumber() + "-" + nextCreditNoteNumber);
         assertSalesCreditNoteCreatedMessage(salesCreditNoteCreatedMessage, salesOrder);
+    }
+
+    private String createNextCreditNoteNumberCounter(String creditNoteNumber) {
+        if (creditNoteNumber.length() != 10) {
+            throw new IllegalArgumentException("Credit note number does not contain 10 digits");
+        }
+        var counter = Long.valueOf(creditNoteNumber.substring(5));
+        counter++;
+        return creditNoteNumber.substring(0, 5) + String.format("%05d", counter);
     }
 
     @Test

@@ -8,12 +8,14 @@ import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnConfir
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.helper.ReturnOrderHelper;
+import de.kfzteile24.salesOrderHub.repositories.CreditNoteNumberCounterRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderReturnRepository;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,6 +49,12 @@ public class SalesOrderReturnServiceIntegrationTest extends AbstractIntegrationT
     @Autowired
     private ReturnOrderHelper returnOrderHelper;
 
+    @Autowired
+    private CreditNoteNumberCounterRepository creditNoteNumberCounterRepository;
+
+    @Autowired
+    private CreditNoteNumberCounterService creditNoteNumberCounterService;
+
     @Test
     @SneakyThrows
     @DisplayName("Create First Credit Note Number, Then Create Sales Credit Note, Then Create Second Credit Note Number")
@@ -76,6 +84,12 @@ public class SalesOrderReturnServiceIntegrationTest extends AbstractIntegrationT
 
         String result = salesOrderReturnService.createCreditNoteNumber();
         assertTrue(result.endsWith("00002"));
+    }
+
+    @BeforeEach
+    public void prepare() {
+        creditNoteNumberCounterRepository.deleteAll();
+        creditNoteNumberCounterService.init();
     }
 
     @AfterEach

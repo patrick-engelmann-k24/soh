@@ -9,8 +9,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Optional;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
@@ -20,6 +18,9 @@ class SalesOrderReturnServiceTest {
     @Mock
     private SalesOrderReturnRepository salesOrderReturnRepository;
 
+    @Mock
+    private CreditNoteNumberCounterService creditNoteNumberCounterService;
+
     @InjectMocks
     private SalesOrderReturnService salesOrderReturnService;
 
@@ -27,15 +28,17 @@ class SalesOrderReturnServiceTest {
     @SneakyThrows
     @DisplayName(("Create Credit Note Number When Latest Credit Note Number Is Empty"))
     public void testCreateCreditNoteNumberWhenLatestCreditNoteNumberIsEmpty() {
-        when(salesOrderReturnService.findLatestCreditNoteNumber()).thenReturn(Optional.empty());
-        assertThat(salesOrderReturnService.getNextCreditNoteCount()).isEqualTo("00001");
+        var currentYear = 2022;
+        when(creditNoteNumberCounterService.getNextCounter(currentYear)).thenReturn(1L);
+        assertThat(salesOrderReturnService.createCreditNoteNumber(currentYear)).isEqualTo("2022200001");
     }
 
     @Test
     @SneakyThrows
     @DisplayName(("Create Credit Note Number When Latest Credit Note Number Is Not Empty"))
     public void testCreateCreditNoteNumberWhenLatestCreditNoteNumberIsNotEmpty() {
-        when(salesOrderReturnService.findLatestCreditNoteNumber()).thenReturn(Optional.of("2022200001"));
-        assertThat(salesOrderReturnService.getNextCreditNoteCount()).isEqualTo("00002");
+        var currentYear = 2022;
+        when(creditNoteNumberCounterService.getNextCounter(currentYear)).thenReturn(2L);
+        assertThat(salesOrderReturnService.createCreditNoteNumber(currentYear)).isEqualTo("2022200002");
     }
 }

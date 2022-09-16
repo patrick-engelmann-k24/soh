@@ -25,6 +25,9 @@ public class SalesOrderReturnService {
     @Autowired
     private AuditLogRepository auditLogRepository;
 
+    @Autowired
+    private CreditNoteNumberCounterService creditNoteNumberCounterService;
+
     public SalesOrderReturn getByOrderNumber(String orderNumber) {
         return salesOrderReturnRepository.findByOrderNumber(orderNumber);
     }
@@ -63,26 +66,15 @@ public class SalesOrderReturnService {
 
     public String createCreditNoteNumber() {
         var currentYear = LocalDateTime.now().getYear();
-        return currentYear + CREDIT_NOTE_NUMBER_SEPARATOR + getNextCreditNoteCount();
+        return createCreditNoteNumber(currentYear);
     }
 
-    Optional<String> findLatestCreditNoteNumber() {
-        return salesOrderReturnRepository.findLatesCreditNoteNumber();
+    String createCreditNoteNumber(int currentYear) {
+        return currentYear + CREDIT_NOTE_NUMBER_SEPARATOR + getNextCreditNoteCount(currentYear);
     }
 
-    String getNextCreditNoteCount() {
-        return findLatestCreditNoteNumber().map(this::createNextCreditNoteNumberCounter).orElse("00001");
-    }
-
-    private String createNextCreditNoteNumberCounter(String creditNoteNumber) {
-        var counter = Long.valueOf(extractCreditNoteCounterNumber(creditNoteNumber));
-        counter++;
-        return String.format("%05d", counter);
-    }
-
-    private String extractCreditNoteCounterNumber(String creditNoteNumber) {
-        if (creditNoteNumber.length() != 10)
-            throw new IllegalArgumentException("Last return order credit note number in DB does not contain 10 digits");
-        return creditNoteNumber.substring(5);
+    private String getNextCreditNoteCount(int currentYear) {
+        Long creditNoteNumber = creditNoteNumberCounterService.getNextCounter(currentYear);
+        return String.format("%05d", creditNoteNumber);
     }
 }

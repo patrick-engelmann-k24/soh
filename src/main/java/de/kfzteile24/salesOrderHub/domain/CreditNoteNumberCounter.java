@@ -1,0 +1,27 @@
+package de.kfzteile24.salesOrderHub.domain;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Table;
+
+@Entity
+@Table(name = "credit_note_number_counter", schema = "public", catalog = "soh")
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class CreditNoteNumberCounter {
+
+    @Id
+    @Column(name = "year", columnDefinition = "integer", updatable = false)
+    private Integer year;
+
+    private Long counter;
+
+}
