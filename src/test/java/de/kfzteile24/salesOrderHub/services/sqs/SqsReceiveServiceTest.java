@@ -113,6 +113,8 @@ class SqsReceiveServiceTest {
     @Mock
     private ParcelShippedService parcelShippedService;
     @Mock
+    private CoreSalesCreditNoteCreatedService coreSalesCreditNoteCreatedService;
+    @Mock
     private SQSNamesConfig sqsNamesConfig;
     @Spy
     private final SalesOrderMapper salesOrderMapper = new SalesOrderMapperImpl();
@@ -315,6 +317,17 @@ class SqsReceiveServiceTest {
     }
 
     @Test
+    void testQueueListenerCoreSalesCreditNoteCreated() {
+
+        String invoiceMsg = readResource("examples/coreSalesCreditNoteCreated.json");
+        String sqsName = sqsNamesConfig.getCoreSalesCreditNoteCreated();
+
+        sqsReceiveService.queueListenerCoreSalesCreditNoteCreated(invoiceMsg, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+
+        verify(coreSalesCreditNoteCreatedService).handleCoreSalesCreditNoteCreated(invoiceMsg, ANY_RECEIVE_COUNT, sqsName);
+
+    }
+    @Test
     void testQueueListenerMigrationCoreSalesCreditNoteCreatedDuplication() {
 
         String rawEventMessage = readResource("examples/coreSalesCreditNoteCreated.json");
@@ -340,6 +353,7 @@ class SqsReceiveServiceTest {
         var creditNoteMsg = getCreditNoteMsg(rawEventMessage);
         var orderNumber = creditNoteMsg.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber();
         var creditNoteNumber = creditNoteMsg.getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteNumber();
+        String sqsName = sqsNamesConfig.getCoreSalesCreditNoteCreated();
 
         when(salesOrderReturnService.getByOrderNumber(any())).thenReturn(null);
         when(salesOrderService.createOrderNumberInSOH(eq(orderNumber), eq(creditNoteNumber))).thenReturn(createOrderNumberInSOH(orderNumber, creditNoteNumber));
@@ -347,7 +361,7 @@ class SqsReceiveServiceTest {
 
         sqsReceiveService.queueListenerMigrationCoreSalesCreditNoteCreated(rawEventMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
-        verify(salesOrderRowService).handleSalesOrderReturn(eq(creditNoteMsg), eq(RETURN_ORDER_CREATED), eq(CORE_CREDIT_NOTE_CREATED));
+        verify(coreSalesCreditNoteCreatedService).handleCoreSalesCreditNoteCreated(rawEventMessage,ANY_RECEIVE_COUNT, sqsName);
     }
 
     @Test

@@ -68,6 +68,7 @@ public class SqsReceiveService {
     private final SalesOrderProcessService salesOrderCreateService;
     private final MessageWrapperUtil messageWrapperUtil;
     private final CoreSalesInvoiceCreatedService coreSalesInvoiceCreatedService;
+    private final CoreSalesCreditNoteCreatedService coreSalesCreditNoteCreatedService;
     private final ParcelShippedService parcelShippedService;
     private final SQSNamesConfig sqsNamesConfig;
     private final SalesOrderMapper salesOrderMapper;
@@ -447,28 +448,15 @@ public class SqsReceiveService {
      * Consume messages from sqs for core sales credit note created published by core-publisher
      */
     @SqsListener(value = "${soh.sqs.queue.coreSalesCreditNoteCreated}", deletionPolicy = ON_SUCCESS)
+    @SneakyThrows
     @Trace(metricName = "Handling core sales credit note created message", dispatcher = true)
     public void queueListenerCoreSalesCreditNoteCreated(
             String rawMessage,
             @Header("SenderId") String senderId,
             @Header("ApproximateReceiveCount") Integer receiveCount) {
-        try {
-            if (featureFlagConfig.getIgnoreCoreCreditNote()) {
-                log.info("Core Credit Note is ignored");
-            } else {
-                String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-                SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage =
-                        objectMapper.readValue(body, SalesCreditNoteCreatedMessage.class);
 
-                var orderNumber =
-                        salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber();
-                log.info("Received core sales credit note created message with order number: {}", orderNumber);
-                salesOrderRowService.handleSalesOrderReturn(salesCreditNoteCreatedMessage, RETURN_ORDER_CREATED,
-                        CORE_CREDIT_NOTE_CREATED);
-            }
-        } catch (Exception e) {
-            messageErrorHandler.logErrorMessage(rawMessage, senderId, receiveCount, e);
-        }
+        String sqsName = sqsNamesConfig.getCoreSalesCreditNoteCreated();
+        coreSalesCreditNoteCreatedService.handleCoreSalesCreditNoteCreated(rawMessage, receiveCount, sqsName);
     }
 
     /**
