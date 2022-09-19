@@ -1,17 +1,5 @@
 package de.kfzteile24.salesOrderHub.modeltests.salesorder.partial;
 
-import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.DropshipmentOrderRowsCancellationDelegate;
-import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.PublishDropshipmentOrderCreatedDelegate;
-import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.PublishDropshipmentTrackingInformationDelegate;
-import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.StoreDropshipmentInvoiceDelegate;
-import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.listener.CheckIsDropshipmentOrderListener;
-import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.listener.CheckProcessingDropshipmentOrderListener;
-import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.listener.NewRelicAwareTimerListener;
-import de.kfzteile24.salesOrderHub.delegates.salesOrder.OrderCancelledDelegate;
-import de.kfzteile24.salesOrderHub.delegates.salesOrder.OrderCompletedDelegate;
-import de.kfzteile24.salesOrderHub.delegates.salesOrder.OrderCreatedDelegate;
-import de.kfzteile24.salesOrderHub.delegates.salesOrder.PublishCoreSalesInvoiceCreatedReceivedDelegate;
-import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.modeltests.AbstractWorkflowTest;
 import lombok.extern.slf4j.Slf4j;
@@ -21,8 +9,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.boot.test.mock.mockito.SpyBean;
 
 import static de.kfzteile24.salesOrderHub.constants.CustomEventName.DROPSHIPMENT_ORDER_BOOKED_MISSING;
 import static de.kfzteile24.salesOrderHub.constants.CustomEventName.DROPSHIPMENT_SHIPMENT_CONFIRMED_MISSING;
@@ -43,27 +29,9 @@ import static org.mockito.Mockito.when;
 
 @DisplayName("DropshipmentOrderTimer model test")
 @Slf4j(topic = "DropshipmentOrderTimer model test")
-@MockBean({
-        CheckIsDropshipmentOrderListener.class,
-        CheckProcessingDropshipmentOrderListener.class,
-        DropshipmentOrderRowsCancellationDelegate.class,
-        OrderCreatedDelegate.class,
-        OrderCancelledDelegate.class,
-        PublishDropshipmentOrderCreatedDelegate.class,
-        PublishDropshipmentTrackingInformationDelegate.class,
-        PublishCoreSalesInvoiceCreatedReceivedDelegate.class,
-        StoreDropshipmentInvoiceDelegate.class,
-        OrderCompletedDelegate.class
-})
 class DropshipmentOrderTimerModelTest extends AbstractWorkflowTest {
 
     public static final String DEFER_PERIOD_SECONDS_25 = "PT25S";
-
-    @SpyBean
-    private NewRelicAwareTimerListener newRelicAwareTimerListener;
-
-    @MockBean
-    private MetricsHelper metricsHelper;
 
     @BeforeEach
     protected void setUp() {

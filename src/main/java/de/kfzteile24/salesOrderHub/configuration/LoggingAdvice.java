@@ -3,6 +3,7 @@ package de.kfzteile24.salesOrderHub.configuration;
 import com.amazonaws.services.sqs.AmazonSQSAsync;
 import com.amazonaws.services.sqs.model.MessageAttributeValue;
 import com.amazonaws.services.sqs.model.SendMessageRequest;
+import de.kfzteile24.salesOrderHub.helper.MessageErrorHandler;
 import de.kfzteile24.salesOrderHub.helper.SleuthHelper;
 import de.kfzteile24.salesOrderHub.services.sqs.EnrichMessageForDlq;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ class LoggingAdvice {
 
     private final SleuthHelper sleuthHelper;
     private final AmazonSQSAsync amazonSQSAsync;
+    private final MessageErrorHandler messageErrorHandler;
 
     @Around("execution(public void de.kfzteile24.salesOrderHub.services.sqs.SqsReceiveService.*(String, String, Integer))")
     Object incomingMessageLogging(ProceedingJoinPoint joinPoint) throws Throwable {
@@ -57,20 +59,25 @@ class LoggingAdvice {
             return joinPoint.proceed();
         } catch (Throwable e) {
             if (receiveCount < 4) {
-                throw e;
+                messageErrorHandler.logErrorMessage(rawMessage, queueName, receiveCount, e);
             } else {
-                Map<String, MessageAttributeValue> messageAttributes = createStringMessageAttributeValueMap(e);
-                SendMessageRequest sendMessageRequest = new SendMessageRequest()
-                        .withQueueUrl(queueName + "-dlq")
-                        .withMessageBody(rawMessage)
-                        .withMessageAttributes(messageAttributes)
-                        .withDelaySeconds(1);
-                amazonSQSAsync.sendMessage(sendMessageRequest);
-                log.info("Message for invoice received was manually sent to DLQ");
+                moveToDlq(rawMessage, queueName, e);
             }
         }
         return null;
     }
+
+    private void moveToDlq(String rawMessage, String queueName, Throwable e) {
+        Map<String, MessageAttributeValue> messageAttributes = createStringMessageAttributeValueMap(e);
+        SendMessageRequest sendMessageRequest = new SendMessageRequest()
+                .withQueueUrl(queueName + "-dlq")
+                .withMessageBody(rawMessage)
+                .withMessageAttributes(messageAttributes)
+                .withDelaySeconds(1);
+        amazonSQSAsync.sendMessage(sendMessageRequest);
+        log.info("Message for invoice received was manually sent to DLQ");
+    }
+
 
     private Map<String, MessageAttributeValue> createStringMessageAttributeValueMap(Throwable e) {
 

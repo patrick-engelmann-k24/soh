@@ -7,10 +7,12 @@ import brave.context.slf4j.MDCScopeDecorator;
 import brave.propagation.CurrentTraceContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 import java.util.List;
 
 @Configuration
+@Profile("!test")
 public class SleuthConfig {
 
     public static final String TRACE_ID_NAME = "x-business-key";

@@ -53,7 +53,7 @@ public class ProcessQueryService {
                 .processDefinitionVersion(version)
                 .singleResult())
                 .map(ProcessDefinition::getId)
-                .orElseThrow(() -> new NoProcessDefinitionFound(format("{}:{}", processDefinition, version)));
+                .orElseThrow(() -> new NoProcessDefinitionFound(format("{0}:{1}", processDefinition, version)));
     }
 
     public ProcessDefinition getProcessDefinition(String processDefinitionId) {

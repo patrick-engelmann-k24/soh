@@ -1,6 +1,6 @@
 package de.kfzteile24.salesOrderHub.configuration;
 
-import com.amazonaws.services.sqs.AmazonSQSAsync;
+import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import de.kfzteile24.salesOrderHub.services.sqs.SqsReceiveService;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -10,8 +10,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.SpyBean;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -19,23 +17,24 @@ import java.nio.file.Paths;
 import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 
-@SpringBootTest
 @Slf4j
-class LoggingAdviceIntegrationTest {
+class LoggingAdviceIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private SqsReceiveService sqsReceiveService;
-
-    @SpyBean
-    private AmazonSQSAsync amazonSQSAsync;
+    @Autowired
+    private SQSNamesConfig sqsNamesConfig;
 
     @BeforeEach
-    void setUp() {
+    protected void setUp() {
+        super.setUp();
         doReturn(null).when(amazonSQSAsync).sendMessage(any());
     }
 
@@ -44,10 +43,13 @@ class LoggingAdviceIntegrationTest {
     void testMessageAttributeForEcpShop(TestInfo testInfo) {
 
         log.info(testInfo.getDisplayName());
-        String rawMessage = getRawMessageOfOrderWithoutCustomerNumber();
+        final String rawMessage = getRawMessageOfOrderWithoutCustomerNumber();
 
         sqsReceiveService.queueListenerEcpShopOrders(rawMessage, "senderId", 4);
-        verifyIfMessageIsSendingToDLQ("soh-ecp-shop-orders-queue-dlq");
+        verifyIfMessageIsSendingToDLQ(sqsNamesConfig.getEcpShopOrders() + "-dlq");
+
+        verifyErrorMessageIsLogged(() -> sqsReceiveService.queueListenerEcpShopOrders(rawMessage, "senderId", 3),
+                rawMessage, sqsNamesConfig.getEcpShopOrders());
     }
 
     @Test
@@ -58,7 +60,10 @@ class LoggingAdviceIntegrationTest {
         String rawMessage = getRawMessageOfOrderWithoutCustomerNumber();
 
         sqsReceiveService.queueListenerBcShopOrders(rawMessage, "senderId", 4);
-        verifyIfMessageIsSendingToDLQ("soh-bc-shop-orders-queue-dlq");
+        verifyIfMessageIsSendingToDLQ(sqsNamesConfig.getBcShopOrders() + "-dlq");
+
+        verifyErrorMessageIsLogged(() -> sqsReceiveService.queueListenerBcShopOrders(rawMessage, "senderId", 3),
+                rawMessage, sqsNamesConfig.getBcShopOrders());
     }
 
     @Test
@@ -69,7 +74,10 @@ class LoggingAdviceIntegrationTest {
         String rawMessage = getRawMessageOfOrderWithoutCustomerNumber();
 
         sqsReceiveService.queueListenerCoreShopOrders(rawMessage, "senderId", 4);
-        verifyIfMessageIsSendingToDLQ("soh-core-shop-orders-queue-dlq");
+        verifyIfMessageIsSendingToDLQ(sqsNamesConfig.getCoreShopOrders() + "-dlq");
+
+        verifyErrorMessageIsLogged(() -> sqsReceiveService.queueListenerCoreShopOrders(rawMessage, "senderId", 3),
+                rawMessage, sqsNamesConfig.getCoreShopOrders());
     }
 
     @Test
@@ -80,7 +88,10 @@ class LoggingAdviceIntegrationTest {
         String rawMessage = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
 
         sqsReceiveService.queueListenerCoreSalesInvoiceCreated(rawMessage, "senderId", 4);
-        verifyIfMessageIsSendingToDLQ("soh-core-sales-invoice-created-queue-dlq");
+        verifyIfMessageIsSendingToDLQ(sqsNamesConfig.getCoreSalesInvoiceCreated() + "-dlq");
+
+        verifyErrorMessageIsLogged(() -> sqsReceiveService.queueListenerCoreSalesInvoiceCreated(rawMessage, "senderId", 3),
+                rawMessage, sqsNamesConfig.getCoreSalesInvoiceCreated());
     }
 
     @Test
@@ -91,7 +102,10 @@ class LoggingAdviceIntegrationTest {
         String rawMessage = readResource("examples/parcelShipped.json");
 
         sqsReceiveService.queueListenerParcelShipped(rawMessage, "senderId", 4);
-        verifyIfMessageIsSendingToDLQ("soh-parcel-shipped-queue-dlq");
+        verifyIfMessageIsSendingToDLQ(sqsNamesConfig.getParcelShipped() + "-dlq");
+
+        verifyErrorMessageIsLogged(() -> sqsReceiveService.queueListenerParcelShipped(rawMessage, "senderId", 3),
+                rawMessage, sqsNamesConfig.getParcelShipped());
     }
 
     @NotNull
@@ -105,6 +119,16 @@ class LoggingAdviceIntegrationTest {
             assertThat(msgReq.getQueueUrl()).contains(dlqName);
             return true;
         }));
+    }
+
+    private void verifyErrorMessageIsLogged(Runnable runnable, String rawMessage, String queueName) {
+        try {
+            runnable.run();
+            fail("should throw exception");
+        } catch (Exception e) {
+            //ignore
+        }
+        verify(messageErrorHandler).logErrorMessage(eq(rawMessage), eq(queueName), eq(3), any());
     }
 
     @SneakyThrows({URISyntaxException.class, IOException.class})

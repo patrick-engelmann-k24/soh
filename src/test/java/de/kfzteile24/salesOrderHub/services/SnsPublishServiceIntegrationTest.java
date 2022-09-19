@@ -1,18 +1,17 @@
 package de.kfzteile24.salesOrderHub.services;
 
+import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderReturnRepository;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
-import org.junit.Assert;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
 
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.RETURN_ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrderFromOrder;
@@ -20,9 +19,7 @@ import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrderReturn;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.readResource;
 
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@SpringBootTest
-public class SnsPublishServiceIntegrationTest {
+public class SnsPublishServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private SnsPublishService snsPublishService;
@@ -55,7 +52,7 @@ public class SnsPublishServiceIntegrationTest {
         try {
             snsPublishService.publishCreditNoteCreatedEvent(salesCreditNoteCreatedEvent);
         } catch (Exception e) {
-            Assert.fail();
+            Assertions.fail();
         }
     }
 

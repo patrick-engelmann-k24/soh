@@ -1,11 +1,5 @@
 package de.kfzteile24.salesOrderHub.modeltests.salesorder.partial;
 
-import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.DropshipmentOrderRowsCancellationDelegate;
-import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.PublishDropshipmentTrackingInformationDelegate;
-import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.StoreDropshipmentInvoiceDelegate;
-import de.kfzteile24.salesOrderHub.delegates.salesOrder.OrderCancelledDelegate;
-import de.kfzteile24.salesOrderHub.delegates.salesOrder.OrderCompletedDelegate;
-import de.kfzteile24.salesOrderHub.delegates.salesOrder.PublishCoreSalesInvoiceCreatedReceivedDelegate;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.modeltests.AbstractWorkflowTest;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +9,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
-import org.springframework.boot.test.mock.mockito.MockBean;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.DROPSHIPMENT_ORDER_GENERATE_INVOICE;
@@ -38,14 +31,6 @@ import static org.mockito.Mockito.when;
 
 @DisplayName("IsDropshipmentOrderCreatedGateway model test")
 @Slf4j(topic = "IsDropshipmentOrderCreatedGateway model test")
-@MockBean({
-        PublishDropshipmentTrackingInformationDelegate.class,
-        StoreDropshipmentInvoiceDelegate.class,
-        PublishCoreSalesInvoiceCreatedReceivedDelegate.class,
-        OrderCompletedDelegate.class,
-        DropshipmentOrderRowsCancellationDelegate.class,
-        OrderCancelledDelegate.class
-})
 class IsDropshipmentOrderCreatedGatewayModelTest extends AbstractWorkflowTest {
 
     @BeforeEach

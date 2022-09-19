@@ -1,8 +1,5 @@
 package de.kfzteile24.salesOrderHub.modeltests.salesorder.subprocess;
 
-import de.kfzteile24.salesOrderHub.delegates.salesOrder.ChangeInvoiceAddressDelegate;
-import de.kfzteile24.salesOrderHub.delegates.salesOrder.ChangeInvoiceAddressPossibleDelegate;
-import de.kfzteile24.salesOrderHub.delegates.salesOrder.InvoiceAddressChangedDelegate;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.modeltests.AbstractWorkflowTest;
 import lombok.extern.slf4j.Slf4j;
@@ -12,7 +9,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
-import org.springframework.boot.test.mock.mockito.MockBean;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.CHANGE_INVOICE_ADDRESS;
@@ -29,11 +25,6 @@ import static org.mockito.Mockito.verify;
 
 @DisplayName("InvoiceExistsGateway model test")
 @Slf4j(topic = "InvoiceExistsGateway model test")
-@MockBean({
-        ChangeInvoiceAddressPossibleDelegate.class,
-        ChangeInvoiceAddressDelegate.class,
-        InvoiceAddressChangedDelegate.class
-})
 class InvoiceExistsGatewayModelTest extends AbstractWorkflowTest {
 
     @BeforeEach

@@ -1,7 +1,6 @@
 package de.kfzteile24.salesOrderHub.services;
 
 import de.kfzteile24.salesOrderHub.constants.CustomerSegment;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
@@ -30,7 +29,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.util.Strings;
-import org.camunda.bpm.engine.RuntimeService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,7 +36,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -48,8 +45,6 @@ import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.CustomerSegment.B2B;
 import static de.kfzteile24.salesOrderHub.constants.CustomerSegment.DIRECT_DELIVERY;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.INVOICE_URL;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getSumValue;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.isNotNullAndEqual;
@@ -77,9 +72,6 @@ public class SalesOrderService {
     @NonNull
     private final OrderUtil orderUtil;
 
-    @NonNull
-    private final RuntimeService runtimeService;
-
     @Transactional
     public SalesOrder updateProcessInstanceId(String orderNumber, String processInstanceId) {
         Optional<SalesOrder> salesOrderOptional = getOrderByOrderNumber(orderNumber);
@@ -89,7 +81,7 @@ public class SalesOrderService {
             salesOrder.setProcessId(processInstanceId);
             return updateOrder(salesOrder);
         }
-        throw new SalesOrderNotFoundException(format("for order {}", orderNumber));
+        throw new SalesOrderNotFoundException(format("for order {0}", orderNumber));
     }
 
     @Transactional
@@ -405,33 +397,6 @@ public class SalesOrderService {
         return orderUtil.createOrderNumberInSOH(orderNumber, reference);
     }
 
-    public void handleInvoiceFromCore(String invoiceUrl) {
-        final var orderNumber = InvoiceUrlExtractor.extractOrderNumber(invoiceUrl);
-
-        log.info("Received invoice from core with order number: {} ", orderNumber);
-
-        final Map<String, Object> processVariables = Map.of(
-                ORDER_NUMBER.getName(), orderNumber,
-                INVOICE_URL.getName(), invoiceUrl
-        );
-        runtimeService.startProcessInstanceByMessage(Messages.INVOICE_CREATED.getName(), orderNumber, processVariables);
-        log.info("Invoice {} from core for order-number {} successfully received", invoiceUrl, orderNumber);
-    }
-
-    public void handleCreditNoteFromDropshipmentOrderReturn(String invoiceUrl) {
-        final var returnOrderNumber = InvoiceUrlExtractor.extractOrderNumber(invoiceUrl);
-
-        log.info("Received credit note from dropshipment with return order number: {} ", returnOrderNumber);
-
-        final Map<String, Object> processVariables = Map.of(
-                ORDER_NUMBER.getName(), returnOrderNumber,
-                INVOICE_URL.getName(), invoiceUrl
-        );
-
-        runtimeService.startProcessInstanceByMessage(Messages.DROPSHIPMENT_CREDIT_NOTE_CREATED.getName(), returnOrderNumber, processVariables);
-        log.info("Invoice {} for credit note of dropshipment order return for order-number {} successfully received", invoiceUrl, returnOrderNumber);
-    }
-
     @Transactional
     public void enrichSalesOrder(SalesOrder salesOrder, Order order, Order originalOrder) {
         updatePaymentsAndOrderGroupId(salesOrder, order);
@@ -484,15 +449,8 @@ public class SalesOrderService {
         }
 
         if (target.getType().equals("ec_cash")) {
-            switch (sourcePaymentsList.get(0).getType()) {
-                case "self_pickup":
-                    sourcePaymentsList.get(0).setType("ec_cash");
-                    break;
-                case "cash":
-                    sourcePaymentsList.get(0).setType("ec_cash");
-                    break;
-                default:
-                    break;
+            if ("self_pickup".equals(sourcePaymentsList.get(0).getType())) {
+                sourcePaymentsList.get(0).setType("ec_cash");
             }
             sourcePaymentsList.get(0).setType("ec_cash");
         }

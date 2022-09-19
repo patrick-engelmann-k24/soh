@@ -1,18 +1,15 @@
 package de.kfzteile24.salesOrderHub.clients;
 
+import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import org.junit.Ignore;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Disabled
-@SpringBootTest
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-class PricingServiceClientIntegrationTest {
+class PricingServiceClientIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private PricingServiceClient pricingServiceClient;

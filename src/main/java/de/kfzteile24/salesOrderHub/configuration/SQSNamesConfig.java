@@ -11,6 +11,9 @@ public class SQSNamesConfig {
     @Value("${soh.sqs.queue.coreSalesInvoiceCreated}")
     private String coreSalesInvoiceCreated;
 
+    @Value("${soh.sqs.queue.coreSalesCreditNoteCreated}")
+    private String coreSalesCreditNoteCreated;
+
     @Value("${soh.sqs.queue.parcelShipped}")
     private String parcelShipped;
 

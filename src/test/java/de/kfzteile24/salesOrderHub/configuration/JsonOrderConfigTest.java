@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ExtendWith(SpringExtension.class)
-class JsonOrderConfigIntegrationTest {
+class JsonOrderConfigTest {
 
     private final ObjectMapper objectMapper = new ObjectMapperConfig().objectMapper();
 

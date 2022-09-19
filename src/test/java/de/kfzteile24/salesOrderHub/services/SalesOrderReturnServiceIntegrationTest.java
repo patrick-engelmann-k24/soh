@@ -1,23 +1,24 @@
 package de.kfzteile24.salesOrderHub.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.helper.ReturnOrderHelper;
+import de.kfzteile24.salesOrderHub.repositories.CreditNoteNumberCounterRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderReturnRepository;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
 
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.RETURN_ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrderFromOrder;
@@ -28,9 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@SpringBootTest
-public class SalesOrderReturnServiceIntegrationTest {
+public class SalesOrderReturnServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -49,6 +48,12 @@ public class SalesOrderReturnServiceIntegrationTest {
 
     @Autowired
     private ReturnOrderHelper returnOrderHelper;
+
+    @Autowired
+    private CreditNoteNumberCounterRepository creditNoteNumberCounterRepository;
+
+    @Autowired
+    private CreditNoteNumberCounterService creditNoteNumberCounterService;
 
     @Test
     @SneakyThrows
@@ -79,6 +84,12 @@ public class SalesOrderReturnServiceIntegrationTest {
 
         String result = salesOrderReturnService.createCreditNoteNumber();
         assertTrue(result.endsWith("00002"));
+    }
+
+    @BeforeEach
+    public void prepare() {
+        creditNoteNumberCounterRepository.deleteAll();
+        creditNoteNumberCounterService.init();
     }
 
     @AfterEach
