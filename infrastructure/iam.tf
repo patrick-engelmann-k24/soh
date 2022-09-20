@@ -45,7 +45,6 @@ data "aws_iam_policy_document" "sns_sqs_access_policy" {
       aws_sqs_queue.core_shop_orders.arn,
       aws_sqs_queue.soh_order_payment_secured.arn,
       aws_sqs_queue.soh_invoices_from_core.arn,
-      aws_sqs_queue.soh_core_cancellation.arn,
       aws_sqs_queue.soh_subsequent_delivery_received.arn,
       aws_sqs_queue.d365_order_payment_secured.arn,
       aws_sqs_queue.soh_dropshipment_shipment_confirmed.arn,
