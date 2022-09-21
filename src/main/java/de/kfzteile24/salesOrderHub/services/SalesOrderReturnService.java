@@ -62,10 +62,6 @@ public class SalesOrderReturnService {
         return salesOrderReturnRepository.findByOrderNumber(orderNumber);
     }
 
-    public SalesOrderReturn save(SalesOrderReturn salesOrderReturn) {
-        return salesOrderReturnRepository.save(salesOrderReturn);
-    }
-
     @Transactional(readOnly = true)
     public boolean checkOrderNotExists(final String orderNumber) {
         if (getByOrderNumber(orderNumber) != null) {
