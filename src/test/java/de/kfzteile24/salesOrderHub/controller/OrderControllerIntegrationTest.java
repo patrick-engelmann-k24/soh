@@ -1,5 +1,23 @@
 package de.kfzteile24.salesOrderHub.controller;
 
+import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
+import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
+import de.kfzteile24.salesOrderHub.domain.converter.InvoiceSource;
+import de.kfzteile24.salesOrderHub.helper.BpmUtil;
+import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
+import de.kfzteile24.salesOrderHub.services.InvoiceService;
+import de.kfzteile24.soh.order.dto.BillingAddress;
+import org.camunda.bpm.engine.RuntimeService;
+import org.camunda.bpm.engine.runtime.ProcessInstance;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.List;
+
+import static de.kfzteile24.salesOrderHub.constants.Payment.CREDIT_CARD;
+import static de.kfzteile24.salesOrderHub.constants.ShipmentMethod.REGULAR;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.MSG_ORDER_PAYMENT_SECURED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_MARKETPLACE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
@@ -10,24 +28,8 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.http.HttpStatus.CONFLICT;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.OK;
-
-import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
-import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
-import de.kfzteile24.salesOrderHub.domain.converter.InvoiceSource;
-import de.kfzteile24.salesOrderHub.helper.BpmUtil;
-import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
-import de.kfzteile24.salesOrderHub.services.InvoiceService;
-import de.kfzteile24.soh.order.dto.BillingAddress;
-import org.camunda.bpm.engine.RuntimeService;
-import org.camunda.bpm.engine.runtime.ProcessInstance;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-
-import java.util.List;
-
-import static de.kfzteile24.salesOrderHub.constants.Payment.CREDIT_CARD;
-import static de.kfzteile24.salesOrderHub.constants.ShipmentMethod.REGULAR;
 
 class OrderControllerIntegrationTest extends AbstractIntegrationTest {
 
@@ -41,6 +43,14 @@ class OrderControllerIntegrationTest extends AbstractIntegrationTest {
     private OrderController controller;
     @Autowired
     private InvoiceService invoiceService;
+
+    private SalesOrder testOrder;
+
+    @BeforeEach
+    public void setup() {
+        super.setUp();
+        testOrder = salesOrderUtil.createNewSalesOrder();
+    }
 
     @Test
     void updatingTheInvoiceAddressSuccessfullyReturnsTheStatusOK() {
@@ -81,6 +91,30 @@ class OrderControllerIntegrationTest extends AbstractIntegrationTest {
 
         final var result = controller.updateBillingAddress(orderNumber, address);
         assertThat(result.getStatusCode()).isEqualTo(CONFLICT);
+    }
+
+    @Test
+    void cancellingAnOrderRowSuccessfullyReturnsTheStatusOK() {
+
+        //This endpoint is not used anymore
+        final var result = controller.cancelOrderRow("orderNumber", "orderRows");
+        assertThat(result.getStatusCode()).isEqualTo(NOT_FOUND);
+    }
+
+    @Test
+    void cancellingAnOrderSuccessfullyReturnsTheStatusOK() {
+
+        //This endpoint is not used anymore
+        final var result = controller.cancelOrder("orderNumber");
+        assertThat(result.getStatusCode()).isEqualTo(NOT_FOUND);
+    }
+
+    @Test
+    void ifAnOrderCannotBeCancelledBecauseOfTheProcessStateTheStatusCONFLICTIsReturned() {
+
+        //This endpoint is not used anymore
+        final var result = controller.cancelOrder("orderNumber");
+        assertThat(result.getStatusCode()).isEqualTo(NOT_FOUND);
     }
 
     private ProcessInstance createProcessInstance(String orderNumber, List<String> orderItems) {
