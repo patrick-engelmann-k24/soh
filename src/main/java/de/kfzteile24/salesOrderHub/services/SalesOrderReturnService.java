@@ -21,7 +21,6 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,17 +40,17 @@ import static de.kfzteile24.salesOrderHub.constants.SOHConstants.DATE_TIME_FORMA
 @RequiredArgsConstructor
 public class SalesOrderReturnService {
 
-    @Autowired
-    private SalesOrderReturnRepository salesOrderReturnRepository;
+    @NonNull
+    private final SalesOrderReturnRepository salesOrderReturnRepository;
 
-    @Autowired
-    private AuditLogRepository auditLogRepository;
+    @NonNull
+    private final AuditLogRepository auditLogRepository;
 
-    @Autowired
-    private SalesOrderService salesOrderService;
+    @NonNull
+    private final SalesOrderService salesOrderService;
 
-    @Autowired
-    private CreditNoteNumberCounterService creditNoteNumberCounterService;
+    @NonNull
+    private final CreditNoteNumberCounterService creditNoteNumberCounterService;
 
     @NonNull
     private final CamundaHelper helper;
