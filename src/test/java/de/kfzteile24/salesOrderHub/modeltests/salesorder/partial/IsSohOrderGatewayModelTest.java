@@ -10,19 +10,20 @@ import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
-import static de.kfzteile24.salesOrderHub.constants.CustomerType.NEW;
-import static de.kfzteile24.salesOrderHub.constants.PaymentType.CREDIT_CARD;
-import static de.kfzteile24.salesOrderHub.constants.ShipmentMethod.REGULAR;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.ORDER_ROW_FULFILLMENT_PROCESS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.END_MSG_ORDER_COMPLETED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.MSG_ORDER_CORE_SALES_INVOICE_CREATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Gateways.XOR_CHECK_BRANCH_TYPE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Gateways.XOR_CHECK_PLATFORM_TYPE;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_BRANCH_ORDER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_SOH_ORDER;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents.ROW_TRANSMITTED_TO_LOGISTICS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -46,14 +47,17 @@ class IsSohOrderGatewayModelTest extends AbstractWorkflowTest {
 
         processVariables.put(IS_SOH_ORDER.getName(), true);
 
-        when(processScenario.waitsAtMessageIntermediateCatchEvent(MSG_ORDER_CORE_SALES_INVOICE_CREATED.getName()))
+        when(processScenario.waitsAtMessageIntermediateCatchEvent(ROW_TRANSMITTED_TO_LOGISTICS.getName()))
                 .thenReturn(WAIT_MESSAGE_CATCH_EVENT_ACTION);
+        when(processScenario.runsCallActivity(ORDER_ROW_FULFILLMENT_PROCESS.getName()))
+                .thenReturn(executeCallActivity());
 
         scenario = startBeforeActivity(SALES_ORDER_PROCESS, XOR_CHECK_PLATFORM_TYPE.getName(),
                 businessKey, processVariables);
 
         verify(processScenario, never()).hasCompleted(XOR_CHECK_BRANCH_TYPE.getName());
-        verify(processScenario).waitsAtMessageIntermediateCatchEvent(MSG_ORDER_CORE_SALES_INVOICE_CREATED.getName());
+        verify(processScenario, times(3)).waitsAtMockedCallActivity(ORDER_ROW_FULFILLMENT_PROCESS.getName());
+        verify(processScenario, times(3)).waitsAtMessageIntermediateCatchEvent(ROW_TRANSMITTED_TO_LOGISTICS.getName());
     }
 
     @Test
@@ -69,7 +73,7 @@ class IsSohOrderGatewayModelTest extends AbstractWorkflowTest {
                 businessKey, processVariables);
 
         verify(processScenario).hasCompleted(XOR_CHECK_BRANCH_TYPE.getName());
-        verify(processScenario, never()).hasStarted(ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED.getName());
+        verify(processScenario, never()).hasCompleted(ORDER_ROW_FULFILLMENT_PROCESS.getName());
         verify(processScenario).hasCompleted(END_MSG_ORDER_COMPLETED.getName());
 
         assertThat(scenario.instance(processScenario)).isEnded();

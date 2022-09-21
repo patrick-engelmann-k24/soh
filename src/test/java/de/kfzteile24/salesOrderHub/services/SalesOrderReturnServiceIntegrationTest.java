@@ -95,7 +95,7 @@ public class SalesOrderReturnServiceIntegrationTest extends AbstractIntegrationT
     @AfterEach
     @SneakyThrows
     public void cleanup() {
-        salesOrderRepository.deleteAllInBatch();
-        salesOrderReturnRepository.deleteAllInBatch();
+        salesOrderRepository.deleteAll();
+        salesOrderReturnRepository.deleteAll();
     }
 }

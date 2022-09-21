@@ -6,7 +6,7 @@ import lombok.Getter;
 public enum InvoiceSource {
     SOH("SOH");
 
-    private final String name;
+    private String name;
 
     InvoiceSource(String name) {
         this.name = name;

@@ -15,7 +15,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 
 @Slf4j
-class MessageErrorHandlerIntegrationTest extends AbstractIntegrationTest {
+class MessageErrorHandlerIntegrationTestt extends AbstractIntegrationTest {
 
     @Autowired
     private SqsReceiveService sqsReceiveService;

@@ -26,7 +26,7 @@ import static org.mockito.Mockito.when;
 public class OrderSplitServiceTest {
 
     @Spy
-    private final ObjectMapper objectMapper = new ObjectMapperConfig().objectMapper();
+    private ObjectMapper objectMapper = new ObjectMapperConfig().objectMapper();
 
     @Mock
     private OrderUtil orderUtil;

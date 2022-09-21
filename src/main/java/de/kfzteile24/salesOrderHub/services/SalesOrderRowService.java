@@ -2,6 +2,8 @@ package de.kfzteile24.salesOrderHub.services;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
@@ -29,6 +31,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.RuntimeService;
+import org.camunda.bpm.engine.runtime.Execution;
+import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Service;
 
@@ -47,6 +51,7 @@ import java.util.stream.Collectors;
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.COMBINED_ITEM_SEPARATOR;
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.DATE_TIME_FORMATTER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS;
 
 @Service
 @Slf4j
@@ -296,8 +301,16 @@ public class SalesOrderRowService {
             log.debug("Sales order process does not exist for order number {}", orderNumber);
         }
 
-        snsPublishService.publishOrderRowCancelled(orderNumber, orderRowId);
-        log.debug("Published Order row cancelled for order number: {} and order row: {}", orderNumber, orderRowId);
+        if (helper.checkIfOrderRowProcessExists(orderNumber, orderRowId)) {
+            correlateMessageForOrderRowCancelCancellation(orderNumber, orderRowId);
+
+        } else {
+            log.debug("Sales order row process does not exist for order number {} and order row: {}",
+                    orderNumber, orderRowId);
+
+            snsPublishService.publishOrderRowCancelled(orderNumber, orderRowId);
+            log.debug("Published Order row cancelled for order number: {} and order row: {}", orderNumber, orderRowId);
+        }
         log.info("Order row cancelled for order number: {} and order row: {}", orderNumber, orderRowId);
     }
 
@@ -377,8 +390,66 @@ public class SalesOrderRowService {
         return originalOrder.getOrderRows().stream().map(OrderRows::getSku).collect(Collectors.toList());
     }
 
+    private void correlateMessageForOrderRowCancelCancellation(String orderNumber, String orderRowId) {
+        log.info("Starting cancelling order row process for order number: {} and order row: {}", orderNumber, orderRowId);
+        List<Execution> processList = runtimeService.createExecutionQuery().
+                processDefinitionKey(SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName())
+                .processInstanceBusinessKey(orderNumber + "#" + orderRowId)
+                .list();
+        if (!processList.isEmpty()) {
+            var processInstanceId = processList.stream().findFirst().orElseThrow().getProcessInstanceId();
+            runtimeService.createMessageCorrelation(RowMessages.ORDER_ROW_CANCELLATION_RECEIVED.getName())
+                    .processInstanceBusinessKey(orderNumber + "#" + orderRowId)
+                    .processInstanceId(processInstanceId)
+                    .correlateWithResult();
+        } else {
+            log.info("Could not find Order Row process for order number: {} and sku: {}", orderNumber, orderRowId);
+        }
+    }
+
+    public void correlateOrderRowMessage(RowMessages rowMessage,
+                                         String orderGroupId,
+                                         String orderItemSku,
+                                         String logMessage,
+                                         String rawMessage,
+                                         RowEvents rowEvents) {
+        if (isVirtualSku(orderItemSku)) {
+            log.info("sku: {} is a virtual item so it would be ignored for bpmn processes.", orderItemSku);
+        } else {
+            salesOrderService.getOrderNumberListByOrderGroupIdAndFilterNotCancelled(orderGroupId, orderItemSku).forEach(orderNumber -> {
+                try {
+                    MessageCorrelationResult result = helper.correlateMessageForOrderRowProcess(rowMessage, orderNumber, rowEvents, orderItemSku);
+
+                    if (!result.getExecution().getProcessInstanceId().isEmpty()) {
+                        log.info("{} message for order-number {} and sku {} successfully received",
+                                logMessage,
+                                orderNumber,
+                                orderItemSku
+                        );
+                    }
+                } catch (Exception e) {
+                    log.error("{} message error: \r\nOrderNumber: {}\r\nOrderItem-SKU: {}\r\nSQS-Message: {}\r\nError-Message: {}",
+                            logMessage,
+                            orderNumber,
+                            orderItemSku,
+                            rawMessage,
+                            e.getMessage()
+                    );
+                    throw e;
+                }
+            });
+        }
+    }
+
     private boolean isCorePlatformOrder(List<SalesOrder> salesOrders) {
         return Platform.CORE == ((Order)salesOrders.get(0).getOriginalOrder()).getOrderHeader().getPlatform();
+    }
+
+    private boolean isVirtualSku(String sku) {
+
+        return sku.startsWith("KBA") ||
+                sku.startsWith("MARK-") ||
+                (sku.startsWith("90") && sku.length() == 8 && !sku.contains("-"));
     }
 
     public void handleParcelShippedEvent(ParcelShipped event) {

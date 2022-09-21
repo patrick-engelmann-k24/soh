@@ -17,6 +17,9 @@ public class AwsSnsConfig {
     @Value("${soh.sns.topic.invoiceAddressChanged}")
     private String snsInvoiceAddressChangedTopic;
 
+    @Value("${soh.sns.topic.deliveryAddressChanged}")
+    private String snsDeliveryAddressChanged;
+
     @Value("${soh.sns.topic.salesOrderRowCancelled}")
     private String snsSalesOrderRowCancelled;
 
@@ -58,4 +61,5 @@ public class AwsSnsConfig {
 
     @Value("${soh.sns.topic.dropshipmentOrderReturnNotifiedV1}")
     private String snsDropshipmentOrderReturnNotifiedV1;
+
 }

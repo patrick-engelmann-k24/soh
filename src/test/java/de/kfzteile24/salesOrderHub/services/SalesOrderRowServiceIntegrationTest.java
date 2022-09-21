@@ -23,15 +23,16 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 
-import static de.kfzteile24.salesOrderHub.constants.CustomerType.NEW;
-import static de.kfzteile24.salesOrderHub.constants.PaymentType.CREDIT_CARD;
-import static de.kfzteile24.salesOrderHub.constants.ShipmentMethod.REGULAR;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_PAYMENT_SECURED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ROW_CANCELLED;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -65,6 +66,9 @@ class SalesOrderRowServiceIntegrationTest extends AbstractIntegrationTest {
     private HistoryService historyService;
 
     @Autowired
+    private TimedPollingService timerService;
+
+    @Autowired
     private CamundaHelper camundaHelper;
 
     @Test
@@ -79,6 +83,7 @@ class SalesOrderRowServiceIntegrationTest extends AbstractIntegrationTest {
 
         ProcessInstance processInstance = camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
         assertTrue(util.isProcessWaitingAtExpectedToken(processInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName()));
+        assertThatNoSubprocessExists(orderNumber, skuToCancel);
 
         salesOrderRowService.cancelOrderRows(salesOrder.getOrderNumber(), Lists.newArrayList(skuToCancel));
 
@@ -106,6 +111,7 @@ class SalesOrderRowServiceIntegrationTest extends AbstractIntegrationTest {
         assertThat(updatedSkus.stream().anyMatch(sku -> sku.equals(skuToCancel))).isFalse();
 
         auditLogUtil.assertAuditLogExists(salesOrder.getId(), ORDER_ROW_CANCELLED);
+        assertThatNoSubprocessExists(orderNumber, skuToCancel);
         assertTrue(util.isProcessWaitingAtExpectedToken(processInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName()));
     }
 
@@ -150,6 +156,7 @@ class SalesOrderRowServiceIntegrationTest extends AbstractIntegrationTest {
         assertThat(updatedSkus.stream().anyMatch(sku -> sku.equals(skuToCancel))).isFalse();
 
         auditLogUtil.assertAuditLogExists(salesOrder.getId(), ORDER_ROW_CANCELLED);
+        assertThatNoSubprocessExists(orderNumber, skuToCancel);
     }
 
     @Test
@@ -165,6 +172,13 @@ class SalesOrderRowServiceIntegrationTest extends AbstractIntegrationTest {
         assertTrue(util.isProcessWaitingAtExpectedToken(processInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName()));
         util.sendMessage(ORDER_RECEIVED_PAYMENT_SECURED, salesOrder.getOrderNumber());
 
+        assertTrue(timerService.pollWithDefaultTiming(() ->
+                camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), orderRowSkus.get(0)) &&
+                        camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), orderRowSkus.get(1)) &&
+                        camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), orderRowSkus.get(2)) &&
+                        camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())
+        ));
+
         salesOrderRowService.cancelOrderRows(salesOrder.getOrderNumber(), orderRowSkus);
 
         final var updatedSalesOrder = salesOrderService.getOrderByOrderNumber(orderNumber);
@@ -173,9 +187,16 @@ class SalesOrderRowServiceIntegrationTest extends AbstractIntegrationTest {
         Order latestJson = updatedSalesOrder.get().getLatestJson();
         for (OrderRows orderRows : latestJson.getOrderRows()) {
             assertTrue(orderRows.getIsCancelled());
+            assertThatNoSubprocessExists(orderNumber, orderRows.getSku());
         }
 
         auditLogUtil.assertAuditLogExists(salesOrder.getId(), ORDER_ROW_CANCELLED, 3);
+        assertFalse(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+                camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), orderRowSkus.get(0)) &&
+                        camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), orderRowSkus.get(1)) &&
+                        camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), orderRowSkus.get(2)) &&
+                        camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())
+        ));
     }
 
     @Test
@@ -234,5 +255,11 @@ class SalesOrderRowServiceIntegrationTest extends AbstractIntegrationTest {
         assertEquals(BigDecimal.valueOf(4), totals.getGrandTotalGross());
         assertEquals(BigDecimal.valueOf(4), totals.getPaymentTotal());
         assertEquals(BigDecimal.valueOf(8), totals.getGrandTotalNet());
+    }
+
+    public void assertThatNoSubprocessExists(String orderNumber, String sku) {
+        assertFalse(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+                camundaHelper.checkIfOrderRowProcessExists(orderNumber, sku)
+        ));
     }
 }

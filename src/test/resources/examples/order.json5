@@ -1,0 +1,547 @@
+{
+  // version of this format. Following semantic versioning
+  "version": "2.1",
+  // contains all meta information to this order that are not related to articles itself
+  "order_header": {
+    // primary key to identify the order in the producing service
+    "order_id": "9dbed692-66fe-4628-9b77-50cc6107795f", //UUID created by Orderservice
+    // kfz24 wide unique order number - is visible to the customer
+    "order_number": "order number (e.g. DE-600382161)",
+    // date when the order (not the offer) was created in UTC without offset
+    "order_datetime": "2020-09-20T12:34:56Z",
+    // timezone of the order_datetime
+    "order_timezone": "",
+    // currency of the order in ISO 4217
+    "order_currency": "",
+    // primary key to identify the referencing order in the producing service
+    "order_reference_id": "",
+    // primary key to identify the referencing order number the producing service
+    "order_reference_order_number": "",
+    // is only filled when a the order_reference fields are set
+    "order_reference_reason": "cancellation|extension|?",
+    // primary key to identify the referencing offer id the producing service
+    "offer_id": "",
+    // primary key to identify the referencing offer number in the producing service
+    "offer_reference_number": "",
+    // summaries information about the origin of the order
+    "origin": {
+      // which channel created the order (could also be ebay or amazon, ...)
+      "sales_channel": "DE-KFZ24|DE-POS-3|CS",
+      // identifies the locale in the sales channel
+      "locale": "EN_en"
+    },
+    // creator of the order => will be empty for orders created by the checkout
+    // is used for e.g. provisioning if sales people participate in the order creation
+    "creator": {
+      // type of creator
+      "type": "customer_support",
+      // an id to represent the creator
+      "creator_id": "backoffice_user_id|null",
+      // a human readable name of the creator
+      "creator_name": "Hans Müller|Kürzel|null"
+    },
+    // list of all used discounts => this field does not include an creational rules, just the results
+    "discounts": [
+      {
+        // identifier for the discount
+        "discount_name": "unique_discount_identifier (name)",
+        // discount name shown to the customer
+        "display_name": "10% auf alles",
+        // code of the discount
+        "discount_code": "XYZ",
+        // tell about the type of the discount whether it is a "no shipping costs" discount or a normal one
+        "discount_type": "discount|shipping",
+        // is used by accounting to book promotions to the right accounts
+        "promotion_identifier": "string|null"
+      },
+      {
+        "discount_name": "unique_discount_identifier (name)",
+        "display_name": "Ein Eiskratzer gratis",
+        // tell about the type of the discount whether it is a "no shipping costs" discount or a normal one
+        "discount_type": "discount|shipping"
+      }
+    ],
+    // list of all payments that were applied for this order
+    "payments": [
+      {
+        // identification of the payment
+        // voucher payments are at the moment ignored by the erp-connector and will not appear in the csv that is exported to the erp system!
+        "type": "voucher",
+        // payment value
+        "value": 50.99,
+        "payment_provider_data": {
+          // optional code the customer used
+          "code": "ABC123",
+          "promotion_identifier": "string|null"
+        }
+      },
+      {
+        "type": "creditcard",
+        "value": 99.00,
+        "payment_transaction_id": "transaction id of the internal payment service",
+        // additional information that was provided by the PaymentServiceProvider (PSP)
+        // can contain key-value pairs dependent on the type
+        // all Data in this key is provided by PAYS and will not be processed by any other service (e.g. Checkout/Order)
+        "payment_provider_data": {
+          // transaction id on PSP side
+          "external_id": "transaction id from computop",
+          "transaction_amount": 99.00,
+          // transaction id on PSP side
+          "payment_provider_transaction_id": "transaction id from computop",
+          // identification for the credit card on computop side
+          "pseudo_card_number": "XYZ",
+          // Field CCExpiry from Computop
+          "card_expiry_date": "",
+          // Field CCBrand from Computop
+          "card_brand": "",
+          // Field OrderDesc from Computop
+          "order_description": "",
+          // Field PayID from Computop
+          "payment_provider_payment_id": "",
+          // Field Status from Computop
+          "payment_provider_status": "",
+          // Field Description from Computop
+          "payment_provider_order_description": "",
+          // Field Code from Computop
+          "payment_provider_code": ""
+        }
+      },
+      {
+        "type": "paypal",
+        "value": 121.00,
+        "payment_transaction_id": "transaction id of the internal payment service",
+        // all Data in this key is provided by PAYS and will not be processed by any other service (e.g. Checkout/Order)
+        "payment_provider_data": {
+          "external_id": "transaction id from paypal",
+          "transaction_amount": 121.00,
+          // identifies if the payment was done by a paypal billing billing agreement
+          "billing_agreement": "true|false"
+        }
+      },
+      {
+        "type": "sofortuberweisung",
+        "value": 121.00,
+        "payment_transaction_id": "transaction id of the internal payment service",
+        // all Data in this key is provided by PAYS and will not be processed by any other service (e.g. Checkout/Order)
+        "payment_provider_data": {
+          "transaction_amount": 121.00,
+          "external_id": "transaction id from sofort",
+          "sender_holder": "lastname, firstname",
+          "account number": "",
+          "bank_code": "",
+          "bank_name": "",
+          "bic": "",
+          "country_code": ""
+        }
+      },
+      {
+        "type": "invoice",
+        "value": 121.00,
+        "payment_transaction_id": "transaction id of the internal payment service",
+        // all Data in this key is provided by PAYS and will not be processed by any other
+        "payment_provider_data": {
+          "external_id": "transaction id from trust and pay",
+          "transaction_amount": 99.00,
+          "request": "SOAP request send to trust and pay",
+          "response": "SOAP response from trust and pay",
+          "additional_data": {
+            "CommunicationToken": "Token used to access trust and pay"
+          }
+        }
+      },
+      {
+        "type": "payment_in_advance",
+        "value": 121.00,
+        "payment_transaction_id": "transaction id of the internal payment service",
+        // all Data in this key is provided by PAYS and will not be processed by any other
+        "payment_provider_data": {}
+      },
+      {
+        "type" : "ideal",
+        "value" : 16.89,
+        // internal payment service transaction id
+        "payment_transaction_id" : "d5b01a53-4b23-4c1b-abf0-f635de1a91e3",
+        "payment_provider_data" : {
+          "request" : "",
+          "response" : "",
+          // Field PayID from Computop
+          "external_id" : "8db3a9fbf951434ba9542a7d76afadfc",
+          "transaction_amount" : 16.89,
+          // Field Code from Computop
+          "payment_provider_code" : "00000000",
+          // Field Status from Computop
+          "payment_provider_status" : "OK",
+          // Field PayID from Computop
+          "payment_provider_payment_id" : "8db3a9fbf951434ba9542a7d76afadfc",
+          // Field Description from Computop
+          "payment_provider_description" : "SUCCESS",
+          // transaction id on PSP side
+          "payment_provider_transaction_id" : "d5b01a53-4b23-4c1b-abf0-f635de1a91e3",
+          // used for matching the payment later in the old system (at the end of the order process) - Sent to computop as the "RefNr"
+          "matching_id":  "23423423423"
+        }
+      }
+    ],
+    // include all totals from order rows
+    "totals": {
+      // sum of all sales_values_gross + their deposit_gross for all rows
+      "goods_total_gross": 0.0,
+      // sum of all sales_values_net + their deposit_net for all rows
+      "goods_total_net": 0.0,
+      //  sum of all sales_values_gross without deposit for all rows
+      "sales_value_total_gross": "",
+      //  sum of all sales_values_net without deposit for all rows
+      "sales_value_total_net": "",
+      // goods_total_gross + all expenses_gross for all rows (e.g. shipping_expenses, payment_expenses, ...)
+      "subtotal_gross": 0.0,
+      // goods_total_net + all expenses_net for all rows (e.g. shipping_expenses, payment_expenses, ...)
+      "subtotal_net": 0.0,
+      // sum of all gross shipping costs for all rows
+      "shipping_totals_gross": {
+        "standard": "",
+        "express": "",
+        "bulky_goods": "",
+        "dangerous_goods": ""
+      },
+      // sum of all net shipping costs for all rows
+      "shipping_totals_net": {
+        "standard": "",
+        "express": "",
+        "bulky_goods": "",
+        "dangerous_goods": ""
+      },
+      // sum of all gross payment expenses for all rows
+      "payment_expenses_gross": {
+        // Nachnahme
+        "cash_on_delivery": "5.50",
+        // Bezahlung per Kreditkarte
+        "credit_card_payment": "0.50"
+      },
+      // sum of all net payment expenses for all rows
+      "payment_expenses_net": {
+        // Nachnahme
+        "cash_on_delivery": "5.50",
+        // Bezahlung per Kreditkarte
+        "credit_card_payment": "0.50"
+      },
+      // subtotal_gross - discounts_gross
+      // sum of all payments == grandtotal_gross
+      "grandtotal_gross": "",
+      // subtotal_net - discounts_net
+      "grandtotal_net": "",
+      // taxes of grandtotal
+      "grandtotal_taxes": [
+        {
+          // tax type (e.g. normal, reduced, none)
+          "type": "normal",
+          // monetary tax value
+          "value": "21.00",
+          // rate in percent e.g. 19%
+          "rate": "19.00"
+        }
+      ],
+      // sum of all gross discounts for all rows
+      "total_discount_gross": 0.0,
+      // sum of all net discounts for all rows
+      "total_discount_net": 0.0,
+      // amount that customer must still pay
+      "payment_total": 30.00
+    },
+    // result of a risk check that was may done
+    "risk_check": {
+      "trust_n_pay_score": {
+        "communication_token": "",
+        "result": "xpath, TNP Response: RiskCheckResponse -> Decision -> Result"
+      },
+      // the levenshtein score for this order
+      "levenshtein_score": ""
+    },
+    // customer information summary
+    "customer": {
+      // number to identify the customer in the producing system
+      "customer_number": "",
+      // primary key to identify the customer in the producing system
+      "customer_id": "",
+      // type of customer
+      "customer_type": "business|private|guest|null",
+      // email address for the order: will be the customer email for guest customer and the shop user email for otherwise
+      "customer_email": "guest customer: customer email/otherwise the shop user email",
+      // identification of the contact (in our case shop_user_id) who made the order
+      "contact_id": "string|null",
+      // email address of the contact (in our case identical to the customer_email)
+      "contact_email": "email address of the shopuser"
+    },
+    "billing_address": {
+      // identification for this address in this document => document internal usage only
+      "address_key": "internal_document_address_key",
+      "address_format": "standard",
+      "address_type": "private|business",
+      "company": "",
+      "salutation": "mr|ms|company|null",
+      "first_name": "",
+      "last_name": "",
+      "phone_number": "",
+      "street1": "",
+      "street2": "",
+      "street3": "",
+      "street4": "",
+      "city": "",
+      "zip_code": "",
+      "country_region_code": "",
+      "country_code": "",
+      "tax_number": "",
+      "has_valid_tax_number": "true/false/null"
+    },
+    "shipping_addresses": [
+      {
+        "address_key": "internal_document_address_id",
+        "address_format": "standard | de_packstation",
+        "address_type": "private|business",
+        "company": "",
+        "salutation": "mr|ms|company|null",
+        "first_name": "",
+        "last_name": "",
+        "phone_number": "",
+        "street1": "",
+        "street2": "",
+        "street3": "",
+        "street4": "",
+        "city": "",
+        "zip_code": "",
+        "country_region_code": "",
+        "country_code": "",
+        "tax_number": ""
+      }
+    ]
+  },
+  "order_rows": [
+    {
+      // position of the order row
+      "position": "1",
+      // identification of this row in this document => document internal usage only
+      "row_key": "internal Document Order Row ID",
+      // stock keeping unit => article number of the bought article
+      "sku": "", // K24 SKU
+      // how many times is the sku bought => can be a float (e.g. 1.5m rope)
+      "quantity": 5.0,
+      // unit type of the article
+      "quantity_unit_type": "pieces|meter|liter",
+      // how was the article identified => key value fields
+      "part_identification_properties": {
+        // JSON DATA
+        "car_type_number": "ktypnr",
+        // tbd
+        "pr_number": "PR",
+        // deprecated - not in use
+        "oe_number": "OE",
+        // how was the ktypnr. selected
+        "car_selection_type": "HSN/TSN|SELECTION FIELDS|FREETEXT SEARCH|GARAGE",
+        //HSN selection if this has been used
+        "hsn" : "0600",
+        //TSN selection if this has been used
+        "tsn" : "911"
+      },
+      // article related information
+      "item_numbers": {
+        "ean": [
+          "ean1",
+          "ean2"
+        ],
+        "data_supplier_number": "dlnr",
+        "manufacturer_product_number": "mpnr"
+      },
+      // contains all information for showing the article later in different places
+      "item_information": {
+        // url of a large scaled image - image asset with sort: 1 in product json
+        "image_url": "",
+        // url of a thumbnail image - Deprecated, images are resized using API
+        "thumbnail_url": "",
+        // brand name of the article
+        "brand": "",
+        // is the product a bulky good
+        "is_bulky_good": "true|false",
+        // is the product a risky good - depends on transport
+        "is_risky_good": "true|false",
+        // is the product a hazardous good - depends on storage
+        "is_hazardous_good": "true|false",
+        // any legal notices => will always be in the language of the customer
+        // "z.B. Bitte Öl am Recyclinghof entsorgen aber auch komplexe Energieverbrauchsangaben"
+        "legal_notices": null,
+        //Pricehammer (indicates a OEM product)
+        "pricehammer" : "true|false",
+
+        // offer specific article information
+        "offer": {
+          "name": "",
+          // is array in product.json, pick first one
+          "info_text": ""
+        },
+        // order specific article information
+        "order": {
+          "name": "",
+          // is array in product.json, pick first one
+          "info_text": ""
+        },
+        // invoice specific article information
+        "invoice": {
+          "name": "",
+          // is array in product.json, pick first one
+          "info_text": ""
+        }
+      },
+      // which rules where applied to the items of this order row and maybe influenced it
+      // TBD how to map with product.json
+      "item_rules": [
+        // Example Rules
+        {
+          "identifier": "buyInSetsOfTwo"
+        },
+        {
+          "identifier": "buyWith",
+          "related_skus": []
+        }
+      ],
+      // who created this order row => used for provision reasons
+      "creator": {
+        "type": "customer_support",
+        "creator_id": "backoffice_user_id|null",
+        "creator_name": "Hans Müller|Kürzel|null"
+      },
+      // tax information to this order row
+      "tax": {
+        // tax type
+        "type": "reduced|normal|no_tax",
+        // tax rate in percent (e.g. 19%)
+        "rate": "7.00|19.00|null",
+        // total tax value for this row
+        "value": 0.0
+      },
+      // sum of all values in this row including quantity
+      "sum_values": {
+        // unit_values -> sales_value_gross*quantity
+        "sales_value_gross": 0.0,
+        // unit_values -> sales_value_net*quantity
+        "sales_value_net": 0.0,
+        // (unit_values -> goods_value_gross)*quantity
+        "goods_value_gross": 0.0,
+        // (unit_values -> goods_value_net)*quantity
+        "goods_value_net": 0.0,
+        // (unit_values -> deposit_gross)*quantity
+        "deposit_gross": 0.0,
+        // (unit_values -> deposit_net)*quantity
+        "deposit_net": 0.0,
+        // (unit_values -> bulky_goods_gross)*quantity
+        "bulky_goods_gross": 0.0,
+        // (unit_values -> bulky_goods_net)*quantity
+        "bulky_goods_net": 0.0,
+        // (unit_values -> risky_goods_gross)*quantity
+        "risky_goods_gross": 0.0,
+        // (unit_values -> risky_goods_net)*quantity
+        "risky_goods_net": 0.0,
+        // distributed order discount_gross (calculated by calcs) for this row
+        "discount_gross": 0.0,
+        // distributed order discount_net (calculated by calcs) for this row
+        "discount_net": 0.0,
+        // sales_value_gross - discount_gross
+        "total_discounted_gross": 0.0,
+        // sales_value_net - discount_net
+        "total_discounted_net": 0.0,
+        "exchange_part_value_gross" : 0.0,
+        "exchange_part_value_net" : 0.0
+      },
+      // values for a single unit in the row (quantity = 1) => shown e.g. in the cart
+      "unit_values": {
+        // sales value_gross without deposits
+        "sales_value_gross": 0.0,
+        // sales value_net without deposits
+        "sales_value_net": 0.0,
+        // sales_value_gross + deposit_gross
+        "goods_value_gross": 0.0,
+        // sales_value_net + deposit_net
+        "goods_value_net": 0.0,
+        "deposit_gross": 0.0,
+        "deposit_net": 0.0,
+        "bulky_goods_gross": 0.0,
+        "bulky_goods_net": 0.0,
+        "risky_goods_gross": 0.0,
+        "risky_goods_net": 0.0,
+        // Recommended sales price_gross (UVP)
+        "rrp_gross": 0.0,
+        // Recommended sales price_net (UVP)
+        "rrp_net": 0.0,
+        "discount_net": 0.0,
+        "discount_gross": 0.0,
+        "discounted_net": 0.0,
+        "discounted_gross": 0.0,
+        "exchange_part_value_gross" : 0.0,
+        "exchange_part_value_net" : 0.0,
+
+        // Item discount as gross value that comes from the catalog
+        "undiscounted_sales_value_gross" : 0.0,
+        // Item discount as net value that comes from the catalog
+        "undiscounted_sales_value_net" : 0.0
+      },
+      // itemprices including roundings => used for imbursements
+      // one row for each quantity => quantity: 5 => 5 rows in this array
+      "items": [
+        {
+          // sales value_gross without deposits
+          "sales_value_gross": 0.0,
+          // sales value_net without deposits
+          "sales_value_net": 0.0,
+          // sales_value_gross + deposit_gross
+          "goods_value_gross": 0.0,
+          // sales_value_net + deposit_net
+          "goods_value_net": 0.0,
+          // distributed deposit per item
+          "deposit_gross": 0.0,
+          "deposit_net": 0.0,
+          // distributed bulky goods expenses per quantity 1
+          "bulky_goods_gross": 0.0,
+          "bulky_goods_net": 0.0,
+          // distributed risky goods expenses per quantity 1
+          "risky_goods_gross": 0.0,
+          "risky_goods_net": 0.0,
+          // distributed exchange part deposit expenses per quantity 1
+          "exchange_part_value_gross" : 0.0,
+          "exchange_part_value_net" : 0.0,
+          // distributed discount per quantity 1
+          "discount_gross": 0.0,
+          "discount_net": 0.0
+        }
+      ]
+    }
+  ],
+  // multiple items in one row can be dristributed across multiple logistical units
+  // multiple rows can be summarized in logistical unit
+  "logistical_units": [
+    {
+      "shipping_address_key": "internal_document_address_id",
+      "contact_salutation": "mr|ms|company|null",
+      "contact_first_name": "",
+      "contact_last_name": "",
+      "contact_phone_number": "",
+      "contact_email": "",
+      "customer_comment": "Bitte bei Nachbar abgeben",
+      // used if the customer will pickup the order at a store
+      "self_pickup": {
+        "store_location_code": "F2",
+        "store_location_name": "Filiale in Berlin-Mahlsdorf"
+      },
+      "shipping_advice": "Vorsicht Glas",
+      "shipping_provider": "DHL|DPD|...",
+      "shipping_type": "express|standard",
+      "expected_delivery_date": "2020-09-20T12:34:56Z", //DATETIME
+      "expected_delivery_message": "e.g. 'in 2-3 Werktagen'",
+      "tracking_number": "",
+      "tracking_link": "",
+      "logistical_items": [
+        {
+          "row_key": "internal Document Order Row ID",
+          // how many of a row will be in this logistical unit
+          "quantity": "5"
+        }
+      ]
+    }
+  ]
+}

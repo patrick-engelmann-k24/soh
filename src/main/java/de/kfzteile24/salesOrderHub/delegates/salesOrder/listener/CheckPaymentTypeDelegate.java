@@ -1,7 +1,7 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder.listener;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
-import de.kfzteile24.salesOrderHub.constants.PaymentType;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.ExecutionListener;
 import org.springframework.stereotype.Component;

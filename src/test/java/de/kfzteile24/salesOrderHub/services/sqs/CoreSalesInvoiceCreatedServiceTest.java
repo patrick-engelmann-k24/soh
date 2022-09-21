@@ -38,15 +38,12 @@ import java.util.Collections;
 import java.util.Optional;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_CREATED_IN_SOH;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -107,13 +104,10 @@ public class CoreSalesInvoiceCreatedServiceTest {
         when(salesOrderService.createSalesOrderForInvoice(any(), any(), any())).thenReturn(salesOrder);
         when(salesOrderService.createOrderNumberInSOH(any(), any())).thenReturn(salesOrder.getOrderNumber(), "10");
         when(orderUtil.checkIfOrderHasOrderRows(any())).thenReturn(true);
-        when(camundaHelper.checkIfActiveProcessExists(anyString())).thenReturn(false);
 
         String coreSalesInvoiceCreatedMessage = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
         coreSalesInvoiceCreatedService.handleCoreSalesInvoiceCreated(coreSalesInvoiceCreatedMessage, ANY_RECEIVE_COUNT, ANY_SQS_NAME);
 
-        verify(camundaHelper).checkIfActiveProcessExists(salesOrder.getOrderNumber());
-        verify(camundaHelper, never()).correlateMessage(eq(ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED), any());
         verify(salesOrderService).createSalesOrderForInvoice(any(CoreSalesInvoiceCreatedMessage.class), any(SalesOrder.class), any(String.class));
         verify(camundaHelper).createOrderProcess(any(SalesOrder.class), eq(ORDER_CREATED_IN_SOH));
         verify(camundaHelper).startInvoiceCreatedReceivedProcess(salesOrder);
@@ -130,13 +124,10 @@ public class CoreSalesInvoiceCreatedServiceTest {
         when(featureFlagConfig.getIgnoreCoreSalesInvoice()).thenReturn(false);
         when(salesOrderService.createOrderNumberInSOH(any(), any())).thenReturn(salesOrder.getOrderNumber(), "10");
         when(orderUtil.checkIfOrderHasOrderRows(any())).thenReturn(true);
-        when(camundaHelper.checkIfActiveProcessExists(anyString())).thenReturn(true);
 
         String coreSalesInvoiceCreatedMessage = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
         coreSalesInvoiceCreatedService.handleCoreSalesInvoiceCreated(coreSalesInvoiceCreatedMessage, ANY_RECEIVE_COUNT, ANY_SQS_NAME);
 
-        verify(camundaHelper).checkIfActiveProcessExists(salesOrder.getOrderNumber());
-        verify(camundaHelper).correlateMessage(ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED, salesOrder);
         verify(salesOrderService).createSalesOrderForInvoice(any(CoreSalesInvoiceCreatedMessage.class), any(SalesOrder.class),any(String.class));
         verify(camundaHelper).createOrderProcess(any(SalesOrder.class), any(Messages.class));
         verify(camundaHelper).startInvoiceCreatedReceivedProcess(salesOrder);
@@ -157,13 +148,10 @@ public class CoreSalesInvoiceCreatedServiceTest {
         when(featureFlagConfig.getIgnoreCoreSalesInvoice()).thenReturn(false);
         when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.of(salesOrder));
         when(salesOrderService.isFullyMatchedWithOriginalOrder(eq(salesOrder), any())).thenReturn(true);
-        when(camundaHelper.checkIfActiveProcessExists(anyString())).thenReturn(false);
 
         coreSalesInvoiceCreatedService.handleCoreSalesInvoiceCreated(invoiceRawMessage, ANY_RECEIVE_COUNT, ANY_SQS_NAME);
 
-        verify(camundaHelper).checkIfActiveProcessExists(salesOrder.getOrderNumber());
-        verify(camundaHelper, never()).correlateMessage(eq(ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED), any());
-        verify(salesOrderService).updateOrder(salesOrder);
+        verify(salesOrderService).updateOrder(eq(salesOrder));
         verify(camundaHelper).startInvoiceCreatedReceivedProcess(salesOrder);
 
         assertNotNull(salesOrder.getLatestJson().getOrderHeader().getOrderGroupId());

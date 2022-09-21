@@ -30,7 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static de.kfzteile24.salesOrderHub.constants.CustomerType.NEW;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.MSG_ORDER_PAYMENT_SECURED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.INVOICE_CREATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_MARKETPLACE;
@@ -41,8 +41,8 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_VALID;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.PAYMENT_TYPE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SHIPMENT_METHOD;
-import static de.kfzteile24.salesOrderHub.constants.PaymentType.CREDIT_CARD;
-import static de.kfzteile24.salesOrderHub.constants.ShipmentMethod.REGULAR;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.INVOICE_RECEIVED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrderInvoice;
@@ -125,6 +125,8 @@ class SaveInvoiceDelegateIntegrationTest extends AbstractIntegrationTest {
 
         assertTrue(invoicesWereUpdatedCorrectly);
 
+        util.finishOrderProcess(orderProcess, orderNumber);
+
         auditLogUtil.assertAuditLogExists(testOrder.getId(), ORDER_CREATED);
         for (SalesOrderInvoice invoice : salesOrderUtil.getSalesOrderInvoices(testOrder.getOrderNumber())) {
             auditLogUtil.assertAuditLogExists(invoice.getId(), INVOICE_RECEIVED, 1);
@@ -138,6 +140,8 @@ class SaveInvoiceDelegateIntegrationTest extends AbstractIntegrationTest {
         final var orderNumber = testOrder.getOrderNumber();
 
         assertTrue(util.isProcessWaitingAtExpectedToken(orderProcess, MSG_ORDER_PAYMENT_SECURED.getName()));
+
+        util.finishOrderProcess(orderProcess, orderNumber);
 
         final var expectedInvoice = createSalesOrderInvoice(orderNumber, false);
 
