@@ -1,7 +1,10 @@
 package de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 public enum Messages implements BpmItem {
     ORDER_RECEIVED_PAYMENT_SECURED("msgOrderReceivedPaymentSecured"),
     ORDER_RECEIVED_MARKETPLACE("msgOrderReceivedMarketplace"),
@@ -9,6 +12,7 @@ public enum Messages implements BpmItem {
     ORDER_RECEIVED_CUSTOMER_CARE("msgOrderReceivedCustomerCare"),
     ORDER_RECEIVED_BRANCH("msgOrderReceivedBranch"),
     ORDER_RECEIVED_GARAGE("msgOrderReceivedGarage"),
+    // TODO: Andreas Where will be used?
     ORDER_INVOICE_ADDRESS_CHANGE_RECEIVED("msgInvoiceAddressChangeReceived"),
     INVOICE_CREATED("msgInvoiceCreated"),
     ORDER_CREATED_IN_SOH("msgOrderCreatedInSoh"),
@@ -18,16 +22,10 @@ public enum Messages implements BpmItem {
     DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED("msgDropShipmentOrderTrackingInformationReceived"),
     DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED("msgDropshipmentOrderRowCancellationReceived"),
     DROPSHIPMENT_CREDIT_NOTE_CREATED("msgCreditNoteCreated"),
-    DROPSHIPMENT_ORDER_RETURN_CONFIRMED("msgDropshipmentOrderReturnConfirmed")
+    DROPSHIPMENT_ORDER_RETURN_CONFIRMED("msgDropshipmentOrderReturnConfirmed"),
+    ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED("msgOrderReceivedCoreSalesInvoiceCreated"),
     ;
 
+    @Getter
     private final String name;
-
-    Messages(final String name) {
-        this.name = name;
-    }
-
-    public String getName() {
-        return name;
-    }
 }

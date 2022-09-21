@@ -1,12 +1,5 @@
 package de.kfzteile24.salesOrderHub.services;
 
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
-import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
-import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ROW_CANCELLED;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import de.kfzteile24.salesOrderHub.helper.AuditLogUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
@@ -14,6 +7,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.transaction.support.TransactionTemplate;
+
+import static de.kfzteile24.salesOrderHub.constants.CustomerType.NEW;
+import static de.kfzteile24.salesOrderHub.constants.PaymentType.CREDIT_CARD;
+import static de.kfzteile24.salesOrderHub.constants.ShipmentMethod.REGULAR;
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ROW_CANCELLED;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class SalesOrderServiceIntegrationTest extends AbstractIntegrationTest {
 

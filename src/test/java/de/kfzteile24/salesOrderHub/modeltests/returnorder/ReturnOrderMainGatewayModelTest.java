@@ -11,15 +11,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.RETURN_ORDER_PROCESS;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
+import static de.kfzteile24.salesOrderHub.constants.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.END_MSG_CORE_CREDIT_NOTE_RECEIVED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.START_MSG_CORE_CREDIT_NOTE_CREATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.START_MSG_DROPSHIPMENT_ORDER_RETURN_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.THROW_MSG_PUBLISH_RETURN_ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Gateways.RETURN_ORDER_MAIN_GATEWAY;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.PUBLISH_DELAY;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
+import static de.kfzteile24.salesOrderHub.constants.PaymentType.CREDIT_CARD;
+import static de.kfzteile24.salesOrderHub.constants.ShipmentMethod.REGULAR;
 import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;

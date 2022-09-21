@@ -25,7 +25,7 @@ import static org.mockito.Mockito.doReturn;
 class OrderSplitServiceTest {
 
     @Spy
-    private ObjectMapper objectMapper = new ObjectMapperConfig().objectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapperConfig().objectMapper();
 
     @Mock
     private DropShipmentConfig config;

@@ -39,9 +39,9 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
+import static de.kfzteile24.salesOrderHub.constants.CustomerType.NEW;
+import static de.kfzteile24.salesOrderHub.constants.PaymentType.CREDIT_CARD;
+import static de.kfzteile24.salesOrderHub.constants.ShipmentMethod.REGULAR;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createNewSalesOrderV3;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.readResource;
@@ -211,18 +211,6 @@ class SnsPublishServiceTest {
                     return true;
                 }),
                 eq(expectedSubject));
-    }
-
-    @Test
-    @SneakyThrows(Exception.class)
-    void testPublishDeliveryAddressChanged() {
-        final var expectedTopic = "delivery-address changed";
-        final var expectedSubject = "Sales order delivery address changed";
-
-        given(awsSnsConfig.getSnsDeliveryAddressChanged()).willReturn(expectedTopic);
-
-        verifyPublishedEvent(expectedTopic, expectedSubject,
-                throwingConsumerWrapper(snsPublishService::publishDeliveryAddressChanged));
     }
 
     @Test

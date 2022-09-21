@@ -36,7 +36,6 @@ module "application_module" {
     soh_order_created_v2                       = data.aws_sns_topic.sns_soh_order_created_v2_topic.arn
     soh_order_completed                        = data.aws_sns_topic.sns_soh_sales_order_completed_topic_v1.arn
     soh_invoice_address_changed                = data.aws_sns_topic.sns_soh_invoice_address_changed_topic.arn
-    soh_delivery_address_changed               = data.aws_sns_topic.sns_soh_delivery_address_changed_topic.arn
     soh_sales_order_row_cancellation           = data.aws_sns_topic.sns_soh_sales_order_row_cancellation_v1.arn
     soh_sales_order_cancellation               = data.aws_sns_topic.sns_soh_sales_order_cancellation_v1.arn
     soh_order_invoice_created_v1               = data.aws_sns_topic.sns_soh_order_invoice_created_v1.arn
@@ -55,12 +54,7 @@ module "application_module" {
     soh_sqs_ecp_shop_orders                    = aws_sqs_queue.ecp_shop_orders.id
     soh_sqs_bc_shop_orders                     = aws_sqs_queue.bc_shop_orders.id
     soh_sqs_core_shop_orders                   = aws_sqs_queue.core_shop_orders.id
-    soh_sqs_order_item_shipped                 = aws_sqs_queue.soh_order_item_shipped.id
     soh_sqs_order_payment_secured              = aws_sqs_queue.soh_order_payment_secured.id
-    soh_sqs_order_item_transmitted_to_logistic = aws_sqs_queue.soh_order_item_transmitted_to_logistic.id
-    soh_sqs_order_item_packing_started         = aws_sqs_queue.soh_order_item_packing_started.id
-    soh_sqs_order_item_tracking_id_received    = aws_sqs_queue.soh_order_item_tracking_id_received.id
-    soh_sqs_order_item_tour_started            = aws_sqs_queue.soh_order_item_tour_started.id
     soh_sqs_invoices_from_core                 = aws_sqs_queue.soh_invoices_from_core.id
     soh_sqs_core_cancellation                  = aws_sqs_queue.soh_core_cancellation.id
     soh_sqs_subsequent_delivery_received       = aws_sqs_queue.soh_subsequent_delivery_received.id

@@ -1,6 +1,5 @@
-package de.kfzteile24.salesOrderHub.delegates.salesOrder;
+package de.kfzteile24.salesOrderHub.delegates.dropshipmentorder;
 
-import de.kfzteile24.salesOrderHub.delegates.salesOrder.row.OrderRowCancelledDelegate;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import lombok.SneakyThrows;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
@@ -10,17 +9,17 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
+import static de.kfzteile24.salesOrderHub.constants.CustomerType.NEW;
+import static de.kfzteile24.salesOrderHub.constants.PaymentType.CREDIT_CARD;
+import static de.kfzteile24.salesOrderHub.constants.ShipmentMethod.REGULAR;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.ORDER_ROW_ID;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROW_ID;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createNewSalesOrderV3;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class OrderRowCancelledDelegateTest {
+class DropshipmentOrderRowCancelledDelegateTest {
     @Mock
     private DelegateExecution delegateExecution;
 
@@ -28,7 +27,7 @@ class OrderRowCancelledDelegateTest {
     private SnsPublishService snsPublishService;
 
     @InjectMocks
-    private OrderRowCancelledDelegate orderRowCancelledDelegate;
+    private DropshipmentOrderRowCancelledDelegate orderRowCancelledDelegate;
 
     @Test
     @SneakyThrows(Exception.class)

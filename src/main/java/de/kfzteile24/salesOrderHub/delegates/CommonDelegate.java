@@ -6,7 +6,7 @@ import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.JavaDelegate;
 import org.springframework.beans.factory.annotation.Autowired;
 
-abstract public class CommonDelegate implements JavaDelegate {
+public abstract class CommonDelegate implements JavaDelegate {
 
     @Autowired
     protected

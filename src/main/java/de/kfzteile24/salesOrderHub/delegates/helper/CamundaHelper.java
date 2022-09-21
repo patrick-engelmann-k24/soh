@@ -1,12 +1,10 @@
 package de.kfzteile24.salesOrderHub.delegates.helper;
 
 import com.amazonaws.util.CollectionUtils;
+import de.kfzteile24.salesOrderHub.constants.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Signals;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.exception.NoProcessInstanceFoundException;
@@ -34,8 +32,6 @@ import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.variable.VariableMap;
 import org.camunda.bpm.engine.variable.Variables;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -45,10 +41,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+import static de.kfzteile24.salesOrderHub.constants.CustomerType.NEW;
+import static de.kfzteile24.salesOrderHub.constants.CustomerType.RECURRING;
+import static de.kfzteile24.salesOrderHub.constants.PaymentType.VOUCHER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.RECURRING;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_SALES_INVOICE_CREATED_RECEIVED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.CUSTOMER_TYPE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.INVOICE_URL;
@@ -63,9 +59,6 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SALES_ORDER_ID;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SHIPMENT_METHOD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.VIRTUAL_ORDER_ROWS;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.VOUCHER;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.DELIVERY_ADDRESS_CHANGE_POSSIBLE;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.ORDER_ROW_ID;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toList;
 
@@ -236,16 +229,6 @@ public class CamundaHelper {
                 .orElseThrow(() -> new IllegalArgumentException("Order does not contain a valid payment type"));
     }
 
-    public boolean checkIfOrderRowProcessExists(String orderNumber, String orderRowId) {
-        var result = runtimeService.createProcessInstanceQuery()
-                                           .processDefinitionKey(SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName())
-                                           .variableValueEquals(ORDER_NUMBER.getName(), orderNumber)
-                                           .variableValueEquals(ORDER_ROW_ID.getName(), orderRowId)
-                                           .list().isEmpty();
-
-        return !result;
-    }
-
     /**
      * Test if an active process instance for the given order number exists.
      *
@@ -260,32 +243,8 @@ public class CamundaHelper {
         return !result;
     }
 
-    public Boolean getProcessStatus(Execution execution) {
-        return (Boolean) runtimeService.getVariable(execution.getId(), DELIVERY_ADDRESS_CHANGE_POSSIBLE.getName());
-    }
-
     public boolean isShipped(String shippingType) {
         return !ShipmentMethod.NONE.getName().equals(shippingType);
-    }
-
-
-    /**
-     * Send message to bpmn engine
-     */
-    public MessageCorrelationResult correlateMessageForOrderRowProcess(
-            RowMessages itemMessages, String orderNumber, RowEvents rowEvent, String orderItemSku) {
-
-        List<Execution> processList = runtimeService.createExecutionQuery().
-                processDefinitionKey(SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName())
-                .processInstanceBusinessKey(orderNumber + "#" + orderItemSku)
-                .activityId(rowEvent.getName())
-                .list();
-        var processInstanceId = processList.stream().findFirst().orElseThrow().getProcessInstanceId();
-
-        return runtimeService.createMessageCorrelation(itemMessages.getName())
-                .processInstanceBusinessKey(orderNumber + "#" + orderItemSku)
-                .processInstanceId(processInstanceId)
-                .correlateWithResult();
     }
 
     public void correlateMessage(Messages message, SalesOrder salesOrder, VariableMap variableMap) {
@@ -358,11 +317,6 @@ public class CamundaHelper {
                             log.error(errorMessage);
                             throw new NoProcessInstanceFoundException(errorMessage);
                         });
-    }
-
-    @EventListener(ApplicationReadyEvent.class)
-    public void runAfterStartup() {
-        deleteProcessInstancesByProcessDefinitionKeyAndVersionLesserThan(SALES_ORDER_ROW_FULFILLMENT_PROCESS, 11);
     }
 
     public void deleteProcessInstancesByProcessDefinitionKeyAndVersionLesserThan(
