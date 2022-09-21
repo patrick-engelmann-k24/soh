@@ -56,7 +56,6 @@ soh:
       coreShopOrders:                 http://localhost:4566/000000000000/soh-core-shop-orders-queue
       orderPaymentSecured:            http://localhost:4566/000000000000/soh-order-payment-secured-queue
       invoicesFromCore:               http://localhost:4566/000000000000/soh-invoices-from-core-queue
-      coreCancellation:               http://localhost:4566/000000000000/soh-core-cancellation-queue
       subsequentDeliveryReceived:     http://localhost:4566/000000000000/soh-subsequent-delivery-received-queue
       d365OrderPaymentSecured:        http://localhost:4566/000000000000/soh-d365-order-payment-secured-queue
       dropshipmentShipmentConfirmed:  http://localhost:4566/000000000000/soh-dropshipment-shipment-confirmed-queue
