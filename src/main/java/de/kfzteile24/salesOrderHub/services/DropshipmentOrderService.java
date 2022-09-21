@@ -62,7 +62,6 @@ public class DropshipmentOrderService {
     private final InvoiceService invoiceService;
     private final KeyValuePropertyService keyValuePropertyService;
     private final SalesOrderReturnService salesOrderReturnService;
-    private final SalesOrderRowService salesOrderRowService;
     private final SnsPublishService snsPublishService;
     private final ReturnOrderHelper returnOrderHelper;
     private final ObjectMapper objectMapper;
@@ -85,7 +84,7 @@ public class DropshipmentOrderService {
         var orderNumber = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber();
         log.info("Received dropshipment purchase order return confirmed message with order number: {}", orderNumber);
 
-        salesOrderRowService.handleSalesOrderReturn(salesCreditNoteCreatedMessage, DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED, DROPSHIPMENT_ORDER_RETURN_CONFIRMED);
+        salesOrderReturnService.handleSalesOrderReturn(salesCreditNoteCreatedMessage, DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED, DROPSHIPMENT_ORDER_RETURN_CONFIRMED);
     }
 
     SalesCreditNoteCreatedMessage buildSalesCreditNoteCreatedMessage(DropshipmentPurchaseOrderReturnConfirmedMessage message) {

@@ -67,9 +67,6 @@ class DropshipmentOrderServiceTest {
     private SalesOrderReturnService salesOrderReturnService;
 
     @Mock
-    private SalesOrderRowService salesOrderRowService;
-
-    @Mock
     private SnsPublishService snsPublishService;
 
     @Mock
@@ -114,7 +111,7 @@ class DropshipmentOrderServiceTest {
         assertThat(salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber()).isEqualTo(orderNumber);
         assertSalesCreditNoteCreatedMessage(salesCreditNoteCreatedMessage, salesOrder);
 
-        verify(salesOrderRowService).handleSalesOrderReturn(salesCreditNoteCreatedMessage, DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED, DROPSHIPMENT_ORDER_RETURN_CONFIRMED);
+        verify(salesOrderReturnService).handleSalesOrderReturn(salesCreditNoteCreatedMessage, DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED, DROPSHIPMENT_ORDER_RETURN_CONFIRMED);
     }
 
     @Test

@@ -4,16 +4,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.FeatureFlagConfig;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
+import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Autowired;
-import de.kfzteile24.salesOrderHub.services.SalesOrderRowService;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
 
 import static de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig.OBJECT_MAPPER_WITH_BEAN_VALIDATION;
-
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_CREDIT_NOTE_CREATED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.RETURN_ORDER_CREATED;
 
@@ -23,7 +22,7 @@ import static de.kfzteile24.salesOrderHub.domain.audit.Action.RETURN_ORDER_CREAT
 public class CoreSalesCreditNoteCreatedService {
 
     private ObjectMapper objectMapper;
-    private final SalesOrderRowService salesOrderRowService;
+    private final SalesOrderReturnService salesOrderReturnService;
     private final FeatureFlagConfig featureFlagConfig;
 
     @SneakyThrows
@@ -39,7 +38,7 @@ public class CoreSalesCreditNoteCreatedService {
 
             var orderNumber = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber();
             log.info("Received core sales credit note created message with order number: {}", orderNumber);
-            salesOrderRowService.handleSalesOrderReturn(salesCreditNoteCreatedMessage, RETURN_ORDER_CREATED, CORE_CREDIT_NOTE_CREATED);
+            salesOrderReturnService.handleSalesOrderReturn(salesCreditNoteCreatedMessage, RETURN_ORDER_CREATED, CORE_CREDIT_NOTE_CREATED);
         }
     }
 
