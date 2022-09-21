@@ -655,36 +655,6 @@
           <dc:Bounds x="1184" y="305" width="74" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_1iglph0_di" bpmnElement="eventThrowMsgPublishTrackingInformation">
-        <dc:Bounds x="1462" y="672" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1441" y="715" width="78" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_0nk4k17_di" bpmnElement="eventThrowMsgDropshipmentOrderCreated" bioc:stroke="#000" bioc:fill="#fff">
-        <dc:Bounds x="932" y="522" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="916" y="568" width="68" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_0bt2aw2_di" bpmnElement="eventMsgDropShipmentOrderConfirmed">
-        <dc:Bounds x="780" y="500" width="100" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_0thynz7_di" bpmnElement="eventEndMsgOrderCompleted" bioc:stroke="#000" bioc:fill="#fff">
-        <dc:Bounds x="2012" y="262" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1990" y="308" width="82" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Gateway_0vfbunc_di" bpmnElement="Gateway_0vfbunc" isMarkerVisible="true">
-        <dc:Bounds x="1915" y="255" width="50" height="50" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_16tlr1d_di" bpmnElement="eventThrowMsgPublishInvoiceData">
-        <dc:Bounds x="1852" y="672" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1835" y="715" width="74" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_0ttoph5_di" bpmnElement="activitySubProcessInvoiceAddressChange" isExpanded="true">
         <dc:Bounds x="1040" y="980" width="720" height="200" />
       </bpmndi:BPMNShape>
@@ -744,6 +714,12 @@
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_1e1gayx_di" bpmnElement="activityChangeInvoiceAddress">
         <dc:Bounds x="1390" y="1000" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0thynz7_di" bpmnElement="eventEndMsgOrderCompleted" bioc:stroke="#000" bioc:fill="#fff">
+        <dc:Bounds x="2012" y="262" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1990" y="308" width="82" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_1lbf27v_di" bpmnElement="eventStartMsgOrderReceivedFromMarketplace" bioc:stroke="#000" bioc:fill="#fff">
         <dc:Bounds x="182" y="262" width="36" height="36" />
@@ -847,11 +823,26 @@
       <bpmndi:BPMNShape id="Activity_1tq3x67_di" bpmnElement="activityDropShipmentOrderGenerateInvoice">
         <dc:Bounds x="1555" y="650" width="100" height="80" />
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1iglph0_di" bpmnElement="eventThrowMsgPublishTrackingInformation">
+        <dc:Bounds x="1462" y="672" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1441" y="715" width="78" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_16tlr1d_di" bpmnElement="eventThrowMsgPublishInvoiceData">
+        <dc:Bounds x="1852" y="672" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1835" y="715" width="74" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0vfbunc_di" bpmnElement="Gateway_0vfbunc" isMarkerVisible="true">
+        <dc:Bounds x="1915" y="255" width="50" height="50" />
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_04s1t2i_di" bpmnElement="Gateway_04s1t2i" isMarkerVisible="true">
         <dc:Bounds x="1745" y="365" width="50" height="50" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="subProcessOrderRowCancellationShipment_di" bpmnElement="subProcessDropshipmentOrderRowCancellation" isExpanded="true">
-        <dc:Bounds x="600" y="980" width="370" height="200" />
+        <dc:Bounds x="590" y="980" width="380" height="200" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_0qf55k6_di" bpmnElement="Flow_0qf55k6">
         <di:waypoint x="668" y="1040" />
@@ -890,8 +881,17 @@
           <dc:Bounds x="681" y="308" width="68" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0nk4k17_di" bpmnElement="eventThrowMsgDropshipmentOrderCreated" bioc:stroke="#000" bioc:fill="#fff">
+        <dc:Bounds x="932" y="522" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="916" y="568" width="68" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_1g5yd2o_di" bpmnElement="Gateway_1g5yd2o" isMarkerVisible="true">
         <dc:Bounds x="555" y="515" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0bt2aw2_di" bpmnElement="eventMsgDropShipmentOrderConfirmed">
+        <dc:Bounds x="780" y="500" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_0i9cy5f_di" bpmnElement="eventMsgDropShipmentOrderTrackingInformationReceived">
         <dc:Bounds x="1300" y="650" width="100" height="80" />
@@ -917,14 +917,6 @@
       <bpmndi:BPMNShape id="TextAnnotation_059iq3s_di" bpmnElement="TextAnnotation_059iq3s">
         <dc:Bounds x="1520" y="440" width="230" height="39" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="Association_0b698ow_di" bpmnElement="Association_0b698ow">
-        <di:waypoint x="1490" y="675" />
-        <di:waypoint x="1513" y="643" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Association_0nimsfd_di" bpmnElement="Association_0nimsfd">
-        <di:waypoint x="1869" y="672" />
-        <di:waypoint x="1866" y="643" />
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="Event_0mgem75_di" bpmnElement="eventTimerDropShipmentOrderTrackingInformationReceived">
         <dc:Bounds x="1382" y="712" width="36" height="36" />
       </bpmndi:BPMNShape>
@@ -950,6 +942,14 @@
       <bpmndi:BPMNEdge id="Association_0gdjdx1_di" bpmnElement="Association_0gdjdx1">
         <di:waypoint x="1645" y="650" />
         <di:waypoint x="1651" y="643" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_0b698ow_di" bpmnElement="Association_0b698ow">
+        <di:waypoint x="1490" y="675" />
+        <di:waypoint x="1513" y="643" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_0nimsfd_di" bpmnElement="Association_0nimsfd">
+        <di:waypoint x="1869" y="672" />
+        <di:waypoint x="1866" y="643" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Association_10zhcxn_di" bpmnElement="Association_10zhcxn">
         <di:waypoint x="1636" y="500" />
