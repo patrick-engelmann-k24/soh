@@ -10,8 +10,15 @@ export AWS_SECRET_ACCESS_KEY=000000000000
 export AWS_ACCESS_KEY_ID=000000000000
 
 TOPICS="
+    soh-delivery-address-changed
     soh-order-created-v2
     soh-sales-order-completed-v1
+    soh-order-item-delivered
+    soh-order-item-packing-started
+    soh-order-item-tour-started
+    soh-order-item-tracking-id-received
+    soh-order-item-transmitted-to-logistic
+    soh-order-item-shipped
     soh-order-payment-secured
     soh-invoice-address-changed
     soh-invoices-from-core

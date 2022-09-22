@@ -3,7 +3,7 @@ package de.kfzteile24.salesOrderHub.services.sqs;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.FeatureFlagConfig;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
-import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
+import de.kfzteile24.salesOrderHub.services.SalesOrderRowService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -24,6 +24,7 @@ public class CoreSalesCreditNoteCreatedService {
     private ObjectMapper objectMapper;
     private final SalesOrderReturnService salesOrderReturnService;
     private final FeatureFlagConfig featureFlagConfig;
+    private final MessageWrapperUtil messageWrapperUtil;
 
     @SneakyThrows
     @EnrichMessageForDlq
@@ -32,9 +33,9 @@ public class CoreSalesCreditNoteCreatedService {
         if (featureFlagConfig.getIgnoreCoreCreditNote()) {
             log.info("Core Credit Note is ignored");
         } else {
-            String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-            SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage =
-                    objectMapper.readValue(body, SalesCreditNoteCreatedMessage.class);
+            var messageWrapper =
+                    messageWrapperUtil.create(rawMessage, SalesCreditNoteCreatedMessage.class);
+            var salesCreditNoteCreatedMessage = messageWrapper.getMessage();
 
             var orderNumber = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber();
             log.info("Received core sales credit note created message with order number: {}", orderNumber);

@@ -59,6 +59,7 @@ soh:
       orderCreatedV2: ${soh_order_created_v2}
       orderCompleted: ${soh_order_completed}
       invoiceAddressChanged: ${soh_invoice_address_changed}
+      deliveryAddressChanged: ${soh_delivery_address_changed}
       salesOrderRowCancelled: ${soh_sales_order_row_cancellation}
       salesOrderCancelled: ${soh_sales_order_cancellation}
       orderInvoiceCreatedV1: ${soh_order_invoice_created_v1}
@@ -78,7 +79,12 @@ soh:
       ecpShopOrders: ${soh_sqs_ecp_shop_orders}
       bcShopOrders: ${soh_sqs_bc_shop_orders}
       coreShopOrders: ${soh_sqs_core_shop_orders}
+      orderItemShipped: ${soh_sqs_order_item_shipped}
       orderPaymentSecured: ${soh_sqs_order_payment_secured}
+      orderItemTransmittedToLogistic: ${soh_sqs_order_item_transmitted_to_logistic}
+      orderItemPackingStarted: ${soh_sqs_order_item_packing_started}
+      orderItemTrackingIdReceived: ${soh_sqs_order_item_tracking_id_received}
+      orderItemTourStarted: ${soh_sqs_order_item_tour_started}
       invoicesFromCore: ${soh_sqs_invoices_from_core}
       coreCancellation: ${soh_sqs_core_cancellation}
       subsequentDeliveryReceived: ${soh_sqs_subsequent_delivery_received}

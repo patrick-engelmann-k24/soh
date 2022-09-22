@@ -1,13 +1,10 @@
 package de.kfzteile24.salesOrderHub.services.sqs;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ArticleItemsDto;
 import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ParcelShippedMessage;
-import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.services.SalesOrderRowService;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -24,12 +21,13 @@ public class ParcelShippedService {
 
     private ObjectMapper objectMapper;
     private final SalesOrderRowService salesOrderRowService;
+    private final MessageWrapperUtil messageWrapperUtil;
 
-    @SneakyThrows(JsonProcessingException.class)
     @EnrichMessageForDlq
     public void handleParcelShipped(String rawMessage, Integer receiveCount, String queueName) {
-        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-        var message = objectMapper.readValue(body, ParcelShippedMessage.class);
+        var messageWrapper =
+                messageWrapperUtil.create(rawMessage, ParcelShippedMessage.class);
+        var message = messageWrapper.getMessage();
         var event = message.getMessage();
         var orderNumber = event.getOrderNumber();
         log.info("Parcel shipped received with order number {}, delivery note number {}, " +

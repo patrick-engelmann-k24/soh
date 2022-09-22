@@ -8,9 +8,9 @@ import lombok.Getter;
 @AllArgsConstructor
 public class OrderSplit {
 
-    private final Order order;
+    private Order order;
 
-    private final boolean isSplitted;
+    private boolean isSplitted;
 
     public static OrderSplit splittedOrder(Order order) {
         return new OrderSplit(order, true);

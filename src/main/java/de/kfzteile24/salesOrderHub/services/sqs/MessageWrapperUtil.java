@@ -2,8 +2,19 @@ package de.kfzteile24.salesOrderHub.services.sqs;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnConfirmedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnNotifiedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.FulfillmentMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.OrderPaymentSecuredMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ParcelShippedMessage;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.helper.SleuthHelper;
+import de.kfzteile24.salesOrderHub.services.InvoiceUrlExtractor;
 import de.kfzteile24.salesOrderHub.services.sqs.exception.InvalidOrderJsonException;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +26,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import javax.validation.ConstraintViolationException;
-import java.util.Optional;
 
 import static de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig.OBJECT_MAPPER_WITH_BEAN_VALIDATION;
 
@@ -71,10 +81,39 @@ public class MessageWrapperUtil {
     }
 
     private <T> void updateTraceId(T json) {
+        sleuthHelper.updateTraceId(resolveTraceId(json));
+    }
 
-        Optional.ofNullable(json)
-                .filter(j -> j.getClass().isAssignableFrom(Order.class))
-                .map(Order.class::cast)
-                .ifPresent(order -> sleuthHelper.updateTraceId(order.getOrderHeader().getOrderNumber()));
+    private <T> String resolveTraceId(T json) {
+        if (json == null) {
+            return StringUtils.EMPTY;
+        }
+        if (json.getClass().isAssignableFrom(Order.class)) {
+            return ((Order)json).getOrderHeader().getOrderNumber();
+        } else if (json.getClass().isAssignableFrom(FulfillmentMessage.class)) {
+            return ((FulfillmentMessage)json).getOrderNumber();
+        } else if (json.getClass().isAssignableFrom(CoreDataReaderEvent.class)) {
+            return ((CoreDataReaderEvent)json).getOrderNumber();
+        } else if (json.getClass().isAssignableFrom(String.class)) {
+            return InvoiceUrlExtractor.extractOrderNumber((String)json);
+        } else if (json.getClass().isAssignableFrom(OrderPaymentSecuredMessage.class)) {
+            return ((OrderPaymentSecuredMessage)json).getData().getOrderGroupId();
+        } else if (json.getClass().isAssignableFrom(DropshipmentShipmentConfirmedMessage.class)) {
+            return ((DropshipmentShipmentConfirmedMessage)json).getSalesOrderNumber();
+        } else if (json.getClass().isAssignableFrom(DropshipmentPurchaseOrderBookedMessage.class)) {
+            return ((DropshipmentPurchaseOrderBookedMessage)json).getSalesOrderNumber();
+        } else if (json.getClass().isAssignableFrom(DropshipmentPurchaseOrderReturnConfirmedMessage.class)) {
+            return ((DropshipmentPurchaseOrderReturnConfirmedMessage)json).getSalesOrderNumber();
+        } else if (json.getClass().isAssignableFrom(DropshipmentPurchaseOrderReturnNotifiedMessage.class)) {
+            return ((DropshipmentPurchaseOrderReturnNotifiedMessage)json).getSalesOrderNumber();
+        } else if (json.getClass().isAssignableFrom(SalesCreditNoteCreatedMessage.class)) {
+            return ((SalesCreditNoteCreatedMessage)json).getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber();
+        } else if (json.getClass().isAssignableFrom(CoreSalesInvoiceCreatedMessage.class)) {
+            return ((CoreSalesInvoiceCreatedMessage)json).getSalesInvoice().getSalesInvoiceHeader().getOrderNumber();
+        } else if (json.getClass().isAssignableFrom(ParcelShippedMessage.class)) {
+            return ((ParcelShippedMessage)json).getMessage().getOrderNumber();
+        }
+
+        return StringUtils.EMPTY;
     }
 }

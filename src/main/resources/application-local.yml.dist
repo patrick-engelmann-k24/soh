@@ -13,8 +13,6 @@ spring:
     jdbcUrl: jdbc:postgresql://your-server:5432/your-database?currentSchema=public
     username: your_db_user
     password: your_db_user_password
-  main:
-    allow-bean-definition-overriding: true
 
 cloud:
   aws:
@@ -35,6 +33,7 @@ soh:
       orderCreatedV2:         arn:aws:sns:eu-central-1:000000000000:soh-order-created-v2
       orderCompleted:         arn:aws:sns:eu-central-1:000000000000:soh-sales-order-completed-v1
       invoiceAddressChanged:  arn:aws:sns:eu-central-1:000000000000:soh-invoice-address-changed
+      deliveryAddressChanged: arn:aws:sns:eu-central-1:000000000000:soh-delivery-address-changed
       salesOrderRowCancelled: arn:aws:sns:eu-central-1:000000000000:soh-sales-order-row-cancelled
       salesOrderCancelled:    arn:aws:sns:eu-central-1:000000000000:soh-sales-order-cancelled
       orderInvoiceCreatedV1:  arn:aws:sns:eu-central-1:000000000000:soh-order-invoice-created-v1
@@ -54,15 +53,20 @@ soh:
       ecpShopOrders:                  http://localhost:4566/000000000000/soh-ecp-shop-orders-queue
       bcShopOrders:                   http://localhost:4566/000000000000/soh-bc-shop-orders-queue
       coreShopOrders:                 http://localhost:4566/000000000000/soh-core-shop-orders-queue
+      orderItemShipped:               http://localhost:4566/000000000000/soh-order-item-shipped-queue
       orderPaymentSecured:            http://localhost:4566/000000000000/soh-order-payment-secured-queue
+      orderItemTransmittedToLogistic: http://localhost:4566/000000000000/soh-order-item-transmitted-to-logistic-queue
+      orderItemPackingStarted:        http://localhost:4566/000000000000/soh-order-item-packing-started-queue
+      orderItemTrackingIdReceived:    http://localhost:4566/000000000000/soh-order-item-tracking-id-received-queue
+      orderItemTourStarted:           http://localhost:4566/000000000000/soh-order-item-tour-started-queue
       invoicesFromCore:               http://localhost:4566/000000000000/soh-invoices-from-core-queue
       coreCancellation:               http://localhost:4566/000000000000/soh-core-cancellation-queue
       subsequentDeliveryReceived:     http://localhost:4566/000000000000/soh-subsequent-delivery-received-queue
       d365OrderPaymentSecured:        http://localhost:4566/000000000000/soh-d365-order-payment-secured-queue
       dropshipmentShipmentConfirmed:  http://localhost:4566/000000000000/soh-dropshipment-shipment-confirmed-queue
       dropshipmentPurchaseOrderBooked: http://localhost:4566/000000000000/soh-dropshipment-purchase-order-booked-queue
-      dropshipmentPurchaseOrderReturnNotified: http://localhost:4566/000000000000/soh-dropshipment-purchase-order-return-notified-queue
       dropshipmentPurchaseOrderReturnConfirmed: http://localhost:4566/000000000000/soh-dropshipment-purchase-order-return-confirmed-queue
+      dropshipmentPurchaseOrderReturnNotified: http://localhost:4566/000000000000/soh-dropshipment-purchase-order-return-notified-queue
       coreSalesCreditNoteCreated:     http://localhost:4566/000000000000/soh-core-sales-credit-note-created-queue
       coreSalesInvoiceCreated:        http://localhost:4566/000000000000/soh-core-sales-invoice-created-queue
       migrationCoreSalesOrderCreated: http://localhost:4566/000000000000/migration-core-sales-order-created-queue
@@ -82,11 +86,11 @@ kfzteile:
     url: https://s8vlbhblll.execute-api.eu-central-1.amazonaws.com/stage
     apiKey:  ${pricing_service_api_key:api_key}
 
-ignoreCoreSalesInvoice: false
-ignoreCoreCreditNote: false
-ignoreMigrationCoreSalesInvoice: false
-ignoreMigrationCoreSalesCreditNote: false
-ignoreMigrationCoreSalesOrder: false
-ignoreSalesOrderSplitter: false
+ignore_core_sales_invoice: false
+ignore_core_credit_note: false
+ignore_migration_core_sales_invoice: false
+ignore_migration_core_sales_credit_note: false
+ignore_migration_core_sales_order: false
+ignore_sales_order_splitter: false
 ignoreSetDissolvement: false
 preventSetProcessing: false

@@ -6,7 +6,6 @@ import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
-import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
@@ -32,7 +31,6 @@ import java.util.stream.Collectors;
 import static de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig.OBJECT_MAPPER_WITH_BEAN_VALIDATION;
 import static de.kfzteile24.salesOrderHub.constants.CustomEventName.SUBSEQUENT_ORDER_GENERATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_CREATED_IN_SOH;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toSet;
 
@@ -49,6 +47,7 @@ public class CoreSalesInvoiceCreatedService {
     private final SalesOrderRowService salesOrderRowService;
     private final MetricsHelper metricsHelper;
     private final SnsPublishService snsPublishService;
+    private final MessageWrapperUtil messageWrapperUtil;
 
     @SneakyThrows
     @EnrichMessageForDlq
@@ -57,8 +56,9 @@ public class CoreSalesInvoiceCreatedService {
         if (featureFlagConfig.getIgnoreCoreSalesInvoice()) {
             log.info("Core Sales Invoice is ignored");
         } else {
-            String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-            CoreSalesInvoiceCreatedMessage salesInvoiceCreatedMessage = objectMapper.readValue(body, CoreSalesInvoiceCreatedMessage.class);
+            var messageWrapper =
+                    messageWrapperUtil.create(rawMessage, CoreSalesInvoiceCreatedMessage.class);
+            var salesInvoiceCreatedMessage = messageWrapper.getMessage();
             CoreSalesInvoiceHeader salesInvoiceHeader = salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
             var itemList = salesInvoiceHeader.getInvoiceLines();
             var orderNumber = salesInvoiceHeader.getOrderNumber();
@@ -70,10 +70,6 @@ public class CoreSalesInvoiceCreatedService {
                 // Fetch original sales order
                 var originalSalesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                         .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
-
-                if (camundaHelper.checkIfActiveProcessExists(originalSalesOrder.getOrderNumber())) {
-                    camundaHelper.correlateMessage(ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED, originalSalesOrder);
-                }
 
                 boolean invoicePublished = isInvoicePublished(originalSalesOrder, invoiceNumber);
                 if (!invoicePublished && salesOrderService.isFullyMatchedWithOriginalOrder(originalSalesOrder, itemList)) {

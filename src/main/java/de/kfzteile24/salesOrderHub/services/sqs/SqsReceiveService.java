@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.newrelic.api.agent.Trace;
 import de.kfzteile24.salesOrderHub.configuration.FeatureFlagConfig;
 import de.kfzteile24.salesOrderHub.configuration.SQSNamesConfig;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.dto.mapper.CreditNoteEventMapper;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
@@ -13,6 +15,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessag
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnNotifiedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.FulfillmentMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.OrderPaymentSecuredMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
@@ -107,6 +110,33 @@ public class SqsReceiveService {
     }
 
     /**
+     * Consume messages from sqs for event order item shipped
+     */
+    @SqsListener(value = "${soh.sqs.queue.orderItemShipped}", deletionPolicy = ON_SUCCESS)
+    @Trace(metricName = "Handling ItemShipped message", dispatcher = true)
+    public void queueListenerItemShipped(
+            String rawMessage,
+            @Header("SenderId") String senderId,
+            @Header("ApproximateReceiveCount") Integer receiveCount
+    ) {
+        try {
+            var messageWrapper = messageWrapperUtil.create(rawMessage, FulfillmentMessage.class);
+            FulfillmentMessage fulfillmentMessage = messageWrapper.getMessage();
+            log.info("Received item shipped  message with order number: {} ", fulfillmentMessage.getOrderNumber());
+
+            salesOrderRowService.correlateOrderRowMessage(
+                    RowMessages.ROW_SHIPPED,
+                    fulfillmentMessage.getOrderNumber(),
+                    fulfillmentMessage.getOrderItemSku(),
+                    "Order item shipped",
+                    rawMessage,
+                    RowEvents.ROW_SHIPPED);
+        } catch (Exception e) {
+            messageErrorHandler.logErrorMessage(rawMessage, senderId, receiveCount, e);
+        }
+    }
+
+    /**
      * Consume messages from sqs for order payment secured
      */
     @SqsListener(value = "${soh.sqs.queue.orderPaymentSecured}", deletionPolicy = ON_SUCCESS)
@@ -117,8 +147,8 @@ public class SqsReceiveService {
             @Header("ApproximateReceiveCount") Integer receiveCount
     ) {
         try {
-            String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-            CoreDataReaderEvent coreDataReaderEvent = objectMapper.readValue(body, CoreDataReaderEvent.class);
+            var messageWrapper = messageWrapperUtil.create(rawMessage, CoreDataReaderEvent.class);
+            CoreDataReaderEvent coreDataReaderEvent = messageWrapper.getMessage();
 
             var orderNumber = coreDataReaderEvent.getOrderNumber();
             log.info("Received order payment secured message with order number: {} ", orderNumber);
@@ -135,15 +165,123 @@ public class SqsReceiveService {
     }
 
     /**
+     * Consume messages from sqs for order item transmitted to logistic
+     */
+    @SqsListener(value = "${soh.sqs.queue.orderItemTransmittedToLogistic}", deletionPolicy = ON_SUCCESS)
+    @Trace(metricName = "Handling OrderItemTransmittedToLogistic message", dispatcher = true)
+    public void queueListenerOrderItemTransmittedToLogistic(String rawMessage,
+                                                            @Header("SenderId") String senderId, @Header(
+                                                                    "ApproximateReceiveCount") Integer receiveCount) {
+        try {
+            var messageWrapper = messageWrapperUtil.create(rawMessage, FulfillmentMessage.class);
+            FulfillmentMessage fulfillmentMessage = messageWrapper.getMessage();
+            log.info("Received order item transmitted to logistic message with order number: {} ",
+                    fulfillmentMessage.getOrderNumber());
+
+            salesOrderRowService.correlateOrderRowMessage(
+                    RowMessages.ROW_TRANSMITTED_TO_LOGISTICS,
+                    fulfillmentMessage.getOrderNumber(),
+                    fulfillmentMessage.getOrderItemSku(),
+                    "Order item transmitted to logistic",
+                    rawMessage,
+                    RowEvents.ROW_TRANSMITTED_TO_LOGISTICS);
+        } catch (Exception e) {
+            messageErrorHandler.logErrorMessage(rawMessage, senderId, receiveCount, e);
+        }
+    }
+
+    /**
+     * Consume messages from sqs for event order item packing started
+     */
+    @SqsListener(value = "${soh.sqs.queue.orderItemPackingStarted}", deletionPolicy = ON_SUCCESS)
+    @Trace(metricName = "Handling OrderItemPacking message", dispatcher = true)
+    public void queueListenerOrderItemPackingStarted(
+            String rawMessage,
+            @Header("SenderId") String senderId,
+            @Header("ApproximateReceiveCount") Integer receiveCount
+    ) {
+        try {
+            var messageWrapper = messageWrapperUtil.create(rawMessage, FulfillmentMessage.class);
+            FulfillmentMessage fulfillmentMessage = messageWrapper.getMessage();
+            log.info("Received order item packing message with order number: {} ", fulfillmentMessage.getOrderNumber());
+
+            salesOrderRowService.correlateOrderRowMessage(
+                    RowMessages.PACKING_STARTED,
+                    fulfillmentMessage.getOrderNumber(),
+                    fulfillmentMessage.getOrderItemSku(),
+                    "Order item packing started",
+                    rawMessage,
+                    RowEvents.PACKING_STARTED);
+        } catch (Exception e) {
+            messageErrorHandler.logErrorMessage(rawMessage, senderId, receiveCount, e);
+        }
+    }
+
+    /**
+     * Consume messages from sqs for event order item tracking id received
+     */
+    @SqsListener(value = "${soh.sqs.queue.orderItemTrackingIdReceived}", deletionPolicy = ON_SUCCESS)
+    @Trace(metricName = "Handling OrderItemTrackingIdReceived message", dispatcher = true)
+    public void queueListenerOrderItemTrackingIdReceived(
+            String rawMessage,
+            @Header("SenderId") String senderId,
+            @Header("ApproximateReceiveCount") Integer receiveCount
+    ) {
+        try {
+            var messageWrapper = messageWrapperUtil.create(rawMessage, FulfillmentMessage.class);
+            FulfillmentMessage fulfillmentMessage = messageWrapper.getMessage();
+            log.info("Received order item tracking id message with order number: {} ", fulfillmentMessage.getOrderNumber());
+
+            salesOrderRowService.correlateOrderRowMessage(
+                    RowMessages.TRACKING_ID_RECEIVED,
+                    fulfillmentMessage.getOrderNumber(),
+                    fulfillmentMessage.getOrderItemSku(),
+                    "Order item tracking id received",
+                    rawMessage,
+                    RowEvents.TRACKING_ID_RECEIVED);
+        } catch (Exception e) {
+            messageErrorHandler.logErrorMessage(rawMessage, senderId, receiveCount, e);
+        }
+    }
+
+    /**
+     * Consume messages from sqs for event order item tour started
+     */
+    @SqsListener(value = "${soh.sqs.queue.orderItemTourStarted}", deletionPolicy = ON_SUCCESS)
+    @Trace(metricName = "Handling OrderItemTourStarted message", dispatcher = true)
+    public void queueListenerOrderItemTourStarted(
+            String rawMessage,
+            @Header("SenderId") String senderId,
+            @Header("ApproximateReceiveCount") Integer receiveCount
+    ) {
+        try {
+            var messageWrapper = messageWrapperUtil.create(rawMessage, FulfillmentMessage.class);
+            FulfillmentMessage fulfillmentMessage = messageWrapper.getMessage();
+            log.info("Received order item tour started message with order number: {} ",
+                    fulfillmentMessage.getOrderNumber());
+
+            salesOrderRowService.correlateOrderRowMessage(
+                    RowMessages.TOUR_STARTED,
+                    fulfillmentMessage.getOrderNumber(),
+                    fulfillmentMessage.getOrderItemSku(),
+                    "Order item tour started",
+                    rawMessage,
+                    RowEvents.TOUR_STARTED);
+        } catch (Exception e) {
+            messageErrorHandler.logErrorMessage(rawMessage, senderId, receiveCount, e);
+        }
+    }
+
+    /**
      * Consume messages from sqs for event invoice from core
      */
     @SqsListener(value = "${soh.sqs.queue.invoicesFromCore}", deletionPolicy = ON_SUCCESS)
-    @SneakyThrows(JsonProcessingException.class)
     @Trace(metricName = "Handling InvoiceReceived message", dispatcher = true)
     public void queueListenerInvoiceReceivedFromCore(String rawMessage,
                                                      @Header("SenderId") String senderId,
                                                      @Header("ApproximateReceiveCount") Integer receiveCount) {
-        final var invoiceUrl = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+        var messageWrapper = messageWrapperUtil.create(rawMessage, String.class);
+        final var invoiceUrl = messageWrapper.getMessage();
 
         try {
             if (InvoiceUrlExtractor.matchesCreditNoteNumberPattern(invoiceUrl)) {
@@ -194,9 +332,8 @@ public class SqsReceiveService {
             @Header("ApproximateReceiveCount") Integer receiveCount) {
 
         try {
-            String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-            OrderPaymentSecuredMessage orderPaymentSecuredMessage = objectMapper.readValue(body,
-                    OrderPaymentSecuredMessage.class);
+            var messageWrapper = messageWrapperUtil.create(rawMessage, OrderPaymentSecuredMessage.class);
+            OrderPaymentSecuredMessage orderPaymentSecuredMessage = messageWrapper.getMessage();
 
             var orderNumbers = orderPaymentSecuredMessage.getData().getSalesOrderId().stream()
                     .filter(not(dropshipmentOrderService::isDropShipmentOrder))
@@ -220,9 +357,8 @@ public class SqsReceiveService {
             @Header("SenderId") String senderId,
             @Header("ApproximateReceiveCount") Integer receiveCount) {
         try {
-            String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-            DropshipmentShipmentConfirmedMessage shipmentConfirmedMessage =
-                    objectMapper.readValue(body, DropshipmentShipmentConfirmedMessage.class);
+            var messageWrapper = messageWrapperUtil.create(rawMessage, DropshipmentShipmentConfirmedMessage.class);
+            DropshipmentShipmentConfirmedMessage shipmentConfirmedMessage = messageWrapper.getMessage();
 
             log.info("Received dropshipment shipment confirmed message with order number: {}",
                     shipmentConfirmedMessage.getSalesOrderNumber());
@@ -243,9 +379,8 @@ public class SqsReceiveService {
             @Header("SenderId") String senderId,
             @Header("ApproximateReceiveCount") Integer receiveCount) {
         try {
-            String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-            DropshipmentPurchaseOrderBookedMessage message =
-                    objectMapper.readValue(body, DropshipmentPurchaseOrderBookedMessage.class);
+            var messageWrapper = messageWrapperUtil.create(rawMessage, DropshipmentPurchaseOrderBookedMessage.class);
+            DropshipmentPurchaseOrderBookedMessage message = messageWrapper.getMessage();
 
             log.info("Received drop shipment order purchased booked message with Sales Order Number: {}, External Order " +
                             "NUmber: {}",
@@ -267,9 +402,8 @@ public class SqsReceiveService {
             @Header("SenderId") String senderId,
             @Header("ApproximateReceiveCount") Integer receiveCount) {
         try {
-            String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-            DropshipmentPurchaseOrderReturnConfirmedMessage message =
-                    objectMapper.readValue(body, DropshipmentPurchaseOrderReturnConfirmedMessage.class);
+            var messageWrapper = messageWrapperUtil.create(rawMessage, DropshipmentPurchaseOrderReturnConfirmedMessage.class);
+            DropshipmentPurchaseOrderReturnConfirmedMessage message = messageWrapper.getMessage();
 
             log.info("Received dropshipment purchase order return confirmed message with Sales Order Number: {}, External" +
                             " Order NUmber: {}",
@@ -293,7 +427,6 @@ public class SqsReceiveService {
         try {
             var messageWrapper =
                     messageWrapperUtil.create(rawMessage, DropshipmentPurchaseOrderReturnNotifiedMessage.class);
-
             var message = messageWrapper.getMessage();
 
             log.info("Received dropshipment purchase order return notified message with " +
@@ -351,8 +484,9 @@ public class SqsReceiveService {
             if (Boolean.TRUE.equals(featureFlagConfig.getIgnoreMigrationCoreSalesOrder())) {
                 log.info("Migration Core Sales Order is ignored");
             } else {
+                var messageWrapper = messageWrapperUtil.create(rawMessage, Order.class);
+                var order = messageWrapper.getMessage();
                 String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-                Order order = objectMapper.readValue(body, Order.class);
                 Order originalOrder = objectMapper.readValue(body, Order.class);
                 String orderNumber = order.getOrderHeader().getOrderNumber();
 
@@ -391,9 +525,9 @@ public class SqsReceiveService {
             if (featureFlagConfig.getIgnoreMigrationCoreSalesInvoice()) {
                 log.info("Migration Core Sales Invoice is ignored");
             } else {
-                String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-                CoreSalesInvoiceCreatedMessage salesInvoiceCreatedMessage = objectMapper.readValue(body,
-                        CoreSalesInvoiceCreatedMessage.class);
+                var messageWrapper =
+                        messageWrapperUtil.create(rawMessage, CoreSalesInvoiceCreatedMessage.class);
+                var salesInvoiceCreatedMessage = messageWrapper.getMessage();
                 CoreSalesInvoiceHeader salesInvoiceHeader =
                         salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
                 var orderNumber = salesInvoiceHeader.getOrderNumber();
@@ -439,9 +573,9 @@ public class SqsReceiveService {
             if (featureFlagConfig.getIgnoreMigrationCoreSalesCreditNote()) {
                 log.info("Migration Core Sales Credit Note is ignored");
             } else {
-                String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-                var salesCreditNoteCreatedMessage =
-                        objectMapper.readValue(body, SalesCreditNoteCreatedMessage.class);
+                var messageWrapper =
+                        messageWrapperUtil.create(rawMessage, SalesCreditNoteCreatedMessage.class);
+                var salesCreditNoteCreatedMessage = messageWrapper.getMessage();
                 var salesCreditNoteHeader = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader();
                 var orderNumber = salesCreditNoteHeader.getOrderNumber();
                 var creditNoteNumber = salesCreditNoteHeader.getCreditNoteNumber();

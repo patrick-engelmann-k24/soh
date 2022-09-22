@@ -1,6 +1,7 @@
 package de.kfzteile24.salesOrderHub.helper;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -15,12 +16,19 @@ import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_PAYMENT_SECURED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.PACKING_STARTED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.ROW_SHIPPED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.ROW_TRANSMITTED_TO_LOGISTICS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.TRACKING_ID_RECEIVED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.ORDER_ROW_ID;
 import static java.util.stream.Collectors.toUnmodifiableList;
 import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
 import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.historyService;
@@ -46,6 +54,27 @@ public class BpmUtil {
         return runtimeService.createMessageCorrelation(message)
                 .processInstanceVariableEquals(ORDER_NUMBER.getName(), orderNumber)
                 .correlateAllWithResult();
+    }
+
+    public final MessageCorrelationResult sendMessage(final BpmItem message, final String orderNumber, final String orderRow,
+                                                      final Map<String, Object> processVariables) {
+        return sendMessage(message.getName(), orderNumber, orderRow, processVariables);
+    }
+
+    public final MessageCorrelationResult sendMessage(final BpmItem message, final String orderNumber, final String orderRow) {
+        return sendMessage(message.getName(), orderNumber, orderRow, Collections.emptyMap());
+    }
+
+    public final MessageCorrelationResult sendMessage(final String message, final String orderNumber, final String orderRow,
+                                                      final Map<String, Object> processVariables) {
+        MessageCorrelationBuilder builder = runtimeService.createMessageCorrelation(message)
+                .processInstanceVariableEquals(ORDER_NUMBER.getName(), orderNumber)
+                .processInstanceVariableEquals(ORDER_ROW_ID.getName(), orderRow);
+        if (!processVariables.isEmpty())
+            builder.setVariables(processVariables);
+
+        return builder
+                .correlateWithResult();
     }
 
     public final MessageCorrelationResult sendMessage(final BpmItem message, final String orderNumber,
@@ -79,6 +108,22 @@ public class BpmUtil {
             result.add(orderNumber + "-row-" + i);
         }
         return result;
+    }
+
+    public void finishOrderProcess(final ProcessInstance orderProcess, final String orderNumber) {
+        // start subprocess
+        sendMessage(ORDER_RECEIVED_PAYMENT_SECURED, orderNumber);
+
+        // send items thru
+        sendMessage(ROW_TRANSMITTED_TO_LOGISTICS, orderNumber);
+        sendMessage(PACKING_STARTED, orderNumber);
+        sendMessage(TRACKING_ID_RECEIVED, orderNumber);
+        sendMessage(ROW_SHIPPED, orderNumber);
+
+        pollingService.pollWithDefaultTiming(() -> {
+            assertThat(orderProcess).isEnded().hasPassed(Events.END_MSG_ORDER_COMPLETED.getName());
+            return true;
+        });
     }
 
     public boolean isProcessWaitingAtExpectedToken(final ProcessInstance processInstance, final String activityId) {

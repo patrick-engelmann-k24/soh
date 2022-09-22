@@ -1,6 +1,5 @@
 package de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess;
 
-import de.kfzteile24.salesOrderHub.constants.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 
 public enum Variables implements BpmItem {
@@ -13,7 +12,7 @@ public enum Variables implements BpmItem {
     ORDER_VALID("orderValid"),
     ORDER_ROWS("orderRows"),
     /** Contains the SKU of each order row having the shipment method 'none'.
-     *  {@link ShipmentMethod#NONE}
+     *  {@link de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod#NONE}
      */
     VIRTUAL_ORDER_ROWS("virtualOrderRows"),
     SHIPMENT_METHOD("shipmentMethod"),
@@ -33,8 +32,7 @@ public enum Variables implements BpmItem {
     IS_DROPSHIPMENT_ORDER_CONFIRMED("isDropshipmentOrderConfirmed"),
     TRACKING_LINKS("trackingList"),
     ORDER_ROW("orderRow"),
-    PAUSE_DROPSHIPMENT_ORDER_PROCESSING("pauseDropshipmentOrderProcessing"),
-    ORDER_ROW_ID("orderRowId")
+    PAUSE_DROPSHIPMENT_ORDER_PROCESSING("pauseDropshipmentOrderProcessing")
     ;
 
     private final String name;

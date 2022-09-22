@@ -3,12 +3,15 @@ package de.kfzteile24.salesOrderHub.services.sqs;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.FeatureFlagConfig;
 import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
-import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.configuration.SQSNamesConfig;
+import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.dto.mapper.CreditNoteEventMapper;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.OrderPaymentSecuredMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.FileUtil;
@@ -17,6 +20,7 @@ import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderMapper;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderMapperImpl;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
+import de.kfzteile24.salesOrderHub.helper.SleuthHelper;
 import de.kfzteile24.salesOrderHub.services.DropshipmentOrderService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderPaymentSecuredService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderProcessService;
@@ -42,13 +46,11 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Optional;
 
-import static de.kfzteile24.salesOrderHub.constants.CustomerType.NEW;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_CREDIT_NOTE_CREATED;
-import static de.kfzteile24.salesOrderHub.constants.PaymentType.CREDIT_CARD;
-import static de.kfzteile24.salesOrderHub.constants.PaymentType.PAYPAL;
-import static de.kfzteile24.salesOrderHub.constants.ShipmentMethod.REGULAR;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.PAYPAL;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.MIGRATION_SALES_ORDER_RECEIVED;
-import static de.kfzteile24.salesOrderHub.domain.audit.Action.RETURN_ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createOrderNumberInSOH;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrderFromOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getCreditNoteMsg;
@@ -83,6 +85,8 @@ class SqsReceiveServiceTest {
     private SalesOrderService salesOrderService;
     @Mock
     private SalesOrderProcessService salesOrderProcessService;
+    @Mock
+    private SleuthHelper sleuthHelper;
     @Mock
     private MessageWrapperUtil messageWrapperUtil;
     @Mock
@@ -134,6 +138,7 @@ class SqsReceiveServiceTest {
         when(salesOrderService.getOrderByOrderNumber(anyString())).thenReturn(Optional.of(salesOrder));
 
         String rawMessage =  readResource("examples/coreDataReaderEvent.json");
+        mockMessageWrapper(rawMessage,  CoreDataReaderEvent.class);
         sqsReceiveService.queueListenerOrderPaymentSecured(rawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
         verify(salesOrderService).getOrderByOrderNumber("500000996");
@@ -144,6 +149,7 @@ class SqsReceiveServiceTest {
     }
 
     @Test
+    @SneakyThrows
     void testQueueListenerOrderPaymentSecuredReceivedWithCreditcardPayment() {
 
         SalesOrder salesOrder = SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
@@ -153,6 +159,7 @@ class SqsReceiveServiceTest {
         when(salesOrderPaymentSecuredService.hasOrderPaypalPaymentType(any())).thenReturn(true);
 
         String rawMessage =  readResource("examples/coreDataReaderEvent.json");
+        mockMessageWrapper(rawMessage,  CoreDataReaderEvent.class);
         sqsReceiveService.queueListenerOrderPaymentSecured(rawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
         verify(salesOrderService).getOrderByOrderNumber("500000996");
@@ -164,6 +171,7 @@ class SqsReceiveServiceTest {
     @Test
     void testQueueListenerOrderPaymentSecuredReceivedSalesOrderNotFoundException() {
         String rawMessage =  readResource("examples/coreDataReaderEvent.json");
+        mockMessageWrapper(rawMessage,  CoreDataReaderEvent.class);
 
         var exception = new SalesOrderNotFoundException("500000996");
 
@@ -181,6 +189,7 @@ class SqsReceiveServiceTest {
     void testQueueListenerOrderPaymentSecuredReceivedIllegalArgumentException() {
 
         String rawMessage =  readResource("examples/coreDataReaderEvent.json");
+        mockMessageWrapper(rawMessage,  CoreDataReaderEvent.class);
 
         when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.of(new SalesOrder()));
         when(salesOrderPaymentSecuredService.hasOrderPaypalPaymentType(any())).thenThrow(IllegalArgumentException.class);
@@ -193,9 +202,11 @@ class SqsReceiveServiceTest {
     }
 
     @Test
+    @SneakyThrows
     void testQueueListenerOrderPaymentSecuredReceivedRuntimeExceptionException() {
 
         String rawMessage =  readResource("examples/coreDataReaderEvent.json");
+        mockMessageWrapper(rawMessage,  CoreDataReaderEvent.class);
 
         when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.of(new SalesOrder()));
         when(salesOrderPaymentSecuredService.hasOrderPaypalPaymentType(any())).thenReturn(false);
@@ -209,8 +220,10 @@ class SqsReceiveServiceTest {
     }
 
     @Test
+    @SneakyThrows
     void testQueueListenerD365OrderPaymentSecuredReceived() {
         String rawMessage =  readResource("examples/d365OrderPaymentSecuredMessageWithTwoOrderNumbers.json");
+        mockMessageWrapper(rawMessage,  OrderPaymentSecuredMessage.class);
 
         doNothing().when(salesOrderPaymentSecuredService).correlateOrderReceivedPaymentSecured(any());
 
@@ -227,6 +240,7 @@ class SqsReceiveServiceTest {
     @Test
     void testQueueListenerD365OrderPaymentSecuredDropshipmentOrderReceived() {
         String rawMessage =  readResource("examples/d365OrderPaymentSecuredMessageWithTwoOrderNumbers.json");
+        mockMessageWrapper(rawMessage,  OrderPaymentSecuredMessage.class);
 
 
         when(dropshipmentOrderService.isDropShipmentOrder("4567787")).thenReturn(true);
@@ -240,8 +254,10 @@ class SqsReceiveServiceTest {
     }
 
     @Test
+    @SneakyThrows
     void testQueueListenerD365OrderPaymentSecuredReceivedThrownException() {
         String rawMessage =  readResource("examples/d365OrderPaymentSecuredMessageWithTwoOrderNumbers.json");
+        mockMessageWrapper(rawMessage,  OrderPaymentSecuredMessage.class);
 
         doThrow(RuntimeException.class).when(salesOrderPaymentSecuredService).correlateOrderReceivedPaymentSecured(
                 "4567787", "4567858");
@@ -256,6 +272,7 @@ class SqsReceiveServiceTest {
     void testQueueListenerDropshipmentPurchaseOrderBooked() {
 
         String rawMessage = readResource("examples/dropshipmentOrderPurchasedBooked.json");
+        mockMessageWrapper(rawMessage,  DropshipmentPurchaseOrderBookedMessage.class);
 
         sqsReceiveService.queueListenerDropshipmentPurchaseOrderBooked(rawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
@@ -269,6 +286,7 @@ class SqsReceiveServiceTest {
     void testQueueListenerMigrationCoreSalesOrderCreatedDuplication() {
 
         String rawMessage = readResource("examples/ecpOrderMessage.json");
+        mockMessageWrapper(rawMessage,  Order.class);
         SalesOrder salesOrder = getSalesOrder(rawMessage);
         when(salesOrderService.getOrderByOrderNumber(eq(salesOrder.getOrderNumber()))).thenReturn(Optional.of(salesOrder));
         when(featureFlagConfig.getIgnoreMigrationCoreSalesOrder()).thenReturn(false);
@@ -289,13 +307,9 @@ class SqsReceiveServiceTest {
     void testQueueListenerMigrationCoreSalesOrderCreatedNewOrder() {
 
         String rawMessage = readResource("examples/ecpOrderMessage.json");
+        mockMessageWrapper(rawMessage,  Order.class);
         SqsMessage sqsMessage = objectMapper.readValue(rawMessage, SqsMessage.class);
-        MessageWrapper<Order> messageWrapper = MessageWrapper.<Order>builder()
-                .sqsMessage(sqsMessage)
-                .message(objectMapper.readValue(sqsMessage.getBody(), Order.class))
-                .rawMessage(rawMessage)
-                .build();
-        var order = messageWrapper.getMessage();
+        var order = objectMapper.readValue(sqsMessage.getBody(), Order.class);
 
         when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.empty());
         when(featureFlagConfig.getIgnoreMigrationCoreSalesOrder()).thenReturn(false);
@@ -331,6 +345,7 @@ class SqsReceiveServiceTest {
     void testQueueListenerMigrationCoreSalesCreditNoteCreatedDuplication() {
 
         String rawEventMessage = readResource("examples/coreSalesCreditNoteCreated.json");
+        mockMessageWrapper(rawEventMessage,  SalesCreditNoteCreatedMessage.class);
         var creditNoteMsg = getCreditNoteMsg(rawEventMessage);
         var orderNumber = creditNoteMsg.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber();
         var creditNoteNumber = creditNoteMsg.getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteNumber();
@@ -350,6 +365,7 @@ class SqsReceiveServiceTest {
     void testQueueListenerMigrationCoreSalesCreditNoteCreatedNewCreditNote() {
 
         String rawEventMessage = readResource("examples/coreSalesCreditNoteCreated.json");
+        mockMessageWrapper(rawEventMessage,  SalesCreditNoteCreatedMessage.class);
         var creditNoteMsg = getCreditNoteMsg(rawEventMessage);
         var orderNumber = creditNoteMsg.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber();
         var creditNoteNumber = creditNoteMsg.getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteNumber();
@@ -387,4 +403,18 @@ class SqsReceiveServiceTest {
     private String readResource(String path) {
         return FileUtil.readResource(getClass(), path);
     }
+
+    @SneakyThrows
+    private <T> void mockMessageWrapper(String rawMessage, Class<T> clazz) {
+        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+        T message = objectMapper.readValue(body, clazz);
+        var messageWrapper = MessageWrapper.<T>builder()
+                .message(message)
+                .rawMessage(rawMessage)
+                .build();
+        when(messageWrapperUtil.create(eq(rawMessage), eq(clazz)))
+                .thenReturn(messageWrapper);
+    }
+
+
 }
