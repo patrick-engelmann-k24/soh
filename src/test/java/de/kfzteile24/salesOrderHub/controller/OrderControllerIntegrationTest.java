@@ -145,30 +145,6 @@ class OrderControllerIntegrationTest extends AbstractIntegrationTest {
         assertThat(result.getStatusCode()).isEqualTo(CONFLICT);
     }
 
-    @Test
-    void cancellingAnOrderRowSuccessfullyReturnsTheStatusOK() {
-
-        //This endpoint is not used anymore
-        final var result = controller.cancelOrderRow("orderNumber", "orderRows");
-        assertThat(result.getStatusCode()).isEqualTo(NOT_FOUND);
-    }
-
-    @Test
-    void cancellingAnOrderSuccessfullyReturnsTheStatusOK() {
-
-        //This endpoint is not used anymore
-        final var result = controller.cancelOrder("orderNumber");
-        assertThat(result.getStatusCode()).isEqualTo(NOT_FOUND);
-    }
-
-    @Test
-    void ifAnOrderCannotBeCancelledBecauseOfTheProcessStateTheStatusCONFLICTIsReturned() {
-
-        //This endpoint is not used anymore
-        final var result = controller.cancelOrder("orderNumber");
-        assertThat(result.getStatusCode()).isEqualTo(NOT_FOUND);
-    }
-
     private ProcessInstance createProcessInstance(String orderNumber, List<String> orderItems) {
         return runtimeService.createMessageCorrelation(ORDER_RECEIVED_MARKETPLACE.getName())
                 .processInstanceBusinessKey(orderNumber)

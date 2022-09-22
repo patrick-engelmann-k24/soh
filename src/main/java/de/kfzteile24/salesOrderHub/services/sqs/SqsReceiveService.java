@@ -45,9 +45,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Optional;
 
 import static de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig.OBJECT_MAPPER_WITH_BEAN_VALIDATION;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_CREDIT_NOTE_CREATED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.MIGRATION_SALES_ORDER_RECEIVED;
-import static de.kfzteile24.salesOrderHub.domain.audit.Action.RETURN_ORDER_CREATED;
 import static java.text.MessageFormat.format;
 import static java.util.function.Predicate.not;
 import static org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy.ON_SUCCESS;
@@ -293,18 +291,6 @@ public class SqsReceiveService {
             log.error("Invoice received from core message error - invoice url: {}\r\nErrorMessage: {}", invoiceUrl, e);
             throw e;
         }
-    }
-
-    /**
-     * Consume messages from sqs for event core cancellation
-     */
-    @Deprecated(since = "We are switching to core sales invoice: queueListenerCoreSalesInvoiceCreated")
-    @SqsListener(value = "${soh.sqs.queue.coreCancellation}", deletionPolicy = ON_SUCCESS)
-    @Trace(metricName = "Handling CoreCancellation message", dispatcher = true)
-    public void queueListenerCoreCancellation(String rawMessage,
-                                              @Header("SenderId") String senderId,
-                                              @Header("ApproximateReceiveCount") Integer receiveCount) {
-        log.info("Received message on deprecated queue coreCancellation. \nMessage is ignored.");
     }
 
     /**
