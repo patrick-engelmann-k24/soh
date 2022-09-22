@@ -86,7 +86,6 @@ soh:
       orderItemTrackingIdReceived: ${soh_sqs_order_item_tracking_id_received}
       orderItemTourStarted: ${soh_sqs_order_item_tour_started}
       invoicesFromCore: ${soh_sqs_invoices_from_core}
-      coreCancellation: ${soh_sqs_core_cancellation}
       subsequentDeliveryReceived: ${soh_sqs_subsequent_delivery_received}
       d365OrderPaymentSecured: ${soh_sqs_d365_order_payment_secured}
       dropshipmentShipmentConfirmed: ${soh_sqs_dropshipment_shipment_confirmed}

@@ -33,7 +33,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -115,49 +114,6 @@ public class OrderController {
     public ResponseEntity<String> updateDeliveryAddress(
             @PathVariable("orderNumber") final String orderNumber, @PathVariable("orderItemId") final String orderRowId, @RequestBody final ShippingAddress address) {
         return orderAddressService.updateDeliveryAddress(orderNumber, orderRowId, address);
-    }
-
-    /**
-     * Try to cancel complete order if it has not reached a defined state
-     *
-     * <p>The order can only cancelled if the order rows are not in the subprocess for fulfillment.</p>
-     * <p>If the order rows are in the subprocess for fulfillment, you need to request order row cancel for each row.</p>
-     *
-     * @param orderNumber The order number from the order which should be cancelled
-     * @return ResponseEntity with optional message if not possible
-     */
-    @Hidden
-    @PutMapping("/{orderNumber}/cancel")
-    @ResponseBody
-    public ResponseEntity<String> cancelOrder(
-            @PathVariable("orderNumber") final String orderNumber
-    ) {
-        log.info("Cancel order endpoint is not used anymore");
-        return ResponseEntity.notFound().build();
-    }
-
-    /**
-     * Try to cancel order row if it has not reached a defined state
-     *
-     * <P>
- *     Parcel: only before "TrackingID received"<br/>
-     * Own delivery: only before "Item delivered"<br/>
-     * Pickup: only before "Item picked up"<br/>
-     * </P>
-     *
-     * @param orderNumber The order number where the order row is part of it
-     * @param orderRowId The id of the order row which should tried to cancelled
-     * @return ResponseEntity with optional message if not possible
-     */
-    @Hidden
-    @PutMapping("/{orderNumber}/cancelItem/{orderItemId}")
-    @ResponseBody
-    public ResponseEntity<String> cancelOrderRow(
-            @PathVariable("orderNumber") final String orderNumber,
-            @PathVariable("orderItemId") final String orderRowId
-    ) {
-        log.info("Cancel order row endpoint is not used anymore");
-        return ResponseEntity.notFound().build();
     }
 
     /**
