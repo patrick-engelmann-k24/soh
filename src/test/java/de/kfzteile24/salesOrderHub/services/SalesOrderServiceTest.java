@@ -18,7 +18,6 @@ import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.PaymentProviderData;
 import de.kfzteile24.soh.order.dto.Payments;
 import de.kfzteile24.soh.order.dto.Platform;
-import org.camunda.bpm.engine.RuntimeService;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -68,9 +67,6 @@ class SalesOrderServiceTest {
 
     @Mock
     private OrderUtil orderUtil;
-
-    @Mock
-    private RuntimeService runtimeService;
 
     @InjectMocks
     private SalesOrderService salesOrderService;

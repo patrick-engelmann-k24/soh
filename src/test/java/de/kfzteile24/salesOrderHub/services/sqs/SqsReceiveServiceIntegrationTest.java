@@ -1,6 +1,5 @@
 package de.kfzteile24.salesOrderHub.services.sqs;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
@@ -21,7 +20,6 @@ import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.InvoiceNumberCounterRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.services.InvoiceNumberCounterService;
-import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import de.kfzteile24.soh.order.dto.GrandTotalTaxes;
 import de.kfzteile24.soh.order.dto.Order;
@@ -113,7 +111,7 @@ class SqsReceiveServiceIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private SqsReceiveService sqsReceiveService;
     @Autowired
-    private TimedPollingService timerService;
+    private TimedPollingService timedPollingService;
     @Autowired
     private SalesOrderRepository salesOrderRepository;
     @Autowired
@@ -128,12 +126,6 @@ class SqsReceiveServiceIntegrationTest extends AbstractIntegrationTest {
     private BpmUtil bpmUtil;
     @Autowired
     private SalesOrderUtil salesOrderUtil;
-    @Autowired
-    private SalesOrderReturnService salesOrderReturnService;
-    @Autowired
-    private ObjectMapper objectMapper;
-    @Autowired
-    private TimedPollingService timedPollingService;
     @Autowired
     private ObjectUtil objectUtil;
 
@@ -240,7 +232,7 @@ class SqsReceiveServiceIntegrationTest extends AbstractIntegrationTest {
 
         ProcessInstance orderProcessInstance = camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
 
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
 
         var isWaitingForPaymentSecured =
                 bpmUtil.isProcessWaitingAtExpectedToken(orderProcessInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName());
@@ -253,7 +245,7 @@ class SqsReceiveServiceIntegrationTest extends AbstractIntegrationTest {
                 bpmUtil.isProcessWaitingAtExpectedToken(orderProcessInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName());
         assertTrue(isWaitingForPaymentSecured);
 
-        assertFalse(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), "2270-13012")));
+        assertFalse(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), "2270-13012")));
 
     }
 
@@ -268,7 +260,7 @@ class SqsReceiveServiceIntegrationTest extends AbstractIntegrationTest {
 
         ProcessInstance orderProcessInstance = camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
 
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
 
         var isWaitingForPaymentSecured =
                 bpmUtil.isProcessWaitingAtExpectedToken(orderProcessInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName());
@@ -281,7 +273,7 @@ class SqsReceiveServiceIntegrationTest extends AbstractIntegrationTest {
                 bpmUtil.isProcessWaitingAtExpectedToken(orderProcessInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName());
         assertFalse(isWaitingForPaymentSecured);
 
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), "1130-0713")));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), "1130-0713")));
 
     }
 
@@ -295,7 +287,7 @@ class SqsReceiveServiceIntegrationTest extends AbstractIntegrationTest {
 
         ProcessInstance orderProcessInstance = camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
 
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
 
         var isWaitingForPaymentSecured =
                 bpmUtil.isProcessWaitingAtExpectedToken(orderProcessInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName());
@@ -308,7 +300,7 @@ class SqsReceiveServiceIntegrationTest extends AbstractIntegrationTest {
                 bpmUtil.isProcessWaitingAtExpectedToken(orderProcessInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName());
         assertFalse(isWaitingForPaymentSecured);
 
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), "1130-0713")));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), "1130-0713")));
 
     }
 
@@ -417,24 +409,24 @@ class SqsReceiveServiceIntegrationTest extends AbstractIntegrationTest {
     private void callQueueListenerDropshipmentShipmentConfirmed(SalesOrder salesOrder) {
         camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
 
-        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+        assertTrue(timedPollingService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
                 camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
 
-        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+        assertTrue(timedPollingService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
                 camundaHelper.hasPassed(salesOrder.getProcessId(), EVENT_THROW_MSG_PURCHASE_ORDER_CREATED.getName())));
 
         bpmUtil.sendMessage(Messages.DROPSHIPMENT_ORDER_CONFIRMED, salesOrder.getOrderNumber(),
                 Map.of(IS_DROPSHIPMENT_ORDER_CONFIRMED.getName(), true));
 
-        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+        assertTrue(timedPollingService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
                 camundaHelper.hasPassed(salesOrder.getProcessId(), THROW_MSG_DROPSHIPMENT_ORDER_CREATED.getName())));
 
         sqsReceiveService.queueListenerDropshipmentShipmentConfirmed(getDropshipmentShipmentConfirmed(salesOrder), ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
-        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+        assertTrue(timedPollingService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
                 camundaHelper.hasPassed(salesOrder.getProcessId(), EVENT_THROW_MSG_PURCHASE_ORDER_SUCCESSFUL.getName())));
 
-        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+        assertTrue(timedPollingService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
                 camundaHelper.hasPassed(salesOrder.getProcessId(), EVENT_MSG_DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED.getName())));
     }
 
@@ -454,17 +446,17 @@ class SqsReceiveServiceIntegrationTest extends AbstractIntegrationTest {
         SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(order));
         camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
 
-        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+        assertTrue(timedPollingService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
                 camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
 
         String message = readResource("examples/dropshipmentOrderPurchasedBooked.json");
         message = message.replace("123", salesOrder.getOrderNumber());
         sqsReceiveService.queueListenerDropshipmentPurchaseOrderBooked(message, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
-        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+        assertTrue(timedPollingService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
                 camundaHelper.hasPassed(salesOrder.getProcessId(), EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED.getName())));
 
-        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+        assertTrue(timedPollingService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
                 camundaHelper.hasPassed(salesOrder.getProcessId(), EVENT_THROW_MSG_PURCHASE_ORDER_SUCCESSFUL.getName())));
     }
 
@@ -477,17 +469,17 @@ class SqsReceiveServiceIntegrationTest extends AbstractIntegrationTest {
         SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(order));
         camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
 
-        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+        assertTrue(timedPollingService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
                 camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
 
         String message = readResource("examples/dropshipmentOrderPurchasedBookedFalse.json");
         message = message.replace("123", salesOrder.getOrderNumber());
         sqsReceiveService.queueListenerDropshipmentPurchaseOrderBooked(message, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
-        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+        assertTrue(timedPollingService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
                 camundaHelper.hasPassed(salesOrder.getProcessId(), EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED.getName())));
 
-        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+        assertTrue(timedPollingService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
                 camundaHelper.hasPassed(salesOrder.getProcessId(), DROPSHIPMENT_ORDER_ROWS_CANCELLATION.getName())));
     }
 
@@ -592,7 +584,7 @@ class SqsReceiveServiceIntegrationTest extends AbstractIntegrationTest {
     private void checkEventIsPublished(SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage) {
 
         verify(salesOrderService).getOrderByOrderNumber("580309129");
-        verify(salesOrderRowService).handleSalesOrderReturn(eq(salesCreditNoteCreatedMessage), eq(RETURN_ORDER_CREATED), eq(CORE_CREDIT_NOTE_CREATED));
+        verify(salesOrderReturnService).handleSalesOrderReturn(eq(salesCreditNoteCreatedMessage), eq(RETURN_ORDER_CREATED), eq(CORE_CREDIT_NOTE_CREATED));
         verify(snsPublishService).publishReturnOrderCreatedEvent(argThat(
                 salesOrderReturn -> {
                     assertThat(salesOrderReturn.getOrderNumber()).isEqualTo("580309129-876130");
@@ -620,7 +612,7 @@ class SqsReceiveServiceIntegrationTest extends AbstractIntegrationTest {
 
         sqsReceiveService.queueListenerMigrationCoreSalesOrderCreated(orderRawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
-        assertFalse(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(7),
+        assertFalse(timedPollingService.poll(Duration.ofSeconds(7), Duration.ofSeconds(7),
                 () -> camundaHelper.checkIfActiveProcessExists(order.getOrderHeader().getOrderNumber())));
 
         SalesOrder updated = salesOrderService.getOrderByOrderNumber(order.getOrderHeader().getOrderNumber()).orElse(null);
@@ -641,13 +633,13 @@ class SqsReceiveServiceIntegrationTest extends AbstractIntegrationTest {
         SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(order));
         camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
 
-        assertTrue(timerService.pollWithDefaultTiming(() ->
+        assertTrue(timedPollingService.pollWithDefaultTiming(() ->
                 camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber()))
         );
 
         sqsReceiveService.queueListenerMigrationCoreSalesOrderCreated(orderRawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
-        assertTrue(timerService.pollWithDefaultTiming(
+        assertTrue(timedPollingService.pollWithDefaultTiming(
                 () -> camundaHelper.checkIfActiveProcessExists(order.getOrderHeader().getOrderNumber())));
 
         SalesOrder updated = salesOrderService.getOrderByOrderNumber(order.getOrderHeader().getOrderNumber()).orElse(null);
@@ -677,10 +669,10 @@ class SqsReceiveServiceIntegrationTest extends AbstractIntegrationTest {
         sqsReceiveService.queueListenerMigrationCoreSalesInvoiceCreated(migrationInvoiceMsg, senderId, receiveCount);
 
         String newOrderNumberCreatedInSoh = createOrderNumberInSOH(originalOrderNumber, invoiceNumber);
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku1)));
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku2)));
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku3)));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku1)));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku2)));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku3)));
     }
 
     @Test
@@ -701,11 +693,11 @@ class SqsReceiveServiceIntegrationTest extends AbstractIntegrationTest {
         sqsReceiveService.queueListenerCoreSalesInvoiceCreated(invoiceMsg, senderId, receiveCount);
 
         String newOrderNumberCreatedInSoh = createOrderNumberInSOH(originalOrderNumber, invoiceNumber);
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
 
         sqsReceiveService.queueListenerMigrationCoreSalesInvoiceCreated(invoiceMsg, "Migration Delivery", 1);
 
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
 
         verify(snsPublishService).publishMigrationOrderRowCancelled(eq(originalOrderNumber), eq(rowSku));
         verify(snsPublishService).publishMigrationOrderCreated(eq(newOrderNumberCreatedInSoh));
@@ -777,8 +769,8 @@ class SqsReceiveServiceIntegrationTest extends AbstractIntegrationTest {
         sqsReceiveService.queueListenerCoreSalesInvoiceCreated(invoiceEvent, senderId, receiveCount);
 
         String newOrderNumberCreatedInSoh = createOrderNumberInSOH(originalOrderNumber, invoiceNumber);
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku)));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku)));
         checkTotalsValues(newOrderNumberCreatedInSoh,
                 "12.95",
                 "10.79",
@@ -816,11 +808,11 @@ class SqsReceiveServiceIntegrationTest extends AbstractIntegrationTest {
         sqsReceiveService.queueListenerCoreSalesInvoiceCreated(invoiceEvent, senderId, receiveCount);
 
         String newOrderNumberCreatedInSoh = createOrderNumberInSOH(originalOrderNumber, invoiceNumber);
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku1)));
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku2)));
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku3)));
-        assertTrue(timerService.pollWithDefaultTiming(() -> checkIfInvoiceCreatedReceivedProcessExists(newOrderNumberCreatedInSoh)));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku1)));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku2)));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku3)));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() -> checkIfInvoiceCreatedReceivedProcessExists(newOrderNumberCreatedInSoh)));
         checkTotalsValues(newOrderNumberCreatedInSoh,
                 "834.52",
                 "695.64",
@@ -855,11 +847,11 @@ class SqsReceiveServiceIntegrationTest extends AbstractIntegrationTest {
         sqsReceiveService.queueListenerCoreSalesInvoiceCreated(invoiceEvent, senderId, receiveCount);
 
         String newOrderNumberCreatedInSoh = createOrderNumberInSOH(originalOrderNumber, invoiceNumber);
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku1)));
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku2)));
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku3)));
-        assertTrue(timerService.pollWithDefaultTiming(() -> checkIfInvoiceCreatedReceivedProcessExists(newOrderNumberCreatedInSoh)));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku1)));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku2)));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku3)));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() -> checkIfInvoiceCreatedReceivedProcessExists(newOrderNumberCreatedInSoh)));
         checkTotalsValues(newOrderNumberCreatedInSoh,
                 "432.52",
                 "360.64",
@@ -900,10 +892,10 @@ class SqsReceiveServiceIntegrationTest extends AbstractIntegrationTest {
         sqsReceiveService.queueListenerCoreSalesInvoiceCreated(invoiceEvent, senderId, receiveCount);
 
         String newOrderNumberCreatedInSoh = createOrderNumberInSOH(originalOrderNumber, invoiceNumber);
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku1)));
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku2)));
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku3)));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku1)));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku2)));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku3)));
         checkTotalsValues(newOrderNumberCreatedInSoh,
                 "432.52",
                 "360.64",
@@ -947,10 +939,10 @@ class SqsReceiveServiceIntegrationTest extends AbstractIntegrationTest {
         sqsReceiveService.queueListenerCoreSalesInvoiceCreated(invoiceEvent, senderId, receiveCount);
 
         String newOrderNumberCreatedInSoh = createOrderNumberInSOH(originalOrderNumber, invoiceNumber);
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku1)));
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku2)));
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku3)));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku1)));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku2)));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku3)));
         checkTotalsValues(newOrderNumberCreatedInSoh,
                 "432.52",
                 "360.64",

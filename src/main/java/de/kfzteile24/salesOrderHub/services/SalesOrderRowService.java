@@ -1,26 +1,19 @@
 package de.kfzteile24.salesOrderHub.services;
 
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
 import de.kfzteile24.salesOrderHub.dto.events.shipmentconfirmed.TrackingLink;
-import de.kfzteile24.salesOrderHub.dto.shared.creditnote.CreditNoteLine;
-import de.kfzteile24.salesOrderHub.dto.shared.creditnote.SalesCreditNote;
-import de.kfzteile24.salesOrderHub.dto.shared.creditnote.SalesCreditNoteHeader;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
-import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ArticleItemsDto;
 import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ParcelShipped;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.EventMapper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
-import de.kfzteile24.soh.order.dto.GrandTotalTaxes;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Platform;
@@ -33,15 +26,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.Execution;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
-import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.math.BigDecimal;
 import java.text.MessageFormat;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -49,7 +38,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.COMBINED_ITEM_SEPARATOR;
-import static de.kfzteile24.salesOrderHub.constants.SOHConstants.DATE_TIME_FORMATTER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS;
 
@@ -66,9 +54,6 @@ public class SalesOrderRowService {
 
     @NonNull
     private final SalesOrderService salesOrderService;
-
-    @NonNull
-    private final SalesOrderReturnService salesOrderReturnService;
 
     @NonNull
     private final OrderUtil orderUtil;
@@ -105,60 +90,6 @@ public class SalesOrderRowService {
                 log.error("Sku: {} is not in original order with order number: {}", sku, orderNumber);
             }
         }
-    }
-
-    @Transactional
-    public void handleSalesOrderReturn(SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage, Action action, Messages message) {
-        var salesCreditNoteHeader = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader();
-        var orderNumber = salesCreditNoteHeader.getOrderNumber();
-        var creditNoteLines = salesCreditNoteHeader.getCreditNoteLines();
-        var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
-                .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
-        var returnOrderJson = recalculateOrderByReturns(salesOrder, getOrderRowUpdateItems(creditNoteLines));
-        updateShippingCosts(returnOrderJson, creditNoteLines);
-        returnOrderJson = orderUtil.removeInvalidGrandTotalTaxes(returnOrderJson);
-
-        String newOrderNumber = orderUtil.createOrderNumberInSOH(orderNumber, salesCreditNoteHeader.getCreditNoteNumber());
-
-        if (salesOrderReturnService.checkOrderNotExists(newOrderNumber)) {
-            returnOrderJson.getOrderHeader().setOrderNumber(newOrderNumber);
-            returnOrderJson.getOrderHeader().setOrderDateTime(DATE_TIME_FORMATTER.format(LocalDateTime.now()));
-
-            var salesOrderReturn = SalesOrderReturn.builder()
-                    .orderGroupId(salesOrder.getOrderGroupId())
-                    .orderNumber(newOrderNumber)
-                    .returnOrderJson(returnOrderJson)
-                    .salesOrder(salesOrder)
-                    .salesCreditNoteCreatedMessage(updateByOrderNumber(salesCreditNoteCreatedMessage, newOrderNumber))
-                    .build();
-
-            SalesOrderReturn savedSalesOrderReturn = salesOrderReturnService.save(salesOrderReturn, action);
-            ProcessInstance result = helper.createReturnOrderProcess(savedSalesOrderReturn, message);
-            if (result != null) {
-                log.info("New return order process started for order number: {}. Process-Instance-ID: {} ",
-                        orderNumber, result.getProcessInstanceId());
-            }
-        }
-    }
-
-    private SalesCreditNoteCreatedMessage updateByOrderNumber(SalesCreditNoteCreatedMessage message,
-                                                              String newOrderNumber) {
-        return SalesCreditNoteCreatedMessage.builder()
-                .salesCreditNote(SalesCreditNote.builder()
-                        .salesCreditNoteHeader(SalesCreditNoteHeader.builder()
-                                .orderNumber(newOrderNumber)
-                                .orderGroupId(message.getSalesCreditNote().getSalesCreditNoteHeader().getOrderGroupId())
-                                .creditNoteNumber(message.getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteNumber())
-                                .creditNoteDate(message.getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteDate())
-                                .currencyCode(message.getSalesCreditNote().getSalesCreditNoteHeader().getCurrencyCode())
-                                .netAmount(message.getSalesCreditNote().getSalesCreditNoteHeader().getNetAmount())
-                                .grossAmount(message.getSalesCreditNote().getSalesCreditNoteHeader().getGrossAmount())
-                                .billingAddress(message.getSalesCreditNote().getSalesCreditNoteHeader().getBillingAddress())
-                                .creditNoteLines(message.getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteLines())
-                                .build())
-                        .deliveryNotes(message.getSalesCreditNote().getDeliveryNotes())
-                        .build())
-                .build();
     }
 
     @Transactional
@@ -208,79 +139,6 @@ public class SalesOrderRowService {
                     invoiceNumber, salesOrder.getOrderNumber());
             snsPublishService.publishMigrationOrderCancelled(salesOrder.getLatestJson());
         }
-    }
-
-    public Order recalculateOrderByReturns(SalesOrder salesOrder, Collection<CreditNoteLine> items) {
-
-        var returnLatestJson = orderUtil.copyOrderJson(salesOrder.getLatestJson());
-        returnLatestJson.setOrderRows(new ArrayList<>());
-        var totals = returnLatestJson.getOrderHeader().getTotals();
-        var lastRowKey = orderUtil.getLastRowKey(salesOrder);
-
-        for (CreditNoteLine item : items) {
-            var orderRow = orderUtil.createNewOrderRow(item, salesOrder, lastRowKey);
-            returnLatestJson.getOrderRows().add(orderRow);
-            lastRowKey = orderUtil.updateLastRowKey(salesOrder, item.getItemNumber(), lastRowKey);
-        }
-
-        totals.setShippingCostGross(BigDecimal.ZERO);
-        totals.setShippingCostNet(BigDecimal.ZERO);
-        totals.setGoodsTotalGross(BigDecimal.ZERO);
-        totals.setGoodsTotalNet(BigDecimal.ZERO);
-        totals.setTotalDiscountGross(BigDecimal.ZERO);
-        totals.setTotalDiscountNet(BigDecimal.ZERO);
-        totals.setGrandTotalGross(BigDecimal.ZERO);
-        totals.setGrandTotalNet(BigDecimal.ZERO);
-        totals.setPaymentTotal(BigDecimal.ZERO);
-
-        returnLatestJson.getOrderRows().stream()
-                .map(OrderRows::getSumValues)
-                .forEach(sumValues -> {
-                    totals.setGoodsTotalGross(totals.getGoodsTotalGross().add(
-                            Optional.ofNullable(sumValues.getGoodsValueGross()).orElse(BigDecimal.ZERO)));
-                    totals.setGoodsTotalNet(totals.getGoodsTotalNet().add(
-                            Optional.ofNullable(sumValues.getGoodsValueNet()).orElse(BigDecimal.ZERO)));
-                    totals.setTotalDiscountGross(totals.getTotalDiscountGross().add(
-                            Optional.ofNullable(sumValues.getDiscountGross()).orElse(BigDecimal.ZERO)));
-                    totals.setTotalDiscountNet(totals.getTotalDiscountNet().add(
-                            Optional.ofNullable(sumValues.getDiscountNet()).orElse(BigDecimal.ZERO)));
-                });
-
-        totals.setGrandTotalGross(totals.getGoodsTotalGross().subtract(
-                Optional.ofNullable(totals.getTotalDiscountGross()).orElse(BigDecimal.ZERO)));
-        totals.setGrandTotalNet(totals.getGoodsTotalNet().subtract(
-                Optional.ofNullable(totals.getTotalDiscountNet()).orElse(BigDecimal.ZERO)));
-        totals.setPaymentTotal(totals.getGrandTotalGross());
-        totals.setGrandTotalTaxes(salesOrderService.calculateGrandTotalTaxes(returnLatestJson));
-
-        returnLatestJson.getOrderHeader().setTotals(totals);
-        return returnLatestJson;
-    }
-
-    private List<CreditNoteLine> getOrderRowUpdateItems(Collection<CreditNoteLine> negativedCreditNoteLine) {
-        return negativedCreditNoteLine.stream()
-                .filter(creditNoteLine -> !creditNoteLine.getIsShippingCost())
-                .collect(Collectors.toList());
-    }
-
-    private void updateShippingCosts(Order returnOrder, Collection<CreditNoteLine> creditNoteLines) {
-        var totals = returnOrder.getOrderHeader().getTotals();
-        creditNoteLines.stream()
-                .filter(CreditNoteLine::getIsShippingCost)
-                .findFirst()
-                .ifPresent(creditNoteLine -> {
-                    totals.setShippingCostNet(creditNoteLine.getLineNetAmount());
-                    totals.setShippingCostGross(creditNoteLine.getLineGrossAmount());
-                    totals.setGrandTotalNet(totals.getGrandTotalNet().add(totals.getShippingCostNet()));
-                    totals.setGrandTotalGross(totals.getGrandTotalGross().add(totals.getShippingCostGross()));
-                    totals.setPaymentTotal(totals.getGrandTotalGross());
-                    BigDecimal fullTaxValue = totals.getGrandTotalGross().subtract(totals.getGrandTotalNet());
-                    BigDecimal sumTaxValues = totals.getGrandTotalTaxes().stream()
-                            .map(GrandTotalTaxes::getValue).reduce(BigDecimal.ZERO, BigDecimal::add);
-                    BigDecimal taxValueToAdd = fullTaxValue.subtract(sumTaxValues);
-                    totals.getGrandTotalTaxes().stream().findFirst().
-                            ifPresent(tax -> tax.setValue(tax.getValue().add(taxValueToAdd)));
-                });
     }
 
     private void cancelOrderRowsOfOrderGroup(String orderGroupId, String orderRowId) {
