@@ -54,10 +54,6 @@ data "aws_sns_topic" "sns_soh_sales_order_cancellation_v1" {
   name = "soh-sales-order-cancelled-v1"
 }
 
-data "aws_sns_topic" "sns_core_subsequent_delivery_note_printed" {
-  name = "core-subsequent-delivery-note-printed-v1"
-}
-
 data "aws_sns_topic" "sns_core_sales_invoice_created" {
   name = "core-sales-invoice-created-v1"
 }
@@ -208,13 +204,6 @@ resource "aws_sns_topic_subscription" "sns_subscription_invoices_from_core" {
   endpoint = aws_sqs_queue.soh_invoices_from_core.arn
   protocol = "sqs"
   topic_arn = var.invoices_from_core_sns
-}
-
-# subscription for core subsequent delivery notes
-resource "aws_sns_topic_subscription" "sns_subscription_subsequent_delivery_note" {
-  endpoint = aws_sqs_queue.soh_subsequent_delivery_received.arn
-  protocol = "sqs"
-  topic_arn = data.aws_sns_topic.sns_core_subsequent_delivery_note_printed.arn
 }
 
 # subscription for core sales invoice created

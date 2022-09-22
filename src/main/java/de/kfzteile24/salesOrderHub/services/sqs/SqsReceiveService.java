@@ -294,20 +294,6 @@ public class SqsReceiveService {
     }
 
     /**
-     * Consume messages from sqs for subsequent delivery received
-     */
-    @Deprecated(since = "We are switching to core sales invoice: queueListenerCoreSalesInvoiceCreated")
-    @SqsListener(value = "${soh.sqs.queue.subsequentDeliveryReceived}")
-    @Trace(metricName = "Handling subsequent delivery note printed message", dispatcher = true)
-    public void queueListenerSubsequentDeliveryReceived(
-            String rawMessage,
-            @Header("SenderId") String senderId,
-            @Header("ApproximateReceiveCount") Integer receiveCount
-    ) {
-        log.info("Received message on deprecated queue subsequentDeliveryReceived. \nMessage is ignored.");
-    }
-
-    /**
      * Consume messages from sqs for order payment secured published by D365
      */
     @SqsListener(value = "${soh.sqs.queue.d365OrderPaymentSecured}", deletionPolicy = ON_SUCCESS)
