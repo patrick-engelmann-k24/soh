@@ -6,7 +6,6 @@ import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
-import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
@@ -48,6 +47,7 @@ public class CoreSalesInvoiceCreatedService {
     private final SalesOrderRowService salesOrderRowService;
     private final MetricsHelper metricsHelper;
     private final SnsPublishService snsPublishService;
+    private final MessageWrapperUtil messageWrapperUtil;
 
     @SneakyThrows
     @EnrichMessageForDlq
@@ -56,8 +56,9 @@ public class CoreSalesInvoiceCreatedService {
         if (featureFlagConfig.getIgnoreCoreSalesInvoice()) {
             log.info("Core Sales Invoice is ignored");
         } else {
-            String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-            CoreSalesInvoiceCreatedMessage salesInvoiceCreatedMessage = objectMapper.readValue(body, CoreSalesInvoiceCreatedMessage.class);
+            var messageWrapper =
+                    messageWrapperUtil.create(rawMessage, CoreSalesInvoiceCreatedMessage.class);
+            var salesInvoiceCreatedMessage = messageWrapper.getMessage();
             CoreSalesInvoiceHeader salesInvoiceHeader = salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
             var itemList = salesInvoiceHeader.getInvoiceLines();
             var orderNumber = salesInvoiceHeader.getOrderNumber();

@@ -120,8 +120,8 @@ public class SqsReceiveService {
             @Header("ApproximateReceiveCount") Integer receiveCount
     ) {
         try {
-            String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-            FulfillmentMessage fulfillmentMessage = objectMapper.readValue(body, FulfillmentMessage.class);
+            var messageWrapper = messageWrapperUtil.create(rawMessage, FulfillmentMessage.class);
+            FulfillmentMessage fulfillmentMessage = messageWrapper.getMessage();
             log.info("Received item shipped  message with order number: {} ", fulfillmentMessage.getOrderNumber());
 
             salesOrderRowService.correlateOrderRowMessage(
@@ -147,8 +147,8 @@ public class SqsReceiveService {
             @Header("ApproximateReceiveCount") Integer receiveCount
     ) {
         try {
-            String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-            CoreDataReaderEvent coreDataReaderEvent = objectMapper.readValue(body, CoreDataReaderEvent.class);
+            var messageWrapper = messageWrapperUtil.create(rawMessage, CoreDataReaderEvent.class);
+            CoreDataReaderEvent coreDataReaderEvent = messageWrapper.getMessage();
 
             var orderNumber = coreDataReaderEvent.getOrderNumber();
             log.info("Received order payment secured message with order number: {} ", orderNumber);
@@ -173,8 +173,8 @@ public class SqsReceiveService {
                                                             @Header("SenderId") String senderId, @Header(
                                                                     "ApproximateReceiveCount") Integer receiveCount) {
         try {
-            String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-            FulfillmentMessage fulfillmentMessage = objectMapper.readValue(body, FulfillmentMessage.class);
+            var messageWrapper = messageWrapperUtil.create(rawMessage, FulfillmentMessage.class);
+            FulfillmentMessage fulfillmentMessage = messageWrapper.getMessage();
             log.info("Received order item transmitted to logistic message with order number: {} ",
                     fulfillmentMessage.getOrderNumber());
 
@@ -201,8 +201,8 @@ public class SqsReceiveService {
             @Header("ApproximateReceiveCount") Integer receiveCount
     ) {
         try {
-            String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-            FulfillmentMessage fulfillmentMessage = objectMapper.readValue(body, FulfillmentMessage.class);
+            var messageWrapper = messageWrapperUtil.create(rawMessage, FulfillmentMessage.class);
+            FulfillmentMessage fulfillmentMessage = messageWrapper.getMessage();
             log.info("Received order item packing message with order number: {} ", fulfillmentMessage.getOrderNumber());
 
             salesOrderRowService.correlateOrderRowMessage(
@@ -228,8 +228,8 @@ public class SqsReceiveService {
             @Header("ApproximateReceiveCount") Integer receiveCount
     ) {
         try {
-            String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-            FulfillmentMessage fulfillmentMessage = objectMapper.readValue(body, FulfillmentMessage.class);
+            var messageWrapper = messageWrapperUtil.create(rawMessage, FulfillmentMessage.class);
+            FulfillmentMessage fulfillmentMessage = messageWrapper.getMessage();
             log.info("Received order item tracking id message with order number: {} ", fulfillmentMessage.getOrderNumber());
 
             salesOrderRowService.correlateOrderRowMessage(
@@ -255,8 +255,8 @@ public class SqsReceiveService {
             @Header("ApproximateReceiveCount") Integer receiveCount
     ) {
         try {
-            String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-            FulfillmentMessage fulfillmentMessage = objectMapper.readValue(body, FulfillmentMessage.class);
+            var messageWrapper = messageWrapperUtil.create(rawMessage, FulfillmentMessage.class);
+            FulfillmentMessage fulfillmentMessage = messageWrapper.getMessage();
             log.info("Received order item tour started message with order number: {} ",
                     fulfillmentMessage.getOrderNumber());
 
@@ -276,12 +276,12 @@ public class SqsReceiveService {
      * Consume messages from sqs for event invoice from core
      */
     @SqsListener(value = "${soh.sqs.queue.invoicesFromCore}", deletionPolicy = ON_SUCCESS)
-    @SneakyThrows(JsonProcessingException.class)
     @Trace(metricName = "Handling InvoiceReceived message", dispatcher = true)
     public void queueListenerInvoiceReceivedFromCore(String rawMessage,
                                                      @Header("SenderId") String senderId,
                                                      @Header("ApproximateReceiveCount") Integer receiveCount) {
-        final var invoiceUrl = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+        var messageWrapper = messageWrapperUtil.create(rawMessage, String.class);
+        final var invoiceUrl = messageWrapper.getMessage();
 
         try {
             if (InvoiceUrlExtractor.matchesCreditNoteNumberPattern(invoiceUrl)) {
@@ -332,9 +332,8 @@ public class SqsReceiveService {
             @Header("ApproximateReceiveCount") Integer receiveCount) {
 
         try {
-            String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-            OrderPaymentSecuredMessage orderPaymentSecuredMessage = objectMapper.readValue(body,
-                    OrderPaymentSecuredMessage.class);
+            var messageWrapper = messageWrapperUtil.create(rawMessage, OrderPaymentSecuredMessage.class);
+            OrderPaymentSecuredMessage orderPaymentSecuredMessage = messageWrapper.getMessage();
 
             var orderNumbers = orderPaymentSecuredMessage.getData().getSalesOrderId().stream()
                     .filter(not(dropshipmentOrderService::isDropShipmentOrder))
@@ -358,9 +357,8 @@ public class SqsReceiveService {
             @Header("SenderId") String senderId,
             @Header("ApproximateReceiveCount") Integer receiveCount) {
         try {
-            String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-            DropshipmentShipmentConfirmedMessage shipmentConfirmedMessage =
-                    objectMapper.readValue(body, DropshipmentShipmentConfirmedMessage.class);
+            var messageWrapper = messageWrapperUtil.create(rawMessage, DropshipmentShipmentConfirmedMessage.class);
+            DropshipmentShipmentConfirmedMessage shipmentConfirmedMessage = messageWrapper.getMessage();
 
             log.info("Received dropshipment shipment confirmed message with order number: {}",
                     shipmentConfirmedMessage.getSalesOrderNumber());
@@ -381,9 +379,8 @@ public class SqsReceiveService {
             @Header("SenderId") String senderId,
             @Header("ApproximateReceiveCount") Integer receiveCount) {
         try {
-            String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-            DropshipmentPurchaseOrderBookedMessage message =
-                    objectMapper.readValue(body, DropshipmentPurchaseOrderBookedMessage.class);
+            var messageWrapper = messageWrapperUtil.create(rawMessage, DropshipmentPurchaseOrderBookedMessage.class);
+            DropshipmentPurchaseOrderBookedMessage message = messageWrapper.getMessage();
 
             log.info("Received drop shipment order purchased booked message with Sales Order Number: {}, External Order " +
                             "NUmber: {}",
@@ -405,9 +402,8 @@ public class SqsReceiveService {
             @Header("SenderId") String senderId,
             @Header("ApproximateReceiveCount") Integer receiveCount) {
         try {
-            String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-            DropshipmentPurchaseOrderReturnConfirmedMessage message =
-                    objectMapper.readValue(body, DropshipmentPurchaseOrderReturnConfirmedMessage.class);
+            var messageWrapper = messageWrapperUtil.create(rawMessage, DropshipmentPurchaseOrderReturnConfirmedMessage.class);
+            DropshipmentPurchaseOrderReturnConfirmedMessage message = messageWrapper.getMessage();
 
             log.info("Received dropshipment purchase order return confirmed message with Sales Order Number: {}, External" +
                             " Order NUmber: {}",
@@ -431,7 +427,6 @@ public class SqsReceiveService {
         try {
             var messageWrapper =
                     messageWrapperUtil.create(rawMessage, DropshipmentPurchaseOrderReturnNotifiedMessage.class);
-
             var message = messageWrapper.getMessage();
 
             log.info("Received dropshipment purchase order return notified message with " +
@@ -489,8 +484,9 @@ public class SqsReceiveService {
             if (Boolean.TRUE.equals(featureFlagConfig.getIgnoreMigrationCoreSalesOrder())) {
                 log.info("Migration Core Sales Order is ignored");
             } else {
+                var messageWrapper = messageWrapperUtil.create(rawMessage, Order.class);
+                var order = messageWrapper.getMessage();
                 String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-                Order order = objectMapper.readValue(body, Order.class);
                 Order originalOrder = objectMapper.readValue(body, Order.class);
                 String orderNumber = order.getOrderHeader().getOrderNumber();
 
@@ -529,9 +525,9 @@ public class SqsReceiveService {
             if (featureFlagConfig.getIgnoreMigrationCoreSalesInvoice()) {
                 log.info("Migration Core Sales Invoice is ignored");
             } else {
-                String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-                CoreSalesInvoiceCreatedMessage salesInvoiceCreatedMessage = objectMapper.readValue(body,
-                        CoreSalesInvoiceCreatedMessage.class);
+                var messageWrapper =
+                        messageWrapperUtil.create(rawMessage, CoreSalesInvoiceCreatedMessage.class);
+                var salesInvoiceCreatedMessage = messageWrapper.getMessage();
                 CoreSalesInvoiceHeader salesInvoiceHeader =
                         salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
                 var orderNumber = salesInvoiceHeader.getOrderNumber();
@@ -577,9 +573,9 @@ public class SqsReceiveService {
             if (featureFlagConfig.getIgnoreMigrationCoreSalesCreditNote()) {
                 log.info("Migration Core Sales Credit Note is ignored");
             } else {
-                String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-                var salesCreditNoteCreatedMessage =
-                        objectMapper.readValue(body, SalesCreditNoteCreatedMessage.class);
+                var messageWrapper =
+                        messageWrapperUtil.create(rawMessage, SalesCreditNoteCreatedMessage.class);
+                var salesCreditNoteCreatedMessage = messageWrapper.getMessage();
                 var salesCreditNoteHeader = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader();
                 var orderNumber = salesCreditNoteHeader.getOrderNumber();
                 var creditNoteNumber = salesCreditNoteHeader.getCreditNoteNumber();

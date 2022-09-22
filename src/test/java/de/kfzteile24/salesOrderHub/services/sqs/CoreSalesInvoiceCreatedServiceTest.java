@@ -10,6 +10,7 @@ import de.kfzteile24.salesOrderHub.dto.mapper.CreditNoteEventMapper;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoice;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
+import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.helper.FileUtil;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.services.DropshipmentOrderService;
@@ -106,6 +107,7 @@ public class CoreSalesInvoiceCreatedServiceTest {
         when(orderUtil.checkIfOrderHasOrderRows(any())).thenReturn(true);
 
         String coreSalesInvoiceCreatedMessage = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
+        mockMessageWrapper(coreSalesInvoiceCreatedMessage);
         coreSalesInvoiceCreatedService.handleCoreSalesInvoiceCreated(coreSalesInvoiceCreatedMessage, ANY_RECEIVE_COUNT, ANY_SQS_NAME);
 
         verify(salesOrderService).createSalesOrderForInvoice(any(CoreSalesInvoiceCreatedMessage.class), any(SalesOrder.class), any(String.class));
@@ -126,6 +128,7 @@ public class CoreSalesInvoiceCreatedServiceTest {
         when(orderUtil.checkIfOrderHasOrderRows(any())).thenReturn(true);
 
         String coreSalesInvoiceCreatedMessage = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
+        mockMessageWrapper(coreSalesInvoiceCreatedMessage);
         coreSalesInvoiceCreatedService.handleCoreSalesInvoiceCreated(coreSalesInvoiceCreatedMessage, ANY_RECEIVE_COUNT, ANY_SQS_NAME);
 
         verify(salesOrderService).createSalesOrderForInvoice(any(CoreSalesInvoiceCreatedMessage.class), any(SalesOrder.class),any(String.class));
@@ -142,6 +145,7 @@ public class CoreSalesInvoiceCreatedServiceTest {
         salesOrder.setOrderGroupId(orderNumber);
         salesOrder.getLatestJson().getOrderHeader().setOrderGroupId(orderNumber);
         String invoiceRawMessage = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
+        mockMessageWrapper(invoiceRawMessage);
         assertNotNull(salesOrder.getLatestJson().getOrderHeader().getOrderGroupId());
         assertNull(salesOrder.getInvoiceEvent());
 
@@ -162,5 +166,17 @@ public class CoreSalesInvoiceCreatedServiceTest {
     @SneakyThrows({URISyntaxException.class, IOException.class})
     private String readResource(String path) {
         return FileUtil.readResource(getClass(), path);
+    }
+
+    @SneakyThrows
+    private void mockMessageWrapper(String rawMessage) {
+        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
+        CoreSalesInvoiceCreatedMessage message = objectMapper.readValue(body, CoreSalesInvoiceCreatedMessage.class);
+        var messageWrapper = MessageWrapper.<CoreSalesInvoiceCreatedMessage>builder()
+                .message(message)
+                .rawMessage(rawMessage)
+                .build();
+        when(messageWrapperUtil.create(eq(rawMessage), eq(CoreSalesInvoiceCreatedMessage.class)))
+                .thenReturn(messageWrapper);
     }
 }
