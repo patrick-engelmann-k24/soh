@@ -1,7 +1,7 @@
 package de.kfzteile24.salesOrderHub.controller;
 
 import de.kfzteile24.salesOrderHub.dto.invoice.InvoiceDocument;
-import de.kfzteile24.salesOrderHub.services.InvoiceService;
+import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;

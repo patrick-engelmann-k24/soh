@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapperUtil;
-import de.kfzteile24.salesOrderHub.services.sqs.SqsReceiveService;
+import de.kfzteile24.salesOrderHub.services.general.GeneralSqsReceiveService;
 import org.apache.commons.lang3.ClassUtils;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -55,7 +55,7 @@ public class ObjectMapperConfig {
      * This is a secondary bean injected with qualifier:
      *
      * @see MessageWrapperUtil#setObjectMapper(ObjectMapper)
-     * @see SqsReceiveService#setObjectMapper(ObjectMapper)
+     * @see GeneralSqsReceiveService#setObjectMapper(ObjectMapper)
      *
      * @param modules available object mapper modules
      */
