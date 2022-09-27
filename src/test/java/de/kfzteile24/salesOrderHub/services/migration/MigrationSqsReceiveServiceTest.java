@@ -3,7 +3,6 @@ package de.kfzteile24.salesOrderHub.services.migration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.FeatureFlagConfig;
 import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
-import de.kfzteile24.salesOrderHub.configuration.SQSNamesConfig;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.dto.mapper.CreditNoteEventMapper;
@@ -16,7 +15,6 @@ import de.kfzteile24.salesOrderHub.helper.SalesOrderMapperImpl;
 import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
-import de.kfzteile24.salesOrderHub.services.financialdocuments.CoreSalesCreditNoteCreatedService;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.FinancialDocumentsSqsReceiveService;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapperUtil;
@@ -72,19 +70,15 @@ class MigrationSqsReceiveServiceTest {
     private FeatureFlagConfig featureFlagConfig;
     @Mock
     private SnsPublishService snsPublishService;
+    @Mock
+    private CreditNoteEventMapper creditNoteEventMapper;
+    @Mock
+    private FinancialDocumentsSqsReceiveService financialDocumentsSqsReceiveService;
     @InjectMocks
     @Spy
     private MigrationSqsReceiveService migrationSqsReceiveService;
-    @Mock
-    private CoreSalesCreditNoteCreatedService coreSalesCreditNoteCreatedService;
-    @Mock
-    private SQSNamesConfig sqsNamesConfig;
     @Spy
     private MessageErrorHandler messageErrorHandler;
-    @Mock
-    private FinancialDocumentsSqsReceiveService financialDocumentsSqsReceiveService;
-    @Mock
-    private CreditNoteEventMapper creditNoteEventMapper;
     @Spy
     private final SalesOrderMapper salesOrderMapper = new SalesOrderMapperImpl();
 
@@ -169,7 +163,6 @@ class MigrationSqsReceiveServiceTest {
         var creditNoteMsg = getCreditNoteMsg(rawEventMessage);
         var orderNumber = creditNoteMsg.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber();
         var creditNoteNumber = creditNoteMsg.getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteNumber();
-        String sqsName = sqsNamesConfig.getCoreSalesCreditNoteCreated();
 
         when(salesOrderReturnService.getByOrderNumber(any())).thenReturn(null);
         when(salesOrderService.createOrderNumberInSOH(eq(orderNumber), eq(creditNoteNumber))).thenReturn(createOrderNumberInSOH(orderNumber, creditNoteNumber));
