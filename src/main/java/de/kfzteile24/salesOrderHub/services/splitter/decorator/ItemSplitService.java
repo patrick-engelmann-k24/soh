@@ -245,6 +245,8 @@ public class ItemSplitService {
             sumValues.setGoodsValueNet(sumGoodsValueNet);
             sumValues.setTotalDiscountedGross(sumTotalDiscountedGross);
             sumValues.setTotalDiscountedNet(sumTotalDiscountedNet);
+            sumValues.setDiscountGross(sumGoodsValueGross.subtract(sumTotalDiscountedGross));
+            sumValues.setDiscountNet(sumGoodsValueNet.subtract(sumTotalDiscountedNet));
 
             log.info("SumValues initially calculated for sku: {}, sum values: {}, order number {}",
                     orderRow.getSku(), sumValues, orderNumber);
@@ -270,6 +272,8 @@ public class ItemSplitService {
             unitValues.setGoodsValueNet(unitGoodsValueNet);
             unitValues.setDiscountedGross(unitDiscountedGross);
             unitValues.setDiscountedNet(unitDiscountedNet);
+            unitValues.setDiscountGross(unitGoodsValueGross.subtract(unitDiscountedGross));
+            unitValues.setDiscountNet(unitGoodsValueNet.subtract(unitDiscountedNet));
         }
     }
 
