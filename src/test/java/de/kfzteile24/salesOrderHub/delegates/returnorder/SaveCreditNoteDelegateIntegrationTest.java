@@ -94,7 +94,7 @@ class SaveCreditNoteDelegateIntegrationTest extends AbstractIntegrationTest {
 
     @AfterEach
     public void cleanup() {
-        salesOrderReturnRepository.deleteAll();
-        salesOrderRepository.deleteAll();
+        pollingService.retry(() -> salesOrderRepository.deleteAll());
+        pollingService.retry(() -> salesOrderReturnRepository.deleteAll());
     }
 }

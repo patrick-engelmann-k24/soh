@@ -1,7 +1,6 @@
 package de.kfzteile24.salesOrderHub.delegates.dropshipmentorder;
 
 import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
-import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
@@ -31,7 +30,7 @@ import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrderRet
 import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class SaveCreditNoteDelegateIntegrationTest extends AbstractIntegrationTest {
+class SaveDropshipmentCreditNoteDelegateIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private SalesOrderRepository salesOrderRepository;
@@ -46,9 +45,6 @@ class SaveCreditNoteDelegateIntegrationTest extends AbstractIntegrationTest {
     private TimedPollingService pollingService;
 
     @Autowired
-    private CamundaHelper camundaHelper;
-
-    @Autowired
     private BpmUtil bpmUtil;
 
     @Test
@@ -61,7 +57,6 @@ class SaveCreditNoteDelegateIntegrationTest extends AbstractIntegrationTest {
         salesOrderReturnRepository.save(salesOrderReturn);
         Assertions.assertThat(salesOrderReturn.getUrl()).isNull();
         var invoiceUrl = String.format("s3://k24-invoices/app_android-kfzteile24-de/2021/06/04/%s.pdf", salesOrderReturn.getOrderNumber() + "-" + creditNoteNumber);
-
 
         camundaHelper.createReturnOrderProcess(salesOrderReturn, CORE_CREDIT_NOTE_CREATED);
         final Map<String, Object> processVariables = new HashMap<>();
@@ -87,8 +82,8 @@ class SaveCreditNoteDelegateIntegrationTest extends AbstractIntegrationTest {
 
     @AfterEach
     public void cleanup() {
-        bpmUtil.cleanUp();
-        salesOrderRepository.deleteAll();
-        salesOrderReturnRepository.deleteAll();
+        pollingService.retry(() -> bpmUtil.cleanUp());
+        pollingService.retry(() -> salesOrderRepository.deleteAll());
+        pollingService.retry(() -> salesOrderReturnRepository.deleteAll());
     }
 }
