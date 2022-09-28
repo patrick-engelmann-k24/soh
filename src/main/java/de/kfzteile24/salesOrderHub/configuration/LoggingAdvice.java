@@ -28,7 +28,11 @@ class LoggingAdvice {
     private final AmazonSQSAsync amazonSQSAsync;
     private final MessageErrorHandler messageErrorHandler;
 
-    @Around("execution(public void de.kfzteile24.salesOrderHub.services.general.GeneralSqsReceiveService.*(String, String, Integer))")
+    @Around("execution(public void de.kfzteile24.salesOrderHub.services.salesorder.SalesOrderSqsReceiveService.*(String, String, Integer)) || " +
+            "execution(public void de.kfzteile24.salesOrderHub.services.financialdocuments.FinancialDocumentsSqsReceiveService.*(String, String, Integer)) || " +
+            "execution(public void de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentSqsReceiveService.*(String, String, Integer)) || " +
+            "execution(public void de.kfzteile24.salesOrderHub.services.migration.MigrationSqsReceiveService.*(String, String, Integer)) || " +
+            "execution(public void de.kfzteile24.salesOrderHub.services.general.GeneralSqsReceiveService.*(String, String, Integer))")
     Object incomingMessageLogging(ProceedingJoinPoint joinPoint) throws Throwable {
         logReceivedMessage(joinPoint.getArgs());
         return joinPoint.proceed();
