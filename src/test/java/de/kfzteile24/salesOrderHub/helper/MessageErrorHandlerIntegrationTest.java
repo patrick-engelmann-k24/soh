@@ -1,7 +1,7 @@
 package de.kfzteile24.salesOrderHub.helper;
 
 import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
-import de.kfzteile24.salesOrderHub.services.sqs.SqsReceiveService;
+import de.kfzteile24.salesOrderHub.services.migration.MigrationSqsReceiveService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,10 +15,10 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 
 @Slf4j
-class MessageErrorHandlerIntegrationTestt extends AbstractIntegrationTest {
+class MessageErrorHandlerIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
-    private SqsReceiveService sqsReceiveService;
+    private MigrationSqsReceiveService migrationSqsReceiveService;
 
     @Test
     @DisplayName("Test Error Handler Message for Migration Core Sales Order Created")
@@ -27,7 +27,7 @@ class MessageErrorHandlerIntegrationTestt extends AbstractIntegrationTest {
         log.info(testInfo.getDisplayName());
         String rawMessage = "test";
         try {
-            sqsReceiveService.queueListenerMigrationCoreSalesOrderCreated(rawMessage, "senderId", 3);
+            migrationSqsReceiveService.queueListenerMigrationCoreSalesOrderCreated(rawMessage, "senderId", 3);
             fail("should throw exception");
         } catch (Exception e) {
             //ignore
@@ -43,7 +43,7 @@ class MessageErrorHandlerIntegrationTestt extends AbstractIntegrationTest {
         log.info(testInfo.getDisplayName());
         String rawMessage = "test";
         try {
-            sqsReceiveService.queueListenerMigrationCoreSalesInvoiceCreated(rawMessage, "senderId", 3);
+            migrationSqsReceiveService.queueListenerMigrationCoreSalesInvoiceCreated(rawMessage, "senderId", 3);
         } catch (Exception e) {
             //ignore
         }

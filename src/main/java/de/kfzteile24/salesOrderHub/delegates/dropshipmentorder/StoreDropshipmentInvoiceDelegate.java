@@ -3,7 +3,7 @@ package de.kfzteile24.salesOrderHub.delegates.dropshipmentorder;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.delegates.CommonDelegate;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
-import de.kfzteile24.salesOrderHub.services.InvoiceService;
+import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;

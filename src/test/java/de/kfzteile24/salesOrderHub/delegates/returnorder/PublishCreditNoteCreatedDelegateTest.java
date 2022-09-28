@@ -2,7 +2,7 @@ package de.kfzteile24.salesOrderHub.delegates.returnorder;
 
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.dto.events.SalesCreditNoteCreatedEvent;
-import de.kfzteile24.salesOrderHub.services.CreditNoteService;
+import de.kfzteile24.salesOrderHub.services.financialdocuments.CreditNoteService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import org.camunda.bpm.engine.delegate.DelegateExecution;

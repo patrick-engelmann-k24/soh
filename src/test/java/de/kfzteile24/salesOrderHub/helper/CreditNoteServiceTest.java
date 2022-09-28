@@ -1,7 +1,7 @@
 package de.kfzteile24.salesOrderHub.helper;
 
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
-import de.kfzteile24.salesOrderHub.services.CreditNoteService;
+import de.kfzteile24.salesOrderHub.services.financialdocuments.CreditNoteService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
