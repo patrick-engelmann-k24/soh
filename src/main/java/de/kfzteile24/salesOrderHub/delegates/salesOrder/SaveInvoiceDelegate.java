@@ -31,10 +31,17 @@ class SaveInvoiceDelegate implements JavaDelegate {
         final var orderNumber = (String) delegateExecution.getVariable(Variables.ORDER_NUMBER.getName());
         final var invoiceUrl = (String) delegateExecution.getVariable(Variables.INVOICE_URL.getName());
 
-        var salesOrderInvoice = createAndSaveSalesOrderInvoice(orderNumber, invoiceUrl);
-
-        salesOrderService.getOrderByOrderNumber(orderNumber)
-                .ifPresent(salesOrder -> invoiceService.addSalesOrderToInvoice(salesOrder, salesOrderInvoice));
+        final var invoiceNumber = InvoiceUrlExtractor.extractInvoiceNumber(invoiceUrl);
+        final var invoiceExists = invoiceService.invoiceExistsForInvoiceNumber(invoiceNumber);
+        boolean isDuplicateDropshipmentInvoice = false;
+        if(!invoiceExists) {
+            var salesOrderInvoice = createAndSaveSalesOrderInvoice(orderNumber, invoiceUrl);
+            salesOrderService.getOrderByOrderNumber(orderNumber)
+                    .ifPresent(salesOrder -> invoiceService.addSalesOrderToInvoice(salesOrder, salesOrderInvoice));
+        } else {
+            isDuplicateDropshipmentInvoice = true;
+        }
+        delegateExecution.setVariable(Variables.IS_DUPLICATE_DROPSHIPMENT_INVOICE.getName(), isDuplicateDropshipmentInvoice);
     }
 
     private SalesOrderInvoice createAndSaveSalesOrderInvoice(String orderNumber, String invoiceUrl) {

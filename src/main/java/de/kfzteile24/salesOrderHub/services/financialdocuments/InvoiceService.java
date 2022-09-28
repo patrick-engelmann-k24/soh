@@ -73,6 +73,11 @@ public class InvoiceService {
         return invoiceRepository.save(invoice);
     }
 
+    public boolean invoiceExistsForInvoiceNumber(String invoiceNumber) {
+
+        return invoiceRepository.existsByInvoiceNumber(invoiceNumber);
+    }
+
     @Transactional
     public SalesOrderInvoice addSalesOrderToInvoice(SalesOrder salesOrder, SalesOrderInvoice invoice) {
         final var auditLog = AuditLog.builder()
