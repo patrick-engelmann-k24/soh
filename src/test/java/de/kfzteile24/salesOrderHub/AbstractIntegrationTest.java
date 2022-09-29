@@ -7,11 +7,11 @@ import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.PublishDropshipme
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.helper.MessageErrorHandler;
 import de.kfzteile24.salesOrderHub.helper.SleuthHelper;
-import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentOrderService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderRowService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
+import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentOrderService;
 import de.kfzteile24.salesOrderHub.services.property.KeyValuePropertyService;
 import de.kfzteile24.salesOrderHub.services.splitter.decorator.ItemSplitService;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapperUtil;
@@ -26,6 +26,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.cloud.aws.messaging.core.NotificationMessagingTemplate;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Import;
@@ -35,6 +36,8 @@ import java.util.Objects;
 
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
 import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.reset;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
 
 @Slf4j
 @SpringBootTest
@@ -79,6 +82,8 @@ public abstract class AbstractIntegrationTest implements ApplicationContextAware
     protected PublishDropshipmentOrderCreatedDelegate publishDropshipmentOrderCreatedDelegate;
     @SpyBean
     protected MessageErrorHandler messageErrorHandler;
+    @SpyBean
+    protected NotificationMessagingTemplate notificationMessagingTemplate;
 
     /**
      * The application context gets created only once for all the model tests
@@ -105,5 +110,6 @@ public abstract class AbstractIntegrationTest implements ApplicationContextAware
         log.info("Process engine name: {}. Object id: {}", processEngine.getName(), processEngine);
         reset();
         init(processEngine);
+        doNothing().when(notificationMessagingTemplate).sendNotification(any(), any(), any());
     }
 }

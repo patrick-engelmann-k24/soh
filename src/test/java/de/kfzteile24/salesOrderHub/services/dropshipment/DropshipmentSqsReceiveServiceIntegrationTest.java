@@ -50,8 +50,6 @@ import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrder
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
 
 /**
  * @author stefand
@@ -86,13 +84,6 @@ class DropshipmentSqsReceiveServiceIntegrationTest extends AbstractIntegrationTe
         auditLogRepository.deleteAll();
         invoiceNumberCounterRepository.deleteAll();
         invoiceNumberCounterService.init();
-        doNothing().when(snsPublishService).publishDropshipmentOrderCreatedEvent(any());
-        doNothing().when(snsPublishService).publishOrderCreated(any());
-        doNothing().when(snsPublishService).publishSalesOrderShipmentConfirmedEvent(any(), any());
-        doNothing().when(snsPublishService).publishCoreInvoiceReceivedEvent(any());
-        doNothing().when(snsPublishService).publishOrderCompleted(any());
-        doNothing().when(snsPublishService).publishOrderCancelled(any());
-        doNothing().when(snsPublishService).publishOrderRowCancelled(any(), any());
     }
 
     @Test
