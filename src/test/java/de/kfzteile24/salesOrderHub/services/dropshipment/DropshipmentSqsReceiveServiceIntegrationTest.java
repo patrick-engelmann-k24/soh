@@ -14,6 +14,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
+import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,6 +50,8 @@ import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrder
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
 
 /**
  * @author stefand
@@ -83,6 +86,13 @@ class DropshipmentSqsReceiveServiceIntegrationTest extends AbstractIntegrationTe
         auditLogRepository.deleteAll();
         invoiceNumberCounterRepository.deleteAll();
         invoiceNumberCounterService.init();
+        doNothing().when(snsPublishService).publishDropshipmentOrderCreatedEvent(any());
+        doNothing().when(snsPublishService).publishOrderCreated(any());
+        doNothing().when(snsPublishService).publishSalesOrderShipmentConfirmedEvent(any(), any());
+        doNothing().when(snsPublishService).publishCoreInvoiceReceivedEvent(any());
+        doNothing().when(snsPublishService).publishOrderCompleted(any());
+        doNothing().when(snsPublishService).publishOrderCancelled(any());
+        doNothing().when(snsPublishService).publishOrderRowCancelled(any(), any());
     }
 
     @Test
@@ -188,27 +198,27 @@ class DropshipmentSqsReceiveServiceIntegrationTest extends AbstractIntegrationTe
     }
 
     private void callQueueListenerDropshipmentShipmentConfirmed(SalesOrder salesOrder) {
-        camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
+        ProcessInstance orderProcess = camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
 
         assertTrue(timedPollingService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
                 camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
 
         assertTrue(timedPollingService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
-                camundaHelper.hasPassed(salesOrder.getProcessId(), EVENT_THROW_MSG_PURCHASE_ORDER_CREATED.getName())));
+                camundaHelper.hasPassed(orderProcess.getProcessInstanceId(), EVENT_THROW_MSG_PURCHASE_ORDER_CREATED.getName())));
 
         bpmUtil.sendMessage(Messages.DROPSHIPMENT_ORDER_CONFIRMED, salesOrder.getOrderNumber(),
                 Map.of(IS_DROPSHIPMENT_ORDER_CONFIRMED.getName(), true));
 
         assertTrue(timedPollingService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
-                camundaHelper.hasPassed(salesOrder.getProcessId(), THROW_MSG_DROPSHIPMENT_ORDER_CREATED.getName())));
+                camundaHelper.hasPassed(orderProcess.getProcessInstanceId(), THROW_MSG_DROPSHIPMENT_ORDER_CREATED.getName())));
 
         dropshipmentSqsReceiveService.queueListenerDropshipmentShipmentConfirmed(getDropshipmentShipmentConfirmed(salesOrder), ANY_SENDER_ID, ANY_RECEIVE_COUNT);
 
         assertTrue(timedPollingService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
-                camundaHelper.hasPassed(salesOrder.getProcessId(), EVENT_THROW_MSG_PURCHASE_ORDER_SUCCESSFUL.getName())));
+                camundaHelper.hasPassed(orderProcess.getProcessInstanceId(), EVENT_THROW_MSG_PURCHASE_ORDER_SUCCESSFUL.getName())));
 
         assertTrue(timedPollingService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
-                camundaHelper.hasPassed(salesOrder.getProcessId(), EVENT_MSG_DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED.getName())));
+                camundaHelper.hasPassed(orderProcess.getProcessInstanceId(), EVENT_MSG_DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED.getName())));
     }
 
     @NotNull
