@@ -49,11 +49,29 @@ class InvoiceSavedDelegateTest {
         originalOrder.getOrderHeader().setOrderFulfillment("delticom");
         when(delegateExecution.getVariable(Variables.ORDER_NUMBER.getName())).thenReturn(salesOrder.getOrderNumber());
         when(delegateExecution.getVariable(Variables.INVOICE_URL.getName())).thenReturn(expectedInvoiceUrl);
+        when(delegateExecution.getVariable(Variables.IS_DUPLICATE_DROPSHIPMENT_INVOICE.getName())).thenReturn(false);
         when(salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber())).thenReturn(Optional.of(salesOrder));
 
         invoiceSavedDelegate.execute(delegateExecution);
 
         verify(snsPublishService).publishOrderInvoiceCreated(salesOrder.getOrderNumber(), expectedInvoiceUrl);
+    }
+
+    @Test
+    @SneakyThrows
+    void whenDuplicateDropshipmentInvoiceUrlThenNeverPublishInvoiceCreatedEvent() {
+
+        var salesOrder = SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
+        var originalOrder = (Order) salesOrder.getOriginalOrder();
+        originalOrder.getOrderHeader().setOrderFulfillment("delticom");
+        when(delegateExecution.getVariable(Variables.ORDER_NUMBER.getName())).thenReturn(salesOrder.getOrderNumber());
+        when(delegateExecution.getVariable(Variables.INVOICE_URL.getName())).thenReturn(expectedInvoiceUrl);
+        when(delegateExecution.getVariable(Variables.IS_DUPLICATE_DROPSHIPMENT_INVOICE.getName())).thenReturn(true);
+        when(salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber())).thenReturn(Optional.of(salesOrder));
+
+        invoiceSavedDelegate.execute(delegateExecution);
+
+        verify(snsPublishService, never()).publishOrderInvoiceCreated(salesOrder.getOrderNumber(), expectedInvoiceUrl);
     }
 
     @Test

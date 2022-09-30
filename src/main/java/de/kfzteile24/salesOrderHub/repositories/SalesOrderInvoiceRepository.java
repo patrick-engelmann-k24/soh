@@ -18,4 +18,6 @@ public interface SalesOrderInvoiceRepository extends JpaRepository<SalesOrderInv
     Optional<SalesOrderInvoice> findFirstBySourceAndInvoiceNumberStartsWithOrderByInvoiceNumberDesc(InvoiceSource source, String invoiceNumberStartsWith);
 
     boolean existsByOrderNumber(String orderNumber);
+
+    boolean existsByInvoiceNumber(String invoiceNumber);
 }
