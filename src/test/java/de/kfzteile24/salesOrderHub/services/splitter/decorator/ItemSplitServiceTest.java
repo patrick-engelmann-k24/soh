@@ -8,11 +8,14 @@ import de.kfzteile24.salesOrderHub.dto.pricing.Prices;
 import de.kfzteile24.salesOrderHub.dto.pricing.PricingItem;
 import de.kfzteile24.salesOrderHub.dto.pricing.SetUnitPriceAPIResponse;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
+import de.kfzteile24.salesOrderHub.exception.ProductNameNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.SumValues;
 import de.kfzteile24.soh.order.dto.UnitValues;
+import org.assertj.core.api.AssertionsForClassTypes;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -176,6 +179,29 @@ class ItemSplitServiceTest {
 
         final var product = itemSplitService.getProduct("2270-13013");
         assertThat(product).isEqualTo(productEnvelope.getProduct());
+        assertThat(product).isEqualTo(productEnvelope.getProduct());
+        assertThat(product.getLocalizations().size()).isGreaterThan(0);
+        assertThat(product.getLocalizations().get("DE")).isNotNull();
+        assertThat(product.getLocalizations().get("DE").getName()).isEqualTo("[MEZ] Warnblinkschalter");
+        assertThat(product.getLocalizations().get("DE").getGenart()).isEqualTo("Warnblinkschalter");
+        assertThat(itemSplitService.getProductName(product.getLocalizations().get("DE"))).isEqualTo("[MEZ] Warnblinkschalter");
+    }
+
+    @Test
+    @DisplayName("mapProductToOrderRows Throws ProductNotFoundException")
+    void mapProductToOrderRowsThrowsProductNotFoundException() {
+
+        final var product = getProductEnvelope(readResource("examples/product/2270-13013.json"));
+        final var order = getOrder(readResource("examples/splitterSalesOrderMessageWithTwoRows.json"));
+        final var firstRow = order.getOrderRows().get(0);
+        final var locale = order.getOrderHeader().getLocale();
+        assertThat(product.getProduct().getLocalizations().size()).isGreaterThan(0);
+        assertThat(product.getProduct().getLocalizations().get("DE")).isNotNull();
+        product.getProduct().getLocalizations().get("DE").setGenart(null);
+        product.getProduct().getLocalizations().get("DE").setName(null);
+
+        AssertionsForClassTypes.assertThatThrownBy(() -> itemSplitService.mapProductToOrderRows(product.getProduct(), firstRow, BigDecimal.valueOf(2), locale))
+                .isInstanceOf(ProductNameNotFoundException.class);
     }
 
     @Test

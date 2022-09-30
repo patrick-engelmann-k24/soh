@@ -85,11 +85,10 @@ class MigrationSqsReceiveServiceIntegrationTest extends AbstractIntegrationTest 
 
     @BeforeEach
     public void setup() {
-        super.setUp();
-        bpmUtil.cleanUp();
-        salesOrderRepository.deleteAll();
-        auditLogRepository.deleteAll();
-        invoiceNumberCounterRepository.deleteAll();
+        timedPollingService.retry(() -> salesOrderRepository.deleteAll());
+        timedPollingService.retry(() -> auditLogRepository.deleteAll());
+        timedPollingService.retry(() -> bpmUtil.cleanUp());
+        timedPollingService.retry(() -> invoiceNumberCounterRepository.deleteAll());
         invoiceNumberCounterService.init();
     }
 
