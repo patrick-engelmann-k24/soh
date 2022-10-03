@@ -30,8 +30,7 @@ data "aws_iam_policy_document" "sns_sqs_access_policy" {
       data.aws_sns_topic.sns_soh_dropshipment_order_created_v1.arn,
       data.aws_sns_topic.sns_soh_dropshipment_order_return_notified_v1.arn,
       data.aws_sns_topic.sns_parcel_shipped.arn,
-      data.aws_sns_topic.sns_soh_payout_receipt_confirmation_received_v1.arn,
-      data.aws_sns_topic.sns_soh_invoice_pdf_generation_triggered_v1.arn
+      data.aws_sns_topic.sns_soh_payout_receipt_confirmation_received_v1.arn
     ]
   }
   statement {
@@ -70,10 +69,8 @@ data "aws_iam_policy_document" "sns_sqs_access_policy" {
       aws_sqs_queue.core_shop_orders_dlq.arn,
       aws_sqs_queue.soh_core_sales_invoice_created_dlq.arn,
       aws_sqs_queue.soh_parcel_shipped_dlq.arn,
-      aws_sqs_queue.soh_invoices_from_core_dlq.arn,
       aws_sqs_queue.soh_core_sales_credit_note_created_dlq.arn,
-      aws_sqs_queue.soh_paypal_refund_instruction_successful_dlq.arn,
-      aws_sqs_queue.d365_order_payment_secured_dlq.arn
+      aws_sqs_queue.soh_paypal_refund_instruction_successful_dlq.arn
     ]
   }
   statement {

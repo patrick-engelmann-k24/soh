@@ -76,7 +76,6 @@ soh:
       dropshipmentOrderCreatedV1: ${sns_soh_dropshipment_order_created_v1}
       dropshipmentOrderReturnNotifiedV1: ${sns_soh_dropshipment_order_return_notified_v1}
       payoutReceiptConfirmationReceivedV1: ${sns_soh_payout_receipt_confirmation_received_v1}
-      invoicePdfGenerationTriggeredV1: ${sns_soh_invoice_pdf_generation_triggered_v1}
   sqs:
     queue:
       ecpShopOrders: ${soh_sqs_ecp_shop_orders}
@@ -154,8 +153,6 @@ logbook:
     headers:
     parameters:
 
-
-
 kfzteile:
   product-data-hub:
     pdhUrl: https://pdh-dashboard-api.${environment:stage}.kfzteile24.io
@@ -186,10 +183,8 @@ kfzteile:
         - 10041
         - 10042
   persistent-properties:
-    - key: pauseDropshipmentProcessing
-      value: true
-      overwrite-on-startup: false
-    - key: preventDropshipmentOrderReturnConfirmed
+    -
+      key: pauseDropshipmentProcessing
       value: true
       overwrite-on-startup: false
   pricing-service:

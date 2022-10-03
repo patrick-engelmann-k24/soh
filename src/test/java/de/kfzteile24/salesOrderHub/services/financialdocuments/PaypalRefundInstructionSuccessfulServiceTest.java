@@ -22,7 +22,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class PaypalRefundInstructionSuccessfulServiceTest {
+public class PaypalRefundInstructionSuccessfulServiceTest {
 
     @Mock
     private SalesOrderReturnService salesOrderReturnService;
@@ -36,24 +36,30 @@ class PaypalRefundInstructionSuccessfulServiceTest {
 
     @Test
     void testExceptionThrownWhenReturnOrderDoesNotExist() {
+
+        var returnOrderNumber = "123456789-123456789";
         var message = getObjectByResource("paypalRefundInstructionSuccessful.json", PaypalRefundInstructionSuccessfulEvent.class);
         var messageWrapper = MessageWrapper.builder().build();
 
-        when(salesOrderReturnService.getReturnOrder("123456789", "123456789")).thenReturn(Optional.empty());
+        when(salesOrderReturnService.getByOrderNumber(returnOrderNumber)).thenReturn(Optional.empty());
+        when(orderUtil.createOrderNumberInSOH("123456789", "123456789")).thenReturn(returnOrderNumber);
 
         assertThatThrownBy(() -> paypalRefundInstructionSuccessfulService.handlePaypalRefundInstructionSuccessful(
                 message, messageWrapper))
                 .isExactlyInstanceOf(SalesOrderReturnNotFoundException.class)
-                .hasMessageContaining("Sales order return not found for the given order number 123456789 and credit note number 123456789 ");
+                .hasMessageContaining("Sales order return not found for the given order number " + returnOrderNumber);
     }
 
     @Test
     void testHandlePaypalRefundInstructionSuccessful() {
+
+        var returnOrderNumber = "123456789-123456789";
         var message = getObjectByResource("paypalRefundInstructionSuccessful.json", PaypalRefundInstructionSuccessfulEvent.class);
         var messageWrapper = MessageWrapper.builder().build();
         SalesOrderReturn salesOrderReturn = SalesOrderReturn.builder().build();
 
-        when(salesOrderReturnService.getReturnOrder("123456789", "123456789")).thenReturn(Optional.of(salesOrderReturn));
+        when(salesOrderReturnService.getByOrderNumber(returnOrderNumber)).thenReturn(Optional.of(salesOrderReturn));
+        when(orderUtil.createOrderNumberInSOH("123456789", "123456789")).thenReturn(returnOrderNumber);
         when(orderUtil.isDropshipmentOrder(salesOrderReturn.getReturnOrderJson())).thenReturn(true);
 
         paypalRefundInstructionSuccessfulService.handlePaypalRefundInstructionSuccessful(message, messageWrapper);
@@ -63,11 +69,14 @@ class PaypalRefundInstructionSuccessfulServiceTest {
 
     @Test
     void testHandlePaypalRefundInstructionSuccessfulNotDropshipmentOrder() {
+
+        var returnOrderNumber = "123456789-123456789";
         var message = getObjectByResource("paypalRefundInstructionSuccessful.json", PaypalRefundInstructionSuccessfulEvent.class);
         var messageWrapper = MessageWrapper.builder().build();
         SalesOrderReturn salesOrderReturn = SalesOrderReturn.builder().build();
 
-        when(salesOrderReturnService.getReturnOrder("123456789", "123456789")).thenReturn(Optional.of(salesOrderReturn));
+        when(salesOrderReturnService.getByOrderNumber(returnOrderNumber)).thenReturn(Optional.of(salesOrderReturn));
+        when(orderUtil.createOrderNumberInSOH("123456789", "123456789")).thenReturn(returnOrderNumber);
         when(orderUtil.isDropshipmentOrder(salesOrderReturn.getReturnOrderJson())).thenReturn(false);
 
         paypalRefundInstructionSuccessfulService.handlePaypalRefundInstructionSuccessful(message, messageWrapper);

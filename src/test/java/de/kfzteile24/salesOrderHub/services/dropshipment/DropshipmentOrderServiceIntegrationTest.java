@@ -19,7 +19,6 @@ import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderReturnNotFoundException;
-import de.kfzteile24.salesOrderHub.exception.SalesOrderReturnNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.EventType;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
@@ -59,8 +58,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
-import static de.kfzteile24.salesOrderHub.constants.SOHConstants.ORDER_NUMBER_SEPARATOR;
-import static de.kfzteile24.salesOrderHub.constants.SOHConstants.RETURN_ORDER_NUMBER_PREFIX;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_END_MSG_DROPSHIPMENT_ORDER_ROW_CANCELLED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_SIGNAL_PAUSE_PROCESSING_DROPSHIPMENT_ORDER;
@@ -153,14 +150,14 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
 
         dropshipmentOrderService.handleDropshipmentPurchaseOrderReturnConfirmed(message);
 
-        String returnOrderNumber = RETURN_ORDER_NUMBER_PREFIX + ORDER_NUMBER_SEPARATOR + nextCreditNoteNumber;
+        String returnOrderNumber = salesOrder.getOrderNumber() + "-" + nextCreditNoteNumber;
         SalesOrderReturn updatedOrder = salesOrderReturnService.getByOrderNumber(returnOrderNumber)
                 .orElseThrow(() -> new SalesOrderReturnNotFoundException(returnOrderNumber));
         SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage = updatedOrder.getSalesCreditNoteCreatedMessage();
         assertNotNull(updatedOrder);
         assertEquals(nextCreditNoteNumber, updatedOrder.getSalesCreditNoteCreatedMessage().getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteNumber());
 
-        assertThat(salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber()).isEqualTo(returnOrderNumber);
+        assertThat(salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber()).isEqualTo(salesOrder.getOrderNumber() + "-" + nextCreditNoteNumber);
         assertSalesCreditNoteCreatedMessage(salesCreditNoteCreatedMessage, salesOrder);
     }
 

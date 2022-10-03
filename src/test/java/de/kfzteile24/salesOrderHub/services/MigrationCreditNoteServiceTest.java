@@ -19,6 +19,8 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Optional;
+
 import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createOrderNumberInSOH;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrderFromOrder;
@@ -71,7 +73,7 @@ class MigrationCreditNoteServiceTest {
 
         SalesOrder salesOrder = createSalesOrder(orderNumber);
         SalesOrderReturn salesOrderReturn = getSalesOrderReturn(salesOrder, creditNoteNumber);
-        when(salesOrderReturnService.getByOrderNumber(salesOrderReturn.getOrderNumber())).thenReturn(salesOrderReturn);
+        when(salesOrderReturnService.getByOrderNumber(salesOrderReturn.getOrderNumber())).thenReturn(Optional.of(salesOrderReturn));
         when(salesOrderService.createOrderNumberInSOH(orderNumber, creditNoteNumber)).thenReturn(createOrderNumberInSOH(orderNumber, creditNoteNumber));
 
         migrationCreditNoteService.handleMigrationCoreSalesCreditNoteCreated(message, messageWrapper);
@@ -86,7 +88,7 @@ class MigrationCreditNoteServiceTest {
         var orderNumber = message.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber();
         var creditNoteNumber = message.getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteNumber();
 
-        when(salesOrderReturnService.getByOrderNumber(any())).thenReturn(null);
+        when(salesOrderReturnService.getByOrderNumber(any())).thenReturn(Optional.empty());
         when(salesOrderService.createOrderNumberInSOH(orderNumber, creditNoteNumber)).thenReturn(createOrderNumberInSOH(orderNumber, creditNoteNumber));
 
         migrationCreditNoteService.handleMigrationCoreSalesCreditNoteCreated(message, messageWrapper);

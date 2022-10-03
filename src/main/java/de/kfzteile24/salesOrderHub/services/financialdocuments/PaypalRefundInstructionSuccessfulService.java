@@ -29,20 +29,16 @@ public class PaypalRefundInstructionSuccessfulService {
 
         var orderGroupId = message.getEvent().getPaypalRequestPayload().getOrderGroupId();
         var creditNoteNumber = message.getEvent().getPaypalRequestPayload().getCreditNoteNumber();
+        var returnOrderNumber = orderUtil.createOrderNumberInSOH(orderGroupId, creditNoteNumber);
 
-        log.info("Received core sales credit note created message with order group id: {} and credit note number:{}",
-                orderGroupId,
-                creditNoteNumber);
-        SalesOrderReturn salesOrderReturn = salesOrderReturnService.getReturnOrder(orderGroupId, creditNoteNumber)
-                .orElseThrow(() -> new SalesOrderReturnNotFoundException(orderGroupId, creditNoteNumber));
+        log.info("Received core sales credit note created message with order number: {}", returnOrderNumber);
+        SalesOrderReturn salesOrderReturn = salesOrderReturnService.getByOrderNumber(returnOrderNumber)
+                .orElseThrow(() -> new SalesOrderReturnNotFoundException(returnOrderNumber));
 
         if (orderUtil.isDropshipmentOrder(salesOrderReturn.getReturnOrderJson())) {
             snsPublishService.publishPayoutReceiptConfirmationReceivedEvent(salesOrderReturn);
         } else {
-            log.info("Return order searched with order group id {} and credit note number {} is not dropshipment, " +
-                            "paypal refund message is ignored",
-                    orderGroupId,
-                    creditNoteNumber);
+            log.info("Return order {} is not dropshipment, paypal refund message is ignored", returnOrderNumber);
         }
     }
 }

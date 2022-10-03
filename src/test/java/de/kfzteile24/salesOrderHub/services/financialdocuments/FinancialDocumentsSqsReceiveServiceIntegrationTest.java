@@ -9,6 +9,7 @@ import de.kfzteile24.salesOrderHub.domain.audit.Action;
 import de.kfzteile24.salesOrderHub.dto.shared.creditnote.SalesCreditNoteHeader;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
+import de.kfzteile24.salesOrderHub.exception.SalesOrderReturnNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.ObjectUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
@@ -121,7 +122,8 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
 
         SalesCreditNoteHeader salesCreditNoteHeader = message.getSalesCreditNote().getSalesCreditNoteHeader();
         String returnOrderNumber = createOrderNumberInSOH(salesCreditNoteHeader.getOrderNumber(), salesCreditNoteHeader.getCreditNoteNumber());
-        SalesOrderReturn returnSalesOrder = salesOrderReturnService.getByOrderNumber(returnOrderNumber);
+        SalesOrderReturn returnSalesOrder = salesOrderReturnService.getByOrderNumber(returnOrderNumber)
+                .orElseThrow(() -> new SalesOrderReturnNotFoundException(returnOrderNumber));
         Order returnOrder = returnSalesOrder.getReturnOrderJson();
 
         checkOrderRowValues(returnOrder.getOrderRows());

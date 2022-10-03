@@ -13,8 +13,6 @@ import de.kfzteile24.salesOrderHub.exception.NoProcessInstanceFoundException;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.helper.SleuthHelper;
 import de.kfzteile24.salesOrderHub.services.InvoiceUrlExtractor;
-import de.kfzteile24.salesOrderHub.services.sqs.EnrichMessageForDlq;
-import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Payments;
@@ -150,8 +148,7 @@ public class CamundaHelper {
                 .correlateWithResult().getProcessInstance();
     }
 
-    @EnrichMessageForDlq
-    public void handleInvoiceFromCore(String invoiceUrl, MessageWrapper messageWrapper) {
+    public void handleInvoiceFromCore(String invoiceUrl) {
         final var orderNumber = InvoiceUrlExtractor.extractOrderNumber(invoiceUrl);
 
         log.info("Received invoice from core with order number: {} ", orderNumber);
@@ -164,8 +161,7 @@ public class CamundaHelper {
         log.info("Invoice {} from core for order-number {} successfully received", invoiceUrl, orderNumber);
     }
 
-    @EnrichMessageForDlq
-    public void handleCreditNoteFromDropshipmentOrderReturn(String invoiceUrl, MessageWrapper messageWrapper) {
+    public void handleCreditNoteFromDropshipmentOrderReturn(String invoiceUrl) {
 
         final var returnOrderNumber = InvoiceUrlExtractor.extractReturnOrderNumber(invoiceUrl);
         log.info("Received credit note from dropshipment with return order number: {} ", returnOrderNumber);

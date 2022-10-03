@@ -146,10 +146,6 @@ data aws_sns_topic "sns_soh_payout_receipt_confirmation_received_v1" {
   name = "soh-payout-receipt-confirmation-received-v1"
 }
 
-data aws_sns_topic "sns_soh_invoice_pdf_generation_triggered_v1" {
-  name = "soh-invoice-pdf-generation-triggered-v1"
-}
-
 # subscriptions of sqs to sns
 resource "aws_sns_topic_subscription" "sns_subscription_ecp_orders_v3" {
   endpoint = aws_sqs_queue.ecp_shop_orders.arn

@@ -64,24 +64,10 @@ public class SalesOrderReturnService {
     }
 
     @Transactional(readOnly = true)
-    public Optional<SalesOrderReturn> getReturnOrder(String orderNumber, String creditNoteNumber) {
-
-        var oldReturnOrderNumber = orderUtil.createOldFormatReturnOrderNumberInSOH(orderNumber, creditNoteNumber);
-        var newReturnOrderNumber = orderUtil.createReturnOrderNumberInSOH(creditNoteNumber);
-
-        Optional<SalesOrderReturn> returnOrderWithNewPattern = getByOrderNumber(newReturnOrderNumber);
-        if (returnOrderWithNewPattern.isPresent()) {
-            return returnOrderWithNewPattern;
-        }
-
-        return getByOrderNumber(oldReturnOrderNumber);
-    }
-
-    @Transactional(readOnly = true)
-    public boolean checkReturnOrderNotExists(String orderNumber, final String creditNoteNumber) {
-        if (getReturnOrder(orderNumber, creditNoteNumber).isPresent()) {
+    public boolean checkOrderNotExists(final String orderNumber) {
+        if (getByOrderNumber(orderNumber).isPresent()) {
             log.warn("The following order return won't be processed because it exists in SOH system already from another source. " +
-                    "Order Number: {} and Credit Note Number: {}", orderNumber, creditNoteNumber);
+                    "Order Number: {}", orderNumber);
             return false;
         }
         return true;
@@ -123,53 +109,34 @@ public class SalesOrderReturnService {
     public void handleSalesOrderReturn(SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage, Action action, Messages message) {
         var salesCreditNoteHeader = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader();
         var orderNumber = salesCreditNoteHeader.getOrderNumber();
-        var creditNoteNumber = salesCreditNoteHeader.getCreditNoteNumber();
+        var creditNoteLines = salesCreditNoteHeader.getCreditNoteLines();
+        var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
+                .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
+        var returnOrderJson = recalculateOrderByReturns(salesOrder, getOrderRowUpdateItems(creditNoteLines));
+        updateShippingCosts(returnOrderJson, creditNoteLines);
+        returnOrderJson = orderUtil.removeInvalidGrandTotalTaxes(returnOrderJson);
 
-        if (checkReturnOrderNotExists(salesCreditNoteHeader.getOrderGroupId(), creditNoteNumber)) {
-            var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
-                    .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
+        String newOrderNumber = orderUtil.createOrderNumberInSOH(orderNumber, salesCreditNoteHeader.getCreditNoteNumber());
 
-            SalesOrderReturn salesOrderReturn = createSalesOrderReturn(
-                    salesCreditNoteCreatedMessage,
-                    salesOrder);
+        if (checkOrderNotExists(newOrderNumber)) {
+            returnOrderJson.getOrderHeader().setOrderNumber(newOrderNumber);
+            returnOrderJson.getOrderHeader().setOrderDateTime(DATE_TIME_FORMATTER.format(LocalDateTime.now()));
 
-            ProcessInstance result = helper.createReturnOrderProcess(save(salesOrderReturn, action), message);
+            var salesOrderReturn = SalesOrderReturn.builder()
+                    .orderGroupId(salesOrder.getOrderGroupId())
+                    .orderNumber(newOrderNumber)
+                    .returnOrderJson(returnOrderJson)
+                    .salesOrder(salesOrder)
+                    .salesCreditNoteCreatedMessage(updateByOrderNumber(salesCreditNoteCreatedMessage, newOrderNumber))
+                    .build();
+
+            SalesOrderReturn savedSalesOrderReturn = save(salesOrderReturn, action);
+            ProcessInstance result = helper.createReturnOrderProcess(savedSalesOrderReturn, message);
             if (result != null) {
                 log.info("New return order process started for order number: {}. Process-Instance-ID: {} ",
                         orderNumber, result.getProcessInstanceId());
             }
         }
-    }
-
-    private SalesOrderReturn createSalesOrderReturn(SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage,
-                                                    SalesOrder salesOrder) {
-        var creditNoteNumber =
-                salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteNumber();
-        var newReturnOrderNumber = orderUtil.createReturnOrderNumberInSOH(creditNoteNumber);
-
-        return SalesOrderReturn.builder()
-                .orderGroupId(salesOrder.getOrderGroupId())
-                .orderNumber(newReturnOrderNumber)
-                .returnOrderJson(
-                        createReturnOrderJson(salesCreditNoteCreatedMessage, salesOrder, newReturnOrderNumber))
-                .salesOrder(salesOrder)
-                .salesCreditNoteCreatedMessage(
-                        createCreditNoteEventMessage(salesCreditNoteCreatedMessage, newReturnOrderNumber))
-                .build();
-    }
-
-    private Order createReturnOrderJson(SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage,
-                                        SalesOrder salesOrder, String newReturnOrderNumber) {
-        var creditNoteLines =
-                salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteLines();
-        var returnOrderJson = recalculateOrderByReturns(salesOrder, getOrderRowUpdateItems(creditNoteLines));
-
-        updateShippingCosts(returnOrderJson, creditNoteLines);
-        returnOrderJson = orderUtil.removeInvalidGrandTotalTaxes(returnOrderJson);
-        returnOrderJson.getOrderHeader().setOrderNumber(newReturnOrderNumber);
-        returnOrderJson.getOrderHeader().setOrderGroupId(salesOrder.getOrderGroupId());
-        returnOrderJson.getOrderHeader().setOrderDateTime(DATE_TIME_FORMATTER.format(LocalDateTime.now()));
-        return returnOrderJson;
     }
 
     public Order recalculateOrderByReturns(SalesOrder salesOrder, Collection<CreditNoteLine> items) {
@@ -244,8 +211,8 @@ public class SalesOrderReturnService {
                             ifPresent(tax -> tax.setValue(tax.getValue().add(taxValueToAdd)));
                 });
     }
-    private SalesCreditNoteCreatedMessage createCreditNoteEventMessage(SalesCreditNoteCreatedMessage message,
-                                                                       String newOrderNumber) {
+    private SalesCreditNoteCreatedMessage updateByOrderNumber(SalesCreditNoteCreatedMessage message,
+                                                              String newOrderNumber) {
         return SalesCreditNoteCreatedMessage.builder()
                 .salesCreditNote(SalesCreditNote.builder()
                         .salesCreditNoteHeader(SalesCreditNoteHeader.builder()

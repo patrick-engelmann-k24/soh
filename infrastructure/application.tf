@@ -52,7 +52,6 @@ module "application_module" {
     sns_soh_dropshipment_order_created_v1      = data.aws_sns_topic.sns_soh_dropshipment_order_created_v1.arn
     sns_soh_dropshipment_order_return_notified_v1 = data.aws_sns_topic.sns_soh_dropshipment_order_return_notified_v1.arn
     sns_soh_payout_receipt_confirmation_received_v1 = data.aws_sns_topic.sns_soh_payout_receipt_confirmation_received_v1.arn
-    sns_soh_invoice_pdf_generation_triggered_v1 = data.aws_sns_topic.sns_soh_invoice_pdf_generation_triggered_v1.arn
 
     soh_sqs_ecp_shop_orders                    = aws_sqs_queue.ecp_shop_orders.id
     soh_sqs_bc_shop_orders                     = aws_sqs_queue.bc_shop_orders.id
