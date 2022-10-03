@@ -1,0 +1,58 @@
+{
+  "event": {
+    "OrderNumber": "512345678",
+    "OrderGroupId": "123123123123",
+    "PaypalAccountId": "123-456-789",
+    "SaleId": "12345678",
+    "CaptureId": "2345-6789",
+    "Currency": "EUR",
+    "RefundAmount": 12.34,
+    "TotalAmount": 50.0,
+    "Description": "description...",
+    "Reason": "reason...",
+    "InvoiceNumber": "712345678",
+    "RequestPayload": {
+      "AmountCustomerPayment": 10.0,
+      "CoreVoucherNumber": "1234567",
+      "CreditNoteNumber": "123456789",
+      "Currency": "AOA",
+      "CustAccount": "PM0000001",
+      "CustName": "Meerblick",
+      "DataAreaId": "k24",
+      "OrderGroupId": "123456789",
+      "OriginialTransactionNumber": "1",
+      "PayableAmount": 50.0,
+      "PaymentMethod": "Paypal"
+    }
+  },
+  "response": {
+    "id": "0P209507D6694645N",
+    "create_time": "2017-05-06T22:11:51Z",
+    "update_time": "2017-05-06T22:11:51Z",
+    "state": "COMPLETED",
+    "amount": {
+      "total": "2.34",
+      "currency": "USD"
+    },
+    "capture_id": "8F148933LY9388354",
+    "parent_payment": "PAY-8PT597110X687430LKGECATA",
+    "invoice_number": "INV-1234567",
+    "links": [
+      {
+        "href": "https://api-m.sandbox.paypal.com/v1/payments/refund/0P209507D6694645N",
+        "rel": "self",
+        "method": "GET"
+      },
+      {
+        "href": "https://api-m.sandbox.paypal.com/v1/payments/payment/PAY-8PT597110X687430LKGECATA",
+        "rel": "parent_payment",
+        "method": "GET"
+      },
+      {
+        "href": "https://api-m.sandbox.paypal.com/v1/payments/capture/8F148933LY9388354",
+        "rel": "capture",
+        "method": "GET"
+      }
+    ]
+  }
+}

@@ -51,6 +51,7 @@ module "application_module" {
     sns_migration_soh_return_order_created_v1  = data.aws_sns_topic.sns_migration_soh_return_order_created_v1.arn
     sns_soh_dropshipment_order_created_v1      = data.aws_sns_topic.sns_soh_dropshipment_order_created_v1.arn
     sns_soh_dropshipment_order_return_notified_v1 = data.aws_sns_topic.sns_soh_dropshipment_order_return_notified_v1.arn
+    sns_soh_payout_receipt_confirmation_received_v1 = data.aws_sns_topic.sns_soh_payout_receipt_confirmation_received_v1.arn
 
     soh_sqs_ecp_shop_orders                    = aws_sqs_queue.ecp_shop_orders.id
     soh_sqs_bc_shop_orders                     = aws_sqs_queue.bc_shop_orders.id
@@ -73,6 +74,7 @@ module "application_module" {
     soh_sqs_migration_core_sales_invoice_created = aws_sqs_queue.soh_migration_core_sales_invoice_created.id
     soh_sqs_migration_core_sales_credit_note_created = aws_sqs_queue.soh_migration_core_sales_credit_note_created.id
     soh_sqs_parcel_shipped                     = aws_sqs_queue.soh_parcel_shipped.id
+    soh_sqs_paypal_refund_instruction_successful = aws_sqs_queue.soh_paypal_refund_instruction_successful.id
 
     ignore_core_sales_invoice                  = var.ignore_core_sales_invoice
     ignore_core_credit_note                    = var.ignore_core_credit_note

@@ -1320,3 +1320,88 @@ resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_soh_core_sales_credi
   queue_url = aws_sqs_queue.soh_core_sales_credit_note_created_dlq.id
   policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_soh_core_sales_credit_note_created_dlq.json
 }
+
+data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_soh_paypal_refund_instruction_successful" {
+  statement {
+    sid = "SNS-soh-paypal-refund-instruction-successful"
+    effect = "Allow"
+
+    actions = [
+      "sqs:SendMessage",
+    ]
+
+    principals {
+      identifiers = ["*"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_paypal_refund_instruction_successful.arn
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sqs:*",
+    ]
+
+    principals {
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_paypal_refund_instruction_successful.arn
+    ]
+  }
+}
+
+resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_soh_paypal_refund_instruction_successful" {
+  queue_url = aws_sqs_queue.soh_paypal_refund_instruction_successful.id
+  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_soh_paypal_refund_instruction_successful.json
+}
+
+
+data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_soh_paypal_refund_instruction_successful_dlq" {
+  statement {
+    sid = "SNS-soh-paypal-refund-instruction-successful-dlq"
+    effect = "Allow"
+
+    actions = [
+      "sqs:SendMessage",
+    ]
+
+    principals {
+      identifiers = ["*"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_paypal_refund_instruction_successful_dlq.arn
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sqs:*",
+    ]
+
+    principals {
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_paypal_refund_instruction_successful_dlq.arn
+    ]
+  }
+}
+
+resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_soh_paypal_refund_instruction_successful_dlq" {
+  queue_url = aws_sqs_queue.soh_paypal_refund_instruction_successful_dlq.id
+  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_soh_paypal_refund_instruction_successful_dlq.json
+}

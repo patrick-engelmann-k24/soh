@@ -54,6 +54,10 @@ variable "invoices_from_core_sns" {
   type = string
 }
 
+variable "paypal_refund_success_sns" {
+  type = string
+}
+
 variable "db_performance_insight" {
   type = bool
 }

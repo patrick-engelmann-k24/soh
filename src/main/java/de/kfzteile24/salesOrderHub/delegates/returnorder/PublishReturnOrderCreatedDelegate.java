@@ -11,8 +11,6 @@ import org.camunda.bpm.engine.delegate.JavaDelegate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.Optional;
-
 @Component
 @Slf4j
 public class PublishReturnOrderCreatedDelegate implements JavaDelegate {
@@ -27,7 +25,7 @@ public class PublishReturnOrderCreatedDelegate implements JavaDelegate {
     public void execute(DelegateExecution delegateExecution) throws Exception {
 
         var orderNumber = (String) delegateExecution.getVariable(Variables.ORDER_NUMBER.getName());
-        SalesOrderReturn salesOrderReturn = Optional.of(salesOrderReturnService.getByOrderNumber(orderNumber))
+        SalesOrderReturn salesOrderReturn = salesOrderReturnService.getByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderReturnNotFoundException(orderNumber));
         snsPublishService.publishReturnOrderCreatedEvent(salesOrderReturn);
         log.info("Sales Order Return created for order number: {}", orderNumber);

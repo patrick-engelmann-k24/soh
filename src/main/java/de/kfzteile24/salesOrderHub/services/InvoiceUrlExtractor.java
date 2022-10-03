@@ -76,6 +76,17 @@ public class InvoiceUrlExtractor {
         throw new IllegalArgumentException("Cannot parse OrderNumber from invoice url: " + invoiceUrl);
     }
 
+    public String extractReturnOrderNumber(final String invoiceUrl) {
+
+        final var lastIndexOfSlash = invoiceUrl.lastIndexOf('/') + 1;
+
+        if (lastIndexOfSlash > 0) {
+            return invoiceUrl.substring(lastIndexOfSlash, invoiceUrl.lastIndexOf("."));
+        } else {
+            throw new IllegalArgumentException("Cannot parse filename from invoice url: " + invoiceUrl);
+        }
+    }
+
     private static String getAfterLastDash(String source) {
         final var lastIndexOfSlash = source.lastIndexOf('/') + 1;
 

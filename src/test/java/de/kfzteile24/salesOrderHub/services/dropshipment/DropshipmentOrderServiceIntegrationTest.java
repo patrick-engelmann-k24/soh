@@ -18,6 +18,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
+import de.kfzteile24.salesOrderHub.exception.SalesOrderReturnNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.EventType;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
@@ -149,7 +150,9 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
 
         dropshipmentOrderService.handleDropshipmentPurchaseOrderReturnConfirmed(message);
 
-        SalesOrderReturn updatedOrder = salesOrderReturnService.getByOrderNumber(salesOrder.getOrderNumber() + "-" + nextCreditNoteNumber);
+        String returnOrderNumber = salesOrder.getOrderNumber() + "-" + nextCreditNoteNumber;
+        SalesOrderReturn updatedOrder = salesOrderReturnService.getByOrderNumber(returnOrderNumber)
+                .orElseThrow(() -> new SalesOrderReturnNotFoundException(returnOrderNumber));
         SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage = updatedOrder.getSalesCreditNoteCreatedMessage();
         assertNotNull(updatedOrder);
         assertEquals(nextCreditNoteNumber, updatedOrder.getSalesCreditNoteCreatedMessage().getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteNumber());

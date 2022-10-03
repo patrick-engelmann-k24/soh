@@ -39,8 +39,8 @@ public class MigrationCreditNoteService {
 
         var returnOrder = salesOrderReturnService.getByOrderNumber(
                 salesOrderService.createOrderNumberInSOH(orderNumber, creditNoteNumber));
-        if (returnOrder != null) {
-            snsPublishService.publishMigrationReturnOrderCreatedEvent(returnOrder);
+        if (returnOrder.isPresent()) {
+            snsPublishService.publishMigrationReturnOrderCreatedEvent(returnOrder.get());
             log.info("Return order with order number {} and credit note number: {} is duplicated for migration. " +
                             "Publishing event on migration topic",
                     orderNumber,
