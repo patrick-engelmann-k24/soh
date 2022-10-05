@@ -7,7 +7,6 @@ import de.kfzteile24.salesOrderHub.dto.events.shipmentconfirmed.TrackingLink;
 import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ArticleItemsDto;
 import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ParcelShipped;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
-import de.kfzteile24.salesOrderHub.helper.EventMapper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
@@ -47,12 +46,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Shipme
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CANCELLED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ROW_CANCELLED;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createNewSalesOrderV3;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createOrderNumberInSOH;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrder;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getInvoiceMsg;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getOrder;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.readResource;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -82,16 +76,7 @@ class SalesOrderRowServiceTest {
     private SalesOrderService salesOrderService;
 
     @Mock
-    private SalesOrderReturnService salesOrderReturnService;
-
-    @Mock
-    private TimedPollingService timedPollingService;
-
-    @Mock
     private SnsPublishService snsPublishService;
-
-    @Mock
-    private InvoiceService invoiceService;
 
     @Mock
     private OrderUtil orderUtil;
@@ -128,46 +113,6 @@ class SalesOrderRowServiceTest {
         verify(runtimeService).getVariable(processId, ORDER_ROWS.getName());
         verify(runtimeService).setVariable(processId, ORDER_ROWS.getName(), orderRowIds);
         verify(snsPublishService).publishOrderRowCancelled(any(), any());
-    }
-
-    @Test
-    void testQueueListenerMigrationCoreSalesInvoiceCreatedDuplication() {
-
-        String rawEventMessage = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
-        rawEventMessage = rawEventMessage.replace("InvoiceNumber\\\": \\\"10", "InvoiceNumber\\\": \\\"11111");
-        var invoiceMsg = getInvoiceMsg(rawEventMessage);
-        var orderNumber = invoiceMsg.getSalesInvoice().getSalesInvoiceHeader().getOrderNumber();
-        var newOrderNumber = createOrderNumberInSOH(orderNumber, invoiceMsg.getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber());
-
-        SalesOrder salesOrder = createSubsequentSalesOrder(orderNumber, "10");
-        salesOrder.setInvoiceEvent(invoiceMsg);
-        when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.of(salesOrder));
-        when(orderUtil.createOrderNumberInSOH(any(), any())).thenReturn(newOrderNumber);
-
-        salesOrderRowService.handleMigrationSubsequentOrder(invoiceMsg, salesOrder);
-
-        verify(snsPublishService).publishMigrationOrderCreated(newOrderNumber);
-        var event = EventMapper.INSTANCE.toCoreSalesInvoiceCreatedReceivedEvent(invoiceMsg);
-        verify(snsPublishService).publishCoreInvoiceReceivedEvent(event);
-    }
-
-    @Test
-    void testQueueListenerMigrationCoreSalesInvoiceCreatedNewSubsequentOrder() {
-
-        String rawEventMessage = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
-        var invoiceMsg = getInvoiceMsg(rawEventMessage);
-        var orderNumber = invoiceMsg.getSalesInvoice().getSalesInvoiceHeader().getOrderNumber();
-        var newOrderNumber = createOrderNumberInSOH(orderNumber, invoiceMsg.getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber());
-        when(orderUtil.createOrderNumberInSOH(any(), any())).thenReturn(newOrderNumber);
-
-        SalesOrder salesOrder = createSubsequentSalesOrder(orderNumber, "");
-        salesOrder.setInvoiceEvent(invoiceMsg);
-
-        salesOrderRowService.handleMigrationSubsequentOrder(invoiceMsg, salesOrder);
-
-        verify(snsPublishService, never()).publishMigrationOrderCreated(newOrderNumber);
-        var event = EventMapper.INSTANCE.toCoreSalesInvoiceCreatedReceivedEvent(invoiceMsg);
-        verify(snsPublishService).publishCoreInvoiceReceivedEvent(event);
     }
 
     @ParameterizedTest
@@ -403,11 +348,4 @@ class SalesOrderRowServiceTest {
                 Arguments.of("90101083"));
     }
 
-    private SalesOrder createSubsequentSalesOrder(String orderNumber, String invoiceNumber) {
-        String rawOrderMessage = readResource("examples/ecpOrderMessage.json");
-        Order order = getOrder(rawOrderMessage);
-        order.getOrderHeader().setOrderNumber(orderNumber + invoiceNumber);
-        order.getOrderHeader().setOrderGroupId(orderNumber);
-        return getSalesOrder(order);
-    }
 }

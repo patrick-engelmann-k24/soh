@@ -21,10 +21,6 @@ locals {
     order_item_tour_started_dlq = "${var.environment}-${local.service_prefix}-order-item-tour-started-${local.version}-dlq",
     invoices_from_core = "${var.environment}-${local.service_prefix}-invoices-from-core-${local.version}",
     invoices_from_core_dlq = "${var.environment}-${local.service_prefix}-invoices-from-core-${local.version}-dlq",
-    core_cancellation = "${var.environment}-${local.service_prefix}-core-cancellation-${local.version}",
-    core_cancellation_dlq = "${var.environment}-${local.service_prefix}-core-cancellation-${local.version}-dlq",
-    subsequent_delivery_received = "${var.environment}-${local.service_prefix}-subsequent-delivery-received-${local.version}",
-    subsequent_delivery_received_dlq = "${var.environment}-${local.service_prefix}-subsequent-delivery-received-${local.version}-dlq",
     d365_order_payment_secured = "${var.environment}-${local.service_prefix}-d365_order_payment_secured-${local.version}",
     d365_order_payment_secured_dlq = "${var.environment}-${local.service_prefix}-d365_order_payment_secured-${local.version}-dlq",
     dropshipment_shipment_confirmed = "${var.environment}-${local.service_prefix}-dropshipment-shipment-confirmed-${local.version}",
@@ -153,26 +149,6 @@ resource "aws_sqs_queue" "soh_invoices_from_core_dlq" {
 resource "aws_sqs_queue" "soh_invoices_from_core" {
   name = local.sqs_queues.invoices_from_core
   redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.soh_invoices_from_core_dlq.arn}\",\"maxReceiveCount\":4}"
-  visibility_timeout_seconds = 120
-}
-
-resource "aws_sqs_queue" "soh_core_cancellation_dlq" {
-  name = local.sqs_queues.core_cancellation_dlq
-}
-
-resource "aws_sqs_queue" "soh_core_cancellation" {
-  name = local.sqs_queues.core_cancellation
-  redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.soh_core_cancellation_dlq.arn}\",\"maxReceiveCount\":4}"
-  visibility_timeout_seconds = 120
-}
-
-resource "aws_sqs_queue" "soh_subsequent_delivery_received_dlq" {
-  name = local.sqs_queues.subsequent_delivery_received_dlq
-}
-
-resource "aws_sqs_queue" "soh_subsequent_delivery_received" {
-  name = local.sqs_queues.subsequent_delivery_received
-  redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.soh_subsequent_delivery_received_dlq.arn}\",\"maxReceiveCount\":4}"
   visibility_timeout_seconds = 120
 }
 

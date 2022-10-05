@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.SAVE_CREDIT_NOTE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.CREDIT_NOTE_SAVED;
@@ -57,8 +58,11 @@ class SaveCreditNoteDelegateIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("When Save Credit Note Process Starts Then It Ends Successfully And No Exceptions Are Thrown")
     void whenSaveCreditNoteProcessStartsThenItEndsSuccessfullyAndNoExceptionsAreThrown() {
         var expectedInvoiceUrl = "test";
+        var orderNumber = UUID.randomUUID().toString();
         String orderRawMessage = readResource("examples/ecpOrderMessageWithTwoRows.json");
         Order order = getOrder(orderRawMessage);
+        order.getOrderHeader().setOrderNumber(orderNumber);
+        order.getOrderHeader().setOrderGroupId(orderNumber);
         SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(order));
         SalesOrderReturn salesOrderReturn = getSalesOrderReturn(salesOrder, "123");
         salesOrderReturnService.save(salesOrderReturn, RETURN_ORDER_CREATED);
@@ -90,7 +94,7 @@ class SaveCreditNoteDelegateIntegrationTest extends AbstractIntegrationTest {
 
     @AfterEach
     public void cleanup() {
-        salesOrderReturnRepository.deleteAll();
-        salesOrderRepository.deleteAll();
+        pollingService.retry(() -> salesOrderRepository.deleteAll());
+        pollingService.retry(() -> salesOrderReturnRepository.deleteAll());
     }
 }

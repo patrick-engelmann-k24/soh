@@ -1,6 +1,10 @@
 package de.kfzteile24.salesOrderHub.services;
 
+import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
+import de.kfzteile24.salesOrderHub.helper.OrderUtil;
+import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderReturnRepository;
+import de.kfzteile24.salesOrderHub.services.financialdocuments.CreditNoteNumberCounterService;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,7 +23,20 @@ class SalesOrderReturnServiceTest {
     private SalesOrderReturnRepository salesOrderReturnRepository;
 
     @Mock
+    private AuditLogRepository auditLogRepository;
+
+    @Mock
+    private SalesOrderService salesOrderService;
+
+    @Mock
     private CreditNoteNumberCounterService creditNoteNumberCounterService;
+
+    @Mock
+    private CamundaHelper helper;
+
+    @Mock
+    private OrderUtil orderUtil;
+
 
     @InjectMocks
     private SalesOrderReturnService salesOrderReturnService;

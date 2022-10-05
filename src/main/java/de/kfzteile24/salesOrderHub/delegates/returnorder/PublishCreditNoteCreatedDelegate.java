@@ -4,7 +4,7 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.dto.events.SalesCreditNoteCreatedEvent;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderReturnNotFoundException;
-import de.kfzteile24.salesOrderHub.services.CreditNoteService;
+import de.kfzteile24.salesOrderHub.services.financialdocuments.CreditNoteService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import lombok.extern.slf4j.Slf4j;

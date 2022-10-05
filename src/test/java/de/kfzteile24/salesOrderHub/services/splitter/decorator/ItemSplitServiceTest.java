@@ -8,11 +8,14 @@ import de.kfzteile24.salesOrderHub.dto.pricing.Prices;
 import de.kfzteile24.salesOrderHub.dto.pricing.PricingItem;
 import de.kfzteile24.salesOrderHub.dto.pricing.SetUnitPriceAPIResponse;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
+import de.kfzteile24.salesOrderHub.exception.ProductNameNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.SumValues;
 import de.kfzteile24.soh.order.dto.UnitValues;
+import org.assertj.core.api.AssertionsForClassTypes;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -176,6 +179,29 @@ class ItemSplitServiceTest {
 
         final var product = itemSplitService.getProduct("2270-13013");
         assertThat(product).isEqualTo(productEnvelope.getProduct());
+        assertThat(product).isEqualTo(productEnvelope.getProduct());
+        assertThat(product.getLocalizations().size()).isGreaterThan(0);
+        assertThat(product.getLocalizations().get("DE")).isNotNull();
+        assertThat(product.getLocalizations().get("DE").getName()).isEqualTo("[MEZ] Warnblinkschalter");
+        assertThat(product.getLocalizations().get("DE").getGenart()).isEqualTo("Warnblinkschalter");
+        assertThat(itemSplitService.getProductName(product.getLocalizations().get("DE"))).isEqualTo("[MEZ] Warnblinkschalter");
+    }
+
+    @Test
+    @DisplayName("mapProductToOrderRows Throws ProductNotFoundException")
+    void mapProductToOrderRowsThrowsProductNotFoundException() {
+
+        final var product = getProductEnvelope(readResource("examples/product/2270-13013.json"));
+        final var order = getOrder(readResource("examples/splitterSalesOrderMessageWithTwoRows.json"));
+        final var firstRow = order.getOrderRows().get(0);
+        final var locale = order.getOrderHeader().getLocale();
+        assertThat(product.getProduct().getLocalizations().size()).isGreaterThan(0);
+        assertThat(product.getProduct().getLocalizations().get("DE")).isNotNull();
+        product.getProduct().getLocalizations().get("DE").setGenart(null);
+        product.getProduct().getLocalizations().get("DE").setName(null);
+
+        AssertionsForClassTypes.assertThatThrownBy(() -> itemSplitService.mapProductToOrderRows(product.getProduct(), firstRow, BigDecimal.valueOf(2), locale))
+                .isInstanceOf(ProductNameNotFoundException.class);
     }
 
     @Test
@@ -226,7 +252,7 @@ class ItemSplitServiceTest {
 
         UnitValues setUnitValues = UnitValues.builder()
                 .goodsValueGross(new BigDecimal("20.00")).goodsValueNet(new BigDecimal("18.00"))
-                .discountedGross(new BigDecimal("20.00")).discountedNet(new BigDecimal("18.00")).build();
+                .discountedGross(new BigDecimal("19.00")).discountedNet(new BigDecimal("17.10")).build();
 
         PricingItem pricingItem1 = createPricingItem(
                 new BigDecimal("3.50"), new BigDecimal("3.00"), new BigDecimal("0.25"), "sku-1");
@@ -239,21 +265,29 @@ class ItemSplitServiceTest {
 
         assertEquals(new BigDecimal("5.00"), orderRow1.getUnitValues().getGoodsValueGross());
         assertEquals(new BigDecimal("4.50"), orderRow1.getUnitValues().getGoodsValueNet());
-        assertEquals(new BigDecimal("5.00"), orderRow1.getUnitValues().getDiscountedGross());
-        assertEquals(new BigDecimal("4.50"), orderRow1.getUnitValues().getDiscountedNet());
+        assertEquals(new BigDecimal("4.75"), orderRow1.getUnitValues().getDiscountedGross());
+        assertEquals(new BigDecimal("4.28"), orderRow1.getUnitValues().getDiscountedNet());
+        assertEquals(new BigDecimal("0.25"), orderRow1.getUnitValues().getDiscountGross());
+        assertEquals(new BigDecimal("0.22"), orderRow1.getUnitValues().getDiscountNet());
         assertEquals(new BigDecimal("5.00"), orderRow1.getSumValues().getGoodsValueGross());
         assertEquals(new BigDecimal("4.50"), orderRow1.getSumValues().getGoodsValueNet());
-        assertEquals(new BigDecimal("5.00"), orderRow1.getSumValues().getTotalDiscountedGross());
-        assertEquals(new BigDecimal("4.50"), orderRow1.getSumValues().getTotalDiscountedNet());
+        assertEquals(new BigDecimal("4.75"), orderRow1.getSumValues().getTotalDiscountedGross());
+        assertEquals(new BigDecimal("4.28"), orderRow1.getSumValues().getTotalDiscountedNet());
+        assertEquals(new BigDecimal("0.25"), orderRow1.getSumValues().getDiscountGross());
+        assertEquals(new BigDecimal("0.22"), orderRow1.getSumValues().getDiscountNet());
 
         assertEquals(new BigDecimal("5.00"), orderRow2.getUnitValues().getGoodsValueGross());
         assertEquals(new BigDecimal("4.50"), orderRow2.getUnitValues().getGoodsValueNet());
-        assertEquals(new BigDecimal("5.00"), orderRow2.getUnitValues().getDiscountedGross());
-        assertEquals(new BigDecimal("4.50"), orderRow2.getUnitValues().getDiscountedNet());
+        assertEquals(new BigDecimal("4.75"), orderRow2.getUnitValues().getDiscountedGross());
+        assertEquals(new BigDecimal("4.28"), orderRow2.getUnitValues().getDiscountedNet());
+        assertEquals(new BigDecimal("0.25"), orderRow2.getUnitValues().getDiscountGross());
+        assertEquals(new BigDecimal("0.22"), orderRow2.getUnitValues().getDiscountNet());
         assertEquals(new BigDecimal("15.00"), orderRow2.getSumValues().getGoodsValueGross());
         assertEquals(new BigDecimal("13.50"), orderRow2.getSumValues().getGoodsValueNet());
-        assertEquals(new BigDecimal("15.00"), orderRow2.getSumValues().getTotalDiscountedGross());
-        assertEquals(new BigDecimal("13.50"), orderRow2.getSumValues().getTotalDiscountedNet());
+        assertEquals(new BigDecimal("14.25"), orderRow2.getSumValues().getTotalDiscountedGross());
+        assertEquals(new BigDecimal("12.83"), orderRow2.getSumValues().getTotalDiscountedNet());
+        assertEquals(new BigDecimal("0.75"), orderRow2.getSumValues().getDiscountGross());
+        assertEquals(new BigDecimal("0.67"), orderRow2.getSumValues().getDiscountNet());
     }
 
     @Test

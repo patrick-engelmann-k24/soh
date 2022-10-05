@@ -1,7 +1,9 @@
 package de.kfzteile24.salesOrderHub.configuration;
 
 import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
-import de.kfzteile24.salesOrderHub.services.sqs.SqsReceiveService;
+import de.kfzteile24.salesOrderHub.services.financialdocuments.FinancialDocumentsSqsReceiveService;
+import de.kfzteile24.salesOrderHub.services.general.GeneralSqsReceiveService;
+import de.kfzteile24.salesOrderHub.services.salesorder.SalesOrderSqsReceiveService;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -28,7 +30,11 @@ import static org.mockito.Mockito.verify;
 class LoggingAdviceIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
-    private SqsReceiveService sqsReceiveService;
+    private SalesOrderSqsReceiveService salesOrderSqsReceiveService;
+    @Autowired
+    private FinancialDocumentsSqsReceiveService financialDocumentsSqsReceiveService;
+    @Autowired
+    private GeneralSqsReceiveService generalSqsReceiveService;
     @Autowired
     private SQSNamesConfig sqsNamesConfig;
 
@@ -45,10 +51,10 @@ class LoggingAdviceIntegrationTest extends AbstractIntegrationTest {
         log.info(testInfo.getDisplayName());
         final String rawMessage = getRawMessageOfOrderWithoutCustomerNumber();
 
-        sqsReceiveService.queueListenerEcpShopOrders(rawMessage, "senderId", 4);
+        salesOrderSqsReceiveService.queueListenerEcpShopOrders(rawMessage, "senderId", 4);
         verifyIfMessageIsSendingToDLQ(sqsNamesConfig.getEcpShopOrders() + "-dlq");
 
-        verifyErrorMessageIsLogged(() -> sqsReceiveService.queueListenerEcpShopOrders(rawMessage, "senderId", 3),
+        verifyErrorMessageIsLogged(() -> salesOrderSqsReceiveService.queueListenerEcpShopOrders(rawMessage, "senderId", 3),
                 rawMessage, sqsNamesConfig.getEcpShopOrders());
     }
 
@@ -59,10 +65,10 @@ class LoggingAdviceIntegrationTest extends AbstractIntegrationTest {
         log.info(testInfo.getDisplayName());
         String rawMessage = getRawMessageOfOrderWithoutCustomerNumber();
 
-        sqsReceiveService.queueListenerBcShopOrders(rawMessage, "senderId", 4);
+        salesOrderSqsReceiveService.queueListenerBcShopOrders(rawMessage, "senderId", 4);
         verifyIfMessageIsSendingToDLQ(sqsNamesConfig.getBcShopOrders() + "-dlq");
 
-        verifyErrorMessageIsLogged(() -> sqsReceiveService.queueListenerBcShopOrders(rawMessage, "senderId", 3),
+        verifyErrorMessageIsLogged(() -> salesOrderSqsReceiveService.queueListenerBcShopOrders(rawMessage, "senderId", 3),
                 rawMessage, sqsNamesConfig.getBcShopOrders());
     }
 
@@ -73,10 +79,10 @@ class LoggingAdviceIntegrationTest extends AbstractIntegrationTest {
         log.info(testInfo.getDisplayName());
         String rawMessage = getRawMessageOfOrderWithoutCustomerNumber();
 
-        sqsReceiveService.queueListenerCoreShopOrders(rawMessage, "senderId", 4);
+        salesOrderSqsReceiveService.queueListenerCoreShopOrders(rawMessage, "senderId", 4);
         verifyIfMessageIsSendingToDLQ(sqsNamesConfig.getCoreShopOrders() + "-dlq");
 
-        verifyErrorMessageIsLogged(() -> sqsReceiveService.queueListenerCoreShopOrders(rawMessage, "senderId", 3),
+        verifyErrorMessageIsLogged(() -> salesOrderSqsReceiveService.queueListenerCoreShopOrders(rawMessage, "senderId", 3),
                 rawMessage, sqsNamesConfig.getCoreShopOrders());
     }
 
@@ -87,10 +93,10 @@ class LoggingAdviceIntegrationTest extends AbstractIntegrationTest {
         log.info(testInfo.getDisplayName());
         String rawMessage = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
 
-        sqsReceiveService.queueListenerCoreSalesInvoiceCreated(rawMessage, "senderId", 4);
+        financialDocumentsSqsReceiveService.queueListenerCoreSalesInvoiceCreated(rawMessage, "senderId", 4);
         verifyIfMessageIsSendingToDLQ(sqsNamesConfig.getCoreSalesInvoiceCreated() + "-dlq");
 
-        verifyErrorMessageIsLogged(() -> sqsReceiveService.queueListenerCoreSalesInvoiceCreated(rawMessage, "senderId", 3),
+        verifyErrorMessageIsLogged(() -> financialDocumentsSqsReceiveService.queueListenerCoreSalesInvoiceCreated(rawMessage, "senderId", 3),
                 rawMessage, sqsNamesConfig.getCoreSalesInvoiceCreated());
     }
 
@@ -101,10 +107,10 @@ class LoggingAdviceIntegrationTest extends AbstractIntegrationTest {
         log.info(testInfo.getDisplayName());
         String rawMessage = readResource("examples/parcelShipped.json");
 
-        sqsReceiveService.queueListenerParcelShipped(rawMessage, "senderId", 4);
+        generalSqsReceiveService.queueListenerParcelShipped(rawMessage, "senderId", 4);
         verifyIfMessageIsSendingToDLQ(sqsNamesConfig.getParcelShipped() + "-dlq");
 
-        verifyErrorMessageIsLogged(() -> sqsReceiveService.queueListenerParcelShipped(rawMessage, "senderId", 3),
+        verifyErrorMessageIsLogged(() -> generalSqsReceiveService.queueListenerParcelShipped(rawMessage, "senderId", 3),
                 rawMessage, sqsNamesConfig.getParcelShipped());
     }
 

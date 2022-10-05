@@ -10,6 +10,7 @@ import de.kfzteile24.salesOrderHub.domain.pdh.product.ProductSet;
 import de.kfzteile24.salesOrderHub.dto.pricing.PricingItem;
 import de.kfzteile24.salesOrderHub.dto.pricing.SetUnitPriceAPIResponse;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
+import de.kfzteile24.salesOrderHub.exception.ProductNameNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
@@ -17,6 +18,7 @@ import de.kfzteile24.soh.order.dto.SumValues;
 import de.kfzteile24.soh.order.dto.UnitValues;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -189,6 +191,12 @@ public class ItemSplitService {
             log.info("Could not get product number  from PDH for sku: {}", product.getSku());
         }
 
+        var productName = getProductName(localization);
+
+        if (StringUtils.isBlank(productName)) {
+            throw new ProductNameNotFoundException("Could not get product name from PDH for sku: {0}", product.getSku());
+        }
+
         return OrderRows.builder()
                 .isCancelled(originItem.getIsCancelled())
                 .isPriceHammer(originItem.getIsPriceHammer())
@@ -245,6 +253,8 @@ public class ItemSplitService {
             sumValues.setGoodsValueNet(sumGoodsValueNet);
             sumValues.setTotalDiscountedGross(sumTotalDiscountedGross);
             sumValues.setTotalDiscountedNet(sumTotalDiscountedNet);
+            sumValues.setDiscountGross(sumGoodsValueGross.subtract(sumTotalDiscountedGross));
+            sumValues.setDiscountNet(sumGoodsValueNet.subtract(sumTotalDiscountedNet));
 
             log.info("SumValues initially calculated for sku: {}, sum values: {}, order number {}",
                     orderRow.getSku(), sumValues, orderNumber);
@@ -270,6 +280,8 @@ public class ItemSplitService {
             unitValues.setGoodsValueNet(unitGoodsValueNet);
             unitValues.setDiscountedGross(unitDiscountedGross);
             unitValues.setDiscountedNet(unitDiscountedNet);
+            unitValues.setDiscountGross(unitGoodsValueGross.subtract(unitDiscountedGross));
+            unitValues.setDiscountNet(unitGoodsValueNet.subtract(unitDiscountedNet));
         }
     }
 
@@ -480,6 +492,10 @@ public class ItemSplitService {
     protected String getLanguageCode(String locale) {
         String[] split = locale.split("_");
         return split[0].toUpperCase();
+    }
+
+    String getProductName(Localization localization) {
+        return StringUtils.isNotBlank(localization.getName()) ? localization.getName() : localization.getGenart();
     }
 
 }

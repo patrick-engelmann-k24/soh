@@ -1,7 +1,7 @@
 package de.kfzteile24.salesOrderHub.delegates.dropshipmentorder;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
-import de.kfzteile24.salesOrderHub.services.DropshipmentOrderService;
+import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentOrderService;
 import lombok.RequiredArgsConstructor;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.JavaDelegate;
