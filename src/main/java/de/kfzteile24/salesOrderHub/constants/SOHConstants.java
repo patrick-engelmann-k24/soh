@@ -16,8 +16,9 @@ public final class SOHConstants {
     public static final String PATTERN_CREDIT_NOTE_NUMBER = "^\\d{4}2\\d{5}$";
     public static final int LENGTH_CREDIT_NOTE_NUMBER = 10;
     public static final int LENGTH_YEAR_DIGIT = 4;
-
     public static final String COMBINED_ITEM_SEPARATOR = ",";
+
+    public static final String TRACE_ID_NAME = "x-business-key";
 
     private SOHConstants() {}
 }
