@@ -14,18 +14,14 @@ public class CustomCorrelationId implements CorrelationId {
 
     @Override
     public String generate(HttpRequest request) {
-//        if ("org.zalando.logbook.spring.LocalRequest".equals(request.getClass().getName())) {
-//            return generateCorrelationId();
-//        }
+        String traceId = MDC.get(TRACE_ID_NAME);
+        request.getHeaders().update(TRACE_ID_NAME, traceId);
         updateLoggerMDC();
-//        return MDC.get("correlationId");
-        return MDC.get(TRACE_ID_NAME);
+        return traceId;
     }
 
     public static void updateLoggerMDC() {
-//        MDC.put("correlationId", generateCorrelationId());
         String correlationId = generateCorrelationId();
-        log.info("Correlation Id is created : " + correlationId);
         MDC.put(TRACE_ID_NAME, correlationId);
     }
 
