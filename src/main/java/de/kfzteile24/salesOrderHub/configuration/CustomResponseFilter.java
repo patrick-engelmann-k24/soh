@@ -13,9 +13,10 @@ public class CustomResponseFilter implements ResponseFilter {
 
     @Override
     public HttpResponse filter(HttpResponse response) {
-        String traceId = MDC.get(TRACE_ID_NAME);
-        log.info("TRACE_ID : " + traceId);
-        HttpHeaders headers = response.getHeaders().update("RequestID", traceId);
-        return new CustomHttpResponse(headers, response);
+        HttpHeaders headers = response.getHeaders().update("RequestID", MDC.get(TRACE_ID_NAME));
+        log.info("New headers " + headers);
+        CustomHttpResponse customHttpResponse = new CustomHttpResponse(headers, response);
+        log.info("Custom Http Response " + customHttpResponse);
+        return customHttpResponse;
     }
 }
