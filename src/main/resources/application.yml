@@ -145,6 +145,8 @@ swagger:
 logbook:
   include:
     - /api/**
+  exclude:
+    - /healthCheck
   filter.enabled: true
   secure-filter.enabled: true
   obfuscate:

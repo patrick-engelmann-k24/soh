@@ -11,11 +11,10 @@ public class LogbookConfiguration {
 
     @Bean
     public Logbook logbook() {
-//        return Logbook.builder()
-//                .correlationId(new CustomCorrelationId())
-//                .build();
-        log.info("LogbookConfiguration");
-        return Logbook.create();
+        return Logbook.builder()
+//                .condition(exclude(requestTo("/healthCheck")))
+                .correlationId(new CustomCorrelationId())
+                .build();
     }
 
 }
