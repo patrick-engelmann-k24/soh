@@ -1,6 +1,5 @@
 package de.kfzteile24.salesOrderHub.configuration;
 
-import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.zalando.logbook.CorrelationId;
 import org.zalando.logbook.HttpRequest;
@@ -10,7 +9,6 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.TRACE_ID_NAME;
 
-@Slf4j
 public class CustomCorrelationId implements CorrelationId {
 
     @Override
