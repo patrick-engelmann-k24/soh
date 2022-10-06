@@ -5,7 +5,8 @@ import org.slf4j.MDC;
 import org.zalando.logbook.CorrelationId;
 import org.zalando.logbook.HttpRequest;
 
-import java.util.UUID;
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.TRACE_ID_NAME;
 
@@ -14,10 +15,8 @@ public class CustomCorrelationId implements CorrelationId {
 
     @Override
     public String generate(HttpRequest request) {
-        String traceId = MDC.get(TRACE_ID_NAME);
-        request.getHeaders().update(TRACE_ID_NAME, traceId);
         updateLoggerMDC();
-        return traceId;
+        return MDC.get(TRACE_ID_NAME);
     }
 
     public static void updateLoggerMDC() {
@@ -26,9 +25,7 @@ public class CustomCorrelationId implements CorrelationId {
     }
 
     public static String generateCorrelationId() {
-//        final Random random = ThreadLocalRandom.current();
-//        // set most significant bit to produce fixed length string
-//        return Long.toHexString(random.nextLong() | Long.MIN_VALUE);
-        return UUID.randomUUID().toString();
+        final Random random = ThreadLocalRandom.current();
+        return Long.toHexString(random.nextLong() | Long.MIN_VALUE);
     }
 }

@@ -149,7 +149,6 @@ logbook:
   secure-filter.enabled: true
   obfuscate:
     headers:
-      - cookie
     parameters:
 
 kfzteile:

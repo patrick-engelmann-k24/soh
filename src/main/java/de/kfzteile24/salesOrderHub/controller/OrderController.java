@@ -47,6 +47,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import static de.kfzteile24.salesOrderHub.constants.SOHConstants.REQUEST_ID_KEY;
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.TRACE_ID_NAME;
 import static org.springframework.util.CollectionUtils.isEmpty;
 
@@ -72,7 +73,7 @@ public class OrderController {
 
     @ModelAttribute
     public void setResponseHeader(HttpServletResponse response) {
-        response.addHeader("RequestID", MDC.get(TRACE_ID_NAME));
+        response.addHeader(REQUEST_ID_KEY, MDC.get(TRACE_ID_NAME));
     }
 
     /**

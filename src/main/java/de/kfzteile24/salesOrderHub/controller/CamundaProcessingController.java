@@ -23,11 +23,13 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.ProcessEngine;
+import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -36,10 +38,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static de.kfzteile24.salesOrderHub.constants.SOHConstants.REQUEST_ID_KEY;
+import static de.kfzteile24.salesOrderHub.constants.SOHConstants.TRACE_ID_NAME;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 
 @Slf4j
@@ -57,6 +62,11 @@ public class CamundaProcessingController {
     private final MigrationMapper migrationMapper;
     private final SalesOrderService salesOrderService;
     private final ProcessEngine processEngine;
+
+    @ModelAttribute
+    public void setResponseHeader(HttpServletResponse response) {
+        response.addHeader(REQUEST_ID_KEY, MDC.get(TRACE_ID_NAME));
+    }
 
 
     @Operation(summary = "Retrieve all persistent properties")

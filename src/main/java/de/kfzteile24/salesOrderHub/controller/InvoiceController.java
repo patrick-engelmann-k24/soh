@@ -12,18 +12,24 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.text.MessageFormat;
+
+import static de.kfzteile24.salesOrderHub.constants.SOHConstants.REQUEST_ID_KEY;
+import static de.kfzteile24.salesOrderHub.constants.SOHConstants.TRACE_ID_NAME;
 
 /**
  * Invoice Rest Controller Object
@@ -42,6 +48,11 @@ import java.text.MessageFormat;
 public class InvoiceController {
 
     private final InvoiceService invoiceService;
+
+    @ModelAttribute
+    public void setResponseHeader(HttpServletResponse response) {
+        response.addHeader(REQUEST_ID_KEY, MDC.get(TRACE_ID_NAME));
+    }
 
     /**
      * Get invoice document with Base64 encoded content by invoice number

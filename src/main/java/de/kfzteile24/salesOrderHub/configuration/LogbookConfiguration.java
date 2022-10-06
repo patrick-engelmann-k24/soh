@@ -7,6 +7,7 @@ import org.zalando.logbook.Logbook;
 
 import static org.zalando.logbook.Conditions.exclude;
 import static org.zalando.logbook.Conditions.requestTo;
+import static org.zalando.logbook.QueryFilters.removeQuery;
 
 @Configuration
 @Slf4j
@@ -16,7 +17,7 @@ public class LogbookConfiguration {
     public Logbook logbook() {
         return Logbook.builder()
                 .condition(exclude(requestTo("/healthCheck")))
-                .responseFilter(new CustomResponseFilter())
+                .queryFilter(removeQuery("cookie"))
                 .correlationId(new CustomCorrelationId())
                 .build();
     }
