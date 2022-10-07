@@ -1,5 +1,6 @@
-package de.kfzteile24.salesOrderHub.controller;
+package de.kfzteile24.salesOrderHub.controller.impl;
 
+import de.kfzteile24.salesOrderHub.controller.IBaseController;
 import de.kfzteile24.salesOrderHub.controller.dto.ActionType;
 import de.kfzteile24.salesOrderHub.controller.dto.ErrorResponse;
 import de.kfzteile24.salesOrderHub.controller.handler.AbstractActionHandler;
@@ -60,7 +61,7 @@ import static org.springframework.util.CollectionUtils.isEmpty;
 @RequestMapping("/api/v1/order")
 @RequiredArgsConstructor
 @Validated
-public class OrderController {
+public class OrderController implements IBaseController {
 
     private final SalesOrderService salesOrderService;
     private final SalesOrderAddressService orderAddressService;

@@ -8,6 +8,7 @@ server:
 logging:
   level:
     com.zaxxer.hikari: ERROR
+    org.zalando.logbook: TRACE
 
 spring:
   sleuth:
@@ -140,6 +141,15 @@ swagger:
     version: 1.0
     controller:
       basepackage: de.kfzteile24.salesOrderHub
+
+logbook:
+  include:
+    - /api/**
+  filter.enabled: true
+  secure-filter.enabled: true
+  obfuscate:
+    headers:
+    parameters:
 
 kfzteile:
   product-data-hub:

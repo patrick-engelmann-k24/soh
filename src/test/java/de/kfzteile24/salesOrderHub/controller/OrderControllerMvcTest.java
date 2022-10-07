@@ -32,6 +32,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -59,7 +60,8 @@ class OrderControllerMvcTest extends AbstractIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
                 .andDo(print())
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(header().exists("RequestID"));
 
         verify(snsPublishService).publishMigrationOrderCreated(ORDER_NUMBER_1);
         verify(snsPublishService).publishMigrationOrderCreated(ORDER_NUMBER_2);
@@ -148,7 +150,8 @@ class OrderControllerMvcTest extends AbstractIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
                 .andDo(print())
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(header().exists("RequestID"));
 
         verify(dropshipmentOrderService).recreateSalesOrderInvoice(ORDER_NUMBER_1);
         verify(dropshipmentOrderService).recreateSalesOrderInvoice(ORDER_NUMBER_2);
@@ -236,7 +239,8 @@ class OrderControllerMvcTest extends AbstractIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
                 .andDo(print())
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(header().exists("RequestID"));
 
         verify(snsPublishService).publishMigrationReturnOrderCreatedEvent(ORDER_NUMBER_1);
         verify(snsPublishService).publishMigrationReturnOrderCreatedEvent(ORDER_NUMBER_2);
@@ -346,7 +350,8 @@ class OrderControllerMvcTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andDo(print())
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(header().exists("RequestID"));
 
         verify(snsPublishService).publishCoreInvoiceReceivedEvent(any());
     }

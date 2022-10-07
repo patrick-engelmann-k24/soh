@@ -11,11 +11,11 @@ import org.springframework.context.annotation.Profile;
 
 import java.util.List;
 
+import static de.kfzteile24.salesOrderHub.constants.SOHConstants.TRACE_ID_NAME;
+
 @Configuration
 @Profile("!test")
 public class SleuthConfig {
-
-    public static final String TRACE_ID_NAME = "x-business-key";
 
     @Bean
     BaggageField businessKeyField() {

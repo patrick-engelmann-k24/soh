@@ -1,5 +1,6 @@
-package de.kfzteile24.salesOrderHub.controller;
+package de.kfzteile24.salesOrderHub.controller.impl;
 
+import de.kfzteile24.salesOrderHub.controller.IBaseController;
 import de.kfzteile24.salesOrderHub.dto.invoice.InvoiceDocument;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -39,7 +40,7 @@ import java.text.MessageFormat;
 @RequestMapping("/api/v1/invoice")
 @RequiredArgsConstructor
 @Validated
-public class InvoiceController {
+public class InvoiceController implements IBaseController {
 
     private final InvoiceService invoiceService;
 
