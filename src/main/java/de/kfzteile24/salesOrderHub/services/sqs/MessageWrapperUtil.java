@@ -59,14 +59,17 @@ public class MessageWrapperUtil {
 
     private <T> T getMessage(Class<T> messageType, SqsMessage sqsMessage) {
         T json;
-        String errormessage = StringUtils.EMPTY;
         try {
-            json = objectMapper.readValue(sqsMessage.getBody(), messageType);
+            if (messageType.equals(String.class)) {
+                json = (T) sqsMessage.getBody();
+            } else {
+                json = objectMapper.readValue(sqsMessage.getBody(), messageType);
+            }
             updateTraceId(json);
             return json;
         } catch (ConstraintViolationException e1) {
             updateTraceId(messageType, sqsMessage, e1.getMessage());
-            throw new InvalidOrderJsonException(errormessage);
+            throw new InvalidOrderJsonException(e1.getMessage());
         } catch (JsonProcessingException e2) {
             updateTraceId(messageType, sqsMessage, e2.getCause().getMessage());
             throw new InvalidOrderJsonException(e2);

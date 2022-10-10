@@ -44,4 +44,20 @@ class MessageWrapperUtilTest {
         assertThat(messageWrapper.getSqsMessage()).isEqualTo(sqsMessage);
         assertThat(messageWrapper.getMessage()).isEqualTo(order);
     }
+
+    @Test
+    void testCreateForStringMessage() throws JsonProcessingException {
+
+        messageWrapperUtil.setObjectMapper(objectMapper);
+
+        String rawMessage = readResource("examples/invoicesFromCoreMessage.json");
+        var sqsMessage = objectMapper.readValue(rawMessage, SqsMessage.class);
+        var invoicesFromCoreMessage = sqsMessage.getBody();
+
+        var messageWrapper = messageWrapperUtil.create(rawMessage, String.class);
+
+        assertThat(messageWrapper.getRawMessage()).isEqualTo(rawMessage);
+        assertThat(messageWrapper.getSqsMessage()).isEqualTo(sqsMessage);
+        assertThat(messageWrapper.getMessage()).isEqualTo(invoicesFromCoreMessage);
+    }
 }
