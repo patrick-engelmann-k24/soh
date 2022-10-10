@@ -201,7 +201,7 @@ public class ItemSplitService {
                 .isCancelled(originItem.getIsCancelled())
                 .isPriceHammer(originItem.getIsPriceHammer())
                 .sku(product.getSku())
-                .name(localization.getName())
+                .name(productName)
                 .ean(ean)
                 .genart(genart)
                 .setReferenceId(originItem.getSku())

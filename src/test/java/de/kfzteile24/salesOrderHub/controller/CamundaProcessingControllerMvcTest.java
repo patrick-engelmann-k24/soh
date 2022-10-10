@@ -18,6 +18,7 @@ import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -63,7 +64,8 @@ class CamundaProcessingControllerMvcTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.key").value(ANY_PROPERTY_KEY))
                 .andExpect(jsonPath("$.value").value(ANY_PROPERTY_VALUE_2))
                 .andExpect(jsonPath("$.created_at").value(ANY_CREATED_AT_STR))
-                .andExpect(jsonPath("$.updated_at").value(ANY_UPDATED_AT_STR));
+                .andExpect(jsonPath("$.updated_at").value(ANY_UPDATED_AT_STR))
+                .andExpect(header().exists("RequestID"));
 
         verify(keyValuePropertyService).getPropertyByKey(ANY_PROPERTY_KEY);
         verify(keyValuePropertyService).save(modifiedKeyValueProperty);
@@ -89,7 +91,8 @@ class CamundaProcessingControllerMvcTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.key").value(ANY_PROPERTY_KEY))
                 .andExpect(jsonPath("$.value").value(ANY_PROPERTY_VALUE))
                 .andExpect(jsonPath("$.created_at").value(ANY_CREATED_AT_STR))
-                .andExpect(jsonPath("$.updated_at").value(ANY_UPDATED_AT_STR));
+                .andExpect(jsonPath("$.updated_at").value(ANY_UPDATED_AT_STR))
+                .andExpect(header().exists("RequestID"));
 
         verify(keyValuePropertyService).getPropertyByKey(ANY_PROPERTY_KEY);
     }
@@ -126,7 +129,8 @@ class CamundaProcessingControllerMvcTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$[1].key").value(ANY_PROPERTY_KEY_2))
                 .andExpect(jsonPath("$[1].value").value(ANY_PROPERTY_VALUE_2))
                 .andExpect(jsonPath("$[1].created_at").value(ANY_CREATED_AT_STR))
-                .andExpect(jsonPath("$[1].updated_at").value(ANY_UPDATED_AT_STR));
+                .andExpect(jsonPath("$[1].updated_at").value(ANY_UPDATED_AT_STR))
+                .andExpect(header().exists("RequestID"));
 
         verify(keyValuePropertyService).getAllProperties();
     }
@@ -151,7 +155,8 @@ class CamundaProcessingControllerMvcTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.key").value(PersistentProperties.PAUSE_DROPSHIPMENT_PROCESSING))
                 .andExpect(jsonPath("$.value").value(Boolean.TRUE.toString()))
                 .andExpect(jsonPath("$.created_at").value(ANY_CREATED_AT_STR))
-                .andExpect(jsonPath("$.updated_at").value(ANY_UPDATED_AT_STR));
+                .andExpect(jsonPath("$.updated_at").value(ANY_UPDATED_AT_STR))
+                .andExpect(header().exists("RequestID"));
 
         verify(dropshipmentOrderService).setPauseDropshipmentProcessing(true);
     }
@@ -176,7 +181,8 @@ class CamundaProcessingControllerMvcTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.key").value(PersistentProperties.PAUSE_DROPSHIPMENT_PROCESSING))
                 .andExpect(jsonPath("$.value").value(Boolean.FALSE.toString()))
                 .andExpect(jsonPath("$.created_at").value(ANY_CREATED_AT_STR))
-                .andExpect(jsonPath("$.updated_at").value(ANY_UPDATED_AT_STR));
+                .andExpect(jsonPath("$.updated_at").value(ANY_UPDATED_AT_STR))
+                .andExpect(header().exists("RequestID"));
 
         verify(dropshipmentOrderService).setPauseDropshipmentProcessing(false);
     }
