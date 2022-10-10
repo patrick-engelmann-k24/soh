@@ -179,12 +179,11 @@ class ItemSplitServiceTest {
 
         final var product = itemSplitService.getProduct("2270-13013");
         assertThat(product).isEqualTo(productEnvelope.getProduct());
-        assertThat(product).isEqualTo(productEnvelope.getProduct());
         assertThat(product.getLocalizations().size()).isGreaterThan(0);
         assertThat(product.getLocalizations().get("DE")).isNotNull();
-        assertThat(product.getLocalizations().get("DE").getName()).isEqualTo("[MEZ] Warnblinkschalter");
+        assertThat(product.getLocalizations().get("DE").getName()).isNull();
         assertThat(product.getLocalizations().get("DE").getGenart()).isEqualTo("Warnblinkschalter");
-        assertThat(itemSplitService.getProductName(product.getLocalizations().get("DE"))).isEqualTo("[MEZ] Warnblinkschalter");
+        assertThat(itemSplitService.getProductName(product.getLocalizations().get("DE"))).isEqualTo("Warnblinkschalter");
     }
 
     @Test
@@ -222,6 +221,7 @@ class ItemSplitServiceTest {
         assertThat(rows.getSku()).isEqualTo(firstRow.getSku());
         assertThat(rows.getEan()).isEqualTo("4250032492922");
         assertThat(rows.getGenart()).isEqualTo("816");
+        assertThat(rows.getName()).isEqualTo("Warnblinkschalter");
         assertThat(rows.getSetReferenceId()).isEqualTo(firstRow.getSku());
         assertThat(rows.getSetReferenceName()).isEqualTo(firstRow.getName());
         assertThat(rows.getCustomerNote()).isEqualTo(firstRow.getCustomerNote());
