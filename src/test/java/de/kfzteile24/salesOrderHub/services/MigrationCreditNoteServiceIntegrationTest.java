@@ -1,6 +1,7 @@
 package de.kfzteile24.salesOrderHub.services;
 
 import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
@@ -10,7 +11,6 @@ import de.kfzteile24.salesOrderHub.repositories.InvoiceNumberCounterRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.FinancialDocumentsSqsReceiveService;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceNumberCounterService;
-import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
@@ -21,7 +21,7 @@ import org.junit.jupiter.api.TestInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createReturnOrderNumberInSOH;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createOrderNumberInSOH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
@@ -85,7 +85,7 @@ class MigrationCreditNoteServiceIntegrationTest extends AbstractIntegrationTest 
 
         verify(snsPublishService).publishReturnOrderCreatedEvent(argThat(
                 salesOrderReturn -> {
-                    assertThat(salesOrderReturn.getOrderNumber()).isEqualTo(createReturnOrderNumberInSOH(creditNumber));
+                    assertThat(salesOrderReturn.getOrderNumber()).isEqualTo(createOrderNumberInSOH(orderNumber, creditNumber));
                     assertThat(salesOrderReturn.getOrderGroupId()).isEqualTo(orderNumber);
                     return true;
                 }
@@ -110,7 +110,7 @@ class MigrationCreditNoteServiceIntegrationTest extends AbstractIntegrationTest 
 
         verify(snsPublishService).publishMigrationReturnOrderCreatedEvent(argThat(
                 (SalesOrderReturn salesOrderReturn) -> {
-                    assertThat(salesOrderReturn.getOrderNumber()).isEqualTo(createReturnOrderNumberInSOH(creditNumber));
+                    assertThat(salesOrderReturn.getOrderNumber()).isEqualTo(createOrderNumberInSOH(orderNumber, creditNumber));
                     assertThat(salesOrderReturn.getOrderGroupId()).isEqualTo(orderNumber);
                     return true;
                 }

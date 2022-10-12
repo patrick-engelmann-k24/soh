@@ -1,6 +1,5 @@
 package de.kfzteile24.salesOrderHub.services.sqs;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
@@ -18,7 +17,6 @@ import lombok.NonNull;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.MethodParameter;
-import org.springframework.core.env.Environment;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.converter.MessageConverter;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -26,26 +24,18 @@ import org.springframework.messaging.handler.annotation.support.PayloadMethodArg
 import org.springframework.validation.Validator;
 import org.springframework.validation.annotation.Validated;
 
-import java.util.Arrays;
-
 import static de.kfzteile24.salesOrderHub.services.sqs.AbstractSqsReceiveService.logIncomingMessage;
 
 @Configuration
 public class PayloadResolverDecorator extends PayloadMethodArgumentResolver {
 
     private final SleuthHelper sleuthHelper;
-    private final ObjectMapper objectMapper;
-    private final Environment environment;
 
     public PayloadResolverDecorator(SleuthHelper sleuthHelper,
                                     MessageConverter messageConverter,
-                                    Validator validator,
-                                    ObjectMapper objectMapper,
-                                    Environment environment) {
+                                    Validator validator) {
         super(messageConverter, validator);
         this.sleuthHelper = sleuthHelper;
-        this.objectMapper = objectMapper;
-        this.environment = environment;
     }
 
     /**
@@ -58,22 +48,8 @@ public class PayloadResolverDecorator extends PayloadMethodArgumentResolver {
 
     @Override
     public Object resolveArgument(@NonNull MethodParameter parameter, @NonNull Message<?> message) throws Exception {
-        String rawMessage;
-        if (isDefaultProfile()) {
-            var sqsMessage = objectMapper.readValue(message.getPayload().toString(), SqsMessage.class);
-            rawMessage = sqsMessage.getBody();
-        } else {
-            rawMessage = message.getPayload().toString();
-        }
-        logIncomingMessage(message, rawMessage);
-        var parameterClass = parameter.getParameterType();
-
-        if (!parameterClass.isAssignableFrom(String.class)) {
-            Object payload = objectMapper.readValue(rawMessage, parameterClass);
-            validate(message, parameter, payload);
-            return payload;
-        }
-        return rawMessage;
+        logIncomingMessage(MessageWrapper.fromMessage(message));
+        return super.resolveArgument(parameter, message);
     }
 
     /**
@@ -83,13 +59,6 @@ public class PayloadResolverDecorator extends PayloadMethodArgumentResolver {
     protected void validate(@NonNull Message<?> message, @NonNull MethodParameter parameter, @NonNull Object target) {
         updateTraceId(target);
         super.validate(message, parameter, target);
-    }
-
-    public boolean isDefaultProfile() {
-        return Arrays.stream(environment.getActiveProfiles())
-                .noneMatch(profile -> StringUtils.containsIgnoreCase(profile, "local") ||
-                        StringUtils.containsIgnoreCase(profile, "model") ||
-                        StringUtils.containsIgnoreCase(profile, "test"));
     }
 
     private <T> void updateTraceId(T json) {

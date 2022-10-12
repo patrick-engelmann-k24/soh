@@ -26,14 +26,12 @@ public class GeneralSqsReceiveService extends AbstractSqsReceiveService {
      */
     @SqsListener(value = "${soh.sqs.queue.invoicesFromCore}", deletionPolicy = ON_SUCCESS)
     @Trace(metricName = "Handling InvoiceReceived message", dispatcher = true)
-    public void queueListenerInvoiceReceivedFromCore(String message, MessageWrapper messageWrapper) {
+    public void queueListenerInvoiceReceivedFromCore(String message) {
 
         if (InvoiceUrlExtractor.matchesCreditNoteNumberPattern(message)) {
-            log.info("url: {} is for credit note", message);
-            camundaHelper.handleCreditNoteFromDropshipmentOrderReturn(message, messageWrapper);
+            camundaHelper.handleCreditNoteFromDropshipmentOrderReturn(message);
         } else {
-            log.info("url: {} is for invoice", message);
-            camundaHelper.handleInvoiceFromCore(message, messageWrapper);
+            camundaHelper.handleInvoiceFromCore(message);
         }
     }
 

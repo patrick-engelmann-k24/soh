@@ -1,6 +1,7 @@
 package de.kfzteile24.salesOrderHub.services.financialdocuments;
 
 import de.kfzteile24.salesOrderHub.configuration.FeatureFlagConfig;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
@@ -12,7 +13,7 @@ import de.kfzteile24.salesOrderHub.services.SalesOrderRowService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import de.kfzteile24.salesOrderHub.services.sqs.EnrichMessageForDlq;
-import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
+import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -27,6 +28,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.CustomEventName.SUBSEQUENT_ORDER_GENERATED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_CREATED_IN_SOH;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toSet;
 
@@ -74,10 +76,20 @@ public class CoreSalesInvoiceCreatedService {
                         if (!invoicePublished) {
                             handleCancellationForOrderRows(originalSalesOrder, subsequentOrder.getLatestJson().getOrderRows());
                         }
-                        if (orderUtil.checkIfOrderHasOrderRows(subsequentOrder.getLatestJson())) {
-                            metricsHelper.sendCustomEvent(subsequentOrder, SUBSEQUENT_ORDER_GENERATED);
+                        Order order = subsequentOrder.getLatestJson();
+                        if (orderUtil.checkIfOrderHasOrderRows(order)) {
+                            ProcessInstance result = camundaHelper.createOrderProcess(subsequentOrder, ORDER_CREATED_IN_SOH);
+                            if (result != null) {
+                                log.info("New soh order process started by core sales invoice created message with " +
+                                                "order number: {} and invoice number: {}. Process-Instance-ID: {} ",
+                                        orderNumber,
+                                        invoiceNumber,
+                                        result.getProcessInstanceId());
+                                metricsHelper.sendCustomEvent(subsequentOrder, SUBSEQUENT_ORDER_GENERATED);
+                            }
+                        } else {
+                            snsPublishService.publishOrderCreated(subsequentOrder.getOrderNumber());
                         }
-                        snsPublishService.publishOrderCreated(subsequentOrder.getOrderNumber());
                         publishInvoiceEvent(subsequentOrder);
                     }
                 }

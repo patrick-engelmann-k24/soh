@@ -2,6 +2,7 @@ package de.kfzteile24.salesOrderHub.services.sqs;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.RegExUtils;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.handler.annotation.support.MethodArgumentNotValidException;
@@ -38,7 +39,7 @@ public abstract class AbstractSqsReceiveService {
         String message = format("Message Error:\r\n Queue Name: {0}\r\nReceive Count: {1}\r\nContent: {2}",
                 headers.get("LogicalResourceId", String.class),
                 headers.get("ApproximateReceiveCount", String.class),
-                sqsMessage.getPayload());
+                RegExUtils.removeAll(sqsMessage.getPayload(), "[\\t\\n\\r]+"));
         logErrorMessage(message, e);
     }
 
@@ -46,7 +47,7 @@ public abstract class AbstractSqsReceiveService {
         String message = format("Message Error:\r\n Queue Name: {0}\r\nReceive Count: {1}\r\nContent: {2}",
                 messageWrapper.getQueueName(),
                 messageWrapper.getReceiveCount(),
-                messageWrapper.getPayload());
+                messageWrapper.getSanitizedPayload());
         logErrorMessage(message, e);
     }
 
@@ -56,12 +57,11 @@ public abstract class AbstractSqsReceiveService {
         throw e;
     }
 
-    public static void logIncomingMessage(Message<?> sqsMessage, String rawMessage) {
-        var headers = sqsMessage.getHeaders();
-        String message = format("Message Received:\r\n Queue Name: {0}\r\nReceive Count: {1}\r\nContent: {2}",
-                headers.get("LogicalResourceId", String.class),
-                headers.get("ApproximateReceiveCount", String.class),
-                rawMessage);
-        log.info(message);
+    public static void logIncomingMessage(MessageWrapper messageWrapper) {
+        log.info("Message Received: {} \r\nQueue Name: {}\r\nReceive Count: {}\r\nContent: {}",
+                messageWrapper.getSenderId(),
+                messageWrapper.getQueueName(),
+                messageWrapper.getReceiveCount(),
+                messageWrapper.getSanitizedPayload());
     }
 }

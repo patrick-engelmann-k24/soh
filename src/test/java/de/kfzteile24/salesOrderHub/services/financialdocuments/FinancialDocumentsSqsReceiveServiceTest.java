@@ -1,7 +1,5 @@
 package de.kfzteile24.salesOrderHub.services.financialdocuments;
 
-import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
-import de.kfzteile24.salesOrderHub.dto.sns.PaypalRefundInstructionSuccessfulEvent;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import org.junit.jupiter.api.Test;
@@ -27,10 +25,6 @@ class FinancialDocumentsSqsReceiveServiceTest {
     private FinancialDocumentsSqsReceiveService financialDocumentsSqsReceiveService;
     @Mock
     private CoreSalesCreditNoteCreatedService coreSalesCreditNoteCreatedService;
-    @Mock
-    private CoreSalesInvoiceCreatedService coreSalesInvoiceCreatedService;
-    @Mock
-    private PaypalRefundInstructionSuccessfulService paypalRefundInstructionSuccessfulService;
 
     @Test
     void testQueueListenerCoreSalesCreditNoteCreated() {
@@ -41,28 +35,5 @@ class FinancialDocumentsSqsReceiveServiceTest {
         financialDocumentsSqsReceiveService.queueListenerCoreSalesCreditNoteCreated(message, messageWrapper);
 
         verify(coreSalesCreditNoteCreatedService).handleCoreSalesCreditNoteCreated(message, messageWrapper);
-    }
-
-    @Test
-    void testQueueListenerCoreSalesInvoiceCreated() {
-
-        var message = getObjectByResource("coreSalesInvoiceCreatedOneItem.json", CoreSalesInvoiceCreatedMessage.class);
-        var messageWrapper = MessageWrapper.builder().build();
-
-        financialDocumentsSqsReceiveService.queueListenerCoreSalesInvoiceCreated(message, messageWrapper);
-
-        verify(coreSalesInvoiceCreatedService).handleCoreSalesInvoiceCreated(message, messageWrapper);
-    }
-
-
-    @Test
-    void testQueueListenerPaypalRefundInstructionSuccessful() {
-
-        var message = getObjectByResource("paypalRefundInstructionSuccessful.json", PaypalRefundInstructionSuccessfulEvent.class);
-        var messageWrapper = MessageWrapper.builder().build();
-
-        financialDocumentsSqsReceiveService.queueListenerPaypalRefundInstructionSuccessful(message, messageWrapper);
-
-        verify(paypalRefundInstructionSuccessfulService).handlePaypalRefundInstructionSuccessful(message, messageWrapper);
     }
 }

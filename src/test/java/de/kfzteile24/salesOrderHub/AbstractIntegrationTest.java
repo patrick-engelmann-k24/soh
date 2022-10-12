@@ -14,7 +14,6 @@ import de.kfzteile24.salesOrderHub.services.SalesOrderRowService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentOrderService;
-import de.kfzteile24.salesOrderHub.services.general.GeneralSqsReceiveService;
 import de.kfzteile24.salesOrderHub.services.property.KeyValuePropertyService;
 import de.kfzteile24.salesOrderHub.services.salesorder.SalesOrderSqsReceiveService;
 import de.kfzteile24.salesOrderHub.services.splitter.decorator.ItemSplitService;
@@ -97,8 +96,6 @@ public abstract class AbstractIntegrationTest implements ApplicationContextAware
     protected SalesOrderSqsReceiveService salesOrderSqsReceiveService;
     @SpyBean
     protected OrderUtil orderUtil;
-    @SpyBean
-    protected GeneralSqsReceiveService generalSqsReceiveService;
 
     /**
      * The application context gets created only once for all the model tests
