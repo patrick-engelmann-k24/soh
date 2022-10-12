@@ -14,7 +14,13 @@ public class LogbookConfiguration {
     @Bean
     public Logbook logbook() {
         return Logbook.builder()
-                .condition(exclude(requestTo("/healthCheck"), requestTo("/api/swagger-ui/**"), requestTo("/api-docs/**")))
+                .condition(
+                        exclude(
+                                requestTo("/healthCheck"),
+                                requestTo("/api/swagger-ui/**"),
+                                requestTo("/api-docs/**"),
+                                requestTo("/camunda-processing/**")
+                        ))
                 .headerFilter(HeaderFilters.replaceCookies("AWSALB"::equals, "XXX"))
                 .headerFilter(HeaderFilters.replaceCookies("AWSALBCORS"::equals, "XXX"))
                 .correlationId(new CustomCorrelationId())
