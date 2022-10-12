@@ -2,6 +2,7 @@ package de.kfzteile24.salesOrderHub.controller.impl;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Signals;
+import de.kfzteile24.salesOrderHub.controller.IBaseController;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.dto.mapper.KeyValuePropertyMapper;
 import de.kfzteile24.salesOrderHub.dto.property.PersistentProperty;
@@ -47,7 +48,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 @RestController
 @RequestMapping(value = "/camunda-processing", produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
-public class CamundaProcessingController {
+public class CamundaProcessingController implements IBaseController {
 
     private final KeyValuePropertyService keyValuePropertyService;
     private final DropshipmentOrderService dropshipmentOrderService;
