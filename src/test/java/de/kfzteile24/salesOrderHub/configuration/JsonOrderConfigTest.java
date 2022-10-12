@@ -3,21 +3,14 @@ package de.kfzteile24.salesOrderHub.configuration;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
-import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
-import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -41,31 +34,6 @@ class JsonOrderConfigTest {
         final CoreDataReaderEvent event2 = objectMapper.readValue(json, CoreDataReaderEvent.class);
 
         assertEquals(coreDataReader.getCreatedAt(), event2.getCreatedAt());
-    }
-
-    @Test
-    void orderToObject() throws IOException {
-        final String orderNUmber = "524001248";
-
-        final var sqsMessage = objectMapper.readValue(loadJson(), SqsMessage.class);
-        assertNotNull(sqsMessage);
-        assertNotNull(sqsMessage.getMessageId());
-        assertNotNull(sqsMessage.getBody());
-        final Order order = objectMapper.readValue(sqsMessage.getBody(), Order.class);
-
-        assertEquals(orderNUmber, order.getOrderHeader().getOrderNumber());
-
-        final String json = objectMapper.writeValueAsString(order);
-        final Order deserializedOrderJson = objectMapper.readValue(json, Order.class);
-        assertEquals(order, deserializedOrderJson);
-    }
-
-    @SneakyThrows({URISyntaxException.class, IOException.class})
-    private String loadJson() {
-        String fileName = "examples/testmessage.json";
-        return Files.readString(Paths.get(
-                Objects.requireNonNull(getClass().getClassLoader().getResource(fileName))
-                        .toURI()));
     }
 
     @Test

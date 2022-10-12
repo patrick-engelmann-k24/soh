@@ -1,3 +1,6 @@
 {
-  "Message": "{\n\"ExternalOrderNumber\": \"13.2\",\n\"SalesOrderNumber\": \"123\",\n\"Booked\": true,\n\"Items\": null\n}"
+  "ExternalOrderNumber": "13.2",
+  "SalesOrderNumber": "123",
+  "Booked": true,
+  "Items": null
 }

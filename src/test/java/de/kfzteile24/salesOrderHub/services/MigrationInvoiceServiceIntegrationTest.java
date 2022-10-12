@@ -1,72 +1,47 @@
 package de.kfzteile24.salesOrderHub.services;
 
 import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
-import de.kfzteile24.salesOrderHub.helper.BpmUtil;
-import de.kfzteile24.salesOrderHub.helper.MessageErrorHandler;
-import de.kfzteile24.salesOrderHub.helper.OrderUtil;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
+import de.kfzteile24.salesOrderHub.helper.ObjectUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
-import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
-import de.kfzteile24.salesOrderHub.repositories.InvoiceNumberCounterRepository;
-import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.FinancialDocumentsSqsReceiveService;
-import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceNumberCounterService;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.RandomUtils;
-import org.camunda.bpm.engine.RuntimeService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createOrderNumberInSOH;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.readResource;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 
 @Slf4j
 class MigrationInvoiceServiceIntegrationTest extends AbstractIntegrationTest {
-
-    private static final String ANY_SENDER_ID = RandomStringUtils.randomAlphabetic(10);
-    private static final int ANY_RECEIVE_COUNT = RandomUtils.nextInt();
 
     @Autowired
     private FinancialDocumentsSqsReceiveService financialDocumentsSqsReceiveService;
     @Autowired
     private TimedPollingService timerService;
     @Autowired
-    private SalesOrderRepository salesOrderRepository;
-    @Autowired
-    private AuditLogRepository auditLogRepository;
-    @Autowired
-    private InvoiceNumberCounterRepository invoiceNumberCounterRepository;
-    @Autowired
-    private InvoiceNumberCounterService invoiceNumberCounterService;
-    @Autowired
-    private RuntimeService runtimeService;
-    @Autowired
-    private BpmUtil bpmUtil;
-    @Autowired
     private SalesOrderUtil salesOrderUtil;
     @Autowired
     private TimedPollingService timedPollingService;
     @Autowired
-    private SalesOrderService salesOrderService;
-    @Autowired
     private SnsPublishService snsPublishService;
     @Autowired
-    private OrderUtil orderUtil;
-    @Autowired
-    private MessageErrorHandler messageErrorHandler;
-    @Autowired
     private MigrationInvoiceService migrationInvoiceService;
+    @Autowired
+    private ObjectUtil objectUtil;
+
+    private final MessageWrapper messageWrapper = MessageWrapper.builder()
+            .receiveCount(1)
+            .build();
 
     @SneakyThrows
     @Test
     void testQueueListenerMigrationCoreSalesInvoiceCreated() {
 
-        var senderId = "Delivery";
-        var receiveCount = 1;
         var salesOrder = salesOrderUtil.createNewSalesOrder();
 
         String originalOrderNumber = salesOrder.getOrderNumber();
@@ -74,12 +49,14 @@ class MigrationInvoiceServiceIntegrationTest extends AbstractIntegrationTest {
         String rowSku1 = "1440-47378";
         String rowSku2 = "2010-10183";
         String rowSku3 = "2022-KBA";
-        String migrationInvoiceMsg = readResource("examples/coreSalesInvoiceCreatedMultipleItems.json");
+
+        var message = getObjectByResource("coreSalesInvoiceCreatedMultipleItems.json", CoreSalesInvoiceCreatedMessage.class);
 
         //Replace order number with randomly created order number as expected
-        migrationInvoiceMsg = migrationInvoiceMsg.replace("524001248", originalOrderNumber);
+        message.getSalesInvoice().getSalesInvoiceHeader().setOrderNumber(originalOrderNumber);
+        message.getSalesInvoice().getSalesInvoiceHeader().setOrderGroupId(originalOrderNumber);
 
-        migrationInvoiceService.handleMigrationCoreSalesInvoiceCreated(migrationInvoiceMsg, senderId, receiveCount);
+        migrationInvoiceService.handleMigrationCoreSalesInvoiceCreated(message, messageWrapper);
 
         String newOrderNumberCreatedInSoh = createOrderNumberInSOH(originalOrderNumber, invoiceNumber);
         assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
@@ -92,29 +69,32 @@ class MigrationInvoiceServiceIntegrationTest extends AbstractIntegrationTest {
     @Test
     void testQueueListenerMigrationCoreSalesInvoiceCreatedDuplicateSubsequentOrder() {
 
-        var senderId = "Delivery";
-        var receiveCount = 1;
+
         var salesOrder = salesOrderUtil.createNewSalesOrder();
 
         String originalOrderNumber = salesOrder.getOrderNumber();
         String invoiceNumber = "10";
         String rowSku = "2010-10183";
-        String invoiceMsg = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
+        var message = getObjectByResource("coreSalesInvoiceCreatedOneItem.json", CoreSalesInvoiceCreatedMessage.class);
+
 
         //Replace order number with randomly created order number as expected
-        invoiceMsg = invoiceMsg.replace("524001248", originalOrderNumber);
+        message.getSalesInvoice().getSalesInvoiceHeader().setOrderNumber(originalOrderNumber);
+        message.getSalesInvoice().getSalesInvoiceHeader().setOrderGroupId(originalOrderNumber);
 
-        financialDocumentsSqsReceiveService.queueListenerCoreSalesInvoiceCreated(invoiceMsg, senderId, receiveCount);
+        var migrationMessage = objectUtil.deepCopyOf(message, CoreSalesInvoiceCreatedMessage.class);
+
+        financialDocumentsSqsReceiveService.queueListenerCoreSalesInvoiceCreated(message, messageWrapper);
 
         String newOrderNumberCreatedInSoh = createOrderNumberInSOH(originalOrderNumber, invoiceNumber);
         assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
 
-        migrationInvoiceService.handleMigrationCoreSalesInvoiceCreated(invoiceMsg, "Migration Delivery", 1);
+        migrationInvoiceService.handleMigrationCoreSalesInvoiceCreated(migrationMessage, messageWrapper);
 
         assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
 
-        verify(snsPublishService).publishMigrationOrderRowCancelled(eq(originalOrderNumber), eq(rowSku));
-        verify(snsPublishService).publishMigrationOrderCreated(eq(newOrderNumberCreatedInSoh));
+        verify(snsPublishService).publishMigrationOrderRowCancelled(originalOrderNumber, rowSku);
+        verify(snsPublishService).publishMigrationOrderCreated(newOrderNumberCreatedInSoh);
     }
 }
 

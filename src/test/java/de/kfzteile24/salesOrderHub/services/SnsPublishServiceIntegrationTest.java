@@ -15,12 +15,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.RETURN_ORDER_CREATED;
+import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrderFromOrder;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrderReturn;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.readResource;
 
-public class SnsPublishServiceIntegrationTest extends AbstractIntegrationTest {
+class SnsPublishServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private SnsPublishService snsPublishService;
@@ -44,8 +43,7 @@ public class SnsPublishServiceIntegrationTest extends AbstractIntegrationTest {
     @SneakyThrows(Exception.class)
     @DisplayName("When Sales Credit Note Created Event Published Then Topic Is Found And No Exceptions Are Thrown")
     void whenSalesCreditNoteCreatedEventPublishedThenTopicIsFoundAndNoExceptionsAreThrown() {
-        String orderRawMessage = readResource("examples/ecpOrderMessageWithTwoRows.json");
-        Order order = getOrder(orderRawMessage);
+        Order order = getObjectByResource("ecpOrderMessageWithTwoRows.json", Order.class);
         SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(order));
         SalesOrderReturn salesOrderReturn = getSalesOrderReturn(salesOrder, "123");
         salesOrderReturnService.save(salesOrderReturn, RETURN_ORDER_CREATED);

@@ -1,3 +1,9 @@
 {
-  "Message": "{\n  \"Data\" : {\n    \"OrderGroupId\": \"1234\",\n    \"SalesOrderId\": [\n      \"4567787\",\n      \"4567858\"\n    ]\n  }\n}"
+  "Data" : {
+    "OrderGroupId": "1234",
+    "SalesOrderId": [
+      "4567787",
+      "4567858"
+    ]
+  }
 }

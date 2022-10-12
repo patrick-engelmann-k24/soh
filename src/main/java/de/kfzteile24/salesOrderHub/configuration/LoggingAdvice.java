@@ -3,7 +3,7 @@ package de.kfzteile24.salesOrderHub.configuration;
 import com.amazonaws.services.sqs.AmazonSQSAsync;
 import com.amazonaws.services.sqs.model.MessageAttributeValue;
 import com.amazonaws.services.sqs.model.SendMessageRequest;
-import de.kfzteile24.salesOrderHub.helper.MessageErrorHandler;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.salesOrderHub.helper.SleuthHelper;
 import de.kfzteile24.salesOrderHub.services.sqs.EnrichMessageForDlq;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +18,8 @@ import org.springframework.context.annotation.Configuration;
 import java.util.Arrays;
 import java.util.Map;
 
+import static de.kfzteile24.salesOrderHub.services.sqs.AbstractSqsReceiveService.logErrorMessage;
+
 @Aspect
 @Configuration
 @Slf4j
@@ -26,17 +28,6 @@ class LoggingAdvice {
 
     private final SleuthHelper sleuthHelper;
     private final AmazonSQSAsync amazonSQSAsync;
-    private final MessageErrorHandler messageErrorHandler;
-
-    @Around("execution(public void de.kfzteile24.salesOrderHub.services.salesorder.SalesOrderSqsReceiveService.*(String, String, Integer)) || " +
-            "execution(public void de.kfzteile24.salesOrderHub.services.financialdocuments.FinancialDocumentsSqsReceiveService.*(String, String, Integer)) || " +
-            "execution(public void de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentSqsReceiveService.*(String, String, Integer)) || " +
-            "execution(public void de.kfzteile24.salesOrderHub.services.migration.MigrationSqsReceiveService.*(String, String, Integer)) || " +
-            "execution(public void de.kfzteile24.salesOrderHub.services.general.GeneralSqsReceiveService.*(String, String, Integer))")
-    Object incomingMessageLogging(ProceedingJoinPoint joinPoint) throws Throwable {
-        logReceivedMessage(joinPoint.getArgs());
-        return joinPoint.proceed();
-    }
 
     @Around("execution(public void *.notify(org.camunda.bpm.engine.delegate.DelegateExecution))")
     Object updateTraceContext(ProceedingJoinPoint joinPoint) throws Throwable {
@@ -45,37 +36,30 @@ class LoggingAdvice {
         return joinPoint.proceed();
     }
 
-    private static void logReceivedMessage(Object... args) {
-        log.info("message received: {}\r\nmessage receive count: {}\r\nmessage content: {}",
-                args[1], args[2], args[0]);
-    }
-
     @SneakyThrows
     @Around("@annotation(enrichMessageForDlq)")
     Object moveMessageToDlq(ProceedingJoinPoint joinPoint, EnrichMessageForDlq enrichMessageForDlq) {
 
-        String rawMessage = (String) joinPoint.getArgs()[0];
-        Integer receiveCount = (Integer) joinPoint.getArgs()[1];
-        String queueName = (String) joinPoint.getArgs()[2];
-        log.info("This is the logging advice with received count: {}", receiveCount);
+        var messageWrapper = (MessageWrapper) joinPoint.getArgs()[1];
+        log.info("This is the logging advice with received count: {}", messageWrapper.getReceiveCount());
 
         try {
             return joinPoint.proceed();
         } catch (Throwable e) {
-            if (receiveCount < 4) {
-                messageErrorHandler.logErrorMessage(rawMessage, queueName, receiveCount, e);
+            if (messageWrapper.getReceiveCount() < 4) {
+                logErrorMessage(messageWrapper, e);
             } else {
-                moveToDlq(rawMessage, queueName, e);
+                moveToDlq(messageWrapper, e);
             }
         }
         return null;
     }
 
-    private void moveToDlq(String rawMessage, String queueName, Throwable e) {
+    private void moveToDlq(MessageWrapper messageWrapper, Throwable e) {
         Map<String, MessageAttributeValue> messageAttributes = createStringMessageAttributeValueMap(e);
         SendMessageRequest sendMessageRequest = new SendMessageRequest()
-                .withQueueUrl(queueName + "-dlq")
-                .withMessageBody(rawMessage)
+                .withQueueUrl(messageWrapper.getQueueName() + "-dlq")
+                .withMessageBody(messageWrapper.getPayload())
                 .withMessageAttributes(messageAttributes)
                 .withDelaySeconds(1);
         amazonSQSAsync.sendMessage(sendMessageRequest);

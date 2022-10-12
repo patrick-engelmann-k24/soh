@@ -1,19 +1,12 @@
 package de.kfzteile24.salesOrderHub.services;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.FeatureFlagConfig;
-import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
-import de.kfzteile24.salesOrderHub.helper.FileUtil;
+import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderMapper;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderMapperImpl;
-import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
-import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapperUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -21,11 +14,11 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.Optional;
 
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.MIGRATION_SALES_ORDER_RECEIVED;
+import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.copyOrderJson;
+import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -36,12 +29,8 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class MigrationSalesOrderServiceTest {
-
-    private static final String ANY_SENDER_ID = RandomStringUtils.randomAlphabetic(10);
-    private static final int ANY_RECEIVE_COUNT = RandomUtils.nextInt();
-
-    @Spy
-    private final ObjectMapper objectMapper = new ObjectMapperConfig().objectMapper();
+    @Mock
+    private OrderUtil orderUtil;
 
     @Mock
     private SalesOrderService salesOrderService;
@@ -55,21 +44,18 @@ class MigrationSalesOrderServiceTest {
     @Spy
     private final SalesOrderMapper salesOrderMapper = new SalesOrderMapperImpl();
 
-    @Mock
-    private MessageWrapperUtil messageWrapperUtil;
-
     @InjectMocks
     private MigrationSalesOrderService migrationSalesOrderService;
 
     @SneakyThrows
     @Test
     void testHandleMigrationCoreSalesOrderCreatedDuplication() {
-        String rawMessage = readResource("examples/ecpOrderMessage.json");
-        mockMessageWrapper(rawMessage,  Order.class);
-        SalesOrder salesOrder = getSalesOrder(rawMessage);
-        when(salesOrderService.getOrderByOrderNumber(eq(salesOrder.getOrderNumber()))).thenReturn(Optional.of(salesOrder));
+        var message = getObjectByResource("ecpOrderMessage.json", Order.class);
+        SalesOrder salesOrder = getSalesOrder(message);
+        when(orderUtil.copyOrderJson(any())).thenReturn(copyOrderJson(message));
+        when(salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber())).thenReturn(Optional.of(salesOrder));
 
-        migrationSalesOrderService.handleMigrationCoreSalesOrderCreated(rawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+        migrationSalesOrderService.handleMigrationCoreSalesOrderCreated(message);
 
         verify(salesOrderService).enrichSalesOrder(salesOrder, salesOrder.getLatestJson(), (Order) salesOrder.getOriginalOrder());
         verify(salesOrderService).save(argThat(so -> {
@@ -84,43 +70,23 @@ class MigrationSalesOrderServiceTest {
     @SneakyThrows
     void testHandleMigrationCoreSalesOrderCreatedNewOrder() {
 
-        String rawMessage = readResource("examples/ecpOrderMessage.json");
-        mockMessageWrapper(rawMessage,  Order.class);
-        SqsMessage sqsMessage = objectMapper.readValue(rawMessage, SqsMessage.class);
-        var order = objectMapper.readValue(sqsMessage.getBody(), Order.class);
-
+        var message = getObjectByResource("ecpOrderMessage.json", Order.class);
+        when(orderUtil.copyOrderJson(any())).thenReturn(copyOrderJson(message));
         when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.empty());
 
-        migrationSalesOrderService.handleMigrationCoreSalesOrderCreated(rawMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+        migrationSalesOrderService.handleMigrationCoreSalesOrderCreated(message);
 
         verify(salesOrderService).createSalesOrder(argThat(salesOrder -> {
-                    assertThat(salesOrder.getOrderNumber()).isEqualTo(order.getOrderHeader().getOrderNumber());
-                    assertThat(salesOrder.getLatestJson()).isEqualTo(order);
+                    assertThat(salesOrder.getOrderNumber()).isEqualTo(message.getOrderHeader().getOrderNumber());
+                    assertThat(salesOrder.getLatestJson()).isEqualTo(message);
                     assertThat(salesOrder.getVersion()).isEqualTo(3L);
-                    assertThat(salesOrder.getOriginalOrder()).isEqualTo(order);
-                    assertThat(salesOrder.getCustomerEmail()).isEqualTo(order.getOrderHeader().getCustomer().getCustomerEmail());
-                    assertThat(salesOrder.getOrderGroupId()).isEqualTo(order.getOrderHeader().getOrderGroupId());
-                    assertThat(salesOrder.getSalesChannel()).isEqualTo(order.getOrderHeader().getSalesChannel());
+                    assertThat(salesOrder.getOriginalOrder()).isEqualTo(message);
+                    assertThat(salesOrder.getCustomerEmail()).isEqualTo(message.getOrderHeader().getCustomer().getCustomerEmail());
+                    assertThat(salesOrder.getOrderGroupId()).isEqualTo(message.getOrderHeader().getOrderGroupId());
+                    assertThat(salesOrder.getSalesChannel()).isEqualTo(message.getOrderHeader().getSalesChannel());
                     return true;
                 }
         ));
-        verify(snsPublishService).publishMigrationOrderCreated(order.getOrderHeader().getOrderNumber());
-    }
-
-    @SneakyThrows({URISyntaxException.class, IOException.class})
-    private String readResource(String path) {
-        return FileUtil.readResource(getClass(), path);
-    }
-
-    @SneakyThrows
-    private <T> void mockMessageWrapper(String rawMessage, Class<T> clazz) {
-        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-        T message = objectMapper.readValue(body, clazz);
-        var messageWrapper = MessageWrapper.<T>builder()
-                .message(message)
-                .rawMessage(rawMessage)
-                .build();
-        when(messageWrapperUtil.create(eq(rawMessage), eq(clazz)))
-                .thenReturn(messageWrapper);
+        verify(snsPublishService).publishMigrationOrderCreated(message.getOrderHeader().getOrderNumber());
     }
 }

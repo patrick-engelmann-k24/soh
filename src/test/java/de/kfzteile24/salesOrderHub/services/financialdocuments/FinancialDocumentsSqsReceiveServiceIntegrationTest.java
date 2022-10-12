@@ -1,13 +1,14 @@
 package de.kfzteile24.salesOrderHub.services.financialdocuments;
 
 import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
 import de.kfzteile24.salesOrderHub.dto.shared.creditnote.SalesCreditNoteHeader;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
-import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.ObjectUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
@@ -23,8 +24,6 @@ import de.kfzteile24.soh.order.dto.Totals;
 import de.kfzteile24.soh.order.dto.UnitValues;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.RandomUtils;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.junit.jupiter.api.AfterEach;
@@ -35,15 +34,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.io.IOException;
 import java.math.BigDecimal;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.ORDER_NUMBER_SEPARATOR;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
@@ -55,6 +49,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Paymen
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.RETURN_ORDER_CREATED;
+import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createOrderNumberInSOH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -65,15 +60,8 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 
-/**
- * @author stefand
- */
-
 @Slf4j
 class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegrationTest {
-
-    private static final String ANY_SENDER_ID = RandomStringUtils.randomAlphabetic(10);
-    private static final int ANY_RECEIVE_COUNT = RandomUtils.nextInt();
 
     @Autowired
     private FinancialDocumentsSqsReceiveService financialDocumentsSqsReceiveService;
@@ -127,20 +115,18 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
 
         salesOrderService.save(salesOrder, Action.ORDER_CREATED);
 
-        var coreReturnDeliveryNotePrinted = readResource("examples/coreSalesCreditNoteCreated.json");
-        String body = objectMapper.readValue(coreReturnDeliveryNotePrinted, SqsMessage.class).getBody();
-        SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage =
-                objectMapper.readValue(body, SalesCreditNoteCreatedMessage.class);
-        financialDocumentsSqsReceiveService.queueListenerCoreSalesCreditNoteCreated(coreReturnDeliveryNotePrinted, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+        var message = getObjectByResource("coreSalesCreditNoteCreated.json", SalesCreditNoteCreatedMessage.class);
+        var messageWrapper = MessageWrapper.builder().build();
+        financialDocumentsSqsReceiveService.queueListenerCoreSalesCreditNoteCreated(message, messageWrapper);
 
-        SalesCreditNoteHeader salesCreditNoteHeader = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader();
+        SalesCreditNoteHeader salesCreditNoteHeader = message.getSalesCreditNote().getSalesCreditNoteHeader();
         String returnOrderNumber = createOrderNumberInSOH(salesCreditNoteHeader.getOrderNumber(), salesCreditNoteHeader.getCreditNoteNumber());
         SalesOrderReturn returnSalesOrder = salesOrderReturnService.getByOrderNumber(returnOrderNumber);
         Order returnOrder = returnSalesOrder.getReturnOrderJson();
 
         checkOrderRowValues(returnOrder.getOrderRows());
         checkTotalsValues(returnOrder.getOrderHeader().getTotals());
-        checkEventIsPublished(salesCreditNoteCreatedMessage);
+        checkEventIsPublished(message);
     }
 
     private void checkOrderRowValues(List<OrderRows> returnOrderRows) {
@@ -149,19 +135,19 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
 
         OrderRows orderRows = returnOrderRows.stream().filter(r -> r.getSku().equals("sku-1")).findFirst().orElse(null);
         checkOrderRowValues(orderRows, "name-sku-1",
-                new BigDecimal("1"), new BigDecimal("19.0"),
-                new BigDecimal("-1.0"), new BigDecimal("-1.19"),
-                new BigDecimal("-1.0"), new BigDecimal("-1.19"));
+                new BigDecimal("1"), new BigDecimal("19.00"),
+                new BigDecimal("-1.00"), new BigDecimal("-1.19"),
+                new BigDecimal("-1.00"), new BigDecimal("-1.19"));
 
         orderRows = returnOrderRows.stream().filter(r -> r.getSku().equals("new-sku")).findFirst().orElse(null);
         checkOrderRowValues(orderRows, "new-sku",
-                new BigDecimal("1"), new BigDecimal("19.0"),
-                new BigDecimal("10.0"), new BigDecimal("11.90"),
-                new BigDecimal("10.0"), new BigDecimal("11.90"));
+                new BigDecimal("1"), new BigDecimal("19.00"),
+                new BigDecimal("10.00"), new BigDecimal("11.90"),
+                new BigDecimal("10.00"), new BigDecimal("11.90"));
 
         orderRows = returnOrderRows.stream().filter(r -> r.getSku().equals("sku-2")).findFirst().orElse(null);
         checkOrderRowValues(orderRows, "name-sku-2",
-                new BigDecimal("-2"), new BigDecimal("20.0"),
+                new BigDecimal("-2"), new BigDecimal("20.00"),
                 new BigDecimal("17.39"), new BigDecimal("20.87"),
                 new BigDecimal("-34.78"), new BigDecimal("-41.74"));
     }
@@ -195,15 +181,15 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
         assertEquals(new BigDecimal("-35.78"), totals.getGrandTotalNet());
         assertEquals(new BigDecimal("-42.93"), totals.getGrandTotalGross());
         assertEquals(new BigDecimal("-42.93"), totals.getPaymentTotal());
-        assertEquals(new BigDecimal("-10.0"), totals.getShippingCostNet());
+        assertEquals(new BigDecimal("-10.00"), totals.getShippingCostNet());
         assertEquals(new BigDecimal("-11.90"), totals.getShippingCostGross());
 
         List<GrandTotalTaxes> grandTotalTaxes = totals.getGrandTotalTaxes();
         assertEquals(2, grandTotalTaxes.size());
-        GrandTotalTaxes grandTotalTax = grandTotalTaxes.stream().filter(tax -> tax.getRate().equals(new BigDecimal("19.0"))).findFirst().orElse(null);
+        GrandTotalTaxes grandTotalTax = grandTotalTaxes.stream().filter(tax -> tax.getRate().equals(new BigDecimal("19.00"))).findFirst().orElse(null);
         assertNotNull(grandTotalTax);
         assertEquals(new BigDecimal("-0.19"), grandTotalTax.getValue());
-        grandTotalTax = grandTotalTaxes.stream().filter(tax -> tax.getRate().equals(new BigDecimal("20.0"))).findFirst().orElse(null);
+        grandTotalTax = grandTotalTaxes.stream().filter(tax -> tax.getRate().equals(new BigDecimal("20.00"))).findFirst().orElse(null);
         assertNotNull(grandTotalTax);
         assertEquals(new BigDecimal("-6.96"), grandTotalTax.getValue());
     }
@@ -211,7 +197,7 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
     private void checkEventIsPublished(SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage) {
 
         verify(salesOrderService).getOrderByOrderNumber("580309129");
-        verify(salesOrderReturnService).handleSalesOrderReturn(eq(salesCreditNoteCreatedMessage), eq(RETURN_ORDER_CREATED), eq(CORE_CREDIT_NOTE_CREATED));
+        verify(salesOrderReturnService).handleSalesOrderReturn(salesCreditNoteCreatedMessage, RETURN_ORDER_CREATED, CORE_CREDIT_NOTE_CREATED);
         verify(snsPublishService).publishReturnOrderCreatedEvent(argThat(
                 salesOrderReturn -> {
                     assertThat(salesOrderReturn.getOrderNumber()).isEqualTo("580309129-876130");
@@ -224,8 +210,6 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
     @Test
     void testQueueListenerCoreSalesInvoiceCreated() {
 
-        var senderId = "Delivery";
-        var receiveCount = 1;
         var salesOrder = salesOrderUtil.createNewSalesOrder();
         final ProcessInstance orderProcess = camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
         assertTrue(bpmUtil.isProcessWaitingAtExpectedToken(orderProcess, MSG_ORDER_PAYMENT_SECURED.getName()));
@@ -234,12 +218,14 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
         String originalOrderNumber = salesOrder.getOrderNumber();
         String invoiceNumber = "10";
         String rowSku = "2010-10183";
-        String invoiceEvent = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
+
+        var message = getObjectByResource("coreSalesInvoiceCreatedOneItem.json", CoreSalesInvoiceCreatedMessage.class);
+        var messageWrapper = MessageWrapper.builder().build();
 
         //Replace order number with randomly created order number as expected
-        invoiceEvent = invoiceEvent.replace("524001248", originalOrderNumber);
+        message.getSalesInvoice().getSalesInvoiceHeader().setOrderNumber(originalOrderNumber);
 
-        financialDocumentsSqsReceiveService.queueListenerCoreSalesInvoiceCreated(invoiceEvent, senderId, receiveCount);
+        financialDocumentsSqsReceiveService.queueListenerCoreSalesInvoiceCreated(message, messageWrapper);
 
         String newOrderNumberCreatedInSoh = createOrderNumberInSOH(originalOrderNumber, invoiceNumber);
         assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
@@ -259,9 +245,6 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
     @Test
     void testQueueListenerCoreSalesInvoiceCreateWithMultipleItemsSameSkus() {
 
-        var senderId = "Delivery";
-        var receiveCount = 1;
-
         String invoiceNumber = "10";
         String rowSku1 = "1440-47378";
         String rowSku2 = "2010-10183";
@@ -273,12 +256,13 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
         bpmUtil.sendMessage(Messages.ORDER_RECEIVED_PAYMENT_SECURED.getName(), salesOrder.getOrderNumber());
 
         String originalOrderNumber = salesOrder.getOrderNumber();
-        String invoiceEvent = readResource("examples/coreSalesInvoiceCreatedMultipleItemsSameSkus.json");
+        var message = getObjectByResource("coreSalesInvoiceCreatedMultipleItemsSameSkus.json", CoreSalesInvoiceCreatedMessage.class);
+        var messageWrapper = MessageWrapper.builder().build();
 
         //Replace order number with randomly created order number as expected
-        invoiceEvent = invoiceEvent.replace("524001248", originalOrderNumber);
+        message.getSalesInvoice().getSalesInvoiceHeader().setOrderNumber(originalOrderNumber);
 
-        financialDocumentsSqsReceiveService.queueListenerCoreSalesInvoiceCreated(invoiceEvent, senderId, receiveCount);
+        financialDocumentsSqsReceiveService.queueListenerCoreSalesInvoiceCreated(message, messageWrapper);
 
         String newOrderNumberCreatedInSoh = createOrderNumberInSOH(originalOrderNumber, invoiceNumber);
         assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
@@ -301,8 +285,6 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
     @Test
     void testQueueListenerCoreSalesInvoiceCreatedWithMultipleItems() {
 
-        var senderId = "Delivery";
-        var receiveCount = 1;
         var salesOrder = salesOrderUtil.createNewSalesOrder();
         final ProcessInstance orderProcess = camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
         assertTrue(bpmUtil.isProcessWaitingAtExpectedToken(orderProcess, MSG_ORDER_PAYMENT_SECURED.getName()));
@@ -312,12 +294,14 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
         String rowSku1 = "1440-47378";
         String rowSku2 = "2010-10183";
         String rowSku3 = "2022-KBA";
-        String invoiceEvent = readResource("examples/coreSalesInvoiceCreatedMultipleItems.json");
+
+        var message = getObjectByResource("coreSalesInvoiceCreatedMultipleItems.json", CoreSalesInvoiceCreatedMessage.class);
+        var messageWrapper = MessageWrapper.builder().build();
 
         //Replace order number with randomly created order number as expected
-        invoiceEvent = invoiceEvent.replace("524001248", originalOrderNumber);
+        message.getSalesInvoice().getSalesInvoiceHeader().setOrderNumber(originalOrderNumber);
 
-        financialDocumentsSqsReceiveService.queueListenerCoreSalesInvoiceCreated(invoiceEvent, senderId, receiveCount);
+        financialDocumentsSqsReceiveService.queueListenerCoreSalesInvoiceCreated(message, messageWrapper);
 
         String newOrderNumberCreatedInSoh = createOrderNumberInSOH(originalOrderNumber, invoiceNumber);
         assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
@@ -339,8 +323,6 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
     @Test
     void testQueueListenerCoreSalesInvoiceCreatedWithNotConsolidatedDuplicateItems() {
 
-        var senderId = "Delivery";
-        var receiveCount = 1;
         var salesOrder = salesOrderUtil.createNewSalesOrder();
         String originalOrderNumber = salesOrder.getOrderNumber();
         OrderRows duplicatedOrderRow = objectUtil.deepCopyOf(salesOrder.getLatestJson().getOrderRows().get(0), OrderRows.class);
@@ -357,12 +339,14 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
         String rowSku1 = "1440-47378";
         String rowSku2 = "2010-10183";
         String rowSku3 = "2022-KBA";
-        String invoiceEvent = readResource("examples/coreSalesInvoiceCreatedMultipleItems.json");
+
+        var message = getObjectByResource("coreSalesInvoiceCreatedMultipleItems.json", CoreSalesInvoiceCreatedMessage.class);
+        var messageWrapper = MessageWrapper.builder().build();
 
         //Replace order number with randomly created order number as expected
-        invoiceEvent = invoiceEvent.replace("524001248", originalOrderNumber);
+        message.getSalesInvoice().getSalesInvoiceHeader().setOrderNumber(originalOrderNumber);
 
-        financialDocumentsSqsReceiveService.queueListenerCoreSalesInvoiceCreated(invoiceEvent, senderId, receiveCount);
+        financialDocumentsSqsReceiveService.queueListenerCoreSalesInvoiceCreated(message, messageWrapper);
 
         String newOrderNumberCreatedInSoh = createOrderNumberInSOH(originalOrderNumber, invoiceNumber);
         assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
@@ -388,8 +372,6 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
     @Test
     void testQueueListenerCoreSalesInvoiceCreatedWithConsolidatedItems() {
 
-        var senderId = "Delivery";
-        var receiveCount = 1;
         var salesOrder = salesOrderUtil.createNewSalesOrder();
         String originalOrderNumber = salesOrder.getOrderNumber();
         OrderRows duplicatedOrderRow = objectUtil.deepCopyOf(salesOrder.getLatestJson().getOrderRows().get(0), OrderRows.class);
@@ -404,12 +386,13 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
         String rowSku1 = "1440-47378";
         String rowSku2 = "2010-10183";
         String rowSku3 = "2022-KBA";
-        String invoiceEvent = readResource("examples/coreSalesInvoiceCreatedMultipleItems.json");
+        var message = getObjectByResource("coreSalesInvoiceCreatedMultipleItems.json", CoreSalesInvoiceCreatedMessage.class);
+        var messageWrapper = MessageWrapper.builder().build();
 
         //Replace order number with randomly created order number as expected
-        invoiceEvent = invoiceEvent.replace("524001248", originalOrderNumber);
+        message.getSalesInvoice().getSalesInvoiceHeader().setOrderNumber(originalOrderNumber);
 
-        financialDocumentsSqsReceiveService.queueListenerCoreSalesInvoiceCreated(invoiceEvent, senderId, receiveCount);
+        financialDocumentsSqsReceiveService.queueListenerCoreSalesInvoiceCreated(message, messageWrapper);
 
         String newOrderNumberCreatedInSoh = createOrderNumberInSOH(originalOrderNumber, invoiceNumber);
         assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
@@ -490,51 +473,51 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
                 orderRows.get(0),
                 sku1,
                 "2",
-                "20",
+                "20.00",
                 UnitValues.builder()
-                        .goodsValueGross(new BigDecimal("201.0"))
-                        .goodsValueNet(new BigDecimal("167.5"))
+                        .goodsValueGross(new BigDecimal("201.00"))
+                        .goodsValueNet(new BigDecimal("167.50"))
                         .discountGross(BigDecimal.ZERO)
                         .discountNet(BigDecimal.ZERO)
-                        .discountedGross(new BigDecimal("201.0"))
-                        .discountedNet(new BigDecimal("167.5"))
+                        .discountedGross(new BigDecimal("201.00"))
+                        .discountedNet(new BigDecimal("167.50"))
                         .build(),
                 SumValues.builder()
-                        .goodsValueGross(new BigDecimal("402.0"))
-                        .goodsValueNet(new BigDecimal("335.0"))
+                        .goodsValueGross(new BigDecimal("402.00"))
+                        .goodsValueNet(new BigDecimal("335.00"))
                         .discountGross(BigDecimal.ZERO)
                         .discountNet(BigDecimal.ZERO)
-                        .totalDiscountedGross(new BigDecimal("402.0"))
-                        .totalDiscountedNet(new BigDecimal("335.0"))
+                        .totalDiscountedGross(new BigDecimal("402.00"))
+                        .totalDiscountedNet(new BigDecimal("335.00"))
                         .build(),
                 "Unterdruckpumpe, Bremsanlage");
         checkOrderRowValues(
                 orderRows.get(1),
                 sku2,
                 "2",
-                "19",
+                "19.00",
                 UnitValues.builder()
                         .goodsValueGross(new BigDecimal("10.00"))
-                        .goodsValueNet(new BigDecimal("8.4"))
+                        .goodsValueNet(new BigDecimal("8.40"))
                         .discountGross(BigDecimal.ZERO)
                         .discountNet(BigDecimal.ZERO)
                         .discountedGross(new BigDecimal("10.00"))
-                        .discountedNet(new BigDecimal("8.4"))
+                        .discountedNet(new BigDecimal("8.40"))
                         .build(),
                 SumValues.builder()
                         .goodsValueGross(new BigDecimal("20.00"))
-                        .goodsValueNet(new BigDecimal("16.8"))
+                        .goodsValueNet(new BigDecimal("16.80"))
                         .discountGross(BigDecimal.ZERO)
                         .discountNet(BigDecimal.ZERO)
                         .totalDiscountedGross(new BigDecimal("20.00"))
-                        .totalDiscountedNet(new BigDecimal("16.8"))
+                        .totalDiscountedNet(new BigDecimal("16.80"))
                         .build(),
                 "Luftfilter");
         checkOrderRowValues(
                 orderRows.get(2),
                 sku3,
                 "1",
-                "19",
+                "19.00",
                 UnitValues.builder()
                         .goodsValueGross(new BigDecimal("10.52"))
                         .goodsValueNet(new BigDecimal("8.84"))
@@ -585,13 +568,6 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
                     assertThat((Map<String, Object>) map).containsAllEntriesOf(eventAttributes);
                     return true;
                 }));
-    }
-
-    @SneakyThrows({URISyntaxException.class, IOException.class})
-    private String readResource(String path) {
-        return Files.readString(Paths.get(
-                Objects.requireNonNull(getClass().getClassLoader().getResource(path))
-                        .toURI()));
     }
 
     @AfterEach

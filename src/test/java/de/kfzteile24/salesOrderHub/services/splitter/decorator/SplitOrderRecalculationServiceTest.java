@@ -4,9 +4,10 @@ import de.kfzteile24.salesOrderHub.configuration.DropShipmentConfig;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
-import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
+import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
+import de.kfzteile24.soh.order.dto.Order;
 import org.camunda.bpm.engine.RuntimeService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,8 +18,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 
 import java.math.BigDecimal;
 
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getOrder;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.readResource;
+import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(MockitoExtension.class)
@@ -48,7 +48,7 @@ class SplitOrderRecalculationServiceTest {
 
     @Test
     public void recalculateOrder() {
-        final var order = getOrder(readResource("examples/splitterSalesOrderMessageWithTwoRows.json"));
+        final var order = getObjectByResource("splitterSalesOrderMessageWithTwoRows.json", Order.class);
 
         salesOrderService.recalculateTotals(order,
                 order.getOrderHeader().getTotals().getShippingCostNet(),

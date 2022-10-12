@@ -139,13 +139,13 @@ class SalesOrderRowServiceTest {
                 RowEvents.ROW_TRANSMITTED_TO_LOGISTICS);
 
         verify(salesOrderService).getOrderNumberListByOrderGroupIdAndFilterNotCancelled(
-                eq("fake_order_number"),
-                eq(orderItemSku));
+                "fake_order_number",
+                orderItemSku);
         verify(camundaHelper).correlateMessageForOrderRowProcess(
-                eq(ROW_TRANSMITTED_TO_LOGISTICS),
-                eq("fake_order_number"),
-                eq(RowEvents.ROW_TRANSMITTED_TO_LOGISTICS),
-                eq(orderItemSku));
+                ROW_TRANSMITTED_TO_LOGISTICS,
+                "fake_order_number",
+                RowEvents.ROW_TRANSMITTED_TO_LOGISTICS,
+                orderItemSku);
 
     }
 
@@ -162,13 +162,13 @@ class SalesOrderRowServiceTest {
                 RowEvents.ROW_TRANSMITTED_TO_LOGISTICS);
 
         verify(salesOrderService, never()).getOrderNumberListByOrderGroupIdAndFilterNotCancelled(
-                eq("fake_order_number"),
-                eq(orderItemSku));
+                "fake_order_number",
+                orderItemSku);
         verify(camundaHelper, never()).correlateMessageForOrderRowProcess(
-                eq(ROW_TRANSMITTED_TO_LOGISTICS),
-                eq("fake_order_number"),
-                eq(RowEvents.ROW_TRANSMITTED_TO_LOGISTICS),
-                eq(orderItemSku));
+                ROW_TRANSMITTED_TO_LOGISTICS,
+                "fake_order_number",
+                RowEvents.ROW_TRANSMITTED_TO_LOGISTICS,
+                orderItemSku);
     }
 
     @Test
@@ -201,7 +201,7 @@ class SalesOrderRowServiceTest {
                                 .build()
                 ))
                 .build();
-        when(salesOrderService.getOrderByOrderGroupId(eq(orderNumber))).thenReturn(List.of(salesOrder3, salesOrder2, salesOrder1));
+        when(salesOrderService.getOrderByOrderGroupId(orderNumber)).thenReturn(List.of(salesOrder3, salesOrder2, salesOrder1));
 
         salesOrderRowService.handleParcelShippedEvent(event);
 
@@ -227,7 +227,7 @@ class SalesOrderRowServiceTest {
                 ))
                 .build();
 
-        when(salesOrderService.getOrderByOrderGroupId(eq(orderNumber))).thenReturn(List.of(salesOrder1));
+        when(salesOrderService.getOrderByOrderGroupId(orderNumber)).thenReturn(List.of(salesOrder1));
 
         salesOrderRowService.handleParcelShippedEvent(event);
 
@@ -260,7 +260,7 @@ class SalesOrderRowServiceTest {
                                 .build()
                 ))
                 .build();
-        when(salesOrderService.getOrderByOrderGroupId(eq(orderNumber))).thenReturn(new ArrayList<>());
+        when(salesOrderService.getOrderByOrderGroupId(orderNumber)).thenReturn(new ArrayList<>());
 
         assertThatThrownBy(() -> salesOrderRowService.handleParcelShippedEvent(event))
                 .isExactlyInstanceOf(NotFoundException.class)
@@ -347,5 +347,4 @@ class SalesOrderRowServiceTest {
                 Arguments.of("KBA"),
                 Arguments.of("90101083"));
     }
-
 }

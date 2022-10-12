@@ -1,13 +1,12 @@
 package de.kfzteile24.salesOrderHub.services;
 
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.salesOrderHub.dto.mapper.CreditNoteEventMapper;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.FinancialDocumentsSqsReceiveService;
-import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapperUtil;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,19 +29,11 @@ public class MigrationCreditNoteService {
 
     @NonNull
     private final FinancialDocumentsSqsReceiveService financialDocumentsSqsReceiveService;
-    @NonNull
-    private final MessageWrapperUtil messageWrapperUtil;
 
     @Transactional
-    public void handleMigrationCoreSalesCreditNoteCreated(
-            String rawMessage,
-            @Header("SenderId") String senderId,
-            @Header("ApproximateReceiveCount") Integer receiveCount) {
+    public void handleMigrationCoreSalesCreditNoteCreated(SalesCreditNoteCreatedMessage message, MessageWrapper messageWrapper) {
 
-        var messageWrapper =
-                messageWrapperUtil.create(rawMessage, SalesCreditNoteCreatedMessage.class);
-        var salesCreditNoteCreatedMessage = messageWrapper.getMessage();
-        var salesCreditNoteHeader = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader();
+        var salesCreditNoteHeader = message.getSalesCreditNote().getSalesCreditNoteHeader();
         var orderNumber = salesCreditNoteHeader.getOrderNumber();
         var creditNoteNumber = salesCreditNoteHeader.getCreditNoteNumber();
 
@@ -56,7 +47,7 @@ public class MigrationCreditNoteService {
                     creditNoteNumber);
 
             var salesCreditNoteReceivedEvent =
-                    creditNoteEventMapper.toSalesCreditNoteReceivedEvent(salesCreditNoteCreatedMessage);
+                    creditNoteEventMapper.toSalesCreditNoteReceivedEvent(message);
             snsPublishService.publishCreditNoteReceivedEvent(salesCreditNoteReceivedEvent);
             log.info("Publishing migration credit note created event for order number {} and credit note number: " +
                             "{}",
@@ -67,7 +58,7 @@ public class MigrationCreditNoteService {
                             "Call redirected to normal flow.",
                     orderNumber,
                     creditNoteNumber);
-            financialDocumentsSqsReceiveService.queueListenerCoreSalesCreditNoteCreated(rawMessage, senderId, receiveCount);
+            financialDocumentsSqsReceiveService.queueListenerCoreSalesCreditNoteCreated(message, messageWrapper);
         }
     }
 }

@@ -1,11 +1,15 @@
 package de.kfzteile24.salesOrderHub.configuration;
 
 import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ParcelShippedMessage;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.FinancialDocumentsSqsReceiveService;
 import de.kfzteile24.salesOrderHub.services.general.GeneralSqsReceiveService;
 import de.kfzteile24.salesOrderHub.services.salesorder.SalesOrderSqsReceiveService;
-import lombok.SneakyThrows;
+import de.kfzteile24.soh.order.dto.Order;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -13,21 +17,18 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Paths;
-import java.util.Objects;
-
+import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 
 @Slf4j
 class LoggingAdviceIntegrationTest extends AbstractIntegrationTest {
+
+    public static final String SENDER_ID = RandomStringUtils.randomAlphabetic(5);
 
     @Autowired
     private SalesOrderSqsReceiveService salesOrderSqsReceiveService;
@@ -49,13 +50,19 @@ class LoggingAdviceIntegrationTest extends AbstractIntegrationTest {
     void testMessageAttributeForEcpShop(TestInfo testInfo) {
 
         log.info(testInfo.getDisplayName());
-        final String rawMessage = getRawMessageOfOrderWithoutCustomerNumber();
+        var message = getRawMessageOfOrderWithoutCustomerNumber();
+        var messageWrapper = MessageWrapper.builder()
+                .senderId(SENDER_ID)
+                .queueName(sqsNamesConfig.getEcpShopOrders())
+                .receiveCount(4)
+                .build();
 
-        salesOrderSqsReceiveService.queueListenerEcpShopOrders(rawMessage, "senderId", 4);
+        salesOrderSqsReceiveService.queueListenerEcpShopOrders(message, messageWrapper);
         verifyIfMessageIsSendingToDLQ(sqsNamesConfig.getEcpShopOrders() + "-dlq");
 
-        verifyErrorMessageIsLogged(() -> salesOrderSqsReceiveService.queueListenerEcpShopOrders(rawMessage, "senderId", 3),
-                rawMessage, sqsNamesConfig.getEcpShopOrders());
+        messageWrapper.setReceiveCount(3);
+
+        verifyErrorMessageIsLogged(() -> salesOrderSqsReceiveService.queueListenerEcpShopOrders(message, messageWrapper));
     }
 
     @Test
@@ -63,13 +70,19 @@ class LoggingAdviceIntegrationTest extends AbstractIntegrationTest {
     void testMessageAttributeForBcShop(TestInfo testInfo) {
 
         log.info(testInfo.getDisplayName());
-        String rawMessage = getRawMessageOfOrderWithoutCustomerNumber();
+        var message = getRawMessageOfOrderWithoutCustomerNumber();
+        var messageWrapper = MessageWrapper.builder()
+                .senderId(SENDER_ID)
+                .queueName(sqsNamesConfig.getBcShopOrders())
+                .receiveCount(4)
+                .build();
 
-        salesOrderSqsReceiveService.queueListenerBcShopOrders(rawMessage, "senderId", 4);
+        salesOrderSqsReceiveService.queueListenerBcShopOrders(message, messageWrapper);
         verifyIfMessageIsSendingToDLQ(sqsNamesConfig.getBcShopOrders() + "-dlq");
 
-        verifyErrorMessageIsLogged(() -> salesOrderSqsReceiveService.queueListenerBcShopOrders(rawMessage, "senderId", 3),
-                rawMessage, sqsNamesConfig.getBcShopOrders());
+        messageWrapper.setReceiveCount(3);
+
+        verifyErrorMessageIsLogged(() -> salesOrderSqsReceiveService.queueListenerBcShopOrders(message, messageWrapper));
     }
 
     @Test
@@ -77,13 +90,19 @@ class LoggingAdviceIntegrationTest extends AbstractIntegrationTest {
     void testMessageAttributeForCoreShop(TestInfo testInfo) {
 
         log.info(testInfo.getDisplayName());
-        String rawMessage = getRawMessageOfOrderWithoutCustomerNumber();
+        var message = getRawMessageOfOrderWithoutCustomerNumber();
+        var messageWrapper = MessageWrapper.builder()
+                .senderId(SENDER_ID)
+                .queueName(sqsNamesConfig.getCoreShopOrders())
+                .receiveCount(4)
+                .build();
 
-        salesOrderSqsReceiveService.queueListenerCoreShopOrders(rawMessage, "senderId", 4);
+        salesOrderSqsReceiveService.queueListenerCoreShopOrders(message, messageWrapper);
         verifyIfMessageIsSendingToDLQ(sqsNamesConfig.getCoreShopOrders() + "-dlq");
 
-        verifyErrorMessageIsLogged(() -> salesOrderSqsReceiveService.queueListenerCoreShopOrders(rawMessage, "senderId", 3),
-                rawMessage, sqsNamesConfig.getCoreShopOrders());
+        messageWrapper.setReceiveCount(3);
+
+        verifyErrorMessageIsLogged(() -> salesOrderSqsReceiveService.queueListenerCoreShopOrders(message, messageWrapper));
     }
 
     @Test
@@ -91,13 +110,19 @@ class LoggingAdviceIntegrationTest extends AbstractIntegrationTest {
     void testMessageAttributeForInvoiceCreatedEvent(TestInfo testInfo) {
 
         log.info(testInfo.getDisplayName());
-        String rawMessage = readResource("examples/coreSalesInvoiceCreatedOneItem.json");
+        var message = getObjectByResource("coreSalesInvoiceCreatedOneItem.json", CoreSalesInvoiceCreatedMessage.class);
+        var messageWrapper = MessageWrapper.builder()
+                .senderId(SENDER_ID)
+                .queueName(sqsNamesConfig.getCoreSalesInvoiceCreated())
+                .receiveCount(4)
+                .build();
 
-        financialDocumentsSqsReceiveService.queueListenerCoreSalesInvoiceCreated(rawMessage, "senderId", 4);
+        financialDocumentsSqsReceiveService.queueListenerCoreSalesInvoiceCreated(message, messageWrapper);
         verifyIfMessageIsSendingToDLQ(sqsNamesConfig.getCoreSalesInvoiceCreated() + "-dlq");
 
-        verifyErrorMessageIsLogged(() -> financialDocumentsSqsReceiveService.queueListenerCoreSalesInvoiceCreated(rawMessage, "senderId", 3),
-                rawMessage, sqsNamesConfig.getCoreSalesInvoiceCreated());
+        messageWrapper.setReceiveCount(3);
+
+        verifyErrorMessageIsLogged(() -> financialDocumentsSqsReceiveService.queueListenerCoreSalesInvoiceCreated(message, messageWrapper));
     }
 
     @Test
@@ -105,19 +130,26 @@ class LoggingAdviceIntegrationTest extends AbstractIntegrationTest {
     void testMessageAttributeForParcelShippedEvent(TestInfo testInfo) {
 
         log.info(testInfo.getDisplayName());
-        String rawMessage = readResource("examples/parcelShipped.json");
+        var message = getObjectByResource("parcelShipped.json", ParcelShippedMessage.class);
+        var messageWrapper = MessageWrapper.builder()
+                .senderId(SENDER_ID)
+                .queueName(sqsNamesConfig.getParcelShipped())
+                .receiveCount(4)
+                .build();
 
-        generalSqsReceiveService.queueListenerParcelShipped(rawMessage, "senderId", 4);
+        generalSqsReceiveService.queueListenerParcelShipped(message, messageWrapper);
         verifyIfMessageIsSendingToDLQ(sqsNamesConfig.getParcelShipped() + "-dlq");
 
-        verifyErrorMessageIsLogged(() -> generalSqsReceiveService.queueListenerParcelShipped(rawMessage, "senderId", 3),
-                rawMessage, sqsNamesConfig.getParcelShipped());
+        messageWrapper.setReceiveCount(3);
+
+        verifyErrorMessageIsLogged(() -> generalSqsReceiveService.queueListenerParcelShipped(message, messageWrapper));
     }
 
     @NotNull
-    private String getRawMessageOfOrderWithoutCustomerNumber() {
-        String rawMessage = readResource("examples/ecpOrderMessageWithTwoRows.json");
-        return rawMessage.replace("DEB-000000000", "");
+    private Order getRawMessageOfOrderWithoutCustomerNumber() {
+        var message = getObjectByResource("ecpOrderMessageWithTwoRows.json", Order.class);
+        message.getOrderHeader().getCustomer().setCustomerNumber(null);
+        return message;
     }
 
     private void verifyIfMessageIsSendingToDLQ(String dlqName) {
@@ -127,20 +159,12 @@ class LoggingAdviceIntegrationTest extends AbstractIntegrationTest {
         }));
     }
 
-    private void verifyErrorMessageIsLogged(Runnable runnable, String rawMessage, String queueName) {
+    private void verifyErrorMessageIsLogged(Runnable runnable) {
         try {
             runnable.run();
             fail("should throw exception");
         } catch (Exception e) {
             //ignore
         }
-        verify(messageErrorHandler).logErrorMessage(eq(rawMessage), eq(queueName), eq(3), any());
-    }
-
-    @SneakyThrows({URISyntaxException.class, IOException.class})
-    private String readResource(String path) {
-        return java.nio.file.Files.readString(Paths.get(
-                Objects.requireNonNull(getClass().getClassLoader().getResource(path))
-                        .toURI()));
     }
 }

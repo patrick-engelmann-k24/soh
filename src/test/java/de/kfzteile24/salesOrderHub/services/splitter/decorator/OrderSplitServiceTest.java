@@ -15,8 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
 
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getOrder;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.readResource;
+import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
@@ -39,7 +38,7 @@ class OrderSplitServiceTest {
     @Test
     void calculateOrderListWithDSOrder() {
 
-        final var order = getOrder(readResource("examples/splitterSalesOrderMessageWithTwoRows.json"));
+        final var order = getObjectByResource("splitterSalesOrderMessageWithTwoRows.json", Order.class);
         final var orderList = new ArrayList<OrderSplit>();
         orderList.add(OrderSplit.regularOrder(order));
 
@@ -59,12 +58,12 @@ class OrderSplitServiceTest {
 
     @Test
     void calculateOrderListWithoutDSOrder() {
-        final var order = getOrder(readResource("examples/ecpOrderMessage.json"));
+        final var order = getObjectByResource("ecpOrderMessage.json", Order.class);
         final var orderList = new ArrayList<OrderSplit>();
         orderList.add(OrderSplit.regularOrder(order));
         orderSplitService.processOrderList(orderList);
 
-        assertThat(orderList.size()).isGreaterThanOrEqualTo(1);
+        assertThat(orderList.size()).isPositive();
     }
 
 }

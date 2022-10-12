@@ -3,6 +3,8 @@ package de.kfzteile24.salesOrderHub.services.dropshipment;
 import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.InvoiceNumberCounterRepository;
@@ -13,7 +15,6 @@ import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.RandomUtils;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
@@ -23,16 +24,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.TreeSet;
 
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
@@ -45,21 +42,14 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.THR
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_ECP;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_DROPSHIPMENT_ORDER_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.NONE;
+import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createOrderRow;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrderFromOrder;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * @author stefand
- */
-
 @Slf4j
 class DropshipmentSqsReceiveServiceIntegrationTest extends AbstractIntegrationTest {
-
-    private static final String ANY_SENDER_ID = RandomStringUtils.randomAlphabetic(10);
-    private static final int ANY_RECEIVE_COUNT = RandomUtils.nextInt();
 
     @Autowired
     private DropshipmentSqsReceiveService dropshipmentSqsReceiveService;
@@ -172,22 +162,22 @@ class DropshipmentSqsReceiveServiceIntegrationTest extends AbstractIntegrationTe
     }
 
     private SalesOrder createSalesOrderWithRandomOrderNumber() {
-        String orderRawMessage = readResource("examples/ecpOrderMessageWithTwoRows.json");
-        Order order = getOrder(orderRawMessage);
+        var message = getObjectByResource("ecpOrderMessageWithTwoRows.json", Order.class);
         String randomOrderNumber = bpmUtil.getRandomOrderNumber();
-        order.getOrderHeader().setOrderNumber(randomOrderNumber);
-        order.getOrderHeader().setOrderGroupId(randomOrderNumber);
-        order.getOrderHeader().setOrderNumberCore(RandomStringUtils.randomNumeric(9));
+        message.getOrderHeader().setOrderNumber(randomOrderNumber);
+        message.getOrderHeader().setOrderGroupId(randomOrderNumber);
+        message.getOrderHeader().setOrderNumberCore(RandomStringUtils.randomNumeric(9));
         var orderRows = List.of(
                 createOrderRow("sku-1", NONE),
                 createOrderRow("sku-2", NONE),
                 createOrderRow("sku-3", NONE)
         );
-        order.setOrderRows(orderRows);
-        order.getOrderHeader().setOrderFulfillment(DELTICOM.getName());
-        return salesOrderService.createSalesOrder(createSalesOrderFromOrder(order));
+        message.setOrderRows(orderRows);
+        message.getOrderHeader().setOrderFulfillment(DELTICOM.getName());
+        return salesOrderService.createSalesOrder(createSalesOrderFromOrder(message));
     }
 
+    @SneakyThrows
     private void callQueueListenerDropshipmentShipmentConfirmed(SalesOrder salesOrder) {
         ProcessInstance orderProcess = camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
 
@@ -203,7 +193,7 @@ class DropshipmentSqsReceiveServiceIntegrationTest extends AbstractIntegrationTe
         assertTrue(timedPollingService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
                 camundaHelper.hasPassed(orderProcess.getProcessInstanceId(), THROW_MSG_DROPSHIPMENT_ORDER_CREATED.getName())));
 
-        dropshipmentSqsReceiveService.queueListenerDropshipmentShipmentConfirmed(getDropshipmentShipmentConfirmed(salesOrder), ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+        dropshipmentSqsReceiveService.queueListenerDropshipmentShipmentConfirmed(getDropshipmentShipmentConfirmed(salesOrder));
 
         assertTrue(timedPollingService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
                 camundaHelper.hasPassed(orderProcess.getProcessInstanceId(), EVENT_THROW_MSG_PURCHASE_ORDER_SUCCESSFUL.getName())));
@@ -213,27 +203,26 @@ class DropshipmentSqsReceiveServiceIntegrationTest extends AbstractIntegrationTe
     }
 
     @NotNull
-    private String getDropshipmentShipmentConfirmed(SalesOrder salesOrder) {
-        var dropshipmentShipmentConfirmed = readResource("examples/dropshipmentShipmentConfirmed.json");
-        dropshipmentShipmentConfirmed = dropshipmentShipmentConfirmed.replace("580309129", salesOrder.getOrderNumber());
-        return dropshipmentShipmentConfirmed;
+    private DropshipmentShipmentConfirmedMessage getDropshipmentShipmentConfirmed(SalesOrder salesOrder) {
+        var message = getObjectByResource("dropshipmentShipmentConfirmed.json", DropshipmentShipmentConfirmedMessage.class);
+        message.setSalesOrderNumber(salesOrder.getOrderNumber());
+        return message;
     }
 
     @Test
     void testQueueListenerDropshipmentOrderPurchasedBooked() {
 
-        String orderRawMessage = readResource("examples/ecpOrderMessageWithTwoRows.json");
-        Order order = getOrder(orderRawMessage);
-        order.getOrderHeader().setOrderFulfillment(DELTICOM.getName());
-        SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(order));
+        var orderMessage = getObjectByResource("ecpOrderMessageWithTwoRows.json", Order.class);
+        orderMessage.getOrderHeader().setOrderFulfillment(DELTICOM.getName());
+        SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(orderMessage));
         camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
 
         assertTrue(timedPollingService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
                 camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
 
-        String message = readResource("examples/dropshipmentOrderPurchasedBooked.json");
-        message = message.replace("123", salesOrder.getOrderNumber());
-        dropshipmentSqsReceiveService.queueListenerDropshipmentPurchaseOrderBooked(message, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+        var message = getObjectByResource("dropshipmentOrderPurchasedBooked.json", DropshipmentPurchaseOrderBookedMessage.class);
+        message.setSalesOrderNumber(salesOrder.getOrderNumber());
+        dropshipmentSqsReceiveService.queueListenerDropshipmentPurchaseOrderBooked(message);
 
         assertTrue(timedPollingService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
                 camundaHelper.hasPassed(salesOrder.getProcessId(), EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED.getName())));
@@ -245,31 +234,24 @@ class DropshipmentSqsReceiveServiceIntegrationTest extends AbstractIntegrationTe
     @Test
     void testQueueListenerDropshipmentOrderPurchasedBookedFalse() {
 
-        String orderRawMessage = readResource("examples/ecpOrderMessageWithTwoRows.json");
-        Order order = getOrder(orderRawMessage);
-        order.getOrderHeader().setOrderFulfillment(DELTICOM.getName());
-        SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(order));
+        var orderMessage = getObjectByResource("ecpOrderMessageWithTwoRows.json", Order.class);
+        orderMessage.getOrderHeader().setOrderFulfillment(DELTICOM.getName());
+        SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(orderMessage));
         camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
 
         assertTrue(timedPollingService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
                 camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
 
-        String message = readResource("examples/dropshipmentOrderPurchasedBookedFalse.json");
-        message = message.replace("123", salesOrder.getOrderNumber());
-        dropshipmentSqsReceiveService.queueListenerDropshipmentPurchaseOrderBooked(message, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+        var message = getObjectByResource("dropshipmentOrderPurchasedBooked.json", DropshipmentPurchaseOrderBookedMessage.class);
+        message.setSalesOrderNumber(salesOrder.getOrderNumber());
+        message.setBooked(false);
+        dropshipmentSqsReceiveService.queueListenerDropshipmentPurchaseOrderBooked(message);
 
         assertTrue(timedPollingService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
                 camundaHelper.hasPassed(salesOrder.getProcessId(), EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED.getName())));
 
         assertTrue(timedPollingService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
                 camundaHelper.hasPassed(salesOrder.getProcessId(), DROPSHIPMENT_ORDER_ROWS_CANCELLATION.getName())));
-    }
-
-    @SneakyThrows({URISyntaxException.class, IOException.class})
-    private String readResource(String path) {
-        return java.nio.file.Files.readString(Paths.get(
-                Objects.requireNonNull(getClass().getClassLoader().getResource(path))
-                        .toURI()));
     }
 
     @AfterEach

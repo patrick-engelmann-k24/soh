@@ -8,15 +8,12 @@ import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnNotifi
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoice;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
-import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
-import de.kfzteile24.salesOrderHub.helper.FileUtil;
 import de.kfzteile24.salesOrderHub.helper.ReturnOrderHelper;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
-import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -31,8 +28,6 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -44,6 +39,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Paymen
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_INVOICE_STORED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED;
+import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.assertSalesCreditNoteCreatedMessage;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -93,21 +89,17 @@ class DropshipmentOrderServiceTest {
 
     @Test
     @SneakyThrows
-    public void testHandleDropshipmentPurchaseOrderReturnConfirmed() {
-        String rawMessage = readResource("examples/dropshipmentPurchaseOrderReturnConfirmed.json");
-        String body = objectMapperConfig.objectMapper().readValue(rawMessage, SqsMessage.class).getBody();
-        DropshipmentPurchaseOrderReturnConfirmedMessage message =
-                objectMapperConfig.objectMapper().readValue(body, DropshipmentPurchaseOrderReturnConfirmedMessage.class);
+    void testHandleDropshipmentPurchaseOrderReturnConfirmed() {
+        var message = getObjectByResource("dropshipmentPurchaseOrderReturnConfirmed.json", DropshipmentPurchaseOrderReturnConfirmedMessage.class);
         String orderNumber = message.getSalesOrderNumber();
 
-        String rawSalesOrderMessage = readResource("examples/ecpOrderMessageWithTwoRows.json");
-        SalesOrder salesOrder = getSalesOrder(rawSalesOrderMessage);
+        SalesOrder salesOrder = getSalesOrder(getObjectByResource("ecpOrderMessageWithTwoRows.json", Order.class));
 
         when(salesOrderReturnService.createCreditNoteNumber()).thenReturn("2022200002");
         SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage = returnOrderHelper.buildSalesCreditNoteCreatedMessage(
                 message, salesOrder, salesOrderReturnService.createCreditNoteNumber());
 
-        doReturn(salesCreditNoteCreatedMessage).when(dropshipmentOrderService).buildSalesCreditNoteCreatedMessage(eq(message));
+        doReturn(salesCreditNoteCreatedMessage).when(dropshipmentOrderService).buildSalesCreditNoteCreatedMessage(message);
 
         dropshipmentOrderService.handleDropshipmentPurchaseOrderReturnConfirmed(message);
 
@@ -122,30 +114,19 @@ class DropshipmentOrderServiceTest {
     @SneakyThrows
     void testHandleDropshipmentPurchaseOrderReturnNotified() {
 
-        SalesOrder salesOrder = getSalesOrder(readResource("examples/ecpOrderMessage.json"));
+        SalesOrder salesOrder = getSalesOrder(getObjectByResource("ecpOrderMessage.json", Order.class));
         when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.of(salesOrder));
-        String rawMessage = readResource("examples/dropshipmentPurchaseOrderReturnNotified.json");
-        var sqsMessage = objectMapperConfig.objectMapper().readValue(rawMessage, SqsMessage.class);
-        var message =
-                objectMapperConfig.objectMapper().readValue(sqsMessage.getBody(),
-                        DropshipmentPurchaseOrderReturnNotifiedMessage.class);
 
-        MessageWrapper<DropshipmentPurchaseOrderReturnNotifiedMessage> messageWrapper =
-                MessageWrapper.<DropshipmentPurchaseOrderReturnNotifiedMessage>builder()
-                        .rawMessage(rawMessage)
-                        .message(message)
-                        .build();
+        var message = getObjectByResource("dropshipmentPurchaseOrderReturnNotified.json", DropshipmentPurchaseOrderReturnNotifiedMessage.class);
 
-        dropshipmentOrderService.handleDropshipmentPurchaseOrderReturnNotified(messageWrapper);
+        dropshipmentOrderService.handleDropshipmentPurchaseOrderReturnNotified(message);
 
         verify(snsPublishService).publishDropshipmentOrderReturnNotifiedEvent(salesOrder, message);
     }
 
     @Test
     void testRecreateSalesOrderInvoice() {
-        String rawMessage =  readResource("examples/testmessage.json");
-
-        var salesOrder = getSalesOrder(rawMessage);
+        var salesOrder = getSalesOrder(getObjectByResource("testmessage.json", Order.class));
         assertThat(salesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber()).isNull();
         assertThat(salesOrder.getInvoiceEvent()).isNull();
 
@@ -170,11 +151,6 @@ class DropshipmentOrderServiceTest {
                     .getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber()).isEqualTo(ANY_INVOICE_NUMBER);
             return true;
         }), eq(DROPSHIPMENT_INVOICE_STORED));
-    }
-
-    @SneakyThrows({URISyntaxException.class, IOException.class})
-    private String readResource(String path) {
-        return FileUtil.readResource(getClass(), path);
     }
 
     private static Stream<Arguments> provideArgumentsForIsDropShipmentOrder() {

@@ -1,3 +1,61 @@
 {
-  "Message": "{\"SalesCreditNote\": {\"SalesCreditNoteHeader\": {\"OrderGroupId\": \"580309129\",\"OrderNumber\": \"580309129\",\"CreditNoteNumber\": \"876130\",\"CreditNoteDate\": \"2021-07-07T12:00:00.000Z\",\"CurrencyCode\": \"EUR\",\"CreditNoteLines\": [{\"ItemNumber\": \"sku-1\",\"Quantity\": 1,\"UnitNetAmount\": -1.0,\"LineNetAmount\": -1.0,\"UnitGrossAmount\": -1.19,\"LineGrossAmount\": -1.19,\"LineTaxAmount\": 19.0,\"TaxRate\": 19.0,\"IsShippingCost\": false,\"Description\": \"sku-1\"},{\"ItemNumber\": \"new-sku\",\"Quantity\": 1,\"UnitNetAmount\": 10.0,\"LineNetAmount\": 10.0,\"UnitGrossAmount\": 11.90,\"LineGrossAmount\": 11.90,\"LineTaxAmount\": 19.0,\"TaxRate\": 19.0,\"IsShippingCost\": false,\"Description\": \"new-sku\"},{\"ItemNumber\": \"sku-2\",\"Quantity\": -2,\"UnitNetAmount\": 17.39,\"LineNetAmount\": -34.78,\"UnitGrossAmount\": 20.87,\"LineGrossAmount\": -41.74,\"LineTaxAmount\": 6.96,\"TaxRate\": 20.0,\"IsShippingCost\": false,\"Description\": \"sku-2\"},{\"ItemNumber\": \"ship\",\"Quantity\": 10,\"UnitNetAmount\": -10.0,\"LineNetAmount\": -10.0,\"UnitGrossAmount\": -11.90,\"LineGrossAmount\": -11.90,\"LineTaxAmount\": 1.9,\"TaxRate\": 19.0,\"IsShippingCost\": true,\"Description\": \"ship\"}]}}}"
+  "SalesCreditNote": {
+    "SalesCreditNoteHeader": {
+      "OrderGroupId": "580309129",
+      "OrderNumber": "580309129",
+      "CreditNoteNumber": "876130",
+      "CreditNoteDate": "2021-07-07T12:00:00.000Z",
+      "CurrencyCode": "EUR",
+      "CreditNoteLines": [
+        {
+          "ItemNumber": "sku-1",
+          "Quantity": 1,
+          "UnitNetAmount": -1.00,
+          "LineNetAmount": -1.00,
+          "UnitGrossAmount": -1.19,
+          "LineGrossAmount": -1.19,
+          "LineTaxAmount": 19.00,
+          "TaxRate": 19.00,
+          "IsShippingCost": false,
+          "Description": "sku-1"
+        },
+        {
+          "ItemNumber": "new-sku",
+          "Quantity": 1,
+          "UnitNetAmount": 10.00,
+          "LineNetAmount": 10.00,
+          "UnitGrossAmount": 11.90,
+          "LineGrossAmount": 11.90,
+          "LineTaxAmount": 19.00,
+          "TaxRate": 19.00,
+          "IsShippingCost": false,
+          "Description": "new-sku"
+        },
+        {
+          "ItemNumber": "sku-2",
+          "Quantity": -2,
+          "UnitNetAmount": 17.39,
+          "LineNetAmount": -34.78,
+          "UnitGrossAmount": 20.87,
+          "LineGrossAmount": -41.74,
+          "LineTaxAmount": 6.96,
+          "TaxRate": 20.00,
+          "IsShippingCost": false,
+          "Description": "sku-2"
+        },
+        {
+          "ItemNumber": "ship",
+          "Quantity": 10,
+          "UnitNetAmount": -10.00,
+          "LineNetAmount": -10.00,
+          "UnitGrossAmount": -11.90,
+          "LineGrossAmount": -11.90,
+          "LineTaxAmount": 1.90,
+          "TaxRate": 19.00,
+          "IsShippingCost": true,
+          "Description": "ship"
+        }
+      ]
+    }
+  }
 }

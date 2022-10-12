@@ -55,7 +55,6 @@ import static java.text.MessageFormat.format;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.equalsIgnoreCase;
 
-
 @Service
 @Slf4j
 @RequiredArgsConstructor

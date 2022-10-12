@@ -18,12 +18,11 @@ import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.ReturnOrderHelper;
-import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
+import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
 import de.kfzteile24.salesOrderHub.services.property.KeyValuePropertyService;
-import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import lombok.RequiredArgsConstructor;
@@ -211,10 +210,7 @@ public class DropshipmentOrderService {
         return savedPauseDropshipmentProcessingProperty;
     }
 
-    public void handleDropshipmentPurchaseOrderReturnNotified(
-            MessageWrapper<DropshipmentPurchaseOrderReturnNotifiedMessage> messageWrapper) {
-
-        var message = messageWrapper.getMessage();
+    public void handleDropshipmentPurchaseOrderReturnNotified(DropshipmentPurchaseOrderReturnNotifiedMessage message) {
 
         try {
             var salesOrder = salesOrderService.getOrderByOrderNumber(message.getSalesOrderNumber())

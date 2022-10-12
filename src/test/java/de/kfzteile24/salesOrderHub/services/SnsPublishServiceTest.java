@@ -13,16 +13,16 @@ import de.kfzteile24.salesOrderHub.dto.events.ReturnOrderCreatedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderCompletedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInfoEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInvoiceCreatedEvent;
-import de.kfzteile24.salesOrderHub.dto.events.shipmentconfirmed.SalesOrderShipmentConfirmedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.dropshipment.DropshipmentOrderPackage;
 import de.kfzteile24.salesOrderHub.dto.events.dropshipment.DropshipmentOrderPackageItemLine;
+import de.kfzteile24.salesOrderHub.dto.events.shipmentconfirmed.SalesOrderShipmentConfirmedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.shipmentconfirmed.TrackingLink;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnNotifiedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.dropshipment.DropshipmentPurchaseOrderPackage;
 import de.kfzteile24.salesOrderHub.dto.sns.dropshipment.DropshipmentPurchaseOrderPackageItemLine;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
-import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
+import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
@@ -42,9 +42,9 @@ import java.util.stream.Stream;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
+import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createNewSalesOrderV3;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.readResource;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -79,8 +79,7 @@ class SnsPublishServiceTest {
     void testPublishOrderCreatedPublishesBothOrderCreatedEventsIfTheOriginalOrderJsonIsV21() {
         final var expectedTopic2 = "order-created-v2";
         final var expectedSubject2 = "Sales order created V2";
-        String rawMessage = readResource("examples/ecpOrderMessage.json");
-        SalesOrder salesOrder = getSalesOrder(rawMessage);
+        SalesOrder salesOrder = getSalesOrder(getObjectByResource("ecpOrderMessage.json", Order.class));
 
         //given
         var orderNumber = salesOrder.getOrderNumber();
@@ -105,8 +104,7 @@ class SnsPublishServiceTest {
     void testPublishOrderCreatedPublishesOnlyTheOrderCreatedV2EventIfTheOriginalOrderJsonIsV3() {
         final var expectedTopic2 = "order-created-v2";
         final var expectedSubject2 = "Sales order created V2";
-        String rawMessage = readResource("examples/ecpOrderMessage.json");
-        SalesOrder salesOrder = getSalesOrder(rawMessage);
+        SalesOrder salesOrder = getSalesOrder(getObjectByResource("ecpOrderMessage.json", Order.class));
         salesOrder.setOriginalOrder(salesOrder.getLatestJson());
 
         //given
@@ -130,14 +128,13 @@ class SnsPublishServiceTest {
     @Test
     @SneakyThrows(Exception.class)
     void testSendOrderWhenSalesOrderNotFound() {
-        String rawMessage = readResource("examples/ecpOrderMessage.json");
 
         var orderNumber = "514000018";
         var snsTopic = "testsnstopic";
         var subject = "testsubject";
         SalesOrderInfoEvent salesOrderInfo = SalesOrderInfoEvent.builder()
                 .recurringOrder(Boolean.TRUE)
-                .order(SalesOrderUtil.getOrder(rawMessage))
+                .order(getObjectByResource("ecpOrderMessage.json", Order.class))
                 .build();
 
         //given
@@ -478,8 +475,7 @@ class SnsPublishServiceTest {
 
     @SneakyThrows(Exception.class)
     private void verifyPublishedEvent(String expectedTopic, String expectedSubject, Consumer<String> executor) {
-        final String rawMessage = readResource("examples/ecpOrderMessage.json");
-        final SalesOrder salesOrder = getSalesOrder(rawMessage);
+        final SalesOrder salesOrder = getSalesOrder(getObjectByResource("ecpOrderMessage.json", Order.class));
         given(salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber()))
                 .willReturn(Optional.of(salesOrder));
 

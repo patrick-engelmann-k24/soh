@@ -1,10 +1,14 @@
 package de.kfzteile24.salesOrderHub.services.salesorder;
 
 import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
+import de.kfzteile24.salesOrderHub.dto.sns.FulfillmentMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.OrderPaymentSecuredMessage;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
@@ -15,8 +19,6 @@ import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceNumberCoun
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.RandomUtils;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests;
@@ -25,12 +27,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_ECP;
@@ -38,21 +36,14 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.O
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SHIPMENT_METHOD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
+import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrderFromOrder;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getOrder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * @author stefand
- */
-
 @Slf4j
 class SalesOrderSqsReceiveServiceIntegrationTest extends AbstractIntegrationTest {
-
-    private static final String ANY_SENDER_ID = RandomStringUtils.randomAlphabetic(10);
-    private static final int ANY_RECEIVE_COUNT = RandomUtils.nextInt();
 
     @Autowired
     private SalesOrderSqsReceiveService salesOrderSqsReceiveService;
@@ -86,14 +77,14 @@ class SalesOrderSqsReceiveServiceIntegrationTest extends AbstractIntegrationTest
     @Test
     public void testQueueListenerItemTrackingIdReceived() {
 
-        var senderId = "Ecp";
         var salesOrder = salesOrderUtil.createNewSalesOrder();
         var orderRowId = salesOrder.getLatestJson().getOrderRows().get(0).getSku();
 
         createOrderRowProcessWaitingOnTransmittedToLogistics(salesOrder);
 
-        String fulfillmentMessage = getFulfillmentMsg(salesOrder, orderRowId);
-        salesOrderSqsReceiveService.queueListenerOrderItemTransmittedToLogistic(fulfillmentMessage, senderId, 1);
+        var message = getFulfillmentMsg(salesOrder, orderRowId);
+        var messageWrapper = MessageWrapper.builder().build();
+        salesOrderSqsReceiveService.queueListenerOrderItemTransmittedToLogistic(message, messageWrapper);
 
         var processInstanceList = runtimeService.createProcessInstanceQuery()
                 .processDefinitionKey(SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName())
@@ -103,17 +94,16 @@ class SalesOrderSqsReceiveServiceIntegrationTest extends AbstractIntegrationTest
         assertThat(processInstanceList).hasSize(1);
     }
 
-    private String getFulfillmentMsg(SalesOrder salesOrder, String orderRowId) {
-        String fulfillmentMessage = readResource("examples/fulfillmentMessage.json");
-        fulfillmentMessage = fulfillmentMessage.replace("524001240", salesOrder.getOrderNumber());
-        fulfillmentMessage = fulfillmentMessage.replace("1130-0713", orderRowId);
-        return fulfillmentMessage;
+    private FulfillmentMessage getFulfillmentMsg(SalesOrder salesOrder, String orderRowId) {
+        var message = getObjectByResource("fulfillmentMessage.json", FulfillmentMessage.class);
+        message.setOrderNumber(salesOrder.getOrderNumber());
+        message.setOrderItemSku(orderRowId);
+        return message;
     }
 
     @Test
     public void testQueueListenerItemTrackingIdReceivedIfMultipleOrderExistsForSameGroupId() {
 
-        var senderId = "Ecp";
         var salesOrder1 = salesOrderUtil.createNewSalesOrder();
         var orderRowId = salesOrder1.getLatestJson().getOrderRows().get(0).getSku();
         var salesOrder2 = salesOrderUtil.createNewSalesOrderWithCustomSkusAndGroupId(
@@ -124,8 +114,9 @@ class SalesOrderSqsReceiveServiceIntegrationTest extends AbstractIntegrationTest
         createOrderRowProcessWaitingOnTransmittedToLogistics(salesOrder1);
         createOrderRowProcessWaitingOnTransmittedToLogistics(salesOrder2);
 
-        String fulfillmentMessage = getFulfillmentMsg(salesOrder1, orderRowId);
-        salesOrderSqsReceiveService.queueListenerOrderItemTransmittedToLogistic(fulfillmentMessage, senderId, 1);
+        var message = getFulfillmentMsg(salesOrder1, orderRowId);
+        var messageWrapper = MessageWrapper.builder().build();
+        salesOrderSqsReceiveService.queueListenerOrderItemTransmittedToLogistic(message, messageWrapper);
 
         var processInstanceList1 = runtimeService.createProcessInstanceQuery()
                 .processDefinitionKey(SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName())
@@ -168,11 +159,10 @@ class SalesOrderSqsReceiveServiceIntegrationTest extends AbstractIntegrationTest
     @Test
     void testQueueListenerOrderPaymentSecuredWithPaypalPayment() {
 
-        String orderRawMessage = readResource("examples/ecpOrderMessage.json");
-        Order order = getOrder(orderRawMessage);
-        order.getOrderHeader().setOrderNumber("500000996");
-        order.getOrderHeader().getPayments().get(0).setType("paypal");
-        SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(order));
+        var orderMessage = getObjectByResource("ecpOrderMessage.json", Order.class);
+        orderMessage.getOrderHeader().setOrderNumber("500000996");
+        orderMessage.getOrderHeader().getPayments().get(0).setType("paypal");
+        SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(orderMessage));
 
         ProcessInstance orderProcessInstance = camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
 
@@ -182,8 +172,8 @@ class SalesOrderSqsReceiveServiceIntegrationTest extends AbstractIntegrationTest
                 bpmUtil.isProcessWaitingAtExpectedToken(orderProcessInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName());
         assertTrue(isWaitingForPaymentSecured);
 
-        String coreDataReaderEvent = readResource("examples/coreDataReaderEvent.json");
-        salesOrderSqsReceiveService.queueListenerOrderPaymentSecured(coreDataReaderEvent, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+        var message = getObjectByResource("coreDataReaderEvent.json", CoreDataReaderEvent.class);
+        salesOrderSqsReceiveService.queueListenerOrderPaymentSecured(message);
 
         isWaitingForPaymentSecured =
                 bpmUtil.isProcessWaitingAtExpectedToken(orderProcessInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName());
@@ -196,11 +186,10 @@ class SalesOrderSqsReceiveServiceIntegrationTest extends AbstractIntegrationTest
     @Test
     void testQueueListenerOrderPaymentSecuredWithCreditcardPayment() {
 
-        String orderRawMessage = readResource("examples/ecpOrderMessage.json");
-        Order order = getOrder(orderRawMessage);
-        order.getOrderHeader().setOrderNumber("500000996");
-        order.getOrderHeader().getPayments().get(0).setType("creditcard");
-        SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(order));
+        var orderMessage = getObjectByResource("ecpOrderMessage.json", Order.class);
+        orderMessage.getOrderHeader().setOrderNumber("500000996");
+        orderMessage.getOrderHeader().getPayments().get(0).setType("creditcard");
+        SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(orderMessage));
 
         ProcessInstance orderProcessInstance = camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
 
@@ -210,8 +199,8 @@ class SalesOrderSqsReceiveServiceIntegrationTest extends AbstractIntegrationTest
                 bpmUtil.isProcessWaitingAtExpectedToken(orderProcessInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName());
         assertTrue(isWaitingForPaymentSecured);
 
-        String coreDataReaderEvent = readResource("examples/coreDataReaderEvent.json");
-        salesOrderSqsReceiveService.queueListenerOrderPaymentSecured(coreDataReaderEvent, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+        var message = getObjectByResource("coreDataReaderEvent.json", CoreDataReaderEvent.class);
+        salesOrderSqsReceiveService.queueListenerOrderPaymentSecured(message);
 
         isWaitingForPaymentSecured =
                 bpmUtil.isProcessWaitingAtExpectedToken(orderProcessInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName());
@@ -224,10 +213,9 @@ class SalesOrderSqsReceiveServiceIntegrationTest extends AbstractIntegrationTest
     @Test
     void testQueueListenerD365OrderPaymentSecured() {
 
-        String orderRawMessage = readResource("examples/ecpOrderMessage.json");
-        Order order = getOrder(orderRawMessage);
-        order.getOrderHeader().setOrderNumber("500000996");
-        SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(order));
+        var orderMessage = getObjectByResource("ecpOrderMessage.json", Order.class);
+        orderMessage.getOrderHeader().setOrderNumber("500000996");
+        SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(orderMessage));
 
         ProcessInstance orderProcessInstance = camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
 
@@ -237,8 +225,8 @@ class SalesOrderSqsReceiveServiceIntegrationTest extends AbstractIntegrationTest
                 bpmUtil.isProcessWaitingAtExpectedToken(orderProcessInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName());
         assertTrue(isWaitingForPaymentSecured);
 
-        String orderPaymentSecuredMessage = readResource("examples/d365OrderPaymentSecuredMessageWithOneOrderNumber.json");
-        salesOrderSqsReceiveService.queueListenerD365OrderPaymentSecured(orderPaymentSecuredMessage, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+        var message = getObjectByResource("d365OrderPaymentSecuredMessageWithOneOrderNumber.json", OrderPaymentSecuredMessage.class);
+        salesOrderSqsReceiveService.queueListenerD365OrderPaymentSecured(message);
 
         isWaitingForPaymentSecured =
                 bpmUtil.isProcessWaitingAtExpectedToken(orderProcessInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName());
@@ -246,13 +234,6 @@ class SalesOrderSqsReceiveServiceIntegrationTest extends AbstractIntegrationTest
 
         assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(salesOrder.getOrderNumber(), "1130-0713")));
 
-    }
-
-    @SneakyThrows({URISyntaxException.class, IOException.class})
-    private String readResource(String path) {
-        return java.nio.file.Files.readString(Paths.get(
-                Objects.requireNonNull(getClass().getClassLoader().getResource(path))
-                        .toURI()));
     }
 
     @AfterEach

@@ -12,7 +12,7 @@ aws --endpoint-url http://localhost:4566 sqs list-queues
 
 ###Publish an message to an sns topic
 ```shell
-aws --endpoint-url http://localhost:4566 sns publish --topic-arn "arn:aws:sns:eu-central-1:000000000000:soh-order-created" --message file://src/test/resources/examples/order.json5 --message-structure json
+aws --endpoint-url http://localhost:4566 sns publish --topic-arn "arn:aws:sns:eu-central-1:000000000000:soh-order-created" --message file://src/test/resources/examples/ecpOrderMessage.json --message-structure json
 ```
 **_Hint:_** Run this command directly from the project root folder or change the message string!
 

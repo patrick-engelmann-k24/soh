@@ -3,6 +3,7 @@ package de.kfzteile24.salesOrderHub.services.splitter.decorator;
 import de.kfzteile24.salesOrderHub.clients.PricingServiceClient;
 import de.kfzteile24.salesOrderHub.clients.ProductDataHubClient;
 import de.kfzteile24.salesOrderHub.configuration.FeatureFlagConfig;
+import de.kfzteile24.salesOrderHub.domain.pdh.ProductEnvelope;
 import de.kfzteile24.salesOrderHub.domain.pdh.product.ProductSet;
 import de.kfzteile24.salesOrderHub.dto.pricing.Prices;
 import de.kfzteile24.salesOrderHub.dto.pricing.PricingItem;
@@ -29,9 +30,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getOrder;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getProductEnvelope;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.readResource;
+import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -76,8 +75,8 @@ class ItemSplitServiceTest {
         getProductFromJson(firstSetItemSku, fakeProductJson);
         getProductFromJson(secondSetItemSku, fakeProductJson);
 
-        final var order1 = getOrder(readResource("examples/splitterSalesOrderMessageWithTwoRows.json"));
-        final var order2 = getOrder(readResource("examples/splitterSalesOrderMessageWithTwoRows.json"));
+        final var order1 = getObjectByResource("splitterSalesOrderMessageWithTwoRows.json", Order.class);
+        final var order2 = getObjectByResource("splitterSalesOrderMessageWithTwoRows.json", Order.class);
         final var list = new ArrayList<Order>();
         list.add(order1);
         list.add(order2);
@@ -98,7 +97,7 @@ class ItemSplitServiceTest {
             final var rows = order.getOrderRows();
 
             // check if setItem is NOT in the list
-            assertThat(getCountForSku(rows, setSku)).isEqualTo(0);
+            assertThat(getCountForSku(rows, setSku)).isZero();
 
             assertThat(getCountForSku(rows, firstSetItemSku)).isEqualTo(1);
             final var firstReplacementItem = findRowBySku(rows, firstSetItemSku);
@@ -132,7 +131,7 @@ class ItemSplitServiceTest {
         getProductFromJson(firstSetItemSku, fakeProductJson);
         getProductFromJson(secondSetItemSku, fakeProductJson);
 
-        final var order = getOrder(readResource("examples/splitterSalesOrderMessageWithTwoRows.json"));
+        final var order = getObjectByResource("splitterSalesOrderMessageWithTwoRows.json", Order.class);
 
         when(featureFlagConfig.getPreventSetProcessing()).thenReturn(false);
         when(pricingServiceClient.getSetPriceInfo(any(), any(), any())).thenReturn(Optional.of(SetUnitPriceAPIResponse.builder().setUnitPrices(List.of(PricingItem.builder().build())).build()));
@@ -147,7 +146,7 @@ class ItemSplitServiceTest {
         final var rows = order.getOrderRows();
 
         // check if setItem is NOT in the list
-        assertThat(getCountForSku(rows, setSku)).isEqualTo(0);
+        assertThat(getCountForSku(rows, setSku)).isZero();
 
         assertThat(getCountForSku(rows, firstSetItemSku)).isEqualTo(1);
         final var firstReplacementItem = findRowBySku(rows, firstSetItemSku);
@@ -166,7 +165,7 @@ class ItemSplitServiceTest {
     @Test
     void processOrderWhenPDHIsNotAvailable() {
 
-        final var order = getOrder(readResource("examples/splitterSalesOrderMessageWithTwoRows.json"));
+        final var order = getObjectByResource("splitterSalesOrderMessageWithTwoRows.json", Order.class);
         assertThatThrownBy(() -> itemSplitService.processOrder(order))
                 .isInstanceOf(NotFoundException.class);
     }
@@ -174,12 +173,13 @@ class ItemSplitServiceTest {
     @Test
     void getProduct() {
 
-        final var productEnvelope = getProductEnvelope(readResource("examples/product/2270-13013.json"));
+        final var productEnvelope =  getObjectByResource("product/2270-13013.json", ProductEnvelope.class);
         when(productDataHubClient.getProductBySku("2270-13013")).thenReturn(productEnvelope.getProduct());
 
         final var product = itemSplitService.getProduct("2270-13013");
         assertThat(product).isEqualTo(productEnvelope.getProduct());
         assertThat(product.getLocalizations().size()).isGreaterThan(0);
+        assertThat(product.getLocalizations()).isNotEmpty();
         assertThat(product.getLocalizations().get("DE")).isNotNull();
         assertThat(product.getLocalizations().get("DE").getName()).isNull();
         assertThat(product.getLocalizations().get("DE").getGenart()).isEqualTo("Warnblinkschalter");
@@ -190,11 +190,11 @@ class ItemSplitServiceTest {
     @DisplayName("mapProductToOrderRows Throws ProductNotFoundException")
     void mapProductToOrderRowsThrowsProductNotFoundException() {
 
-        final var product = getProductEnvelope(readResource("examples/product/2270-13013.json"));
-        final var order = getOrder(readResource("examples/splitterSalesOrderMessageWithTwoRows.json"));
+        final var product = getObjectByResource("product/2270-13013.json", ProductEnvelope.class);
+        final var order = getObjectByResource("splitterSalesOrderMessageWithTwoRows.json", Order.class);
         final var firstRow = order.getOrderRows().get(0);
         final var locale = order.getOrderHeader().getLocale();
-        assertThat(product.getProduct().getLocalizations().size()).isGreaterThan(0);
+        assertThat(product.getProduct().getLocalizations()).isNotEmpty();
         assertThat(product.getProduct().getLocalizations().get("DE")).isNotNull();
         product.getProduct().getLocalizations().get("DE").setGenart(null);
         product.getProduct().getLocalizations().get("DE").setName(null);
@@ -206,8 +206,8 @@ class ItemSplitServiceTest {
     @Test
     void mapProductToOrderRows() {
 
-        final var product = getProductEnvelope(readResource("examples/product/2270-13013.json"));
-        final var order = getOrder(readResource("examples/splitterSalesOrderMessageWithTwoRows.json"));
+        final var product = getObjectByResource("product/2270-13013.json", ProductEnvelope.class);
+        final var order = getObjectByResource("splitterSalesOrderMessageWithTwoRows.json", Order.class);
         final var firstRow = order.getOrderRows().get(0);
         final var locale = order.getOrderHeader().getLocale();
         firstRow.setCustomerNote("foobar");
@@ -216,8 +216,8 @@ class ItemSplitServiceTest {
 
         assertThat(rows).isNotNull();
 
-        assertThat(rows.getIsCancelled()).isEqualTo(false);
-        assertThat(rows.getIsPriceHammer()).isEqualTo(false);
+        assertThat(rows.getIsCancelled()).isFalse();
+        assertThat(rows.getIsPriceHammer()).isFalse();
         assertThat(rows.getSku()).isEqualTo(firstRow.getSku());
         assertThat(rows.getEan()).isEqualTo("4250032492922");
         assertThat(rows.getGenart()).isEqualTo("816");
@@ -231,7 +231,7 @@ class ItemSplitServiceTest {
     }
 
     @Test
-    public void testGetLocaleString() {
+    void testGetLocaleString() {
 
         String locale = "de_DE";
         String otherLocale = "DE";
@@ -445,7 +445,7 @@ class ItemSplitServiceTest {
     }
 
     protected void getProductFromJson(final String sku, final String json) {
-        final var replacementProductEnvelope = getProductEnvelope(readResource("examples/product/".concat(json)));
+        final var replacementProductEnvelope = getObjectByResource("product/".concat(json), ProductEnvelope.class);
         final var replacementProduct = replacementProductEnvelope.getProduct();
         replacementProduct.setSku(sku);
 

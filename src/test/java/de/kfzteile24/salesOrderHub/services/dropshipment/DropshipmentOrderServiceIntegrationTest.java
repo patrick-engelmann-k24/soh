@@ -17,7 +17,6 @@ import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnConfir
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
-import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.EventType;
@@ -69,9 +68,9 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowVariables.ORDER_ROW_ID;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
+import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.assertSalesCreditNoteCreatedMessage;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrderFromOrder;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getOrder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -116,9 +115,7 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void testHandleDropShipmentOrderConfirmed() {
-
-        String orderRawMessage = readResource("examples/ecpOrderMessageWithTwoRows.json");
-        Order order = getOrder(orderRawMessage);
+        Order order = getObjectByResource("ecpOrderMessageWithTwoRows.json", Order.class);
         order.getOrderHeader().setOrderFulfillment(DELTICOM.getName());
         SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(order));
 
@@ -140,18 +137,14 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
     void testHandleDropShipmentPurchaseOrderReturnConfirmed() {
 
         String nextCreditNoteNumber = createNextCreditNoteNumberCounter(salesOrderReturnService.createCreditNoteNumber());
-        String orderRawMessage = readResource("examples/ecpOrderMessageWithTwoRows.json");
-        Order order = getOrder(orderRawMessage);
+        Order order = getObjectByResource("ecpOrderMessageWithTwoRows.json", Order.class);
         order.getOrderHeader().setOrderFulfillment(DELTICOM.getName());
         order.getOrderHeader().setOrderGroupId(order.getOrderHeader().getOrderNumber());
         SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(order));
 
         doNothing().when(camundaHelper).correlateMessage(any(), any(), any());
-
-        String rawMessage = readResource("examples/dropshipmentPurchaseOrderReturnConfirmed.json");
-        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
         DropshipmentPurchaseOrderReturnConfirmedMessage message =
-                objectMapper.readValue(body, DropshipmentPurchaseOrderReturnConfirmedMessage.class);
+                getObjectByResource("dropshipmentPurchaseOrderReturnConfirmed.json",  DropshipmentPurchaseOrderReturnConfirmedMessage.class);
         message.setSalesOrderNumber(salesOrder.getOrderNumber());
 
         dropshipmentOrderService.handleDropshipmentPurchaseOrderReturnConfirmed(message);
