@@ -19,7 +19,7 @@ public class LogbookConfiguration {
                                 requestTo("/healthCheck"),
                                 requestTo("/api/swagger-ui/**"),
                                 requestTo("/api-docs/**"),
-                                requestTo("/camunda/**")
+                                requestTo("/camunda-processing/**")
                         ))
                 .headerFilter(HeaderFilters.replaceCookies("AWSALB"::equals, "XXX"))
                 .headerFilter(HeaderFilters.replaceCookies("AWSALBCORS"::equals, "XXX"))
