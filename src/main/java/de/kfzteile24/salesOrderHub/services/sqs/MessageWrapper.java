@@ -4,7 +4,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import org.apache.commons.lang3.RegExUtils;
 import org.springframework.messaging.Message;
 
 import java.util.Objects;
@@ -22,10 +21,6 @@ public class MessageWrapper {
     private Integer receiveCount;
     private String queueName;
     private String payload;
-
-    public String getSanitizedPayload() {
-        return RegExUtils.removeAll(payload, "[\\t\\n\\r]+");
-    }
 
     public static MessageWrapper fromMessage(@NonNull Message<?> message) {
         var headers = message.getHeaders();

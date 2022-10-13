@@ -26,4 +26,8 @@ public class SQSNamesConfig {
     @Value("${soh.sqs.queue.coreShopOrders}")
     private String coreShopOrders;
 
+    @Value("${soh.sqs.queue.invoicesFromCore}")
+    private String invoicesFromCore;
+
+
 }
