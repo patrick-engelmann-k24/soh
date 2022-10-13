@@ -52,7 +52,7 @@ class SaveInvoiceDelegateTest {
     private SalesOrder salesOrder;
 
     @BeforeEach
-    public void setUp() {
+    private void setUp() {
 
         invoice = SalesOrderInvoice.builder()
                 .orderNumber(ORDER_NUMBER)
