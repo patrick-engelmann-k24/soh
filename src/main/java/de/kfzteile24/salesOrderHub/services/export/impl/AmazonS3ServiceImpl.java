@@ -34,4 +34,18 @@ public class AmazonS3ServiceImpl implements AmazonS3Service {
         }
     }
 
+    @Override
+    @SneakyThrows
+    public void deleteFile(String url) {
+
+        URI fileToBeDownloaded = new URI(url);
+        AmazonS3URI s3URI = new AmazonS3URI(fileToBeDownloaded);
+        try {
+            amazonS3.deleteObject(s3URI.getBucket(), s3URI.getKey());
+        } catch (SdkClientException e) {
+            log.info("File " + s3URI.getKey() + " from " + s3URI.getBucket() + " could not be found for deletion");
+            return;
+        }
+        log.info("Deleted file " + s3URI.getKey() + " from " + s3URI.getBucket());
+    }
 }

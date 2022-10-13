@@ -23,7 +23,7 @@ class InvoiceSavedDelegate implements JavaDelegate {
         final var invoiceUrl = (String) delegateExecution.getVariable(Variables.INVOICE_URL.getName());
         final var isDuplicateDropshipmentInvoice = (Boolean) delegateExecution.getVariable(Variables.IS_DUPLICATE_DROPSHIPMENT_INVOICE.getName());
 
-        if (isDropShipmentRelated(orderNumber) && ! isDuplicateDropshipmentInvoice) {
+        if (isDropShipmentRelated(orderNumber) && !isDuplicateDropshipmentInvoice) {
             snsPublishService.publishOrderInvoiceCreated(orderNumber, invoiceUrl);
         }
     }

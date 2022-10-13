@@ -7,8 +7,6 @@ import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
 import de.kfzteile24.salesOrderHub.services.export.AmazonS3Service;
-import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceNumberCounterService;
-import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
 import de.kfzteile24.soh.order.dto.BillingAddress;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.UnitValues;
@@ -22,7 +20,7 @@ import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Base64;
-import java.util.Collections;
+import java.util.Optional;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
@@ -134,7 +132,7 @@ class InvoiceServiceTest {
         var s3Object = new S3Object();
         s3Object.setObjectContent(inputStream);
         s3Object.setKey(invoice.getInvoiceNumber());
-        when(invoiceRepository.getInvoicesByInvoiceNumber(eq(invoice.getInvoiceNumber()))).thenReturn(Collections.singleton(invoice));
+        when(invoiceRepository.findByInvoiceNumber(eq(invoice.getInvoiceNumber()))).thenReturn(Optional.of(invoice));
         when(amazonS3Service.downloadFile(eq(invoice.getUrl()))).thenReturn(s3Object);
 
         var result = invoiceService.getInvoiceDocument(invoice.getInvoiceNumber());

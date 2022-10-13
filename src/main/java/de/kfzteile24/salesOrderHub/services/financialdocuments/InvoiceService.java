@@ -73,9 +73,9 @@ public class InvoiceService {
         return invoiceRepository.save(invoice);
     }
 
-    public boolean invoiceExistsForInvoiceNumber(String invoiceNumber) {
+    public Optional<SalesOrderInvoice> getSalesOrderInvoiceByInvoiceNumber(String invoiceNumber) {
 
-        return invoiceRepository.existsByInvoiceNumber(invoiceNumber);
+        return invoiceRepository.findByInvoiceNumber(invoiceNumber);
     }
 
     @Transactional
@@ -106,8 +106,8 @@ public class InvoiceService {
     @Transactional(readOnly = true)
     @SneakyThrows
     public byte[] getInvoiceDocumentAsByteArray(String invoiceNumber) {
-        var invoice = invoiceRepository.getInvoicesByInvoiceNumber(invoiceNumber).stream()
-                .findFirst().orElseThrow(() -> new InvoiceNotFoundException(invoiceNumber));
+        var invoice = invoiceRepository.findByInvoiceNumber(invoiceNumber)
+                .orElseThrow(() -> new InvoiceNotFoundException(invoiceNumber));
         var s3File = amazonS3Service.downloadFile(invoice.getUrl());
         if (s3File == null || s3File.getObjectContent() == null) {
             throw new InvoiceDocumentNotFoundException(invoiceNumber, invoice.getUrl());

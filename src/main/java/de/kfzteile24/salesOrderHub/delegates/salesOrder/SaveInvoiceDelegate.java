@@ -4,6 +4,7 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.domain.converter.InvoiceSource;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentOrderService;
+import de.kfzteile24.salesOrderHub.services.export.AmazonS3Service;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
 import de.kfzteile24.salesOrderHub.services.InvoiceUrlExtractor;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
@@ -22,41 +23,53 @@ class SaveInvoiceDelegate implements JavaDelegate {
 
     private final SalesOrderService salesOrderService;
     private final InvoiceService invoiceService;
-
+    private final AmazonS3Service amazonS3Service;
     private final DropshipmentOrderService dropshipmentOrderService;
 
     @Override
     @Transactional
     public void execute(DelegateExecution delegateExecution) throws Exception {
+
         final var orderNumber = (String) delegateExecution.getVariable(Variables.ORDER_NUMBER.getName());
         final var invoiceUrl = (String) delegateExecution.getVariable(Variables.INVOICE_URL.getName());
-
         final var invoiceNumber = InvoiceUrlExtractor.extractInvoiceNumber(invoiceUrl);
-        final var invoiceExists = invoiceService.invoiceExistsForInvoiceNumber(invoiceNumber);
-        boolean isDuplicateDropshipmentInvoice = false;
-        if(!invoiceExists) {
-            var salesOrderInvoice = createAndSaveSalesOrderInvoice(orderNumber, invoiceUrl);
-            salesOrderService.getOrderByOrderNumber(orderNumber)
-                    .ifPresent(salesOrder -> invoiceService.addSalesOrderToInvoice(salesOrder, salesOrderInvoice));
-        } else {
+
+        var isDuplicateDropshipmentInvoice = false;
+        var optionalSalesOrderInvoice = invoiceService.getSalesOrderInvoiceByInvoiceNumber(invoiceNumber);
+        SalesOrderInvoice salesOrderInvoice;
+
+        if (optionalSalesOrderInvoice.isPresent()) {
             isDuplicateDropshipmentInvoice = true;
+            salesOrderInvoice = optionalSalesOrderInvoice.get();
+            final var oldInvoicePath = salesOrderInvoice.getUrl();
+            salesOrderInvoice.setUrl(invoiceUrl);
+            amazonS3Service.deleteFile(oldInvoicePath);
+        } else {
+            salesOrderInvoice = createSalesOrderInvoice(orderNumber, invoiceUrl);
         }
+
+        saveSalesOrderInvoice(salesOrderInvoice);
         delegateExecution.setVariable(Variables.IS_DUPLICATE_DROPSHIPMENT_INVOICE.getName(), isDuplicateDropshipmentInvoice);
     }
 
-    private SalesOrderInvoice createAndSaveSalesOrderInvoice(String orderNumber, String invoiceUrl) {
+    private SalesOrderInvoice createSalesOrderInvoice(String orderNumber, String invoiceUrl) {
 
         final var invoiceNumber = InvoiceUrlExtractor.extractInvoiceNumber(invoiceUrl);
-
         var invoiceSource = dropshipmentOrderService.isDropShipmentOrder(orderNumber) ? InvoiceSource.SOH : null;
 
-        var salesOrderInvoice = SalesOrderInvoice.builder()
+        return SalesOrderInvoice.builder()
                 .orderNumber(orderNumber)
                 .invoiceNumber(invoiceNumber)
                 .url(invoiceUrl)
                 .source(invoiceSource)
                 .build();
+    }
 
-        return invoiceService.saveInvoice(salesOrderInvoice);
+    private void saveSalesOrderInvoice(SalesOrderInvoice salesOrderInvoice) {
+
+        invoiceService.saveInvoice(salesOrderInvoice);
+        salesOrderService.getOrderByOrderNumber(salesOrderInvoice.getOrderNumber())
+                .ifPresent(salesOrder -> invoiceService.addSalesOrderToInvoice(salesOrder, salesOrderInvoice));
+
     }
 }
