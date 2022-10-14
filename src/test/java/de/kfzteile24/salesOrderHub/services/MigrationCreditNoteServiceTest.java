@@ -21,7 +21,6 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createReturnOrderNumberInSOH;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrderFromOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrderReturn;
 import static org.mockito.ArgumentMatchers.any;
@@ -72,7 +71,6 @@ class MigrationCreditNoteServiceTest {
 
         SalesOrder salesOrder = createSalesOrder(orderNumber);
         SalesOrderReturn salesOrderReturn = getSalesOrderReturn(salesOrder, creditNoteNumber);
-        var newReturnOrderNumber = createReturnOrderNumberInSOH(creditNoteNumber);
         when(salesOrderReturnService.getReturnOrder(any(), any())).thenReturn(salesOrderReturn);
 
         migrationCreditNoteService.handleMigrationCoreSalesCreditNoteCreated(message, messageWrapper);
@@ -84,8 +82,6 @@ class MigrationCreditNoteServiceTest {
     void testHandleMigrationCoreSalesCreditNoteCreatedNewCreditNote() {
 
         var message = getObjectByResource("coreSalesCreditNoteCreated.json", SalesCreditNoteCreatedMessage.class);
-        var orderNumber = message.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber();
-        var creditNoteNumber = message.getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteNumber();
 
         when(salesOrderReturnService.getReturnOrder(any(), any())).thenReturn(null);
 
