@@ -19,6 +19,7 @@ public final class SOHConstants {
     public static final String COMBINED_ITEM_SEPARATOR = ",";
     public static final String TRACE_ID_NAME = "x-business-key";
     public static final String REQUEST_ID_KEY = "RequestID";
+    public static final String RETURN_ORDER_NUMBER_PREFIX = "RO";
 
     private SOHConstants() {}
 }

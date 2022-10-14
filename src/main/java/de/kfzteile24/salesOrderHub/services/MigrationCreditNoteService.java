@@ -1,5 +1,6 @@
 package de.kfzteile24.salesOrderHub.services;
 
+import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.salesOrderHub.dto.mapper.CreditNoteEventMapper;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
@@ -16,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class MigrationCreditNoteService {
 
     @NonNull
-    private final SalesOrderService salesOrderService;
+    private final OrderUtil orderUtil;
 
     @NonNull
     private final SnsPublishService snsPublishService;
@@ -37,8 +38,7 @@ public class MigrationCreditNoteService {
         var orderNumber = salesCreditNoteHeader.getOrderNumber();
         var creditNoteNumber = salesCreditNoteHeader.getCreditNoteNumber();
 
-        var returnOrder = salesOrderReturnService.getByOrderNumber(
-                salesOrderService.createOrderNumberInSOH(orderNumber, creditNoteNumber));
+        var returnOrder = salesOrderReturnService.getReturnOrder(orderNumber, creditNoteNumber);
         if (returnOrder != null) {
             snsPublishService.publishMigrationReturnOrderCreatedEvent(returnOrder);
             log.info("Return order with order number {} and credit note number: {} is duplicated for migration. " +
@@ -46,6 +46,7 @@ public class MigrationCreditNoteService {
                     orderNumber,
                     creditNoteNumber);
 
+            message.getSalesCreditNote().getSalesCreditNoteHeader().setOrderNumber(returnOrder.getOrderNumber()); //?
             var salesCreditNoteReceivedEvent =
                     creditNoteEventMapper.toSalesCreditNoteReceivedEvent(message);
             snsPublishService.publishCreditNoteReceivedEvent(salesCreditNoteReceivedEvent);
