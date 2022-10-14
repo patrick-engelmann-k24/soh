@@ -4,13 +4,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.FeatureFlagConfig;
 import de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig;
 import de.kfzteile24.salesOrderHub.configuration.SQSNamesConfig;
-import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.dto.mapper.CreditNoteEventMapper;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
+import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.CoreSalesCreditNoteCreatedService;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.FinancialDocumentsSqsReceiveService;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,10 +20,8 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Optional;
-
 import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createOrderNumberInSOH;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createReturnOrderNumberInSOH;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrderFromOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrderReturn;
 import static org.mockito.ArgumentMatchers.any;
@@ -36,7 +35,7 @@ class MigrationCreditNoteServiceTest {
     private final ObjectMapper objectMapper = new ObjectMapperConfig().objectMapper();
 
     @Mock
-    private SalesOrderService salesOrderService;
+    private OrderUtil orderUtil;
 
     @Mock
     private SnsPublishService snsPublishService;
@@ -73,8 +72,8 @@ class MigrationCreditNoteServiceTest {
 
         SalesOrder salesOrder = createSalesOrder(orderNumber);
         SalesOrderReturn salesOrderReturn = getSalesOrderReturn(salesOrder, creditNoteNumber);
-        when(salesOrderReturnService.getByOrderNumber(salesOrderReturn.getOrderNumber())).thenReturn(Optional.of(salesOrderReturn));
-        when(salesOrderService.createOrderNumberInSOH(orderNumber, creditNoteNumber)).thenReturn(createOrderNumberInSOH(orderNumber, creditNoteNumber));
+        var newReturnOrderNumber = createReturnOrderNumberInSOH(creditNoteNumber);
+        when(salesOrderReturnService.getReturnOrder(any(), any())).thenReturn(salesOrderReturn);
 
         migrationCreditNoteService.handleMigrationCoreSalesCreditNoteCreated(message, messageWrapper);
 
@@ -88,8 +87,7 @@ class MigrationCreditNoteServiceTest {
         var orderNumber = message.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber();
         var creditNoteNumber = message.getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteNumber();
 
-        when(salesOrderReturnService.getByOrderNumber(any())).thenReturn(Optional.empty());
-        when(salesOrderService.createOrderNumberInSOH(orderNumber, creditNoteNumber)).thenReturn(createOrderNumberInSOH(orderNumber, creditNoteNumber));
+        when(salesOrderReturnService.getReturnOrder(any(), any())).thenReturn(null);
 
         migrationCreditNoteService.handleMigrationCoreSalesCreditNoteCreated(message, messageWrapper);
 
