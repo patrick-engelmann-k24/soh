@@ -46,7 +46,7 @@ public class MigrationCreditNoteService {
                     orderNumber,
                     creditNoteNumber);
 
-            message.getSalesCreditNote().getSalesCreditNoteHeader().setOrderNumber(returnOrder.getOrderNumber()); //?
+            message.getSalesCreditNote().getSalesCreditNoteHeader().setOrderNumber(returnOrder.getOrderNumber());
             var salesCreditNoteReceivedEvent =
                     creditNoteEventMapper.toSalesCreditNoteReceivedEvent(message);
             snsPublishService.publishCreditNoteReceivedEvent(salesCreditNoteReceivedEvent);
