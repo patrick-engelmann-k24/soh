@@ -6,4 +6,5 @@ public interface AmazonS3Service {
 
     S3Object downloadFile(String url);
 
+    void deleteFile(String url);
 }
