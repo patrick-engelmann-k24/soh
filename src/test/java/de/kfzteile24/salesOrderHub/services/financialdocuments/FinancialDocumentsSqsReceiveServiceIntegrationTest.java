@@ -228,8 +228,6 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
         financialDocumentsSqsReceiveService.queueListenerCoreSalesInvoiceCreated(message, messageWrapper);
 
         String newOrderNumberCreatedInSoh = createOrderNumberInSOH(originalOrderNumber, invoiceNumber);
-        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
-        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku)));
         checkTotalsValues(newOrderNumberCreatedInSoh,
                 "12.95",
                 "10.79",
@@ -265,10 +263,6 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
         financialDocumentsSqsReceiveService.queueListenerCoreSalesInvoiceCreated(message, messageWrapper);
 
         String newOrderNumberCreatedInSoh = createOrderNumberInSOH(originalOrderNumber, invoiceNumber);
-        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
-        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku1)));
-        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku2)));
-        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku3)));
         assertTrue(timedPollingService.pollWithDefaultTiming(() -> checkIfInvoiceCreatedReceivedProcessExists(newOrderNumberCreatedInSoh)));
         checkTotalsValues(newOrderNumberCreatedInSoh,
                 "834.52",
@@ -304,10 +298,6 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
         financialDocumentsSqsReceiveService.queueListenerCoreSalesInvoiceCreated(message, messageWrapper);
 
         String newOrderNumberCreatedInSoh = createOrderNumberInSOH(originalOrderNumber, invoiceNumber);
-        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
-        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku1)));
-        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku2)));
-        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku3)));
         assertTrue(timedPollingService.pollWithDefaultTiming(() -> checkIfInvoiceCreatedReceivedProcessExists(newOrderNumberCreatedInSoh)));
         checkTotalsValues(newOrderNumberCreatedInSoh,
                 "432.52",
@@ -349,10 +339,6 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
         financialDocumentsSqsReceiveService.queueListenerCoreSalesInvoiceCreated(message, messageWrapper);
 
         String newOrderNumberCreatedInSoh = createOrderNumberInSOH(originalOrderNumber, invoiceNumber);
-        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
-        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku1)));
-        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku2)));
-        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku3)));
         checkTotalsValues(newOrderNumberCreatedInSoh,
                 "432.52",
                 "360.64",
@@ -395,10 +381,6 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
         financialDocumentsSqsReceiveService.queueListenerCoreSalesInvoiceCreated(message, messageWrapper);
 
         String newOrderNumberCreatedInSoh = createOrderNumberInSOH(originalOrderNumber, invoiceNumber);
-        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
-        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku1)));
-        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku2)));
-        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku3)));
         checkTotalsValues(newOrderNumberCreatedInSoh,
                 "432.52",
                 "360.64",

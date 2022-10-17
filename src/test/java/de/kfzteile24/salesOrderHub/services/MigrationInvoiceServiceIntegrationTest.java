@@ -13,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createOrderNumberInSOH;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 
 @Slf4j
@@ -59,10 +58,6 @@ class MigrationInvoiceServiceIntegrationTest extends AbstractIntegrationTest {
         migrationInvoiceService.handleMigrationCoreSalesInvoiceCreated(message, messageWrapper);
 
         String newOrderNumberCreatedInSoh = createOrderNumberInSOH(originalOrderNumber, invoiceNumber);
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku1)));
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku2)));
-        assertTrue(timerService.pollWithDefaultTiming(() -> camundaHelper.checkIfOrderRowProcessExists(newOrderNumberCreatedInSoh, rowSku3)));
     }
 
     @SneakyThrows
@@ -87,11 +82,8 @@ class MigrationInvoiceServiceIntegrationTest extends AbstractIntegrationTest {
         financialDocumentsSqsReceiveService.queueListenerCoreSalesInvoiceCreated(message, messageWrapper);
 
         String newOrderNumberCreatedInSoh = createOrderNumberInSOH(originalOrderNumber, invoiceNumber);
-        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
 
         migrationInvoiceService.handleMigrationCoreSalesInvoiceCreated(migrationMessage, messageWrapper);
-
-        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(newOrderNumberCreatedInSoh)));
 
         verify(snsPublishService).publishMigrationOrderRowCancelled(originalOrderNumber, rowSku);
         verify(snsPublishService).publishMigrationOrderCreated(newOrderNumberCreatedInSoh);

@@ -199,7 +199,7 @@ public class OrderUtil {
 
         if (order.getOrderRows() == null || order.getOrderRows().isEmpty()) {
             String orderNumber = order.getOrderHeader().getOrderNumber();
-            log.info("Sales order with order number {} has no order rows. Camunda process is not created!", orderNumber);
+            log.error("Sales order with order number {} has no order rows.", orderNumber);
             return false;
         } else {
             return true;
