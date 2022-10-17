@@ -81,7 +81,7 @@ public class SalesOrderReturnService {
     public boolean checkReturnOrderNotExists(String orderNumber, final String creditNoteNumber) {
         if (getReturnOrder(orderNumber, creditNoteNumber) != null) {
             log.warn("The following order return won't be processed because it exists in SOH system already from another source. " +
-                    "Order Number: {}", orderNumber);
+                    "Order Number: {} and Credit Note Number: {}", orderNumber, creditNoteNumber);
             return false;
         }
         return true;
