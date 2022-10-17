@@ -29,5 +29,7 @@ public class SQSNamesConfig {
     @Value("${soh.sqs.queue.invoicesFromCore}")
     private String invoicesFromCore;
 
+    @Value("$soh.sqs.queue.paypalRefundInstructionSuccessful}")
+    private String paypalRefundInstructionSuccessful;
 
 }

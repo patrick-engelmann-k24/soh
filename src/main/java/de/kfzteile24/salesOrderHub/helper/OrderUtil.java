@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.ORDER_NUMBER_SEPARATOR;
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.RETURN_ORDER_NUMBER_PREFIX;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.round;
@@ -238,5 +239,11 @@ public class OrderUtil {
                         .subtract(Optional.ofNullable(salesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostNet()).orElse(BigDecimal.ZERO)))
                 .isShippingCost(true)
                 .build();
+    }
+
+    public boolean isDropshipmentOrder(Order order) {
+
+        String orderFulfillment = order.getOrderHeader().getOrderFulfillment();
+        return orderFulfillment != null && orderFulfillment.equalsIgnoreCase(DELTICOM.getName());
     }
 }

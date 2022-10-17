@@ -9,6 +9,7 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.dto.events.DropshipmentOrderReturnNotifiedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.OrderCancelledEvent;
 import de.kfzteile24.salesOrderHub.dto.events.OrderRowCancelledEvent;
+import de.kfzteile24.salesOrderHub.dto.events.PayoutReceiptConfirmationReceivedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.ReturnOrderCreatedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderCompletedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInfoEvent;
@@ -25,6 +26,7 @@ import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import lombok.SneakyThrows;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -45,6 +47,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Shipme
 import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createNewSalesOrderV3;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrderReturn;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -465,6 +468,31 @@ class SnsPublishServiceTest {
                                 .build()).collect(Collectors.toList()))
                         .build()))
                 .build();
+
+        verify(notificationMessagingTemplate).sendNotification(
+                expectedTopic,
+                objectMapper.writeValueAsString(expectedEvent),
+                expectedSubject
+        );
+    }
+
+    @Test
+    @SneakyThrows
+    void testPublishPayoutReceiptConfirmationReceivedEvent() {
+
+        final var expectedTopic = "soh-payout-receipt-confirmation-received-v1";
+        final var expectedSubject = "Payout Receipt Confirmation Received V1";
+        final var creditNoteNumber = RandomStringUtils.randomNumeric(10);
+
+        final var salesOrder = createNewSalesOrderV3(true, REGULAR, CREDIT_CARD, NEW);
+        final var returnOrder = getSalesOrderReturn(salesOrder, creditNoteNumber);
+
+        when(awsSnsConfig.getSnsPayoutReceiptConfirmationReceivedV1()).thenReturn(expectedTopic);
+
+        snsPublishService.publishPayoutReceiptConfirmationReceivedEvent(returnOrder);
+
+        final var expectedEvent =
+                PayoutReceiptConfirmationReceivedEvent.builder().order(returnOrder.getReturnOrderJson()).build();
 
         verify(notificationMessagingTemplate).sendNotification(
                 expectedTopic,

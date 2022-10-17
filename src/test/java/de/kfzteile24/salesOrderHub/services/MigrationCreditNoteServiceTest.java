@@ -20,6 +20,10 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Optional;
+
+import java.util.Optional;
+
 import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrderFromOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrderReturn;
@@ -71,7 +75,7 @@ class MigrationCreditNoteServiceTest {
 
         SalesOrder salesOrder = createSalesOrder(orderNumber);
         SalesOrderReturn salesOrderReturn = getSalesOrderReturn(salesOrder, creditNoteNumber);
-        when(salesOrderReturnService.getReturnOrder(any(), any())).thenReturn(salesOrderReturn);
+        when(salesOrderReturnService.getReturnOrder(any(), any())).thenReturn(Optional.of(salesOrderReturn));
 
         migrationCreditNoteService.handleMigrationCoreSalesCreditNoteCreated(message, messageWrapper);
 
@@ -83,7 +87,7 @@ class MigrationCreditNoteServiceTest {
 
         var message = getObjectByResource("coreSalesCreditNoteCreated.json", SalesCreditNoteCreatedMessage.class);
 
-        when(salesOrderReturnService.getReturnOrder(any(), any())).thenReturn(null);
+        when(salesOrderReturnService.getReturnOrder(any(), any())).thenReturn(Optional.empty());
 
         migrationCreditNoteService.handleMigrationCoreSalesCreditNoteCreated(message, messageWrapper);
 

@@ -2,6 +2,7 @@ package de.kfzteile24.salesOrderHub.delegates.dropshipmentorder;
 
 import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
+import de.kfzteile24.salesOrderHub.exception.SalesOrderReturnNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderReturnRepository;
@@ -74,7 +75,8 @@ class SaveDropshipmentCreditNoteDelegateIntegrationTest extends AbstractIntegrat
                             "eventCreditNoteSaved");
             return true;
         }));
-        SalesOrderReturn returnOrder = salesOrderReturnRepository.findByOrderNumber(salesOrderReturn.getOrderNumber());
+        SalesOrderReturn returnOrder = salesOrderReturnRepository.findByOrderNumber(salesOrderReturn.getOrderNumber())
+                .orElseThrow(() -> new SalesOrderReturnNotFoundException(salesOrderReturn.getOrderNumber()));
         Assertions.assertThat(returnOrder).isNotNull();
         Assertions.assertThat(returnOrder.getUrl()).isNotNull();
         Assertions.assertThat(returnOrder.getUrl()).isEqualTo(invoiceUrl);

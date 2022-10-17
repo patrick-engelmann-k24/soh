@@ -42,6 +42,7 @@ soh:
       migrationReturnOrderCreatedV1: arn:aws:sns:eu-central-1:000000000000:migration-soh-return-order-created-v1
       dropshipmentOrderCreatedV1: arn:aws:sns:eu-central-1:000000000000:soh-dropshipment-order-created-v1
       dropshipmentOrderReturnNotifiedV1: arn:aws:sns:eu-central-1:000000000000:soh-dropshipment-order-return-notified-v1
+      payoutReceiptConfirmationReceivedV1: arn:aws:sns:eu-central-1:000000000000:soh-payout-receipt-confirmation-received-v1
   sqs:
     queue:
       ecpShopOrders:                  http://localhost:4566/000000000000/soh-ecp-shop-orders-queue
@@ -65,6 +66,7 @@ soh:
       migrationCoreSalesInvoiceCreated: http://localhost:4566/000000000000/migration-core-sales-invoice-created-queue
       migrationCoreSalesCreditNoteCreated: http://localhost:4566/000000000000/migration-core-sales-credit-note-created-queue
       parcelShipped:                  http://localhost:4566/000000000000/soh-parcel-shipped-queue
+      paypalRefundInstructionSuccessful: http://localhost:4566/000000000000/soh-paypal-refund-instruction-successful-queue
   aws:
     config:
       maxNumberOfMessages: 10

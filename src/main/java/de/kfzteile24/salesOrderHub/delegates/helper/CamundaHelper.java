@@ -32,7 +32,6 @@ import org.camunda.bpm.engine.runtime.MessageCorrelationBuilder;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.variable.VariableMap;
-import org.camunda.bpm.engine.variable.Variables;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -163,17 +162,19 @@ public class CamundaHelper {
     }
 
     public void handleCreditNoteFromDropshipmentOrderReturn(String invoiceUrl) {
-        final var returnOrderNumber = InvoiceUrlExtractor.extractOrderNumber(invoiceUrl);
 
+        final var returnOrderNumber = InvoiceUrlExtractor.extractReturnOrderNumber(invoiceUrl);
         log.info("Received credit note from dropshipment with return order number: {} ", returnOrderNumber);
 
+        String message = Messages.DROPSHIPMENT_CREDIT_NOTE_CREATED.getName();
         final Map<String, Object> processVariables = Map.of(
                 ORDER_NUMBER.getName(), returnOrderNumber,
                 INVOICE_URL.getName(), invoiceUrl
         );
 
-        runtimeService.startProcessInstanceByMessage(Messages.DROPSHIPMENT_CREDIT_NOTE_CREATED.getName(), returnOrderNumber, processVariables);
-        log.info("Invoice {} for credit note of dropshipment order return for order-number {} successfully received", invoiceUrl, returnOrderNumber);
+        runtimeService.startProcessInstanceByMessage(message, returnOrderNumber, processVariables);
+        log.info("Invoice {} for credit note of dropshipment order return for order-number {} successfully received",
+                invoiceUrl, returnOrderNumber);
     }
 
     public ProcessInstance createReturnOrderProcess(SalesOrderReturn salesOrderReturn, Messages originChannel) {
@@ -322,10 +323,6 @@ public class CamundaHelper {
                     message.getName(), salesOrderNumber, e.getLocalizedMessage());
             throw e;
         }
-    }
-
-    public void correlateMessage(Messages message, SalesOrder salesOrder) {
-        correlateMessage(message, salesOrder, Variables.createVariables());
     }
 
     public void sendSignal(Signals signal) {

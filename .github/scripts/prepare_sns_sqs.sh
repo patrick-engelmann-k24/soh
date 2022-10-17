@@ -50,6 +50,8 @@ TOPICS="
     soh-dropshipment-order-created-v1
     soh-dropshipment-order-return-notified-v1
     soh-parcel-shipped
+    soh-paypal-refund-instruction-successful
+    soh-payout-receipt-confirmation-received-v1
     "
 
 # Outdated topics

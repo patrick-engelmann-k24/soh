@@ -96,6 +96,13 @@ class InvoiceUrlExtractorTest {
         assertThat(orderNumber).isEqualTo("987654321");
     }
 
+    @Test
+    void testExtractFilename() {
+        var invoiceUrl = "s3://production-k24-invoices/app_android-kfzteile24-de/2021/06/04/987654321-123123123.pdf";
+        var orderNumber = InvoiceUrlExtractor.extractReturnOrderNumber(invoiceUrl);
+        assertThat(orderNumber).isEqualTo("987654321-123123123");
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {
             "987654321-12345-1234-1123456789012",
