@@ -130,6 +130,39 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
         checkEventIsPublished(message);
     }
 
+    @SneakyThrows
+    @Test
+    @DisplayName("IT core sales credit note created event handling with dropshipment order sample")
+    void testQueueListenerCoreSalesCreditNoteCreatedWithDropshipmentOrderSample(TestInfo testInfo) {
+
+        log.info(testInfo.getDisplayName());
+
+        var salesOrder = SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
+        salesOrder.setOrderGroupId("580309129");
+        salesOrder.setOrderNumber("580309129-1");
+        salesOrder.getLatestJson().getOrderHeader().getTotals().setGrandTotalTaxes(List.of(GrandTotalTaxes.builder()
+                .rate(BigDecimal.valueOf(19))
+                .value(BigDecimal.valueOf(0.38))
+                .build()));
+
+        salesOrderService.save(salesOrder, Action.ORDER_CREATED);
+
+        var message = getObjectByResource("coreSalesCreditNoteCreated.json", SalesCreditNoteCreatedMessage.class);
+        message.getSalesCreditNote().getSalesCreditNoteHeader().setOrderNumber("580309129-1");
+        var messageWrapper = MessageWrapper.builder().build();
+        financialDocumentsSqsReceiveService.queueListenerCoreSalesCreditNoteCreated(message, messageWrapper);
+
+        verify(salesOrderService).getOrderByOrderNumber("580309129-1");
+        verify(salesOrderReturnService).handleSalesOrderReturn(message, RETURN_ORDER_CREATED, CORE_CREDIT_NOTE_CREATED);
+        verify(snsPublishService).publishReturnOrderCreatedEvent(argThat(
+                salesOrderReturn -> {
+                    assertThat(salesOrderReturn.getOrderNumber()).isEqualTo("RO-876130");
+                    assertThat(salesOrderReturn.getOrderGroupId()).isEqualTo("580309129");
+                    return true;
+                }
+        ));
+    }
+
     private void checkOrderRowValues(List<OrderRows> returnOrderRows) {
 
         assertEquals(3, returnOrderRows.size());
