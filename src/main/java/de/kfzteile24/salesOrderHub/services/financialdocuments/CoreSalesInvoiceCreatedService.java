@@ -5,7 +5,6 @@ import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
-import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
@@ -23,7 +22,6 @@ import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.text.MessageFormat;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -77,13 +75,8 @@ public class CoreSalesInvoiceCreatedService {
                             handleCancellationForOrderRows(originalSalesOrder, subsequentOrder.getLatestJson().getOrderRows());
                         }
                         if (!orderUtil.checkIfOrderHasOrderRows(subsequentOrder.getLatestJson())) {
-                            throw new NotFoundException(
-                                    MessageFormat.format("Subsequent sales order with order number {0} " +
-                                                    "has no order rows.",
-                                            subsequentOrder.getOrderNumber())
-                            );
+                            metricsHelper.sendCustomEvent(subsequentOrder, SUBSEQUENT_ORDER_GENERATED);
                         }
-                        metricsHelper.sendCustomEvent(subsequentOrder, SUBSEQUENT_ORDER_GENERATED);
                         snsPublishService.publishOrderCreated(subsequentOrder.getOrderNumber());
                         publishInvoiceEvent(subsequentOrder);
                     }
