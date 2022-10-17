@@ -29,8 +29,10 @@ public class GeneralSqsReceiveService extends AbstractSqsReceiveService {
     public void queueListenerInvoiceReceivedFromCore(String message) {
 
         if (InvoiceUrlExtractor.matchesCreditNoteNumberPattern(message)) {
+            log.info("url: {} is for credit note", message);
             camundaHelper.handleCreditNoteFromDropshipmentOrderReturn(message);
         } else {
+            log.info("url: {} is for invoice", message);
             camundaHelper.handleInvoiceFromCore(message);
         }
     }

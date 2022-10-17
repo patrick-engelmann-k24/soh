@@ -11,6 +11,7 @@ import de.kfzteile24.salesOrderHub.dto.events.DropshipmentOrderCreatedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.DropshipmentOrderReturnNotifiedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.OrderCancelledEvent;
 import de.kfzteile24.salesOrderHub.dto.events.OrderRowCancelledEvent;
+import de.kfzteile24.salesOrderHub.dto.events.PayoutReceiptConfirmationReceivedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.ReturnOrderCreatedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesCreditNoteCreatedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesCreditNoteReceivedEvent;
@@ -32,7 +33,6 @@ import org.springframework.cloud.aws.messaging.core.NotificationMessagingTemplat
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -207,10 +207,19 @@ public class SnsPublishService {
     }
 
     public void publishMigrationReturnOrderCreatedEvent(String returnOrderNumber) {
-        Optional.ofNullable(salesOrderReturnService.getByOrderNumber(returnOrderNumber))
+        salesOrderReturnService.getByOrderNumber(returnOrderNumber)
                 .ifPresentOrElse(this::publishMigrationReturnOrderCreatedEvent, () -> {
                     throw new SalesOrderNotFoundException(returnOrderNumber);
                 });
+    }
+
+    public void publishPayoutReceiptConfirmationReceivedEvent(SalesOrderReturn salesOrderReturn) {
+        var payoutReceiptConfirmationReceivedEvent = PayoutReceiptConfirmationReceivedEvent.builder()
+                .order(salesOrderReturn.getReturnOrderJson())
+                .build();
+
+        publishEvent(config.getSnsPayoutReceiptConfirmationReceivedV1(), "Payout Receipt Confirmation Received V1",
+                payoutReceiptConfirmationReceivedEvent, salesOrderReturn.getOrderNumber());
     }
 
     protected SalesOrder sendLatestOrderJson(String topic, String subject, String orderNumber) {

@@ -59,13 +59,13 @@ public class SalesOrderReturnService {
     @NonNull
     private final OrderUtil orderUtil;
 
-    public SalesOrderReturn getByOrderNumber(String orderNumber) {
+    public Optional<SalesOrderReturn> getByOrderNumber(String orderNumber) {
         return salesOrderReturnRepository.findByOrderNumber(orderNumber);
     }
 
     @Transactional(readOnly = true)
     public boolean checkOrderNotExists(final String orderNumber) {
-        if (getByOrderNumber(orderNumber) != null) {
+        if (getByOrderNumber(orderNumber).isPresent()) {
             log.warn("The following order return won't be processed because it exists in SOH system already from another source. " +
                     "Order Number: {}", orderNumber);
             return false;

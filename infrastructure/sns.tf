@@ -142,6 +142,10 @@ data "aws_sns_topic" "sns_parcel_shipped" {
   name = "parcel-shipped-v1"
 }
 
+data aws_sns_topic "sns_soh_payout_receipt_confirmation_received_v1" {
+  name = "soh-payout-receipt-confirmation-received-v1"
+}
+
 # subscriptions of sqs to sns
 resource "aws_sns_topic_subscription" "sns_subscription_ecp_orders_v3" {
   endpoint = aws_sqs_queue.ecp_shop_orders.arn
@@ -279,3 +283,9 @@ resource "aws_sns_topic_subscription" "sns_subscription_parcel_shipped" {
   topic_arn = data.aws_sns_topic.sns_parcel_shipped.arn
 }
 
+# subscription for paypal refund instruction successful to trigger credit note PDF generation lambda
+resource "aws_sns_topic_subscription" "sns_subscription_paypal_refund_instruction_successful" {
+  endpoint = aws_sqs_queue.soh_paypal_refund_instruction_successful.arn
+  protocol = "sqs"
+  topic_arn = var.paypal_refund_success_sns
+}

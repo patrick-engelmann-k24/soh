@@ -13,6 +13,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Optional;
+
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.INVOICE_URL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
@@ -61,9 +63,10 @@ class PublishCreditNoteCreatedDelegateTest {
 
         when(delegateExecution.getVariable(ORDER_NUMBER.getName())).thenReturn(expectedOrderNumber);
         when(delegateExecution.getVariable(INVOICE_URL.getName())).thenReturn(expectedCreditNoteDocumentLink);
-        when(salesOrderReturnService.getByOrderNumber(
-                eq(expectedOrderNumber))).thenReturn(salesOrderReturn);
-        when(creditNoteService.buildSalesCreditNoteCreatedEvent(eq( salesOrderReturn.getOrderNumber()), eq( expectedCreditNoteDocumentLink))).thenReturn(salesCreditNoteCreatedEvent);
+        when(salesOrderReturnService.getByOrderNumber(eq(expectedOrderNumber))).thenReturn(Optional.of(salesOrderReturn));
+        when(creditNoteService.buildSalesCreditNoteCreatedEvent(
+                eq(salesOrderReturn.getOrderNumber()),
+                eq(expectedCreditNoteDocumentLink))).thenReturn(salesCreditNoteCreatedEvent);
 
         salesCreditNoteCreatedEvent = publishCreditNoteCreatedDelegate.buildSalesCreditNoteCreatedEvent(delegateExecution);
         assertThat(salesCreditNoteCreatedEvent.getCreditNoteDocumentLink()).isEqualTo(expectedCreditNoteDocumentLink);

@@ -13,8 +13,6 @@ import org.camunda.bpm.engine.delegate.JavaDelegate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.Optional;
-
 @Component
 @Slf4j
 class PublishCreditNoteCreatedDelegate implements JavaDelegate {
@@ -32,7 +30,7 @@ class PublishCreditNoteCreatedDelegate implements JavaDelegate {
     public void execute(DelegateExecution delegateExecution) throws Exception {
         var salesCreditNoteCreatedEvent = buildSalesCreditNoteCreatedEvent(delegateExecution);
         final var orderNumber = (String) delegateExecution.getVariable(Variables.ORDER_NUMBER.getName());
-        SalesOrderReturn salesOrderReturn = Optional.of(salesOrderReturnService.getByOrderNumber(orderNumber))
+        SalesOrderReturn salesOrderReturn = salesOrderReturnService.getByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderReturnNotFoundException(orderNumber));
         var creditNoteNumber = salesOrderReturn.getSalesCreditNoteCreatedMessage() != null
                 ? salesOrderReturn.getSalesCreditNoteCreatedMessage().getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteNumber()

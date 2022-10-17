@@ -8,18 +8,15 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
-
 @Service
 @RequiredArgsConstructor
 public class CreditNoteService {
-
 
     @NonNull
     private final SalesOrderReturnService salesOrderReturnService;
 
     public SalesCreditNoteCreatedEvent buildSalesCreditNoteCreatedEvent(String orderNumber, String creditNoteDocumentLink) {
-        SalesOrderReturn salesOrderReturn = Optional.of(salesOrderReturnService.getByOrderNumber(orderNumber))
+        SalesOrderReturn salesOrderReturn = salesOrderReturnService.getByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderReturnNotFoundException(orderNumber));
         return SalesCreditNoteCreatedEvent
                 .builder()
@@ -27,7 +24,5 @@ public class CreditNoteService {
                 .creditNoteDocumentLink(creditNoteDocumentLink)
                 .build();
     }
-
-
 
 }
