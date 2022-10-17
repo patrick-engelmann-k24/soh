@@ -125,7 +125,7 @@ public class SalesOrderReturnService {
         var orderNumber = salesCreditNoteHeader.getOrderNumber();
         var creditNoteNumber = salesCreditNoteHeader.getCreditNoteNumber();
 
-        if (checkReturnOrderNotExists(orderNumber, creditNoteNumber)) {
+        if (checkReturnOrderNotExists(salesCreditNoteHeader.getOrderGroupId(), creditNoteNumber)) {
             var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                     .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
 
