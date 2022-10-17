@@ -39,12 +39,12 @@ class PaypalRefundInstructionSuccessfulServiceTest {
         var message = getObjectByResource("paypalRefundInstructionSuccessful.json", PaypalRefundInstructionSuccessfulEvent.class);
         var messageWrapper = MessageWrapper.builder().build();
 
-        when(salesOrderReturnService.getReturnOrder("512345678", "123456789")).thenReturn(Optional.empty());
+        when(salesOrderReturnService.getReturnOrder("123456789", "123456789")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> paypalRefundInstructionSuccessfulService.handlePaypalRefundInstructionSuccessful(
                 message, messageWrapper))
                 .isExactlyInstanceOf(SalesOrderReturnNotFoundException.class)
-                .hasMessageContaining("Sales order return not found for the given order number 512345678 and credit note number 123456789 ");
+                .hasMessageContaining("Sales order return not found for the given order number 123456789 and credit note number 123456789 ");
     }
 
     @Test
@@ -53,7 +53,7 @@ class PaypalRefundInstructionSuccessfulServiceTest {
         var messageWrapper = MessageWrapper.builder().build();
         SalesOrderReturn salesOrderReturn = SalesOrderReturn.builder().build();
 
-        when(salesOrderReturnService.getReturnOrder("512345678", "123456789")).thenReturn(Optional.of(salesOrderReturn));
+        when(salesOrderReturnService.getReturnOrder("123456789", "123456789")).thenReturn(Optional.of(salesOrderReturn));
         when(orderUtil.isDropshipmentOrder(salesOrderReturn.getReturnOrderJson())).thenReturn(true);
 
         paypalRefundInstructionSuccessfulService.handlePaypalRefundInstructionSuccessful(message, messageWrapper);
@@ -67,7 +67,7 @@ class PaypalRefundInstructionSuccessfulServiceTest {
         var messageWrapper = MessageWrapper.builder().build();
         SalesOrderReturn salesOrderReturn = SalesOrderReturn.builder().build();
 
-        when(salesOrderReturnService.getReturnOrder("512345678", "123456789")).thenReturn(Optional.of(salesOrderReturn));
+        when(salesOrderReturnService.getReturnOrder("123456789", "123456789")).thenReturn(Optional.of(salesOrderReturn));
         when(orderUtil.isDropshipmentOrder(salesOrderReturn.getReturnOrderJson())).thenReturn(false);
 
         paypalRefundInstructionSuccessfulService.handlePaypalRefundInstructionSuccessful(message, messageWrapper);
