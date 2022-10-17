@@ -74,7 +74,7 @@ public class CoreSalesInvoiceCreatedService {
                         if (!invoicePublished) {
                             handleCancellationForOrderRows(originalSalesOrder, subsequentOrder.getLatestJson().getOrderRows());
                         }
-                        if (!orderUtil.checkIfOrderHasOrderRows(subsequentOrder.getLatestJson())) {
+                        if (orderUtil.checkIfOrderHasOrderRows(subsequentOrder.getLatestJson())) {
                             metricsHelper.sendCustomEvent(subsequentOrder, SUBSEQUENT_ORDER_GENERATED);
                         }
                         snsPublishService.publishOrderCreated(subsequentOrder.getOrderNumber());
