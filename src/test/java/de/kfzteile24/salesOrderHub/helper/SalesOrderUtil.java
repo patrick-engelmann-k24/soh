@@ -40,6 +40,7 @@ import java.util.UUID;
 
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.ORDER_NUMBER_SEPARATOR;
+import static de.kfzteile24.salesOrderHub.constants.SOHConstants.RETURN_ORDER_NUMBER_PREFIX;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.RECURRING;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
@@ -368,6 +369,10 @@ public class SalesOrderUtil {
 
     public static String createOrderNumberInSOH(String orderNumber, String reference) {
         return orderNumber + ORDER_NUMBER_SEPARATOR + reference;
+    }
+
+    public static String createReturnOrderNumberInSOH(String reference) {
+        return RETURN_ORDER_NUMBER_PREFIX + ORDER_NUMBER_SEPARATOR + reference;
     }
 
     public Set<SalesOrderInvoice> getSalesOrderInvoices(final String orderNumber) {
