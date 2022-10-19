@@ -139,8 +139,8 @@ class StoreDropshipmentInvoiceDelegateIntegrationTest extends AbstractIntegratio
 
     @AfterEach
     public void cleanup() {
-        salesOrderInvoiceRepository.deleteAll();
-        salesOrderRepository.deleteAll();
-        auditLogRepository.deleteAll();
+        pollingService.retry(() -> salesOrderInvoiceRepository.deleteAll());
+        pollingService.retry(() -> salesOrderRepository.deleteAll());
+        pollingService.retry(() -> auditLogRepository.deleteAll());
     }
 }

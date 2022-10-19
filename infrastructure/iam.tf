@@ -30,7 +30,8 @@ data "aws_iam_policy_document" "sns_sqs_access_policy" {
       data.aws_sns_topic.sns_soh_dropshipment_order_created_v1.arn,
       data.aws_sns_topic.sns_soh_dropshipment_order_return_notified_v1.arn,
       data.aws_sns_topic.sns_parcel_shipped.arn,
-      data.aws_sns_topic.sns_soh_payout_receipt_confirmation_received_v1.arn
+      data.aws_sns_topic.sns_soh_payout_receipt_confirmation_received_v1.arn,
+      data.aws_sns_topic.sns_soh_invoice_pdf_generation_triggered_v1.arn
     ]
   }
   statement {

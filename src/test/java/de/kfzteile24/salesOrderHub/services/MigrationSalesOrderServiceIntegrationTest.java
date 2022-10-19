@@ -9,6 +9,7 @@ import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -99,6 +100,11 @@ class MigrationSalesOrderServiceIntegrationTest extends AbstractIntegrationTest 
         message.getOrderHeader().setOrderGroupId(message.getOrderHeader().getOrderNumber());
         assertEquals(message, updated.getLatestJson());
         assertEquals(originalOrder, updated.getOriginalOrder());
+    }
+
+    @BeforeEach
+    public void prepare() {
+        pollingService.retry(() -> salesOrderRepository.deleteAllInBatch());
     }
 
     @AfterEach

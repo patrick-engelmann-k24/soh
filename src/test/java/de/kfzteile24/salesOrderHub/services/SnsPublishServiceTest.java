@@ -16,6 +16,7 @@ import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInfoEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInvoiceCreatedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.dropshipment.DropshipmentOrderPackage;
 import de.kfzteile24.salesOrderHub.dto.events.dropshipment.DropshipmentOrderPackageItemLine;
+import de.kfzteile24.salesOrderHub.dto.events.shipmentconfirmed.SalesOrderInvoicePdfGenerationTriggeredEvent;
 import de.kfzteile24.salesOrderHub.dto.events.shipmentconfirmed.SalesOrderShipmentConfirmedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.shipmentconfirmed.TrackingLink;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnNotifiedMessage;
@@ -493,6 +494,29 @@ class SnsPublishServiceTest {
 
         final var expectedEvent =
                 PayoutReceiptConfirmationReceivedEvent.builder().order(returnOrder.getReturnOrderJson()).build();
+
+        verify(notificationMessagingTemplate).sendNotification(
+                expectedTopic,
+                objectMapper.writeValueAsString(expectedEvent),
+                expectedSubject
+        );
+    }
+
+    @Test
+    @SneakyThrows
+    void testPublishInvoicePdfGenerationTriggeredEvent() {
+
+        final var expectedTopic = "soh-invoice-pdf-generation-triggered-v1";
+        final var expectedSubject = "Invoice PDF Generation Triggered V1";
+
+        final var salesOrder = createNewSalesOrderV3(true, REGULAR, CREDIT_CARD, NEW);
+
+        when(awsSnsConfig.getSnsInvoicePdfGenerationTriggeredV1()).thenReturn(expectedTopic);
+
+        snsPublishService.publishInvoicePdfGenerationTriggeredEvent(salesOrder.getLatestJson());
+
+        final var expectedEvent =
+                SalesOrderInvoicePdfGenerationTriggeredEvent.builder().order(salesOrder.getLatestJson()).build();
 
         verify(notificationMessagingTemplate).sendNotification(
                 expectedTopic,
