@@ -52,7 +52,7 @@ class PayloadResolverDecoratorIntegrationTest extends AbstractIntegrationTest {
             .atMost(Duration.ofSeconds(10))
             .untilAsserted(() -> {
                 verify(generalSqsReceiveService).queueListenerInvoiceReceivedFromCore(
-                        argThat(message -> StringUtils.equals(message, "s3://production-k24-invoices/www-kfzteile24-de/2022/10/07/520292951-724437238.pdf")));
+                        argThat(message -> StringUtils.equals(message, "s3://production-k24-invoices/www-kfzteile24-de/2022/10/07/520292951-724437238.pdf")), any());
             });
     }
 
@@ -216,7 +216,7 @@ class PayloadResolverDecoratorIntegrationTest extends AbstractIntegrationTest {
             .atMost(Duration.ofSeconds(10))
             .untilAsserted(() -> {
                 verify(generalSqsReceiveService).queueListenerInvoiceReceivedFromCore(
-                        argThat(message -> StringUtils.equals(message, "s3://production-k24-invoices/www-kfzteile24-de/2022/10/07/520292951-724437238.pdf")));
+                        argThat(message -> StringUtils.equals(message, "s3://production-k24-invoices/www-kfzteile24-de/2022/10/07/520292951-724437238.pdf")), any());
             });
     }
 

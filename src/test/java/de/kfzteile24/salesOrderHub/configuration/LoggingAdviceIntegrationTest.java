@@ -1,12 +1,12 @@
 package de.kfzteile24.salesOrderHub.configuration;
 
 import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
-import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ParcelShippedMessage;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.FinancialDocumentsSqsReceiveService;
 import de.kfzteile24.salesOrderHub.services.general.GeneralSqsReceiveService;
 import de.kfzteile24.salesOrderHub.services.salesorder.SalesOrderSqsReceiveService;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -143,6 +143,26 @@ class LoggingAdviceIntegrationTest extends AbstractIntegrationTest {
         messageWrapper.setReceiveCount(3);
 
         verifyErrorMessageIsLogged(() -> generalSqsReceiveService.queueListenerParcelShipped(message, messageWrapper));
+    }
+
+    @Test
+    @DisplayName("Test Logging Advice Message Attribute Property for Invoices From Core Event")
+    void testMessageAttributeForInvoicesFromCoreEvent(TestInfo testInfo) {
+
+        log.info(testInfo.getDisplayName());
+        var message = "s3://production-k24-invoices/www-kfzteile24-de/2022/10/07/520292951724437238.pdf";
+        var messageWrapper = MessageWrapper.builder()
+                .senderId(SENDER_ID)
+                .queueName(sqsNamesConfig.getInvoicesFromCore())
+                .receiveCount(4)
+                .build();
+
+        generalSqsReceiveService.queueListenerInvoiceReceivedFromCore(message, messageWrapper);
+        verifyIfMessageIsSendingToDLQ(sqsNamesConfig.getInvoicesFromCore() + "-dlq");
+
+        messageWrapper.setReceiveCount(3);
+
+        verifyErrorMessageIsLogged(() -> generalSqsReceiveService.queueListenerInvoiceReceivedFromCore(message, messageWrapper));
     }
 
     @NotNull
