@@ -20,6 +20,7 @@ import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInfoEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInvoiceCreatedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.dropshipment.DropshipmentOrderPackage;
 import de.kfzteile24.salesOrderHub.dto.events.dropshipment.DropshipmentOrderPackageItemLine;
+import de.kfzteile24.salesOrderHub.dto.events.shipmentconfirmed.SalesOrderInvoicePdfGenerationTriggeredEvent;
 import de.kfzteile24.salesOrderHub.dto.events.shipmentconfirmed.SalesOrderShipmentConfirmedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.shipmentconfirmed.TrackingLink;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnNotifiedMessage;
@@ -220,6 +221,15 @@ public class SnsPublishService {
 
         publishEvent(config.getSnsPayoutReceiptConfirmationReceivedV1(), "Payout Receipt Confirmation Received V1",
                 payoutReceiptConfirmationReceivedEvent, salesOrderReturn.getOrderNumber());
+    }
+
+    public void publishInvoicePdfGenerationTriggeredEvent(Order order) {
+        var invoicePdfGenerationTriggeredEvent = SalesOrderInvoicePdfGenerationTriggeredEvent.builder()
+                .order(order)
+                .build();
+
+        publishEvent(config.getSnsInvoicePdfGenerationTriggeredV1(), "Invoice PDF Generation Triggered V1",
+                invoicePdfGenerationTriggeredEvent, order.getOrderHeader().getOrderNumber());
     }
 
     protected SalesOrder sendLatestOrderJson(String topic, String subject, String orderNumber) {

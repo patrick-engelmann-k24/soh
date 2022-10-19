@@ -48,7 +48,8 @@ soh:
       migrationReturnOrderCreatedV1: arn:aws:sns:eu-central-1:000000000000:migration-soh-return-order-created-v1
       dropshipmentOrderCreatedV1: arn:aws:sns:eu-central-1:000000000000:soh-dropshipment-order-created-v1
       dropshipmentOrderReturnNotifiedV1: arn:aws:sns:eu-central-1:000000000000:soh-dropshipment-order-return-notified-v1
-      paypalRefundInstructionSuccessful: arn:aws:sns:eu-central-1:000000000000:soh-payout-receipt-confirmation-received-v1
+      payoutReceiptConfirmationReceivedV1: arn:aws:sns:eu-central-1:000000000000:soh-payout-receipt-confirmation-received-v1
+      invoicePdfGenerationTriggeredV1: arn:aws:sns:eu-central-1:000000000000:soh-invoice-pdf-generation-triggered-v1
   sqs:
     queue:
       ecpShopOrders:                  http://localhost:4566/000000000000/soh-ecp-shop-orders-queue
