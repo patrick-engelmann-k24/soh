@@ -63,7 +63,7 @@ class LoggingAdvice {
                 .withMessageAttributes(messageAttributes)
                 .withDelaySeconds(1);
         amazonSQSAsync.sendMessage(sendMessageRequest);
-        log.info("Message for invoice received was manually sent to DLQ");
+        log.info("Message for {} was manually sent to DLQ", messageWrapper.getQueueName());
     }
 
 
