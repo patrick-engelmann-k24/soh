@@ -43,19 +43,21 @@ class GeneralSqsReceiveServiceTest {
     void testQueueListenerInvoiceReceivedFromCoreCreditNote() {
 
         String message = "s3://production-k24-invoices/www-kfzteile24-de/2022/10/07/987654321-2022200001.pdf";
+        var messageWrapper = MessageWrapper.builder().build();
 
-        generalSqsReceiveService.queueListenerInvoiceReceivedFromCore(message);
+        generalSqsReceiveService.queueListenerInvoiceReceivedFromCore(message, messageWrapper);
 
-        verify(camundaHelper).handleCreditNoteFromDropshipmentOrderReturn(message);
+        verify(camundaHelper).handleCreditNoteFromDropshipmentOrderReturn(message, messageWrapper);
     }
 
     @Test
     void testQueueListenerInvoiceReceivedFromCoreInvoice() {
 
         String message = "s3://production-k24-invoices/www-kfzteile24-de/2022/10/07/528023111-1-2022-1000000002300.pdf";
+        var messageWrapper = MessageWrapper.builder().build();
 
-        generalSqsReceiveService.queueListenerInvoiceReceivedFromCore(message);
+        generalSqsReceiveService.queueListenerInvoiceReceivedFromCore(message, messageWrapper);
 
-        verify(camundaHelper).handleInvoiceFromCore(message);
+        verify(camundaHelper).handleInvoiceFromCore(message, messageWrapper);
     }
 }

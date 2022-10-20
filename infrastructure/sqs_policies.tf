@@ -1405,3 +1405,45 @@ resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_soh_paypal_refund_in
   queue_url = aws_sqs_queue.soh_paypal_refund_instruction_successful_dlq.id
   policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_soh_paypal_refund_instruction_successful_dlq.json
 }
+
+data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_invoices_from_core_dlq" {
+  statement {
+    sid = "SNS-invoices-from-core-dlq"
+    effect = "Allow"
+
+    actions = [
+      "sqs:SendMessage",
+    ]
+
+    principals {
+      identifiers = ["*"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_invoices_from_core_dlq.arn
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sqs:*",
+    ]
+
+    principals {
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_invoices_from_core_dlq.arn
+    ]
+  }
+}
+
+resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_invoices_from_core_dlq" {
+  queue_url = aws_sqs_queue.soh_invoices_from_core_dlq.id
+  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_invoices_from_core_dlq.json
+}
