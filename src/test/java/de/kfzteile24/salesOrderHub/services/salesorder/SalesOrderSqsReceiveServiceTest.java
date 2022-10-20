@@ -8,6 +8,7 @@ import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.services.SalesOrderPaymentSecuredService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentOrderService;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
@@ -138,10 +139,11 @@ class SalesOrderSqsReceiveServiceTest {
     @SneakyThrows
     void testQueueListenerD365OrderPaymentSecuredReceived() {
         var message = getObjectByResource("d365OrderPaymentSecuredMessageWithTwoOrderNumbers.json",  OrderPaymentSecuredMessage.class);
+        var messageWrapper = MessageWrapper.builder().build();
 
         doNothing().when(salesOrderPaymentSecuredService).correlateOrderReceivedPaymentSecured(any());
 
-        salesOrderSqsReceiveService.queueListenerD365OrderPaymentSecured(message);
+        salesOrderSqsReceiveService.queueListenerD365OrderPaymentSecured(message, messageWrapper);
 
         verify(salesOrderPaymentSecuredService).correlateOrderReceivedPaymentSecured(
                 argThat(orderNumber -> StringUtils.equals(orderNumber, "4567787")),
@@ -154,12 +156,13 @@ class SalesOrderSqsReceiveServiceTest {
     @Test
     void testQueueListenerD365OrderPaymentSecuredDropshipmentOrderReceived() {
         var message = getObjectByResource("d365OrderPaymentSecuredMessageWithTwoOrderNumbers.json",  OrderPaymentSecuredMessage.class);
+        var messageWrapper = MessageWrapper.builder().build();
 
 
         when(dropshipmentOrderService.isDropShipmentOrder("4567787")).thenReturn(true);
         doNothing().when(salesOrderPaymentSecuredService).correlateOrderReceivedPaymentSecured(any());
 
-        salesOrderSqsReceiveService.queueListenerD365OrderPaymentSecured(message);
+        salesOrderSqsReceiveService.queueListenerD365OrderPaymentSecured(message, messageWrapper);
 
         verify(salesOrderPaymentSecuredService).correlateOrderReceivedPaymentSecured( "4567858");
 
@@ -170,11 +173,12 @@ class SalesOrderSqsReceiveServiceTest {
     @SneakyThrows
     void testQueueListenerD365OrderPaymentSecuredReceivedThrownException() {
         var message = getObjectByResource("d365OrderPaymentSecuredMessageWithTwoOrderNumbers.json",  OrderPaymentSecuredMessage.class);
+        var messageWrapper = MessageWrapper.builder().build();
 
         doThrow(RuntimeException.class).when(salesOrderPaymentSecuredService).correlateOrderReceivedPaymentSecured(
                 "4567787", "4567858");
 
-        assertThatThrownBy(() -> salesOrderSqsReceiveService.queueListenerD365OrderPaymentSecured(message))
+        assertThatThrownBy(() -> salesOrderSqsReceiveService.queueListenerD365OrderPaymentSecured(message, messageWrapper))
                 .isExactlyInstanceOf(RuntimeException.class);
 
     }

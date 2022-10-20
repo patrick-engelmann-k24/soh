@@ -216,6 +216,7 @@ class SalesOrderSqsReceiveServiceIntegrationTest extends AbstractIntegrationTest
         var orderMessage = getObjectByResource("ecpOrderMessage.json", Order.class);
         orderMessage.getOrderHeader().setOrderNumber("500000996");
         SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(orderMessage));
+        var messageWrapper = MessageWrapper.builder().build();
 
         ProcessInstance orderProcessInstance = camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
 
@@ -226,7 +227,7 @@ class SalesOrderSqsReceiveServiceIntegrationTest extends AbstractIntegrationTest
         assertTrue(isWaitingForPaymentSecured);
 
         var message = getObjectByResource("d365OrderPaymentSecuredMessageWithOneOrderNumber.json", OrderPaymentSecuredMessage.class);
-        salesOrderSqsReceiveService.queueListenerD365OrderPaymentSecured(message);
+        salesOrderSqsReceiveService.queueListenerD365OrderPaymentSecured(message, messageWrapper);
 
         isWaitingForPaymentSecured =
                 bpmUtil.isProcessWaitingAtExpectedToken(orderProcessInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName());

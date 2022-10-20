@@ -1447,3 +1447,45 @@ resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_invoices_from_core_d
   queue_url = aws_sqs_queue.soh_invoices_from_core_dlq.id
   policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_invoices_from_core_dlq.json
 }
+
+data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_d365_order_payment_secured_dlq" {
+  statement {
+    sid = "SNS-d365-order-payment-secured-dlq"
+    effect = "Allow"
+
+    actions = [
+      "sqs:SendMessage",
+    ]
+
+    principals {
+      identifiers = ["*"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.d365_order_payment_secured_dlq.arn
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sqs:*",
+    ]
+
+    principals {
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.d365_order_payment_secured_dlq.arn
+    ]
+  }
+}
+
+resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_d365_order_payment_secured_dlq" {
+  queue_url = aws_sqs_queue.d365_order_payment_secured_dlq.id
+  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_d365_order_payment_secured_dlq.json
+}
