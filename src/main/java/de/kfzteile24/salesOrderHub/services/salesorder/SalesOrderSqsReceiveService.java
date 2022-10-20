@@ -175,8 +175,6 @@ public class SalesOrderSqsReceiveService extends AbstractSqsReceiveService {
     @SqsListener(value = "${soh.sqs.queue.d365OrderPaymentSecured}", deletionPolicy = ON_SUCCESS)
     @Trace(metricName = "Handling d365OrderPaymentSecured message", dispatcher = true)
     public void queueListenerD365OrderPaymentSecured(OrderPaymentSecuredMessage message, MessageWrapper messageWrapper) {
-
-
         salesOrderPaymentSecuredService.handleD365OrderPaymentSecured(message, messageWrapper);
     }
 }
