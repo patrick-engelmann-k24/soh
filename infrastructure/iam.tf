@@ -72,7 +72,8 @@ data "aws_iam_policy_document" "sns_sqs_access_policy" {
       aws_sqs_queue.soh_parcel_shipped_dlq.arn,
       aws_sqs_queue.soh_invoices_from_core_dlq.arn,
       aws_sqs_queue.soh_core_sales_credit_note_created_dlq.arn,
-      aws_sqs_queue.soh_paypal_refund_instruction_successful_dlq.arn
+      aws_sqs_queue.soh_paypal_refund_instruction_successful_dlq.arn,
+      aws_sqs_queue.d365_order_payment_secured_dlq.arn
     ]
   }
   statement {
