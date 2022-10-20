@@ -83,8 +83,6 @@ class SalesOrderPaymentSecuredServiceTest {
 
     @Test
     void testCorrelateOrderReceivedPaymentSecuredThrownException() {
-        doReturn(null).when(camundaHelper).correlateMessageByBusinessKey(any(), any());
-
         assertThatThrownBy(() -> salesOrderPaymentSecuredService.correlateOrderReceivedPaymentSecured("4567787", "4567858"))
                 .isExactlyInstanceOf(CorrelateOrderException.class);
 

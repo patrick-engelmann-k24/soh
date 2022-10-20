@@ -10,7 +10,6 @@ import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentOrderService;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import lombok.SneakyThrows;
-import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -28,7 +27,6 @@ import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResourc
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.argThat;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
@@ -141,45 +139,10 @@ class SalesOrderSqsReceiveServiceTest {
         var message = getObjectByResource("d365OrderPaymentSecuredMessageWithTwoOrderNumbers.json",  OrderPaymentSecuredMessage.class);
         var messageWrapper = MessageWrapper.builder().build();
 
-        doNothing().when(salesOrderPaymentSecuredService).correlateOrderReceivedPaymentSecured(any());
-
         salesOrderSqsReceiveService.queueListenerD365OrderPaymentSecured(message, messageWrapper);
 
-        verify(salesOrderPaymentSecuredService).correlateOrderReceivedPaymentSecured(
-                argThat(orderNumber -> StringUtils.equals(orderNumber, "4567787")),
-                argThat(orderNumber -> StringUtils.equals(orderNumber, "4567858"))
-        );
+        verify(salesOrderPaymentSecuredService).handleD365OrderPaymentSecured(message, messageWrapper);
 
         verifyNoMoreInteractions(salesOrderPaymentSecuredService);
-    }
-
-    @Test
-    void testQueueListenerD365OrderPaymentSecuredDropshipmentOrderReceived() {
-        var message = getObjectByResource("d365OrderPaymentSecuredMessageWithTwoOrderNumbers.json",  OrderPaymentSecuredMessage.class);
-        var messageWrapper = MessageWrapper.builder().build();
-
-
-        when(dropshipmentOrderService.isDropShipmentOrder("4567787")).thenReturn(true);
-        doNothing().when(salesOrderPaymentSecuredService).correlateOrderReceivedPaymentSecured(any());
-
-        salesOrderSqsReceiveService.queueListenerD365OrderPaymentSecured(message, messageWrapper);
-
-        verify(salesOrderPaymentSecuredService).correlateOrderReceivedPaymentSecured( "4567858");
-
-        verifyNoMoreInteractions(salesOrderPaymentSecuredService);
-    }
-
-    @Test
-    @SneakyThrows
-    void testQueueListenerD365OrderPaymentSecuredReceivedThrownException() {
-        var message = getObjectByResource("d365OrderPaymentSecuredMessageWithTwoOrderNumbers.json",  OrderPaymentSecuredMessage.class);
-        var messageWrapper = MessageWrapper.builder().build();
-
-        doThrow(RuntimeException.class).when(salesOrderPaymentSecuredService).correlateOrderReceivedPaymentSecured(
-                "4567787", "4567858");
-
-        assertThatThrownBy(() -> salesOrderSqsReceiveService.queueListenerD365OrderPaymentSecured(message, messageWrapper))
-                .isExactlyInstanceOf(RuntimeException.class);
-
     }
 }
