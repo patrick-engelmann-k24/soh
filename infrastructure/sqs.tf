@@ -38,7 +38,7 @@ locals {
     migration_core_sales_order_created = "${var.environment}-${local.service_prefix}-migration-core-sales-order-created-${local.version}",
     migration_core_sales_order_created_dlq = "${var.environment}-${local.service_prefix}-migration-core-sales-order-created-${local.version}-dlq",
     migration_core_sales_invoice_created = "${var.environment}-${local.service_prefix}-migration-core-sales-invoice-created-${local.version}",
-    migration_core_sales_invoice_created_dlq = "${var.environment}-${local.service_prefix}-migration-core_sales-invoice-created-${local.version}-dlq",
+    migration_core_sales_invoice_created_dlq = "${var.environment}-${local.service_prefix}-migration-core-sales-invoice-created-${local.version}-dlq",
     migration_core_sales_credit_note_created = "${var.environment}-${local.service_prefix}-migration-core-sales-credit-note-created-${local.version}",
     migration_core_sales_credit_note_created_dlq = "${var.environment}-${local.service_prefix}-migration-core-sales-credit-note-created-${local.version}-dlq",
     parcel_shipped = "${var.environment}-${local.service_prefix}-parcel-shipped-${local.version}",

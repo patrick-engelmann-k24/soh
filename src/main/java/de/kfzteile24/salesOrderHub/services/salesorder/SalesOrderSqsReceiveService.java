@@ -1,7 +1,6 @@
 package de.kfzteile24.salesOrderHub.services.salesorder;
 
 import com.newrelic.api.agent.Trace;
-import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
@@ -12,8 +11,8 @@ import de.kfzteile24.salesOrderHub.services.SalesOrderPaymentSecuredService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderProcessService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderRowService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
-import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentOrderService;
 import de.kfzteile24.salesOrderHub.services.sqs.AbstractSqsReceiveService;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,7 +33,6 @@ public class SalesOrderSqsReceiveService extends AbstractSqsReceiveService {
     private final SalesOrderService salesOrderService;
     private final SalesOrderRowService salesOrderRowService;
     private final SalesOrderPaymentSecuredService salesOrderPaymentSecuredService;
-    private final DropshipmentOrderService dropshipmentOrderService;
     private final SalesOrderProcessService salesOrderCreateService;
 
     /**
@@ -176,15 +174,7 @@ public class SalesOrderSqsReceiveService extends AbstractSqsReceiveService {
      */
     @SqsListener(value = "${soh.sqs.queue.d365OrderPaymentSecured}", deletionPolicy = ON_SUCCESS)
     @Trace(metricName = "Handling d365OrderPaymentSecured message", dispatcher = true)
-    public void queueListenerD365OrderPaymentSecured(OrderPaymentSecuredMessage message) {
-
-
-        var orderNumbers = message.getData().getSalesOrderId().stream()
-                .filter(not(dropshipmentOrderService::isDropShipmentOrder))
-                .toArray(String[]::new);
-        log.info("Received d365 order payment secured message with order group id: {} and order numbers: {}",
-                message.getData().getOrderGroupId(), orderNumbers);
-
-        salesOrderPaymentSecuredService.correlateOrderReceivedPaymentSecured(orderNumbers);
+    public void queueListenerD365OrderPaymentSecured(OrderPaymentSecuredMessage message, MessageWrapper messageWrapper) {
+        salesOrderPaymentSecuredService.handleD365OrderPaymentSecured(message, messageWrapper);
     }
 }

@@ -3,13 +3,18 @@ package de.kfzteile24.salesOrderHub.services;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.dto.sns.OrderPaymentSecuredMessage;
 import de.kfzteile24.salesOrderHub.exception.CorrelateOrderException;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
+import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentOrderService;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
+import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
 import org.camunda.bpm.engine.impl.runtime.CorrelationHandlerResult;
 import org.camunda.bpm.engine.impl.runtime.MessageCorrelationResultImpl;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -24,11 +29,14 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerTy
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.PAYPAL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
+import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -42,21 +50,24 @@ class SalesOrderPaymentSecuredServiceTest {
 
     @Mock
     private CamundaHelper camundaHelper;
+    @Mock
+    private DropshipmentOrderService dropshipmentOrderService;
 
     @InjectMocks
     private SalesOrderPaymentSecuredService salesOrderPaymentSecuredService;
 
-    @Test
-    void testCorrelateOrderReceivedPaymentSecured() {
-
+    @BeforeEach
+    public void setup() {
         var executionEntity = new ExecutionEntity();
         executionEntity.setId(ANY_PROCESS_ID);
         executionEntity.setProcessInstanceId(ANY_PROCESS_INSTANCE_ID);
         var messageCorrelationResult =
                 new MessageCorrelationResultImpl(CorrelationHandlerResult.matchedExecution(executionEntity));
-
         when(camundaHelper.correlateMessageByBusinessKey(any(), anyString())).thenReturn(messageCorrelationResult);
+    }
 
+    @Test
+    void testCorrelateOrderReceivedPaymentSecured() {
         salesOrderPaymentSecuredService.correlateOrderReceivedPaymentSecured("4567787", "4567858");
 
         verify(camundaHelper, times(1)).correlateMessageByBusinessKey(
@@ -72,15 +83,7 @@ class SalesOrderPaymentSecuredServiceTest {
 
     @Test
     void testCorrelateOrderReceivedPaymentSecuredThrownException() {
-
-        var executionEntity = new ExecutionEntity();
-        executionEntity.setId(ANY_PROCESS_ID);
-        executionEntity.setProcessInstanceId(ANY_PROCESS_INSTANCE_ID);
-        var messageCorrelationResult =
-                new MessageCorrelationResultImpl(CorrelationHandlerResult.matchedExecution(executionEntity));
-
-        when(camundaHelper.correlateMessageByBusinessKey(Messages.ORDER_RECEIVED_PAYMENT_SECURED, "4567858"))
-                .thenReturn(messageCorrelationResult);
+        doReturn(null).when(camundaHelper).correlateMessageByBusinessKey(any(), any());
 
         assertThatThrownBy(() -> salesOrderPaymentSecuredService.correlateOrderReceivedPaymentSecured("4567787", "4567858"))
                 .isExactlyInstanceOf(CorrelateOrderException.class);
@@ -123,5 +126,48 @@ class SalesOrderPaymentSecuredServiceTest {
         assertThat(hasOrderPaypalPaymentType).isFalse();
 
         verify(camundaHelper, times(1)).getPaymentType(order.getOrderHeader().getPayments());
+    }
+
+    @Test
+    @SneakyThrows
+    void testQueueListenerD365OrderPaymentSecuredReceived() {
+        var message = getObjectByResource("d365OrderPaymentSecuredMessageWithTwoOrderNumbers.json",  OrderPaymentSecuredMessage.class);
+        var messageWrapper = MessageWrapper.builder().build();
+
+        salesOrderPaymentSecuredService.handleD365OrderPaymentSecured(message, messageWrapper);
+
+        verify(camundaHelper, times(2)).correlateMessageByBusinessKey(eq(Messages.ORDER_RECEIVED_PAYMENT_SECURED),
+                argThat(orderNumber ->
+                        StringUtils.equals(orderNumber, "4567787") ||
+                                StringUtils.equals(orderNumber, "4567858"))
+        );
+    }
+
+    @Test
+    void testQueueListenerD365OrderPaymentSecuredDropshipmentOrderReceived() {
+        var message = getObjectByResource("d365OrderPaymentSecuredMessageWithTwoOrderNumbers.json",  OrderPaymentSecuredMessage.class);
+        var messageWrapper = MessageWrapper.builder().build();
+
+
+        when(dropshipmentOrderService.isDropShipmentOrder("4567787")).thenReturn(true);
+
+        salesOrderPaymentSecuredService.handleD365OrderPaymentSecured(message, messageWrapper);
+
+        verify(camundaHelper, times(1)).correlateMessageByBusinessKey(eq(Messages.ORDER_RECEIVED_PAYMENT_SECURED),
+                argThat(orderNumber -> StringUtils.equals(orderNumber, "4567858"))
+        );
+    }
+
+    @Test
+    @SneakyThrows
+    void testQueueListenerD365OrderPaymentSecuredReceivedThrownException() {
+        var message = getObjectByResource("d365OrderPaymentSecuredMessageWithTwoOrderNumbers.json",  OrderPaymentSecuredMessage.class);
+        var messageWrapper = MessageWrapper.builder().build();
+
+        doReturn(null).when(camundaHelper).correlateMessageByBusinessKey(any(), any());
+
+        assertThatThrownBy(() -> salesOrderPaymentSecuredService.handleD365OrderPaymentSecured(message, messageWrapper))
+                .isExactlyInstanceOf(CorrelateOrderException.class);
+
     }
 }
