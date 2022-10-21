@@ -272,8 +272,7 @@ class DropshipmentSqsReceiveServiceIntegrationTest extends AbstractIntegrationTe
         message.setSalesOrderNumber(salesOrder.getOrderNumber());
         assertThatThrownBy(() -> dropshipmentSqsReceiveService.queueListenerDropshipmentPurchaseOrderReturnConfirmed(message))
                 .isExactlyInstanceOf(IllegalStateException.class)
-                .hasMessageContaining(MessageFormat.format("Dropshipment Order Return Confirmed process is in the " +
-                        "stopped state. Message with Order number {0} is moved to DLQ", salesOrder.getOrderNumber()));
+                .hasMessageContaining(MessageFormat.format("Dropshipment Order Return Confirmed process is inactive. Message with Order number {0} is moved to DLQ", salesOrder.getOrderNumber()));
 
         dropshipmentOrderService.setPreventDropshipmentOrderReturnConfirmed(false);
         dropshipmentSqsReceiveService.queueListenerDropshipmentPurchaseOrderReturnConfirmed(message);
