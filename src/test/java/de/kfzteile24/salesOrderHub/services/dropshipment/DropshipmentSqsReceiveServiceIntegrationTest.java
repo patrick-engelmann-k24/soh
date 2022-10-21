@@ -4,6 +4,7 @@ import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
@@ -14,6 +15,7 @@ import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceNumberCoun
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.binary.StringUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.jetbrains.annotations.NotNull;
@@ -24,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.text.MessageFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -45,8 +48,11 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Shipme
 import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createOrderRow;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrderFromOrder;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.verify;
 
 @Slf4j
 class DropshipmentSqsReceiveServiceIntegrationTest extends AbstractIntegrationTest {
@@ -252,6 +258,29 @@ class DropshipmentSqsReceiveServiceIntegrationTest extends AbstractIntegrationTe
 
         assertTrue(timedPollingService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
                 camundaHelper.hasPassed(salesOrder.getProcessId(), DROPSHIPMENT_ORDER_ROWS_CANCELLATION.getName())));
+    }
+
+    @Test
+    void testQueueListenerDropshipmentOrderReturnConfirmed() {
+
+        var orderMessage = getObjectByResource("ecpOrderMessageWithTwoRows.json", Order.class);
+        orderMessage.getOrderHeader().setOrderFulfillment(DELTICOM.getName());
+        SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(orderMessage));
+
+        var message = getObjectByResource("dropshipmentPurchaseOrderReturnConfirmed.json",
+                DropshipmentPurchaseOrderReturnConfirmedMessage.class);
+        message.setSalesOrderNumber(salesOrder.getOrderNumber());
+        assertThatThrownBy(() -> dropshipmentSqsReceiveService.queueListenerDropshipmentPurchaseOrderReturnConfirmed(message))
+                .isExactlyInstanceOf(IllegalStateException.class)
+                .hasMessageContaining(MessageFormat.format("Dropshipment Order Return Confirmed process is in the " +
+                        "stopped state. Message with Order number {0} is moved to DLQ", salesOrder.getOrderNumber()));
+
+        dropshipmentOrderService.setPreventDropshipmentOrderReturnConfirmed(false);
+        dropshipmentSqsReceiveService.queueListenerDropshipmentPurchaseOrderReturnConfirmed(message);
+
+        verify(dropshipmentOrderService).handleDropshipmentPurchaseOrderReturnConfirmed((
+                argThat(msg -> StringUtils.equals(msg.getSalesOrderNumber(), salesOrder.getOrderNumber()))
+        ));
     }
 
     @AfterEach
