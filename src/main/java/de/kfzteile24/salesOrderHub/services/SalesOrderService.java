@@ -54,7 +54,6 @@ import static de.kfzteile24.soh.order.dto.CustomerType.BUSINESS;
 import static java.text.MessageFormat.format;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.equalsIgnoreCase;
-import static java.util.stream.Collectors.toUnmodifiableList;
 
 @Service
 @Slf4j

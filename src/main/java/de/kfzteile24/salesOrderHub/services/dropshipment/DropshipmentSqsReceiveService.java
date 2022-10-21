@@ -2,6 +2,9 @@ package de.kfzteile24.salesOrderHub.services.dropshipment;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.newrelic.api.agent.Trace;
+import de.kfzteile24.salesOrderHub.constants.PersistentProperties;
+import de.kfzteile24.salesOrderHub.exception.NotFoundException;
+import de.kfzteile24.salesOrderHub.services.property.KeyValuePropertyService;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnConfirmedMessage;
@@ -21,6 +24,7 @@ import static org.springframework.cloud.aws.messaging.listener.SqsMessageDeletio
 public class DropshipmentSqsReceiveService extends AbstractSqsReceiveService {
 
     private final DropshipmentOrderService dropshipmentOrderService;
+    private final KeyValuePropertyService keyValuePropertyService;
 
     /**
      * Consume messages from sqs for dropshipment shipment confirmed published by P&R
@@ -55,10 +59,25 @@ public class DropshipmentSqsReceiveService extends AbstractSqsReceiveService {
     public void queueListenerDropshipmentPurchaseOrderReturnConfirmed(
             DropshipmentPurchaseOrderReturnConfirmedMessage message) {
 
-        log.info("Received dropshipment purchase order return confirmed message with Sales Order Number: {}, External" +
-                        " Order NUmber: {}",
-                message.getSalesOrderNumber(), message.getExternalOrderNumber());
-        dropshipmentOrderService.handleDropshipmentPurchaseOrderReturnConfirmed(message);
+        var preventDropshipmentOrderReturnConfirmed =
+                keyValuePropertyService.getPropertyByKey(PersistentProperties.PREVENT_DROPSHIPMENT_ORDER_RETURN_CONFIRMED)
+                .orElseThrow(() -> {
+                    throw new NotFoundException("Could not find persistent property with key " +
+                            "'preventDropshipmentOrderReturnConfirmed'");
+                });
+
+        var orderNumber = message.getSalesOrderNumber();
+        if (Boolean.TRUE.toString().equals(preventDropshipmentOrderReturnConfirmed.getValue())) {
+            log.error("Dropshipment Order Return Confirmed process is in the stopped state. " +
+                    "Message with Order number {} is moved to DLQ", orderNumber);
+            throw new IllegalStateException("Dropshipment Order Return Confirmed process is in the stopped state. " +
+                    "Message with Order number " + orderNumber + " is moved to DLQ.");
+        } else {
+            log.info("Received dropshipment purchase order return confirmed message with Sales Order Number: {}, External" +
+                            " Order NUmber: {}",
+                    orderNumber, message.getExternalOrderNumber());
+            dropshipmentOrderService.handleDropshipmentPurchaseOrderReturnConfirmed(message);
+        }
     }
 
     /**
