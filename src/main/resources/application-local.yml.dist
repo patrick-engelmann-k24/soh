@@ -82,6 +82,8 @@ soh:
     connection:
       timeout: 8
 
+infrastructureEnvironment: ${environment:dev}
+
 kfzteile:
   pricing-service:
     url: https://s8vlbhblll.execute-api.eu-central-1.amazonaws.com/stage

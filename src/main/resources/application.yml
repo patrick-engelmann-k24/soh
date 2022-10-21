@@ -154,6 +154,8 @@ logbook:
     headers:
     parameters:
 
+infrastructureEnvironment: ${environment:prod}
+
 kfzteile:
   product-data-hub:
     pdhUrl: https://pdh-dashboard-api.${environment:stage}.kfzteile24.io
@@ -188,7 +190,7 @@ kfzteile:
       value: true
       overwrite-on-startup: false
     - key: preventDropshipmentOrderReturnConfirmed
-      value: false
+      value: true
       overwrite-on-startup: false
   pricing-service:
     url: ${soh_bpmn_pricing_service_url}
