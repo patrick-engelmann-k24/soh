@@ -2,16 +2,15 @@ package de.kfzteile24.salesOrderHub.services.dropshipment;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.newrelic.api.agent.Trace;
-import de.kfzteile24.salesOrderHub.configuration.ServiceConfig;
 import de.kfzteile24.salesOrderHub.constants.PersistentProperties;
-import de.kfzteile24.salesOrderHub.exception.NotFoundException;
-import de.kfzteile24.salesOrderHub.services.property.KeyValuePropertyService;
-import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnNotifiedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
+import de.kfzteile24.salesOrderHub.exception.NotFoundException;
+import de.kfzteile24.salesOrderHub.services.property.KeyValuePropertyService;
 import de.kfzteile24.salesOrderHub.services.sqs.AbstractSqsReceiveService;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.aws.messaging.listener.annotation.SqsListener;
@@ -26,7 +25,6 @@ public class DropshipmentSqsReceiveService extends AbstractSqsReceiveService {
 
     private final DropshipmentOrderService dropshipmentOrderService;
     private final KeyValuePropertyService keyValuePropertyService;
-    private final ServiceConfig serviceConfig;
 
     /**
      * Consume messages from sqs for dropshipment shipment confirmed published by P&R
@@ -70,8 +68,7 @@ public class DropshipmentSqsReceiveService extends AbstractSqsReceiveService {
 
         var orderNumber = message.getSalesOrderNumber();
 
-        if (!dropshipmentOrderService.isAllowedEnv(serviceConfig.getEnvironment()) &&
-                Boolean.TRUE.equals(preventDropshipmentOrderReturnConfirmed.getTypedValue())) {
+        if (Boolean.TRUE.equals(preventDropshipmentOrderReturnConfirmed.getTypedValue())) {
             log.error("Dropshipment Order Return Confirmed process is in the prevented state. " +
                     "Message with Order number {} is moved to DLQ", orderNumber);
             throw new IllegalStateException("Dropshipment Order Return Confirmed process is in the stopped state. " +
