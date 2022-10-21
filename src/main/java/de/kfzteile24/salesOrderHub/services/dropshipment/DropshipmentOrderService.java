@@ -206,11 +206,14 @@ public class DropshipmentOrderService {
 
     public KeyValueProperty setPauseDropshipmentProcessing(Boolean newPauseDropshipmentProcessing) {
 
+        var currentKeyValueProperty = keyValuePropertyService.getPropertyByKey(PersistentProperties.PAUSE_DROPSHIPMENT_PROCESSING)
+                .orElseThrow(() -> new NotFoundException("Could not found persistent property. Key:  " + PersistentProperties.PAUSE_DROPSHIPMENT_PROCESSING));
+
         var savedPauseDropshipmentProcessingProperty =
                 setValueOfKeyValueProperty(PersistentProperties.PAUSE_DROPSHIPMENT_PROCESSING,
                         newPauseDropshipmentProcessing);
 
-        continueProcessingDropShipmentOrder(newPauseDropshipmentProcessing);
+        continueProcessingDropShipmentOrder(currentKeyValueProperty, newPauseDropshipmentProcessing);
 
         return savedPauseDropshipmentProcessingProperty;
     }
@@ -248,9 +251,7 @@ public class DropshipmentOrderService {
                 .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
     }
 
-    private void continueProcessingDropShipmentOrder(Boolean newPauseDropshipmentProcessing) {
-        var currentPauseDropshipmentProcessingProperty = keyValuePropertyService.getPropertyByKey(PersistentProperties.PAUSE_DROPSHIPMENT_PROCESSING)
-                .orElseThrow(() -> new NotFoundException("Could not found persistent property. Key:  " + PersistentProperties.PAUSE_DROPSHIPMENT_PROCESSING));
+    private void continueProcessingDropShipmentOrder(KeyValueProperty currentPauseDropshipmentProcessingProperty, Boolean newPauseDropshipmentProcessing) {
 
         var currentPauseDropshipmentProcessing = currentPauseDropshipmentProcessingProperty.getTypedValue();
 
