@@ -16,6 +16,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.aws.messaging.listener.annotation.SqsListener;
 import org.springframework.stereotype.Service;
 
+import java.text.MessageFormat;
+
 import static org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy.ON_SUCCESS;
 
 @Service
@@ -69,10 +71,11 @@ public class DropshipmentSqsReceiveService extends AbstractSqsReceiveService {
         var orderNumber = message.getSalesOrderNumber();
 
         if (Boolean.TRUE.equals(preventDropshipmentOrderReturnConfirmed.getTypedValue())) {
-            log.error("Dropshipment Order Return Confirmed process is inactive. " +
-                    "Message with Order number {} is moved to DLQ", orderNumber);
-            throw new IllegalStateException("Dropshipment Order Return Confirmed process is in the stopped state. " +
-                    "Message with Order number " + orderNumber + " is moved to DLQ.");
+            var errorMsg = MessageFormat.format(
+                    "Dropshipment Order Return Confirmed process is inactive. " +
+                    "Message with Order number {0} is moved to DLQ", orderNumber);
+            log.error(errorMsg);
+            throw new IllegalStateException(errorMsg);
         } else {
             log.info("Received dropshipment purchase order return confirmed message with Sales Order Number: {}, External" +
                             " Order NUmber: {}",
