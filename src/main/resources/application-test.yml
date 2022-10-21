@@ -102,7 +102,7 @@ camunda:
     history-level: FULL
     history-level-default: FULL
 
-infrastructureEnvironment: ${environment:prod}
+
 
 kfzteile:
   pricing-service:

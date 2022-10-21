@@ -154,7 +154,7 @@ logbook:
     headers:
     parameters:
 
-infrastructureEnvironment: ${environment:prod}
+
 
 kfzteile:
   product-data-hub:

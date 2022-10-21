@@ -275,14 +275,4 @@ public class DropshipmentOrderService {
     private void setDocumentRefNumber(SalesOrder salesOrder) {
         salesOrder.getLatestJson().getOrderHeader().setDocumentRefNumber(invoiceService.createInvoiceNumber());
     }
-
-    public boolean isAllowedEnv(String environment) {
-        switch (environment) {
-            case "stage":
-            case "dev":
-                return true;
-            default:
-                return false;
-        }
-    }
 }
