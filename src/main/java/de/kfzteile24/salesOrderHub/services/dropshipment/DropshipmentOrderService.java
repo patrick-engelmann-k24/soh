@@ -187,27 +187,37 @@ public class DropshipmentOrderService {
         return org.apache.commons.lang3.StringUtils.equalsIgnoreCase(orderFulfillment, DELTICOM.getName());
     }
 
+    private KeyValueProperty setValueOfKeyValueProperty(String key, Boolean newValue) {
+        var currentKeyValueProperty = keyValuePropertyService.getPropertyByKey(key)
+                .orElseThrow(() -> new NotFoundException("Could not found persistent property. Key:  " + key));
+
+        var currentKeyValueObject = currentKeyValueProperty.getTypedValue();
+
+        log.info("Current value of '{}' is '{}'", key, currentKeyValueObject);
+
+        currentKeyValueProperty.setValue(newValue.toString());
+
+        var savedKeyValueProperty = keyValuePropertyService.save(currentKeyValueProperty);
+
+        log.info("Set value of '{}' to '{}'", key, newValue);
+
+        return savedKeyValueProperty;
+    }
+
     public KeyValueProperty setPauseDropshipmentProcessing(Boolean newPauseDropshipmentProcessing) {
-        var currentPauseDropshipmentProcessingProperty = keyValuePropertyService.getPropertyByKey(PersistentProperties.PAUSE_DROPSHIPMENT_PROCESSING)
-                .orElseThrow(() -> new NotFoundException("Could not found persistent property. Key:  " + PersistentProperties.PAUSE_DROPSHIPMENT_PROCESSING));
 
-        var currentPauseDropshipmentProcessing = currentPauseDropshipmentProcessingProperty.getTypedValue();
+        var savedPauseDropshipmentProcessingProperty =
+                setValueOfKeyValueProperty(PersistentProperties.PAUSE_DROPSHIPMENT_PROCESSING,
+                        newPauseDropshipmentProcessing);
 
-        log.info("Current value of '{}' is '{}'", PersistentProperties.PAUSE_DROPSHIPMENT_PROCESSING,
-                currentPauseDropshipmentProcessing);
-
-        currentPauseDropshipmentProcessingProperty.setValue(newPauseDropshipmentProcessing.toString());
-
-        var savedPauseDropshipmentProcessingProperty = keyValuePropertyService.save(currentPauseDropshipmentProcessingProperty);
-
-        log.info("Set value of '{}' to '{}'", PersistentProperties.PAUSE_DROPSHIPMENT_PROCESSING, newPauseDropshipmentProcessing);
-
-        if (Boolean.TRUE.equals(currentPauseDropshipmentProcessing) && Boolean.FALSE.equals(newPauseDropshipmentProcessing)) {
-            continueProcessingDropShipmentOrder();
-            log.info("Sent signal to all the process instances waiting for dropshipment order continuation");
-        }
+        continueProcessingDropShipmentOrder(newPauseDropshipmentProcessing);
 
         return savedPauseDropshipmentProcessingProperty;
+    }
+
+    public KeyValueProperty setPreventDropshipmentOrderReturnConfirmed(Boolean newPreventDropshipmentOrderReturnConfirmed) {
+        return setValueOfKeyValueProperty(PersistentProperties.PREVENT_DROPSHIPMENT_ORDER_RETURN_CONFIRMED,
+                newPreventDropshipmentOrderReturnConfirmed);
     }
 
     public void handleDropshipmentPurchaseOrderReturnNotified(DropshipmentPurchaseOrderReturnNotifiedMessage message) {
@@ -238,8 +248,16 @@ public class DropshipmentOrderService {
                 .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
     }
 
-    private void continueProcessingDropShipmentOrder() {
-        helper.sendSignal(Signals.CONTINUE_PROCESSING_DROPSHIPMENT_ORDERS);
+    private void continueProcessingDropShipmentOrder(Boolean newPauseDropshipmentProcessing) {
+        var currentPauseDropshipmentProcessingProperty = keyValuePropertyService.getPropertyByKey(PersistentProperties.PAUSE_DROPSHIPMENT_PROCESSING)
+                .orElseThrow(() -> new NotFoundException("Could not found persistent property. Key:  " + PersistentProperties.PAUSE_DROPSHIPMENT_PROCESSING));
+
+        var currentPauseDropshipmentProcessing = currentPauseDropshipmentProcessingProperty.getTypedValue();
+
+        if (Boolean.TRUE.equals(currentPauseDropshipmentProcessing) && Boolean.FALSE.equals(newPauseDropshipmentProcessing)) {
+            helper.sendSignal(Signals.CONTINUE_PROCESSING_DROPSHIPMENT_ORDERS);
+            log.info("Sent signal to all the process instances waiting for dropshipment order continuation");
+        }
     }
 
     private void addParcelNumber(ShipmentItem item, OrderRows row) {

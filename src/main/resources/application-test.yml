@@ -123,6 +123,9 @@ kfzteile:
     - key: pauseDropshipmentProcessing
       value: false
       overwrite-on-startup: false
+    - key: preventDropshipmentOrderReturnConfirmed
+      value: false
+      overwrite-on-startup: false
 
 ignoreCoreSalesInvoice: false
 ignoreCoreCreditNote: false
