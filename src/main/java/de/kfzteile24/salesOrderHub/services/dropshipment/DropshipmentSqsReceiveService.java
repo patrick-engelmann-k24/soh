@@ -69,7 +69,7 @@ public class DropshipmentSqsReceiveService extends AbstractSqsReceiveService {
         var orderNumber = message.getSalesOrderNumber();
 
         if (Boolean.TRUE.equals(preventDropshipmentOrderReturnConfirmed.getTypedValue())) {
-            log.error("Dropshipment Order Return Confirmed process is in the prevented state. " +
+            log.error("Dropshipment Order Return Confirmed process is inactive. " +
                     "Message with Order number {} is moved to DLQ", orderNumber);
             throw new IllegalStateException("Dropshipment Order Return Confirmed process is in the stopped state. " +
                     "Message with Order number " + orderNumber + " is moved to DLQ.");
