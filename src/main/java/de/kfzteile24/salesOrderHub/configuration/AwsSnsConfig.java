@@ -62,4 +62,10 @@ public class AwsSnsConfig {
     @Value("${soh.sns.topic.dropshipmentOrderReturnNotifiedV1}")
     private String snsDropshipmentOrderReturnNotifiedV1;
 
+    @Value("${soh.sns.topic.payoutReceiptConfirmationReceivedV1}")
+    private String snsPayoutReceiptConfirmationReceivedV1;
+
+    @Value("${soh.sns.topic.invoicePdfGenerationTriggeredV1}")
+    private String snsInvoicePdfGenerationTriggeredV1;
+
 }

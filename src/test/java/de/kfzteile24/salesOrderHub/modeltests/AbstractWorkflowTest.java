@@ -29,7 +29,6 @@ import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Payments;
 import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.extension.process_test_coverage.spring_test.ProcessEngineCoverageConfiguration;
@@ -46,6 +45,7 @@ import org.camunda.bpm.spring.boot.starter.CamundaBpmConfiguration;
 import org.camunda.bpm.spring.boot.starter.SpringBootProcessApplication;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -107,8 +107,9 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Paymen
         CheckPlatformTypeDelegate.class
 
 })
-@Slf4j
 public abstract class AbstractWorkflowTest implements ApplicationContextAware {
+
+    private static final Logger LOGGER = org.slf4j.LoggerFactory.getLogger(AbstractWorkflowTest.class);
 
     public static final SignalIntermediateCatchEventAction WAIT_SIGNAL_CATCH_EVENT_ACTION = action -> {};
     public static final MessageIntermediateCatchEventAction WAIT_MESSAGE_CATCH_EVENT_ACTION = action -> {};
@@ -148,7 +149,7 @@ public abstract class AbstractWorkflowTest implements ApplicationContextAware {
     public void setApplicationContext(ApplicationContext newApplicationContext) {
         if (Objects.isNull(applicationContext)) {
             applicationContext = newApplicationContext;
-            log.info(" ========== Application context created ==========");
+            LOGGER.info(" ========== Application context created ==========");
         }
     }
 
@@ -160,9 +161,9 @@ public abstract class AbstractWorkflowTest implements ApplicationContextAware {
     protected void setUp() {
         if (Objects.isNull(processEngine)) {
             processEngine = applicationContext.getBean(ProcessEngine.class);
-            log.info(" ========== Default process engine created ==========");
+            LOGGER.info(" ========== Default process engine created ==========");
         }
-        log.info("Process engine name: {}. Object id: {}", processEngine.getName(), processEngine);
+        LOGGER.info("Process engine name: {}. Object id: {}", processEngine.getName(), processEngine);
     }
 
     protected Scenario scenario;

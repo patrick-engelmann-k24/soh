@@ -14,7 +14,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <spring-cloud-version>2.2.6.RELEASE</spring-cloud-version>
     <json-schema-java-bundle.version>1.0.167</json-schema-java-bundle.version>
-    <soh-order-json.version>1.0.40</soh-order-json.version>
+    <soh-order-json.version>1.0.41</soh-order-json.version>
     <surefire-version>3.0.0-M7</surefire-version>
     <newrelic.version>7.9.0</newrelic.version>
     <mapstruct.version>1.5.2.Final</mapstruct.version>
@@ -27,7 +27,7 @@
     <camunda-bpm-migration.version>1.0</camunda-bpm-migration.version>
     <spring-cloud-starter-sleuth.version>3.1.4</spring-cloud-starter-sleuth.version>
     <camunda-bpm-reactor-spring-starter.version>2.1.2</camunda-bpm-reactor-spring-starter.version>
-    <jackson-bean-validation.version>0.6.0</jackson-bean-validation.version>
+    <awaitility.version>4.2.0</awaitility.version>
     <logbook.version>2.14.0</logbook.version>
   </properties>
 
@@ -144,11 +144,6 @@
       <version>${camunda-bpm-reactor-spring-starter.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.unbroken-dome.jackson-bean-validation</groupId>
-      <artifactId>jackson-bean-validation</artifactId>
-      <version>${jackson-bean-validation.version}</version>
-    </dependency>
-    <dependency>
       <groupId>org.zalando</groupId>
       <artifactId>logbook-spring-boot-starter</artifactId>
       <version>${logbook.version}</version>
@@ -219,6 +214,12 @@
       <groupId>org.camunda.bpm.extension</groupId>
       <artifactId>camunda-bpm-process-test-coverage-spring-test</artifactId>
       <version>1.0.3</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <version>${awaitility.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

@@ -15,9 +15,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.services.splitter.decorator.OrderSplitService.ORDER_FULFILLMENT_K24;
+import static java.util.stream.Collectors.toList;
 
 @Service
 @Slf4j
@@ -41,15 +41,15 @@ public class SplitterService {
      * @return list of split SalesOrders
      */
     public List<SalesOrderSplit> splitSalesOrder(final Order originOrder, final Order originOrderCopy) {
-        updateOriginalOrder(originOrder);
+        originOrder.getOrderHeader().setOrderFulfillment(ORDER_FULFILLMENT_K24);
         final var orderSplitList = new ArrayList<OrderSplit>();
         orderSplitList.add(OrderSplit.regularOrder(originOrder));
-        if (featureFlagConfig.getIgnoreSalesOrderSplitter()) {
+        if (Boolean.TRUE.equals(featureFlagConfig.getIgnoreSalesOrderSplitter())) {
             log.info("Sales Order Splitter is ignored");
         } else {
 
             // add further splitters here (all operations happening on the list object)
-            if (!featureFlagConfig.getIgnoreSetDissolvement()
+            if (Boolean.TRUE.equals(!featureFlagConfig.getIgnoreSetDissolvement())
                     && originOrder.getOrderHeader().getPlatform() != Platform.CORE) {
                 itemSplitService.processOrder(originOrder);
             }
@@ -59,7 +59,7 @@ public class SplitterService {
             }
 
             if (orderSplitList.size() > 1) {
-                var orderList = orderSplitList.stream().map(os -> os.getOrder()).collect(Collectors.toList());
+                var orderList = orderSplitList.stream().map(OrderSplit::getOrder).collect(toList());
                 //recalculate totals only if we added splitted order, which means we also changed original order
                 splitOrderRecalculationService.processOrderList(orderList);
             }
@@ -94,10 +94,5 @@ public class SplitterService {
                 .latestJson(/*splitted order goes here */ splitOrder)
                 .build(),
                 orderSplit.isSplitted());
-    }
-
-    private Order updateOriginalOrder(Order originalOrder) {
-        originalOrder.getOrderHeader().setOrderFulfillment(ORDER_FULFILLMENT_K24);
-        return originalOrder;
     }
 }

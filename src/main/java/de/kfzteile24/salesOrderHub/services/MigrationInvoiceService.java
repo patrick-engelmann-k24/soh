@@ -5,23 +5,19 @@ import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.EventMapper;
-import de.kfzteile24.salesOrderHub.helper.MessageErrorHandler;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.FinancialDocumentsSqsReceiveService;
-import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapperUtil;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static java.text.MessageFormat.format;
 
 @Service
 @Slf4j
@@ -39,15 +35,12 @@ public class MigrationInvoiceService {
 
     private final FinancialDocumentsSqsReceiveService financialDocumentsSqsReceiveService;
 
-    private final MessageErrorHandler messageErrorHandler;
-
-    private final MessageWrapperUtil messageWrapperUtil;
-
     @Transactional
     public void handleMigrationSubsequentOrder(CoreSalesInvoiceCreatedMessage salesInvoiceCreatedMessage,
                                                SalesOrder salesOrder) {
-        var orderNumber = salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader().getOrderNumber();
-        var invoiceNumber = salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber();
+        var coreSalesInvoiceHeader = salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
+        var orderNumber = coreSalesInvoiceHeader.getOrderNumber();
+        var invoiceNumber = coreSalesInvoiceHeader.getInvoiceNumber();
         var newOrderNumber = orderUtil.createOrderNumberInSOH(orderNumber, invoiceNumber);
 
         if (!salesOrder.getOrderNumber().equals(orderNumber)) {
@@ -93,38 +86,24 @@ public class MigrationInvoiceService {
     }
 
     @Transactional
-    public void handleMigrationCoreSalesInvoiceCreated(
-            String rawMessage,
-            @Header("SenderId") String senderId,
-            @Header("ApproximateReceiveCount") Integer receiveCount) {
+    public void handleMigrationCoreSalesInvoiceCreated(CoreSalesInvoiceCreatedMessage message, MessageWrapper messageWrapper) {
 
-        var messageWrapper =
-                messageWrapperUtil.create(rawMessage, CoreSalesInvoiceCreatedMessage.class);
-        var salesInvoiceCreatedMessage = messageWrapper.getMessage();
-        CoreSalesInvoiceHeader salesInvoiceHeader =
-                salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
+        CoreSalesInvoiceHeader salesInvoiceHeader = message.getSalesInvoice().getSalesInvoiceHeader();
         var orderNumber = salesInvoiceHeader.getOrderNumber();
         var invoiceNumber = salesInvoiceHeader.getInvoiceNumber();
         log.info("Received migration core sales invoice created message with order number: {} and invoice number:" +
                         " {}",
                 orderNumber, invoiceNumber);
+        var optionalSalesOrder = salesOrderService.getOrderByOrderGroupId(orderNumber).stream()
+                .filter(salesOrder -> invoiceNumber.equals(salesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber()))
+                .findFirst();
 
-        try {
-            var optionalSalesOrder = salesOrderService.getOrderByOrderGroupId(orderNumber).stream()
-                    .filter(salesOrder -> invoiceNumber.equals(salesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber()))
-                    .findFirst();
-
-            if (optionalSalesOrder.isPresent()) {
-                handleMigrationSubsequentOrder(salesInvoiceCreatedMessage,
-                        optionalSalesOrder.get());
-            } else {
-                log.info("Invoice with invoice number: {} is a new invoice. Call redirected to normal flow.",
-                        invoiceNumber);
-                financialDocumentsSqsReceiveService.queueListenerCoreSalesInvoiceCreated(rawMessage, senderId, receiveCount);
-            }
-        } catch (Exception e) {
-            messageErrorHandler.logErrorMessage(
-                    format("Migration core sales invoice created received message error:\r\nOrderNumber: {0} \r\nInvoiceNumber: {1}", orderNumber, invoiceNumber), e);
+        if (optionalSalesOrder.isPresent()) {
+            handleMigrationSubsequentOrder(message, optionalSalesOrder.get());
+        } else {
+            log.info("Invoice with invoice number: {} is a new invoice. Call redirected to normal flow.",
+                    invoiceNumber);
+            financialDocumentsSqsReceiveService.queueListenerCoreSalesInvoiceCreated(message, messageWrapper);
         }
     }
 }

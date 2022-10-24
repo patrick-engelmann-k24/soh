@@ -124,6 +124,21 @@ public class CamundaProcessingController implements IBaseController {
         return ResponseEntity.ok(keyValuePropertyMapper.toPersistentProperty(keyValueProperty));
     }
 
+    @Operation(summary = "Modify 'preventDropshipmentOrderReturnConfirmed' flag and continue to receive dropshipment order return confirmed messages",
+            parameters = {
+                @Parameter(in = ParameterIn.PATH, name = "preventDropshipmentOrderReturnConfirmed",
+                        description = "'preventDropshipmentOrderReturnConfirmed' property value", example = "true")
+    })
+    @ApiResponses(value = {
+            @ApiResponse(responseCode  = "200", description  = "Prevent Dropshipment Order Return Confirmed set successfully", content = {
+                    @Content(mediaType = "application/json", schema = @Schema(implementation = PersistentProperty.class))})
+    })
+    @PutMapping("/prevent/dropshipmentReturn/{preventDropshipmentOrderReturnConfirmed}")
+    public ResponseEntity<PersistentProperty> handleDropshipmentOrderReturnConfirmedState(@PathVariable Boolean preventDropshipmentOrderReturnConfirmed) {
+        var keyValueProperty = dropshipmentOrderService.setPreventDropshipmentOrderReturnConfirmed(preventDropshipmentOrderReturnConfirmed);
+        return ResponseEntity.ok(keyValuePropertyMapper.toPersistentProperty(keyValueProperty));
+    }
+
     @Operation(summary = "Release individual dropshipment order by order-number",
             parameters = {
                     @Parameter(in = ParameterIn.PATH, name = "orderNumber",

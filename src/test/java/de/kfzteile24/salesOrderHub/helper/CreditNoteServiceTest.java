@@ -10,6 +10,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Optional;
+
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
@@ -30,7 +32,7 @@ public class CreditNoteServiceTest {
 
     @Test
     @DisplayName("When Build Sales Credit Note Created Event Then Return Expected Result")
-    void whenBuildSalesCreditNoteCreatedEventThenReturnExpectedResult() throws Exception {
+    void whenBuildSalesCreditNoteCreatedEventThenReturnExpectedResult() {
         final var expectedOrderNumber = "123";
         final var expectedCreditNoteDocumentLink = "https://test.com";
 
@@ -38,7 +40,7 @@ public class CreditNoteServiceTest {
         SalesOrderReturn salesOrderReturn = getSalesOrderReturn(salesOrder, "1234567");
         salesOrderReturn.setOrderNumber(expectedOrderNumber);
 
-        when(salesOrderReturnService.getByOrderNumber(eq(expectedOrderNumber))).thenReturn(salesOrderReturn);
+        when(salesOrderReturnService.getByOrderNumber(eq(expectedOrderNumber))).thenReturn(Optional.of(salesOrderReturn));
 
         var salesCreditNoteCreatedEvent = creditNoteService.buildSalesCreditNoteCreatedEvent(expectedOrderNumber, expectedCreditNoteDocumentLink);
         assertThat(salesCreditNoteCreatedEvent.getCreditNoteDocumentLink()).isEqualTo(expectedCreditNoteDocumentLink);

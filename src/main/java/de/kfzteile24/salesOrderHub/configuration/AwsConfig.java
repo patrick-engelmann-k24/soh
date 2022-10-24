@@ -11,7 +11,7 @@ import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.AmazonSNSClientBuilder;
 import com.amazonaws.services.sqs.AmazonSQSAsync;
 import com.amazonaws.services.sqs.AmazonSQSAsyncClientBuilder;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.aws.messaging.config.QueueMessageHandlerFactory;
 import org.springframework.cloud.aws.messaging.config.SimpleMessageListenerContainerFactory;
@@ -22,8 +22,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.messaging.converter.MappingJackson2MessageConverter;
+import org.springframework.messaging.handler.invocation.HandlerMethodArgumentResolver;
 
-import java.util.Collections;
+import java.util.List;
 
 @Configuration
 @Import(SqsConfiguration.class)
@@ -116,13 +117,21 @@ public class AwsConfig {
     }
 
     @Bean
-    public QueueMessageHandlerFactory queueMessageHandlerFactory() {
-        QueueMessageHandlerFactory factory = new QueueMessageHandlerFactory();
-        MappingJackson2MessageConverter messageConverter = new MappingJackson2MessageConverter();
-        messageConverter.setStrictContentTypeMatch(false);
-        messageConverter.getObjectMapper().registerModule(new JavaTimeModule());
-        factory.setMessageConverters(Collections.singletonList(messageConverter));
-        return factory;
+    QueueMessageHandlerFactory queueMessageHandlerFactory(AmazonSQSAsync amazonSQSAsync,
+                                                          List<HandlerMethodArgumentResolver> handlerMethodArgumentResolvers) {
+        QueueMessageHandlerFactory queueHandlerFactory = new QueueMessageHandlerFactory();
+        queueHandlerFactory.setAmazonSqs(amazonSQSAsync);
+        queueHandlerFactory.setArgumentResolvers(handlerMethodArgumentResolvers);
+        return queueHandlerFactory;
+    }
+
+    @Bean
+    MappingJackson2MessageConverter mappingJackson2MessageConverter(ObjectMapper objectMapper) {
+        MappingJackson2MessageConverter mappingJackson2MessageConverter = new MappingJackson2MessageConverter();
+        mappingJackson2MessageConverter.setStrictContentTypeMatch(false);
+        mappingJackson2MessageConverter.setPrettyPrint(false);
+        mappingJackson2MessageConverter.setObjectMapper(objectMapper);
+        return mappingJackson2MessageConverter;
     }
 
     @Bean
@@ -131,6 +140,7 @@ public class AwsConfig {
         factory.setAmazonSqs(amazonSqs);
         factory.setMaxNumberOfMessages(maxNumberOfMessages);
         factory.setWaitTimeOut(waitTimeOut);
+
         return factory;
     }
 }

@@ -259,8 +259,8 @@ class SaveInvoiceDelegateIntegrationTest extends AbstractIntegrationTest {
 
     @AfterEach
     public void cleanup() {
-        salesOrderInvoiceRepository.deleteAll();
-        salesOrderRepository.deleteAll();
-        auditLogRepository.deleteAll();
+        pollingService.retry(() -> salesOrderInvoiceRepository.deleteAll());
+        pollingService.retry(() -> salesOrderRepository.deleteAll());
+        pollingService.retry(() -> auditLogRepository.deleteAll());
     }
 }

@@ -2,6 +2,8 @@ package de.kfzteile24.salesOrderHub.utils;
 
 import de.kfzteile24.salesOrderHub.configuration.DropShipmentConfig;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
+import de.kfzteile24.soh.order.dto.Order;
+import de.kfzteile24.soh.order.dto.OrderHeader;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.UnitValues;
 import org.junit.jupiter.api.Test;
@@ -13,12 +15,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.util.List;
 
+import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
+import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.K24;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
+import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createNewSalesOrderV3;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.readResource;
 import static de.kfzteile24.soh.order.dto.Platform.BRAINCRAFT;
 import static de.kfzteile24.soh.order.dto.Platform.CORE;
 import static de.kfzteile24.soh.order.dto.Platform.ECP;
@@ -40,7 +44,7 @@ class OrderUtilTest {
 
     @Test
     void testGetLastRowKey() {
-        final var salesOrder = getSalesOrder(readResource("examples/ecpOrderMessageWithTwoRows.json"));
+        final var salesOrder = getSalesOrder(getObjectByResource("ecpOrderMessageWithTwoRows.json", Order.class));
 
         final var lastRowKey = orderUtil.getLastRowKey(salesOrder);
 
@@ -49,7 +53,7 @@ class OrderUtilTest {
 
     @Test
     void testUpdateLastRowKey() {
-        final var salesOrder = getSalesOrder(readResource("examples/ecpOrderMessageWithTwoRows.json"));
+        final var salesOrder = getSalesOrder(getObjectByResource("ecpOrderMessageWithTwoRows.json", Order.class));
         var lastRowKey = 2;
 
         lastRowKey = orderUtil.updateLastRowKey(salesOrder, "2270-13012", lastRowKey);
@@ -144,5 +148,19 @@ class OrderUtilTest {
                 salesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostGross()
                 .subtract(salesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostNet()));
         assertThat(shippingCostLine.getTaxRate()).isEqualTo(salesOrder.getLatestJson().getOrderHeader().getTotals().getGrandTotalTaxes().get(0).getRate());
+    }
+
+    @Test
+    void testIsDropshipmentOrderFalse() {
+
+        Order order = Order.builder().orderHeader(OrderHeader.builder().orderFulfillment(K24.getName()).build()).build();
+        assertFalse(orderUtil.isDropshipmentOrder(order));
+    }
+
+    @Test
+    void testIsDropshipmentOrderTrue() {
+
+        Order order = Order.builder().orderHeader(OrderHeader.builder().orderFulfillment(DELTICOM.getName()).build()).build();
+        assertTrue(orderUtil.isDropshipmentOrder(order));
     }
 }

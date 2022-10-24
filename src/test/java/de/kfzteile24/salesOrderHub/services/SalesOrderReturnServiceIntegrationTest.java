@@ -1,12 +1,11 @@
 package de.kfzteile24.salesOrderHub.services;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
-import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
+import de.kfzteile24.salesOrderHub.exception.SalesOrderReturnNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.ReturnOrderHelper;
 import de.kfzteile24.salesOrderHub.repositories.CreditNoteNumberCounterRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
@@ -22,18 +21,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.RETURN_ORDER_CREATED;
+import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrderFromOrder;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrderReturn;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.readResource;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class SalesOrderReturnServiceIntegrationTest extends AbstractIntegrationTest {
-
-    @Autowired
-    private ObjectMapper objectMapper;
+class SalesOrderReturnServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private SalesOrderRepository salesOrderRepository;
@@ -62,16 +57,12 @@ public class SalesOrderReturnServiceIntegrationTest extends AbstractIntegrationT
     void testCreateFirstCreditNoteNumberThenCreateSalesCreditNoteThenCreateSecondCreditNoteNumber() {
         String nextCreditNoteNumber = salesOrderReturnService.createCreditNoteNumber();
 
-        String orderRawMessage = readResource("examples/ecpOrderMessageWithTwoRows.json");
-        Order order = getOrder(orderRawMessage);
-        order.getOrderHeader().setOrderNumber(RandomStringUtils.randomNumeric(9));
-        SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(order));
+        var orderMessage = getObjectByResource("ecpOrderMessageWithTwoRows.json", Order.class);
+        orderMessage.getOrderHeader().setOrderNumber(RandomStringUtils.randomNumeric(9));
+        SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(orderMessage));
         SalesOrderReturn salesOrderReturn = getSalesOrderReturn(salesOrder, "123");
 
-        String rawMessage = readResource("examples/dropshipmentPurchaseOrderReturnConfirmed.json");
-        String body = objectMapper.readValue(rawMessage, SqsMessage.class).getBody();
-        DropshipmentPurchaseOrderReturnConfirmedMessage message =
-                objectMapper.readValue(body, DropshipmentPurchaseOrderReturnConfirmedMessage.class);
+        var message = getObjectByResource("dropshipmentPurchaseOrderReturnConfirmed.json", DropshipmentPurchaseOrderReturnConfirmedMessage.class);
         message.setSalesOrderNumber(salesOrder.getOrderNumber());
         SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage = returnOrderHelper.buildSalesCreditNoteCreatedMessage(
                 message, salesOrder, nextCreditNoteNumber);
@@ -79,7 +70,8 @@ public class SalesOrderReturnServiceIntegrationTest extends AbstractIntegrationT
 
         salesOrderReturnService.save(salesOrderReturn, RETURN_ORDER_CREATED);
 
-        SalesOrderReturn updatedOrder = salesOrderReturnService.getByOrderNumber(salesOrderReturn.getOrderNumber());
+        SalesOrderReturn updatedOrder = salesOrderReturnService.getByOrderNumber(salesOrderReturn.getOrderNumber())
+                .orElseThrow(() -> new SalesOrderReturnNotFoundException(salesOrderReturn.getOrderNumber()));
         assertNotNull(updatedOrder);
         assertEquals(nextCreditNoteNumber, updatedOrder.getSalesCreditNoteCreatedMessage().getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteNumber());
 

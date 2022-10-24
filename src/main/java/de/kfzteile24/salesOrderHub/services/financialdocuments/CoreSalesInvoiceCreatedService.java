@@ -1,6 +1,5 @@
 package de.kfzteile24.salesOrderHub.services.financialdocuments;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.FeatureFlagConfig;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
@@ -13,16 +12,13 @@ import de.kfzteile24.salesOrderHub.services.SalesOrderRowService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import de.kfzteile24.salesOrderHub.services.sqs.EnrichMessageForDlq;
-import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapperUtil;
-import de.kfzteile24.soh.order.dto.Order;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -30,9 +26,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import static de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig.OBJECT_MAPPER_WITH_BEAN_VALIDATION;
 import static de.kfzteile24.salesOrderHub.constants.CustomEventName.SUBSEQUENT_ORDER_GENERATED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_CREATED_IN_SOH;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toSet;
 
@@ -41,7 +35,6 @@ import static java.util.stream.Collectors.toSet;
 @RequiredArgsConstructor
 public class CoreSalesInvoiceCreatedService {
 
-    private ObjectMapper objectMapper;
     private final FeatureFlagConfig featureFlagConfig;
     private final OrderUtil orderUtil;
     private final CamundaHelper camundaHelper;
@@ -49,19 +42,15 @@ public class CoreSalesInvoiceCreatedService {
     private final SalesOrderRowService salesOrderRowService;
     private final MetricsHelper metricsHelper;
     private final SnsPublishService snsPublishService;
-    private final MessageWrapperUtil messageWrapperUtil;
 
     @SneakyThrows
     @EnrichMessageForDlq
-    public void handleCoreSalesInvoiceCreated(String rawMessage, Integer receiveCount, String queueName) {
+    public void handleCoreSalesInvoiceCreated(CoreSalesInvoiceCreatedMessage message, MessageWrapper messageWrapper) {
 
-        if (featureFlagConfig.getIgnoreCoreSalesInvoice()) {
+        if (Boolean.TRUE.equals(featureFlagConfig.getIgnoreCoreSalesInvoice())) {
             log.info("Core Sales Invoice is ignored");
         } else {
-            var messageWrapper =
-                    messageWrapperUtil.create(rawMessage, CoreSalesInvoiceCreatedMessage.class);
-            var salesInvoiceCreatedMessage = messageWrapper.getMessage();
-            CoreSalesInvoiceHeader salesInvoiceHeader = salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
+            CoreSalesInvoiceHeader salesInvoiceHeader = message.getSalesInvoice().getSalesInvoiceHeader();
             var itemList = salesInvoiceHeader.getInvoiceLines();
             var orderNumber = salesInvoiceHeader.getOrderNumber();
             var invoiceNumber = salesInvoiceHeader.getInvoiceNumber();
@@ -69,37 +58,26 @@ public class CoreSalesInvoiceCreatedService {
             log.info("Received core sales invoice created message with order number: {} and invoice number: {}", orderNumber, invoiceNumber);
 
             try {
-                // Fetch original sales order
                 var originalSalesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                         .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
 
                 boolean invoicePublished = isInvoicePublished(originalSalesOrder, invoiceNumber);
                 if (!invoicePublished && salesOrderService.isFullyMatchedWithOriginalOrder(originalSalesOrder, itemList)) {
-                    updateOriginalSalesOrder(salesInvoiceCreatedMessage, originalSalesOrder);
+                    updateOriginalSalesOrder(message, originalSalesOrder);
                     publishInvoiceEvent(originalSalesOrder);
                 } else {
                     if (salesOrderService.checkOrderNotExists(newOrderNumber)) {
                         SalesOrder subsequentOrder = salesOrderService.createSalesOrderForInvoice(
-                                salesInvoiceCreatedMessage,
+                                message,
                                 originalSalesOrder,
                                 newOrderNumber);
                         if (!invoicePublished) {
                             handleCancellationForOrderRows(originalSalesOrder, subsequentOrder.getLatestJson().getOrderRows());
                         }
-                        Order order = subsequentOrder.getLatestJson();
-                        if (orderUtil.checkIfOrderHasOrderRows(order)) {
-                            ProcessInstance result = camundaHelper.createOrderProcess(subsequentOrder, ORDER_CREATED_IN_SOH);
-                            if (result != null) {
-                                log.info("New soh order process started by core sales invoice created message with " +
-                                                "order number: {} and invoice number: {}. Process-Instance-ID: {} ",
-                                        orderNumber,
-                                        invoiceNumber,
-                                        result.getProcessInstanceId());
-                                metricsHelper.sendCustomEvent(subsequentOrder, SUBSEQUENT_ORDER_GENERATED);
-                            }
-                        } else {
-                            snsPublishService.publishOrderCreated(subsequentOrder.getOrderNumber());
+                        if (orderUtil.checkIfOrderHasOrderRows(subsequentOrder.getLatestJson())) {
+                            metricsHelper.sendCustomEvent(subsequentOrder, SUBSEQUENT_ORDER_GENERATED);
                         }
+                        snsPublishService.publishOrderCreated(subsequentOrder.getOrderNumber());
                         publishInvoiceEvent(subsequentOrder);
                     }
                 }
@@ -175,10 +153,5 @@ public class CoreSalesInvoiceCreatedService {
             }
 
         }
-    }
-
-    @Autowired
-    public void setObjectMapper(@Qualifier(OBJECT_MAPPER_WITH_BEAN_VALIDATION) ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
     }
 }

@@ -11,6 +11,7 @@ import de.kfzteile24.salesOrderHub.dto.events.DropshipmentOrderCreatedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.DropshipmentOrderReturnNotifiedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.OrderCancelledEvent;
 import de.kfzteile24.salesOrderHub.dto.events.OrderRowCancelledEvent;
+import de.kfzteile24.salesOrderHub.dto.events.PayoutReceiptConfirmationReceivedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.ReturnOrderCreatedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesCreditNoteCreatedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesCreditNoteReceivedEvent;
@@ -19,6 +20,7 @@ import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInfoEvent;
 import de.kfzteile24.salesOrderHub.dto.events.SalesOrderInvoiceCreatedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.dropshipment.DropshipmentOrderPackage;
 import de.kfzteile24.salesOrderHub.dto.events.dropshipment.DropshipmentOrderPackageItemLine;
+import de.kfzteile24.salesOrderHub.dto.events.shipmentconfirmed.SalesOrderInvoicePdfGenerationTriggeredEvent;
 import de.kfzteile24.salesOrderHub.dto.events.shipmentconfirmed.SalesOrderShipmentConfirmedEvent;
 import de.kfzteile24.salesOrderHub.dto.events.shipmentconfirmed.TrackingLink;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnNotifiedMessage;
@@ -32,7 +34,6 @@ import org.springframework.cloud.aws.messaging.core.NotificationMessagingTemplat
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -207,10 +208,28 @@ public class SnsPublishService {
     }
 
     public void publishMigrationReturnOrderCreatedEvent(String returnOrderNumber) {
-        Optional.ofNullable(salesOrderReturnService.getByOrderNumber(returnOrderNumber))
+        salesOrderReturnService.getByOrderNumber(returnOrderNumber)
                 .ifPresentOrElse(this::publishMigrationReturnOrderCreatedEvent, () -> {
                     throw new SalesOrderNotFoundException(returnOrderNumber);
                 });
+    }
+
+    public void publishPayoutReceiptConfirmationReceivedEvent(SalesOrderReturn salesOrderReturn) {
+        var payoutReceiptConfirmationReceivedEvent = PayoutReceiptConfirmationReceivedEvent.builder()
+                .order(salesOrderReturn.getReturnOrderJson())
+                .build();
+
+        publishEvent(config.getSnsPayoutReceiptConfirmationReceivedV1(), "Payout Receipt Confirmation Received V1",
+                payoutReceiptConfirmationReceivedEvent, salesOrderReturn.getOrderNumber());
+    }
+
+    public void publishInvoicePdfGenerationTriggeredEvent(Order order) {
+        var invoicePdfGenerationTriggeredEvent = SalesOrderInvoicePdfGenerationTriggeredEvent.builder()
+                .order(order)
+                .build();
+
+        publishEvent(config.getSnsInvoicePdfGenerationTriggeredV1(), "Invoice PDF Generation Triggered V1",
+                invoicePdfGenerationTriggeredEvent, order.getOrderHeader().getOrderNumber());
     }
 
     protected SalesOrder sendLatestOrderJson(String topic, String subject, String orderNumber) {

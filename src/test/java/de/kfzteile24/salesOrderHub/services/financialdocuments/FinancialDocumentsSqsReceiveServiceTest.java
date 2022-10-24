@@ -1,10 +1,9 @@
 package de.kfzteile24.salesOrderHub.services.financialdocuments;
 
-import de.kfzteile24.salesOrderHub.configuration.SQSNamesConfig;
-import de.kfzteile24.salesOrderHub.helper.FileUtil;
-import lombok.SneakyThrows;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.RandomUtils;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.PaypalRefundInstructionSuccessfulEvent;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
+import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -12,9 +11,7 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-
+import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
 import static org.mockito.Mockito.verify;
 
 /**
@@ -25,30 +22,47 @@ import static org.mockito.Mockito.verify;
 @SuppressWarnings("PMD.UnusedPrivateField")
 class FinancialDocumentsSqsReceiveServiceTest {
 
-    private static final String ANY_SENDER_ID = RandomStringUtils.randomAlphabetic(10);
-    private static final int ANY_RECEIVE_COUNT = RandomUtils.nextInt();
     @InjectMocks
     @Spy
     private FinancialDocumentsSqsReceiveService financialDocumentsSqsReceiveService;
     @Mock
     private CoreSalesCreditNoteCreatedService coreSalesCreditNoteCreatedService;
     @Mock
-    private SQSNamesConfig sqsNamesConfig;
+    private CoreSalesInvoiceCreatedService coreSalesInvoiceCreatedService;
+    @Mock
+    private PaypalRefundInstructionSuccessfulService paypalRefundInstructionSuccessfulService;
 
     @Test
     void testQueueListenerCoreSalesCreditNoteCreated() {
 
-        String invoiceMsg = readResource("examples/coreSalesCreditNoteCreated.json");
-        String sqsName = sqsNamesConfig.getCoreSalesCreditNoteCreated();
+        var message = getObjectByResource("coreSalesCreditNoteCreated.json", SalesCreditNoteCreatedMessage.class);
+        var messageWrapper = MessageWrapper.builder().build();
 
-        financialDocumentsSqsReceiveService.queueListenerCoreSalesCreditNoteCreated(invoiceMsg, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+        financialDocumentsSqsReceiveService.queueListenerCoreSalesCreditNoteCreated(message, messageWrapper);
 
-        verify(coreSalesCreditNoteCreatedService).handleCoreSalesCreditNoteCreated(invoiceMsg, ANY_RECEIVE_COUNT, sqsName);
-
+        verify(coreSalesCreditNoteCreatedService).handleCoreSalesCreditNoteCreated(message, messageWrapper);
     }
 
-    @SneakyThrows({URISyntaxException.class, IOException.class})
-    private String readResource(String path) {
-        return FileUtil.readResource(getClass(), path);
+    @Test
+    void testQueueListenerCoreSalesInvoiceCreated() {
+
+        var message = getObjectByResource("coreSalesInvoiceCreatedOneItem.json", CoreSalesInvoiceCreatedMessage.class);
+        var messageWrapper = MessageWrapper.builder().build();
+
+        financialDocumentsSqsReceiveService.queueListenerCoreSalesInvoiceCreated(message, messageWrapper);
+
+        verify(coreSalesInvoiceCreatedService).handleCoreSalesInvoiceCreated(message, messageWrapper);
+    }
+
+
+    @Test
+    void testQueueListenerPaypalRefundInstructionSuccessful() {
+
+        var message = getObjectByResource("paypalRefundInstructionSuccessful.json", PaypalRefundInstructionSuccessfulEvent.class);
+        var messageWrapper = MessageWrapper.builder().build();
+
+        financialDocumentsSqsReceiveService.queueListenerPaypalRefundInstructionSuccessful(message, messageWrapper);
+
+        verify(paypalRefundInstructionSuccessfulService).handlePaypalRefundInstructionSuccessful(message, messageWrapper);
     }
 }

@@ -7,7 +7,6 @@ import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.services.sqs.EnrichMessageForDlq;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
-import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapperUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,51 +29,39 @@ public class SalesOrderProcessService {
     private final SnsPublishService snsPublishService;
     private final OrderUtil orderUtil;
 
-    private final MessageWrapperUtil messageWrapperUtil;
-
     @EnrichMessageForDlq
-    public void handleShopOrdersReceived(String rawMessage, Integer receiveCount, String queueName, String senderId) {
-        var orderMessageWrapper = messageWrapperUtil.create(rawMessage, Order.class);
-        var order = orderMessageWrapper.getMessage();
+    public void handleShopOrdersReceived(Order order, MessageWrapper messageWrapper) {
 
         log.info("Received shop order message with order number: {}. Platform: {}. Receive count: {}. Sender ID: {}",
                 order.getOrderHeader().getOrderNumber(),
                 order.getOrderHeader().getPlatform(),
-                receiveCount,
-                senderId);
+                messageWrapper.getReceiveCount(),
+                messageWrapper.getSenderId());
 
-        var orderJson = orderMessageWrapper.getMessage();
-        salesOrderService.enrichInitialOrder(orderJson);
-        var orderCopy = messageWrapperUtil.createMessage(orderMessageWrapper.getRawMessage(), Order.class);
-        splitterService.splitSalesOrder(orderMessageWrapper.getMessage(), orderCopy)
-                .forEach(salesOrderSplit -> startSalesOrderProcess(salesOrderSplit, orderMessageWrapper));
+        salesOrderService.enrichInitialOrder(order);
+        var orderCopy = orderUtil.copyOrderJson(order);
+        splitterService.splitSalesOrder(order, orderCopy).forEach(this::startSalesOrderProcess);
     }
 
-    public void startSalesOrderProcess(SalesOrderSplit salesOrderSplit, MessageWrapper<Order> orderMessageWrapper) {
+    public void startSalesOrderProcess(SalesOrderSplit salesOrderSplit) {
         var salesOrder = salesOrderSplit.getOrder();
-        try {
-            if (salesOrderService.checkOrderNotExists(salesOrder.getOrderNumber())) {
-                SalesOrder createdSalesOrder = salesOrderService.createSalesOrder(salesOrder);
-                Order order = createdSalesOrder.getLatestJson();
-                if (orderUtil.checkIfOrderHasOrderRows(order)) {
-                    ProcessInstance result = camundaHelper.createOrderProcess(createdSalesOrder, ORDER_RECEIVED_ECP);
+        if (salesOrderService.checkOrderNotExists(salesOrder.getOrderNumber())) {
+            SalesOrder createdSalesOrder = salesOrderService.createSalesOrder(salesOrder);
+            Order order = createdSalesOrder.getLatestJson();
+            if (orderUtil.checkIfOrderHasOrderRows(order)) {
+                ProcessInstance result = camundaHelper.createOrderProcess(createdSalesOrder, ORDER_RECEIVED_ECP);
 
-                    if (result != null) {
-                        log.info("New ecp order process started for order number: {}. Process-Instance-ID: {} ",
-                                salesOrder.getOrderNumber(), result.getProcessInstanceId());
-                        metricsHelper.sendCustomEvent(salesOrder, SALES_ORDER_CONSUMED);
-                        if (salesOrderSplit.isSplitted()) {
-                            metricsHelper.sendCustomEvent(salesOrder, SPLIT_ORDER_GENERATED);
-                        }
+                if (result != null) {
+                    log.info("New ecp order process started for order number: {}. Process-Instance-ID: {} ",
+                            salesOrder.getOrderNumber(), result.getProcessInstanceId());
+                    metricsHelper.sendCustomEvent(salesOrder, SALES_ORDER_CONSUMED);
+                    if (salesOrderSplit.isSplitted()) {
+                        metricsHelper.sendCustomEvent(salesOrder, SPLIT_ORDER_GENERATED);
                     }
-                } else {
-                    snsPublishService.publishOrderCreated(createdSalesOrder.getOrderNumber());
                 }
+            } else {
+                snsPublishService.publishOrderCreated(createdSalesOrder.getOrderNumber());
             }
-        } catch (Exception e) {
-            log.error("New ecp order process is failed by message error:\r\nError-Message: {}, Message Body: {}",
-                    e.getMessage(), orderMessageWrapper.getSqsMessage().getBody());
-            throw e;
         }
     }
 }

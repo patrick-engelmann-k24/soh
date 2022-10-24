@@ -14,10 +14,15 @@ import org.springframework.http.MediaType;
 import java.util.List;
 import java.util.Optional;
 
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static de.kfzteile24.salesOrderHub.controller.dto.ActionType.RECREATE_ORDER_INVOICE;
 import static de.kfzteile24.salesOrderHub.controller.dto.ActionType.REPUBLISH_ORDER;
 import static de.kfzteile24.salesOrderHub.controller.dto.ActionType.REPUBLISH_ORDER_INVOICE;
 import static de.kfzteile24.salesOrderHub.controller.dto.ActionType.REPUBLISH_RETURN_ORDER;
+import static de.kfzteile24.salesOrderHub.controller.dto.ActionType.RETRIGGER_INVOICE_PDF_GENERATION;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createNewSalesOrderV3;
 import static java.util.Collections.emptyList;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -354,5 +359,28 @@ class OrderControllerMvcTest extends AbstractIntegrationTest {
                 .andExpect(header().exists("RequestID"));
 
         verify(snsPublishService).publishCoreInvoiceReceivedEvent(any());
+    }
+
+    @Test
+    void testRetriggerInvoicePdfGeneration() throws Exception {
+
+        final var salesOrder = createNewSalesOrderV3(true, REGULAR, CREDIT_CARD, NEW);
+        final var orderNumber = salesOrder.getOrderNumber();
+
+        var orderNumbers = List.of(orderNumber);
+        var requestBody = objectMapper.writeValueAsString(orderNumbers);
+
+        doNothing().when(snsPublishService).publishInvoicePdfGenerationTriggeredEvent(salesOrder.getLatestJson());
+        when(salesOrderService.getOrderByOrderNumber(eq(orderNumber))).thenReturn(Optional.of(salesOrder));
+
+        mvc.perform(post(API_V_1_ORDER_APPLY_ACTION)
+                        .param(QUERY_PARAM_ACTION_TYPE, RETRIGGER_INVOICE_PDF_GENERATION.name())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(header().exists("RequestID"));
+
+        verify(snsPublishService).publishInvoicePdfGenerationTriggeredEvent(salesOrder.getLatestJson());
     }
 }

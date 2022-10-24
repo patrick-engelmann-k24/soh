@@ -1,25 +1,18 @@
 package de.kfzteile24.salesOrderHub.services;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
-import de.kfzteile24.salesOrderHub.configuration.SQSNamesConfig;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
-import de.kfzteile24.salesOrderHub.dto.mapper.CreditNoteEventMapper;
+import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
-import de.kfzteile24.salesOrderHub.helper.MessageErrorHandler;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.InvoiceNumberCounterRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
-import de.kfzteile24.salesOrderHub.services.financialdocuments.CoreSalesCreditNoteCreatedService;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.FinancialDocumentsSqsReceiveService;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceNumberCounterService;
-import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapperUtil;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.RandomUtils;
-import org.camunda.bpm.engine.RuntimeService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -27,23 +20,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Paths;
-import java.util.Objects;
-
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createOrderNumberInSOH;
+import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createReturnOrderNumberInSOH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
+
 @Slf4j
 class MigrationCreditNoteServiceIntegrationTest extends AbstractIntegrationTest {
-
-    private static final String ANY_SENDER_ID = RandomStringUtils.randomAlphabetic(10);
-    private static final int ANY_RECEIVE_COUNT = RandomUtils.nextInt();
-
-    @Autowired
-    private SalesOrderService salesOrderService;
 
     @Autowired
     private SnsPublishService snsPublishService;
@@ -52,31 +36,10 @@ class MigrationCreditNoteServiceIntegrationTest extends AbstractIntegrationTest 
     private FinancialDocumentsSqsReceiveService financialDocumentsSqsReceiveService;
 
     @Autowired
-    private ObjectMapper objectMapper;
-
-    @Autowired
-    private MessageErrorHandler messageErrorHandler;
-
-    @Autowired
-    private SQSNamesConfig sqsNamesConfig;
-
-    @Autowired
-    private CreditNoteEventMapper creditNoteEventMapper;
-
-    @Autowired
-    private SalesOrderReturnService salesOrderReturnService;
-
-    @Autowired
-    private CoreSalesCreditNoteCreatedService coreSalesCreditNoteCreatedService;
-
-    @Autowired
     private SalesOrderUtil salesOrderUtil;
 
     @Autowired
     private MigrationCreditNoteService migrationCreditNoteService;
-
-    @Autowired
-    private MessageWrapperUtil messageWrapperUtil;
 
     @Autowired
     private TimedPollingService timedPollingService;
@@ -94,10 +57,9 @@ class MigrationCreditNoteServiceIntegrationTest extends AbstractIntegrationTest 
     private InvoiceNumberCounterService invoiceNumberCounterService;
 
     @Autowired
-    private RuntimeService runtimeService;
-
-    @Autowired
     private BpmUtil bpmUtil;
+
+    private final MessageWrapper messageWrapper = MessageWrapper.builder().build();
 
     @BeforeEach
     public void setup() {
@@ -118,12 +80,12 @@ class MigrationCreditNoteServiceIntegrationTest extends AbstractIntegrationTest 
         var orderNumber = salesOrder.getOrderNumber();
         var creditNumber = "876130";
 
-        var coreReturnDeliveryNotePrinted = readResource("examples/coreSalesCreditNoteCreated.json");
-        migrationCreditNoteService.handleMigrationCoreSalesCreditNoteCreated(coreReturnDeliveryNotePrinted, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+        var message = getObjectByResource("coreSalesCreditNoteCreated.json", SalesCreditNoteCreatedMessage.class);
+        migrationCreditNoteService.handleMigrationCoreSalesCreditNoteCreated(message, messageWrapper);
 
         verify(snsPublishService).publishReturnOrderCreatedEvent(argThat(
                 salesOrderReturn -> {
-                    assertThat(salesOrderReturn.getOrderNumber()).isEqualTo(createOrderNumberInSOH(orderNumber, creditNumber));
+                    assertThat(salesOrderReturn.getOrderNumber()).isEqualTo(createReturnOrderNumberInSOH(creditNumber));
                     assertThat(salesOrderReturn.getOrderGroupId()).isEqualTo(orderNumber);
                     return true;
                 }
@@ -140,26 +102,19 @@ class MigrationCreditNoteServiceIntegrationTest extends AbstractIntegrationTest 
         var orderNumber = salesOrder.getOrderNumber();
         var creditNumber = "876130";
 
-        var coreReturnDeliveryNotePrinted = readResource("examples/coreSalesCreditNoteCreated.json");
+        var message = getObjectByResource("coreSalesCreditNoteCreated.json", SalesCreditNoteCreatedMessage.class);
 
-        financialDocumentsSqsReceiveService.queueListenerCoreSalesCreditNoteCreated(coreReturnDeliveryNotePrinted, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+        financialDocumentsSqsReceiveService.queueListenerCoreSalesCreditNoteCreated(message, messageWrapper);
 
-        migrationCreditNoteService.handleMigrationCoreSalesCreditNoteCreated(coreReturnDeliveryNotePrinted, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+        migrationCreditNoteService.handleMigrationCoreSalesCreditNoteCreated(message, messageWrapper);
 
         verify(snsPublishService).publishMigrationReturnOrderCreatedEvent(argThat(
                 (SalesOrderReturn salesOrderReturn) -> {
-                    assertThat(salesOrderReturn.getOrderNumber()).isEqualTo(createOrderNumberInSOH(orderNumber, creditNumber));
+                    assertThat(salesOrderReturn.getOrderNumber()).isEqualTo(createReturnOrderNumberInSOH(creditNumber));
                     assertThat(salesOrderReturn.getOrderGroupId()).isEqualTo(orderNumber);
                     return true;
                 }
         ));
-    }
-
-    @SneakyThrows({URISyntaxException.class, IOException.class})
-    private String readResource(String path) {
-        return java.nio.file.Files.readString(Paths.get(
-                Objects.requireNonNull(getClass().getClassLoader().getResource(path))
-                        .toURI()));
     }
 
     @AfterEach

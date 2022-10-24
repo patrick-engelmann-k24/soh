@@ -21,7 +21,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.ORDER_NUMBER_SEPARATOR;
+import static de.kfzteile24.salesOrderHub.constants.SOHConstants.RETURN_ORDER_NUMBER_PREFIX;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.round;
 import static java.math.RoundingMode.HALF_UP;
 
@@ -63,8 +65,20 @@ public class OrderUtil {
         return lastRowKey;
     }
 
-    public String createOrderNumberInSOH(String orderNumber, String reference) {
-        return orderNumber + ORDER_NUMBER_SEPARATOR + reference;
+    public String createSubsequentOrderNumberInSOH(String orderNumber, String invoiceNumber) {
+        return createOrderNumberInSOH(orderNumber, invoiceNumber);
+    }
+
+    public String createOldFormatReturnOrderNumberInSOH(String orderNumber, String creditNoteNumber) {
+        return createOrderNumberInSOH(orderNumber, creditNoteNumber);
+    }
+
+    public String createOrderNumberInSOH(String orderNumber, String docReferenceNumber) {
+        return orderNumber + ORDER_NUMBER_SEPARATOR + docReferenceNumber;
+    }
+
+    public String createReturnOrderNumberInSOH(String creditNoteNumber) {
+        return RETURN_ORDER_NUMBER_PREFIX + ORDER_NUMBER_SEPARATOR + creditNoteNumber;
     }
 
     public OrderRows createNewOrderRow(OrderItem item, SalesOrder salesOrder, Integer lastRowKey) {
@@ -199,7 +213,7 @@ public class OrderUtil {
 
         if (order.getOrderRows() == null || order.getOrderRows().isEmpty()) {
             String orderNumber = order.getOrderHeader().getOrderNumber();
-            log.info("Sales order with order number {} has no order rows. Camunda process is not created!", orderNumber);
+            log.error("Sales order with order number {} has no order rows.", orderNumber);
             return false;
         } else {
             return true;
@@ -225,5 +239,11 @@ public class OrderUtil {
                         .subtract(Optional.ofNullable(salesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostNet()).orElse(BigDecimal.ZERO)))
                 .isShippingCost(true)
                 .build();
+    }
+
+    public boolean isDropshipmentOrder(Order order) {
+
+        String orderFulfillment = order.getOrderHeader().getOrderFulfillment();
+        return orderFulfillment != null && orderFulfillment.equalsIgnoreCase(DELTICOM.getName());
     }
 }

@@ -34,7 +34,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings("PMD.UnusedPrivateField")
 class CamundaHelperTest {
 
     @Mock

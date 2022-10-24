@@ -1,3 +1,7 @@
 {
-  "Message": "{\"order_number\":\"500000996\",\"delivery_note_number\":null,\"invoice_number\":null,\"order_item_sku\":\"0987654321\",\"created_at\":\"2022-03-08T21:33:57.478660\"}"
+  "order_number": "500000996",
+  "delivery_note_number": null,
+  "invoice_number": null,
+  "order_item_sku": "0987654321",
+  "created_at": "2022-03-08T21:33:57.478660"
 }

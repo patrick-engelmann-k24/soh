@@ -75,6 +75,8 @@ soh:
       migrationReturnOrderCreatedV1: ${sns_migration_soh_return_order_created_v1}
       dropshipmentOrderCreatedV1: ${sns_soh_dropshipment_order_created_v1}
       dropshipmentOrderReturnNotifiedV1: ${sns_soh_dropshipment_order_return_notified_v1}
+      payoutReceiptConfirmationReceivedV1: ${sns_soh_payout_receipt_confirmation_received_v1}
+      invoicePdfGenerationTriggeredV1: ${sns_soh_invoice_pdf_generation_triggered_v1}
   sqs:
     queue:
       ecpShopOrders: ${soh_sqs_ecp_shop_orders}
@@ -98,6 +100,7 @@ soh:
       migrationCoreSalesInvoiceCreated: ${soh_sqs_migration_core_sales_invoice_created}
       migrationCoreSalesCreditNoteCreated: ${soh_sqs_migration_core_sales_credit_note_created}
       parcelShipped: ${soh_sqs_parcel_shipped}
+      paypalRefundInstructionSuccessful: ${soh_sqs_paypal_refund_instruction_successful}
   aws:
     config:
       maxNumberOfMessages: 10
@@ -151,6 +154,8 @@ logbook:
     headers:
     parameters:
 
+
+
 kfzteile:
   product-data-hub:
     pdhUrl: https://pdh-dashboard-api.${environment:stage}.kfzteile24.io
@@ -181,8 +186,10 @@ kfzteile:
         - 10041
         - 10042
   persistent-properties:
-    -
-      key: pauseDropshipmentProcessing
+    - key: pauseDropshipmentProcessing
+      value: true
+      overwrite-on-startup: false
+    - key: preventDropshipmentOrderReturnConfirmed
       value: true
       overwrite-on-startup: false
   pricing-service:

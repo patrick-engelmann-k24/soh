@@ -40,8 +40,9 @@ import java.util.stream.Stream;
 
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.MIGRATION_SALES_ORDER_RECEIVED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
+import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.copyOrderJson;
+import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.readResource;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -49,12 +50,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings({"PMD.UnusedPrivateField", "PMD.UnusedPrivateMethod"})
 class SalesOrderServiceTest {
 
     @Mock
@@ -88,7 +87,7 @@ class SalesOrderServiceTest {
     @ParameterizedTest
     @MethodSource("provideParamsForRecurringOrderTest")
     void recurringOrdersAreIdentifiedCorrectly(long orderCount, boolean expectedResult) {
-        final var salesOrder = getSalesOrder(readResource("examples/ecpOrderMessage.json"));
+        final var salesOrder = getSalesOrder(getObjectByResource("ecpOrderMessage.json", Order.class));
 
         when(salesOrderRepository.countByCustomerEmail(salesOrder.getCustomerEmail())).thenReturn(orderCount);
 
@@ -98,8 +97,8 @@ class SalesOrderServiceTest {
 
     @Test
     void createSalesOrder() {
-        String rawMessage =  readResource("examples/ecpOrderMessage.json");
-        SalesOrder salesOrder = getSalesOrder(rawMessage);
+        var message = getObjectByResource("ecpOrderMessage.json", Order.class);
+        SalesOrder salesOrder = getSalesOrder(message);
         salesOrder.setRecurringOrder(false);
         final var existingInvoices = Set.of(
                 SalesOrderInvoice.builder()
@@ -126,9 +125,9 @@ class SalesOrderServiceTest {
         assertThat(createdSalesOrder.getOrderNumber()).isEqualTo(salesOrder.getOrderNumber());
         assertThat(createdSalesOrder.getOrderGroupId()).isEqualTo(salesOrder.getOrderGroupId());//The orderNumber should be used to fill the group Id with the same number, since it was missing in the Order JSON.
 
-        verify(invoiceService).getInvoicesByOrderNumber(eq(salesOrder.getOrderNumber()));
+        verify(invoiceService).getInvoicesByOrderNumber(salesOrder.getOrderNumber());
         existingInvoices
-                .forEach(invoice -> verify(invoiceService).addSalesOrderToInvoice(eq(salesOrder), eq(invoice)));
+                .forEach(invoice -> verify(invoiceService).addSalesOrderToInvoice(salesOrder, invoice));
 
         verify(auditLogRepository).save(any());
 
@@ -136,9 +135,9 @@ class SalesOrderServiceTest {
 
     @Test
     void savingAnOrderAlsoInsertsAnAuditLogEntry() {
-        var salesOrder = getSalesOrder(readResource("examples/ecpOrderMessage.json"));
+        var salesOrder = getSalesOrder(getObjectByResource("ecpOrderMessage.json", Order.class));
         salesOrder.setId(UUID.randomUUID());
-        when(salesOrderRepository.save(eq(salesOrder))).thenReturn(salesOrder);
+        when(salesOrderRepository.save(salesOrder)).thenReturn(salesOrder);
 
         salesOrderService.save(salesOrder, ORDER_CREATED);
 
@@ -161,8 +160,8 @@ class SalesOrderServiceTest {
     @Test
     void testCreateSubsequentSalesOrder() {
         // Prepare sales order
-        String rawMessage =  readResource("examples/testmessage.json");
-        var salesOrder = getSalesOrder(rawMessage);
+        var message = getObjectByResource("testmessage.json", Order.class);
+        var salesOrder = getSalesOrder(message);
         var originalOrderGroupId = salesOrder.getOrderGroupId();
         updateRowIsCancelledFieldAsTrue(salesOrder); //In order to observe change
         String newOrderNumber = "22222";
@@ -242,8 +241,8 @@ class SalesOrderServiceTest {
     @DisplayName("Test That Invoice is Fully Matched With Original Order for No Shipping Cost LInes")
     void testFullyMatchedWithOriginalOrderNoShippingCostLines() {
         // Prepare sales order
-        String rawMessage =  readResource("examples/testmessage.json");
-        var salesOrder = getSalesOrder(rawMessage);
+        var message =  getObjectByResource("testmessage.json", Order.class);
+        var salesOrder = getSalesOrder(message);
         assertEquals(2, salesOrder.getLatestJson().getOrderRows().size());
 
         // Prepare sub-sequent delivery note obj
@@ -258,8 +257,8 @@ class SalesOrderServiceTest {
     @DisplayName("Test That Invoice is Fully Matched With Original Order for Unknown Sku Shipping Cost LIne")
     void testFullyMatchedWithOriginalOrderUnknownSkuShippingCostLine() {
         // Prepare sales order
-        String rawMessage =  readResource("examples/testmessage.json");
-        var salesOrder = getSalesOrder(rawMessage);
+        var message =  getObjectByResource("testmessage.json", Order.class);
+        var salesOrder = getSalesOrder(message);
         assertEquals(2, salesOrder.getLatestJson().getOrderRows().size());
 
         // Prepare sub-sequent delivery note obj
@@ -275,8 +274,8 @@ class SalesOrderServiceTest {
     @DisplayName("Test That Invoice is Fully Matched With Original Order for Existing Sku Shipping Cost LIne")
     void testFullyMatchedWithOriginalOrderExistingSkuShippingCostLine() {
         // Prepare sales order
-        String rawMessage =  readResource("examples/testmessage.json");
-        var salesOrder = getSalesOrder(rawMessage);
+        var message =  getObjectByResource("testmessage.json", Order.class);
+        var salesOrder = getSalesOrder(message);
         assertEquals(2, salesOrder.getLatestJson().getOrderRows().size());
         OrderRows orderRow = salesOrder.getLatestJson().getOrderRows().get(0);
 
@@ -292,8 +291,8 @@ class SalesOrderServiceTest {
     @DisplayName("Test That Invoice is NOT Fully Matched With Original Order for NOT NULL And NULL ShippingCostNet")
     void testNotFullyMatchedWithOriginalOrderExistingSkuShippingCostLine() {
         // Prepare sales order
-        String rawMessage =  readResource("examples/testmessage.json");
-        var salesOrder = getSalesOrder(rawMessage);
+        var message =  getObjectByResource("testmessage.json", Order.class);
+        var salesOrder = getSalesOrder(message);
         assertEquals(2, salesOrder.getLatestJson().getOrderRows().size());
         OrderRows orderRow = salesOrder.getLatestJson().getOrderRows().get(0);
         salesOrder.getLatestJson().getOrderHeader().getTotals().setShippingCostNet(BigDecimal.valueOf(0.1));
@@ -310,8 +309,8 @@ class SalesOrderServiceTest {
     @DisplayName("Test That Invoice is Fully Matched With Original Order for NOT NULL Matching ShippingCostNet")
     void testFullyMatchedWithOriginalOrderNotNullShippingCostNet() {
         // Prepare sales order
-        String rawMessage =  readResource("examples/testmessage.json");
-        var salesOrder = getSalesOrder(rawMessage);
+        var message =  getObjectByResource("testmessage.json", Order.class);
+        var salesOrder = getSalesOrder(message);
         assertEquals(2, salesOrder.getLatestJson().getOrderRows().size());
         OrderRows orderRow = salesOrder.getLatestJson().getOrderRows().get(0);
         salesOrder.getLatestJson().getOrderHeader().getTotals().setShippingCostNet(BigDecimal.valueOf(0.1));
@@ -401,27 +400,27 @@ class SalesOrderServiceTest {
     @Test
     void testGetOrderNumberListByOrderGroupIdForMultipleSalesOrdersHavingRightSku(){
         var salesOrderList = new ArrayList<SalesOrder>();
-        String rawMessage =  readResource("examples/ecpOrderMessage.json");
+        var message = getObjectByResource("ecpOrderMessage.json", Order.class);
 
         // create multiple sales orders to be accepted and returned as result
-        var salesOrder = getSalesOrder(rawMessage);
+        var salesOrder = getSalesOrder(message);
         salesOrder.setOrderNumber("1111");
         salesOrder.setOrderGroupId("123");
         salesOrderList.add(salesOrder); // 1 order
-        var salesOrder2 = getSalesOrder(rawMessage);
+        var salesOrder2 = getSalesOrder(copyOrderJson(message));
         salesOrder2.setOrderNumber("2222");
         salesOrder2.setOrderGroupId("123");
         salesOrderList.add(salesOrder2); // 2 orders
 
         // create sales order to be rejected due to is cancelled field in row
-        var salesOrderToBeRejected = getSalesOrder(rawMessage);
+        var salesOrderToBeRejected = getSalesOrder(copyOrderJson(message));
         updateRowIsCancelledFieldAsTrue(salesOrderToBeRejected); //In order to observe change
         salesOrderToBeRejected.setOrderNumber("3333");
         salesOrderToBeRejected.setOrderGroupId("123");
         salesOrderList.add(salesOrderToBeRejected); // 3 orders
 
         // create sales order to be rejected due to different sku number
-        var salesOrderToBeRejected2 = getSalesOrder(rawMessage);
+        var salesOrderToBeRejected2 = getSalesOrder(copyOrderJson(message));
         updateRowIsCancelledFieldAsTrue(salesOrderToBeRejected2); //In order to observe change
         salesOrderToBeRejected2.setOrderNumber("4444");
         salesOrderToBeRejected2.setOrderGroupId("123");
@@ -434,19 +433,16 @@ class SalesOrderServiceTest {
                 "123",
                 salesOrder2.getLatestJson().getOrderRows().get(0).getSku());
 
-        assertThat(orderNumberList).contains("1111");
-        assertThat(orderNumberList).contains("2222");
-        assertThat(orderNumberList).doesNotContain("3333");
-        assertThat(orderNumberList).doesNotContain("4444");
+        assertThat(orderNumberList)
+                .containsExactlyInAnyOrder("1111", "2222")
+                .doesNotContain("3333", "4444");
     }
 
     @Test
     void testGetOrderNumberListByOrderGroupIdForNoneSalesOrderHavingRightSku(){
         var salesOrderList = new ArrayList<SalesOrder>();
-        String rawMessage =  readResource("examples/ecpOrderMessage.json");
-
-        // create sales order to be rejected due to different sku number
-        var salesOrder = getSalesOrder(rawMessage);
+        var message =  getObjectByResource("testmessage.json", Order.class);
+        var salesOrder = getSalesOrder(message);
         updateRowIsCancelledFieldAsTrue(salesOrder); //In order to observe change
         salesOrder.setOrderGroupId("123");
         salesOrder.getLatestJson().getOrderRows().get(0).setSku("98765432");
@@ -465,10 +461,8 @@ class SalesOrderServiceTest {
     @Test
     void testGetOrderNumberListByOrderGroupIdForNoneSalesOrderInGroupId(){
         var salesOrderList = new ArrayList<SalesOrder>();
-        String rawMessage =  readResource("examples/ecpOrderMessage.json");
-
-        // create sales order to be rejected due to different sku number
-        var salesOrder = getSalesOrder(rawMessage);
+        var message =  getObjectByResource("testmessage.json", Order.class);
+        var salesOrder = getSalesOrder(message);
         updateRowIsCancelledFieldAsTrue(salesOrder); //In order to observe change
         salesOrder.getLatestJson().getOrderRows().get(0).setSku("98765432");
         salesOrderList.add(salesOrder); // 4 orders
@@ -490,7 +484,7 @@ class SalesOrderServiceTest {
 
         // Prepare sales order
         var orderNumber = "872634242";
-        var originalSalesOrder = getSalesOrder(readResource("examples/testmessage.json"));
+        var originalSalesOrder = getSalesOrder(getObjectByResource("testmessage.json", Order.class));
         var originalProviderData = getPaypalPaymentProviderData(originalSalesOrder);
         updateOriginalSalesOrder(orderNumber, originalSalesOrder);
 
@@ -540,7 +534,7 @@ class SalesOrderServiceTest {
 
         // Prepare sales order
         var orderNumber = "872634243";
-        var originalSalesOrder = getSalesOrder(readResource("examples/testmessage.json"));
+        var originalSalesOrder = getSalesOrder(getObjectByResource("testmessage.json", Order.class));
         updateOriginalSalesOrder(orderNumber, originalSalesOrder);
 
         // Prepare new order json
@@ -559,8 +553,7 @@ class SalesOrderServiceTest {
                                  String shippingType,
                                  String[] expectedCustomerSegments,
                                  boolean isExistingCustomerSegmentsNull) {
-        String rawMessage =  readResource("examples/ecpOrderMessage.json");
-        var salesOrder = getSalesOrder(rawMessage);
+        var salesOrder = getSalesOrder(getObjectByResource("ecpOrderMessage.json", Order.class));
 
         var order = (Order) salesOrder.getOriginalOrder();
         order.getOrderHeader().getCustomer().setCustomerSegment(existingCustomerSegments);
@@ -615,8 +608,8 @@ class SalesOrderServiceTest {
 
     @NotNull
     private Order getOrderJson(String orderNumber, boolean addInvalidPaymentType) {
-        String rawMessage = readResource("examples/ecpOrderMessageWithTwoRows.json");
-        var orderJson = getSalesOrder(rawMessage).getLatestJson();
+        var message = getObjectByResource("ecpOrderMessageWithTwoRows.json", Order.class);
+        var orderJson = getSalesOrder(message).getLatestJson();
         orderJson.getOrderHeader().setOrderNumber(orderNumber);
         orderJson.getOrderHeader().setOrderGroupId(orderNumber);
 

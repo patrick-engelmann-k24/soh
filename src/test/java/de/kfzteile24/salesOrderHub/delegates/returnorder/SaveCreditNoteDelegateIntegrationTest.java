@@ -27,10 +27,9 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.D
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.INVOICE_URL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.RETURN_ORDER_CREATED;
+import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrderFromOrder;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getOrder;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrderReturn;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.readResource;
 import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -59,11 +58,10 @@ class SaveCreditNoteDelegateIntegrationTest extends AbstractIntegrationTest {
     void whenSaveCreditNoteProcessStartsThenItEndsSuccessfullyAndNoExceptionsAreThrown() {
         var expectedInvoiceUrl = "test";
         var orderNumber = UUID.randomUUID().toString();
-        String orderRawMessage = readResource("examples/ecpOrderMessageWithTwoRows.json");
-        Order order = getOrder(orderRawMessage);
-        order.getOrderHeader().setOrderNumber(orderNumber);
-        order.getOrderHeader().setOrderGroupId(orderNumber);
-        SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(order));
+        var message = getObjectByResource("ecpOrderMessageWithTwoRows.json", Order.class);
+        message.getOrderHeader().setOrderNumber(orderNumber);
+        message.getOrderHeader().setOrderGroupId(orderNumber);
+        SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(message));
         SalesOrderReturn salesOrderReturn = getSalesOrderReturn(salesOrder, "123");
         salesOrderReturnService.save(salesOrderReturn, RETURN_ORDER_CREATED);
 

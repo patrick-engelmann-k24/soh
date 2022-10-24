@@ -3,18 +3,23 @@ package de.kfzteile24.salesOrderHub;
 import com.amazonaws.services.sqs.AmazonSQSAsync;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.newrelic.api.agent.Insights;
+import de.kfzteile24.salesOrderHub.configuration.SQSNamesConfig;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.PublishDropshipmentOrderCreatedDelegate;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
-import de.kfzteile24.salesOrderHub.helper.MessageErrorHandler;
+import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.helper.SleuthHelper;
+import de.kfzteile24.salesOrderHub.services.SalesOrderProcessService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderRowService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentOrderService;
+import de.kfzteile24.salesOrderHub.services.general.GeneralSqsReceiveService;
 import de.kfzteile24.salesOrderHub.services.property.KeyValuePropertyService;
+import de.kfzteile24.salesOrderHub.services.salesorder.SalesOrderSqsReceiveService;
 import de.kfzteile24.salesOrderHub.services.splitter.decorator.ItemSplitService;
-import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapperUtil;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapperResolver;
+import de.kfzteile24.salesOrderHub.services.sqs.PayloadResolverDecorator;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -65,8 +70,6 @@ public abstract class AbstractIntegrationTest implements ApplicationContextAware
     @SpyBean
     protected SnsPublishService snsPublishService;
     @SpyBean
-    protected MessageWrapperUtil messageWrapperUtil;
-    @SpyBean
     protected KeyValuePropertyService keyValuePropertyService;
     @SpyBean
     protected DropshipmentOrderService dropshipmentOrderService;
@@ -81,9 +84,21 @@ public abstract class AbstractIntegrationTest implements ApplicationContextAware
     @SpyBean
     protected PublishDropshipmentOrderCreatedDelegate publishDropshipmentOrderCreatedDelegate;
     @SpyBean
-    protected MessageErrorHandler messageErrorHandler;
-    @SpyBean
     protected NotificationMessagingTemplate notificationMessagingTemplate;
+    @SpyBean
+    protected MessageWrapperResolver messageWrapperResolver;
+    @SpyBean
+    protected PayloadResolverDecorator payloadResolverDecorator;
+    @SpyBean
+    protected SQSNamesConfig sqsNamesConfig;
+    @SpyBean
+    protected SalesOrderProcessService salesOrderCreateService;
+    @SpyBean
+    protected SalesOrderSqsReceiveService salesOrderSqsReceiveService;
+    @SpyBean
+    protected OrderUtil orderUtil;
+    @SpyBean
+    protected GeneralSqsReceiveService generalSqsReceiveService;
 
     /**
      * The application context gets created only once for all the model tests

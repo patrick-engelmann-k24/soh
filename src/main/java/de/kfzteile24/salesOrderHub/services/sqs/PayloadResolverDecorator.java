@@ -1,6 +1,5 @@
 package de.kfzteile24.salesOrderHub.services.sqs;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
@@ -12,82 +11,92 @@ import de.kfzteile24.salesOrderHub.dto.sns.FulfillmentMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.OrderPaymentSecuredMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ParcelShippedMessage;
-import de.kfzteile24.salesOrderHub.dto.sqs.SqsMessage;
 import de.kfzteile24.salesOrderHub.helper.SleuthHelper;
 import de.kfzteile24.salesOrderHub.services.InvoiceUrlExtractor;
-import de.kfzteile24.salesOrderHub.services.sqs.exception.InvalidOrderJsonException;
 import de.kfzteile24.soh.order.dto.Order;
-import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
+import lombok.NonNull;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.MethodParameter;
+import org.springframework.core.env.Environment;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.converter.MessageConverter;
+import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.messaging.handler.annotation.support.PayloadMethodArgumentResolver;
+import org.springframework.validation.Validator;
+import org.springframework.validation.annotation.Validated;
 
-import javax.validation.ConstraintViolationException;
+import java.util.Arrays;
 
-import static de.kfzteile24.salesOrderHub.configuration.ObjectMapperConfig.OBJECT_MAPPER_WITH_BEAN_VALIDATION;
+import static de.kfzteile24.salesOrderHub.services.sqs.AbstractSqsReceiveService.logIncomingMessage;
 
-@Component
-@RequiredArgsConstructor
-@Slf4j
-public class MessageWrapperUtil {
+@Configuration
+public class PayloadResolverDecorator extends PayloadMethodArgumentResolver {
 
-    private final ObjectMapper objectMapperNoValidation;
     private final SleuthHelper sleuthHelper;
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
+    private final Environment environment;
 
-    @SneakyThrows(JsonProcessingException.class)
-    public <T> MessageWrapper<T> create(String rawMessage, Class<T> messageType) {
-        SqsMessage sqsMessage = objectMapper.readValue(rawMessage, SqsMessage.class);
-        return MessageWrapper.<T>builder()
-                .sqsMessage(sqsMessage)
-                .message(getMessage(messageType, sqsMessage))
-                .rawMessage(rawMessage)
-                .build();
-    }
-
-    public <T> T createMessage(String rawMessage, Class<T> messageType) {
-        return create(rawMessage, messageType).getMessage();
-    }
-
-    @Autowired
-    public void setObjectMapper(@Qualifier(OBJECT_MAPPER_WITH_BEAN_VALIDATION) ObjectMapper objectMapper) {
+    public PayloadResolverDecorator(SleuthHelper sleuthHelper,
+                                    MessageConverter messageConverter,
+                                    Validator validator,
+                                    ObjectMapper objectMapper,
+                                    Environment environment) {
+        super(messageConverter, validator);
+        this.sleuthHelper = sleuthHelper;
         this.objectMapper = objectMapper;
+        this.environment = environment;
     }
 
-    private <T> T getMessage(Class<T> messageType, SqsMessage sqsMessage) {
-        T json;
-        try {
-            if (messageType.equals(String.class)) {
-                json = (T) sqsMessage.getBody();
-            } else {
-                json = objectMapper.readValue(sqsMessage.getBody(), messageType);
-            }
-            updateTraceId(json);
-            return json;
-        } catch (ConstraintViolationException e1) {
-            updateTraceId(messageType, sqsMessage, e1.getMessage());
-            throw new InvalidOrderJsonException(e1.getMessage());
-        } catch (JsonProcessingException e2) {
-            updateTraceId(messageType, sqsMessage, e2.getCause().getMessage());
-            throw new InvalidOrderJsonException(e2);
+    /**
+     * If the payload parameter is not the first one, should be annotated by {@link Payload}
+     */
+    @Override
+    public boolean supportsParameter(MethodParameter parameter) {
+        return parameter.hasParameterAnnotation(Payload.class) || parameter.getParameterIndex() == 0;
+    }
+
+    @Override
+    public Object resolveArgument(@NonNull MethodParameter parameter, @NonNull Message<?> message) throws Exception {
+        String rawMessage;
+        if (isDefaultProfile()) {
+            var sqsMessage = objectMapper.readValue(message.getPayload().toString(), SqsMessage.class);
+            rawMessage = sqsMessage.getBody();
+        } else {
+            rawMessage = message.getPayload().toString();
         }
+        logIncomingMessage(message, rawMessage);
+        var parameterClass = parameter.getParameterType();
+
+        if (!parameterClass.isAssignableFrom(String.class)) {
+            Object payload = objectMapper.readValue(rawMessage, parameterClass);
+            validate(message, parameter, payload);
+            return payload;
+        }
+        return rawMessage;
     }
 
-    @SneakyThrows({ConstraintViolationException.class, JsonProcessingException.class})
-    private <T> void updateTraceId(Class<T> messageType, SqsMessage sqsMessage, String errormessage) {
-        T json = objectMapperNoValidation.readValue(sqsMessage.getBody(), messageType);
-        updateTraceId(json);
-        log.error(errormessage);
+    /**
+     * Payload to be validated, should be annotated by {@link Validated}
+     */
+    @Override
+    protected void validate(@NonNull Message<?> message, @NonNull MethodParameter parameter, @NonNull Object target) {
+        updateTraceId(target);
+        super.validate(message, parameter, target);
+    }
+
+    public boolean isDefaultProfile() {
+        return Arrays.stream(environment.getActiveProfiles())
+                .noneMatch(profile -> StringUtils.containsIgnoreCase(profile, "local") ||
+                        StringUtils.containsIgnoreCase(profile, "model") ||
+                        StringUtils.containsIgnoreCase(profile, "test"));
     }
 
     private <T> void updateTraceId(T json) {
         sleuthHelper.updateTraceId(resolveTraceId(json));
     }
 
-    private <T> String resolveTraceId(T json) {
+    private static <T> String resolveTraceId(T json) {
         if (json == null) {
             return StringUtils.EMPTY;
         }

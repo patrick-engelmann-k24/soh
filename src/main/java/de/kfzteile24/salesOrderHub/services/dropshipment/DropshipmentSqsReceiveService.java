@@ -1,28 +1,32 @@
 package de.kfzteile24.salesOrderHub.services.dropshipment;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.newrelic.api.agent.Trace;
+import de.kfzteile24.salesOrderHub.constants.PersistentProperties;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnNotifiedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
-import de.kfzteile24.salesOrderHub.helper.MessageErrorHandler;
-import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapperUtil;
+import de.kfzteile24.salesOrderHub.exception.NotFoundException;
+import de.kfzteile24.salesOrderHub.services.property.KeyValuePropertyService;
+import de.kfzteile24.salesOrderHub.services.sqs.AbstractSqsReceiveService;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.aws.messaging.listener.annotation.SqsListener;
-import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
+
+import java.text.MessageFormat;
 
 import static org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy.ON_SUCCESS;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class DropshipmentSqsReceiveService {
+public class DropshipmentSqsReceiveService extends AbstractSqsReceiveService {
 
     private final DropshipmentOrderService dropshipmentOrderService;
-    private final MessageWrapperUtil messageWrapperUtil;
-    private final MessageErrorHandler messageErrorHandler;
+    private final KeyValuePropertyService keyValuePropertyService;
 
     /**
      * Consume messages from sqs for dropshipment shipment confirmed published by P&R
@@ -30,20 +34,10 @@ public class DropshipmentSqsReceiveService {
     @SqsListener(value = "${soh.sqs.queue.dropshipmentShipmentConfirmed}", deletionPolicy = ON_SUCCESS)
     @Trace(metricName = "Handling dropshipment shipment confirmed message", dispatcher = true)
     public void queueListenerDropshipmentShipmentConfirmed(
-            String rawMessage,
-            @Header("SenderId") String senderId,
-            @Header("ApproximateReceiveCount") Integer receiveCount) {
-        try {
-            var messageWrapper = messageWrapperUtil.create(rawMessage, DropshipmentShipmentConfirmedMessage.class);
-            DropshipmentShipmentConfirmedMessage shipmentConfirmedMessage = messageWrapper.getMessage();
+            DropshipmentShipmentConfirmedMessage message) throws JsonProcessingException {
 
-            log.info("Received dropshipment shipment confirmed message with order number: {}",
-                    shipmentConfirmedMessage.getSalesOrderNumber());
-
-            dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(shipmentConfirmedMessage);
-        } catch (Exception e) {
-            messageErrorHandler.logErrorMessage(rawMessage, senderId, receiveCount, e);
-        }
+        log.info("Received dropshipment shipment confirmed message with order number: {}", message.getSalesOrderNumber());
+        dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(message);
     }
 
     /**
@@ -51,22 +45,12 @@ public class DropshipmentSqsReceiveService {
      */
     @SqsListener(value = "${soh.sqs.queue.dropshipmentPurchaseOrderBooked}", deletionPolicy = ON_SUCCESS)
     @Trace(metricName = "Handling Dropshipment Purchase Order Booked message", dispatcher = true)
-    public void queueListenerDropshipmentPurchaseOrderBooked(
-            String rawMessage,
-            @Header("SenderId") String senderId,
-            @Header("ApproximateReceiveCount") Integer receiveCount) {
-        try {
-            var messageWrapper = messageWrapperUtil.create(rawMessage, DropshipmentPurchaseOrderBookedMessage.class);
-            DropshipmentPurchaseOrderBookedMessage message = messageWrapper.getMessage();
+    public void queueListenerDropshipmentPurchaseOrderBooked(DropshipmentPurchaseOrderBookedMessage message) {
 
-            log.info("Received drop shipment order purchased booked message with Sales Order Number: {}, External Order " +
-                            "NUmber: {}",
-                    message.getSalesOrderNumber(), message.getExternalOrderNumber());
-
-            dropshipmentOrderService.handleDropShipmentOrderConfirmed(message);
-        } catch (Exception e) {
-            messageErrorHandler.logErrorMessage(rawMessage, senderId, receiveCount, e);
-        }
+        log.info("Received drop shipment order purchased booked message with Sales Order Number: {}, External Order " +
+                        "Number: {}",
+                message.getSalesOrderNumber(), message.getExternalOrderNumber());
+        dropshipmentOrderService.handleDropShipmentOrderConfirmed(message);
     }
 
     /**
@@ -75,20 +59,28 @@ public class DropshipmentSqsReceiveService {
     @SqsListener(value = "${soh.sqs.queue.dropshipmentPurchaseOrderReturnConfirmed}", deletionPolicy = ON_SUCCESS)
     @Trace(metricName = "Handling Dropshipment Purchase Order Return Confirmed Message", dispatcher = true)
     public void queueListenerDropshipmentPurchaseOrderReturnConfirmed(
-            String rawMessage,
-            @Header("SenderId") String senderId,
-            @Header("ApproximateReceiveCount") Integer receiveCount) {
-        try {
-            var messageWrapper = messageWrapperUtil.create(rawMessage, DropshipmentPurchaseOrderReturnConfirmedMessage.class);
-            DropshipmentPurchaseOrderReturnConfirmedMessage message = messageWrapper.getMessage();
+            DropshipmentPurchaseOrderReturnConfirmedMessage message) {
 
+        var preventDropshipmentOrderReturnConfirmed =
+                keyValuePropertyService.getPropertyByKey(PersistentProperties.PREVENT_DROPSHIPMENT_ORDER_RETURN_CONFIRMED)
+                .orElseThrow(() -> {
+                    throw new NotFoundException("Could not find persistent property with key " +
+                            "'preventDropshipmentOrderReturnConfirmed'");
+                });
+
+        var orderNumber = message.getSalesOrderNumber();
+
+        if (Boolean.TRUE.equals(preventDropshipmentOrderReturnConfirmed.getTypedValue())) {
+            var errorMsg = MessageFormat.format(
+                    "Dropshipment Order Return Confirmed process is inactive. " +
+                    "Message with Order number {0} is moved to DLQ", orderNumber);
+            log.error(errorMsg);
+            throw new IllegalStateException(errorMsg);
+        } else {
             log.info("Received dropshipment purchase order return confirmed message with Sales Order Number: {}, External" +
                             " Order NUmber: {}",
-                    message.getSalesOrderNumber(), message.getExternalOrderNumber());
-
+                    orderNumber, message.getExternalOrderNumber());
             dropshipmentOrderService.handleDropshipmentPurchaseOrderReturnConfirmed(message);
-        } catch (Exception e) {
-            messageErrorHandler.logErrorMessage(rawMessage, senderId, receiveCount, e);
         }
     }
 
@@ -98,21 +90,14 @@ public class DropshipmentSqsReceiveService {
     @SqsListener(value = "${soh.sqs.queue.dropshipmentPurchaseOrderReturnNotified}", deletionPolicy = ON_SUCCESS)
     @Trace(metricName = "Handling Dropshipment Purchase Order Return Notified message", dispatcher = true)
     public void queueListenerDropshipmentPurchaseOrderReturnNotified(
-            String rawMessage,
-            @Header("SenderId") String senderId,
-            @Header("ApproximateReceiveCount") Integer receiveCount) {
-        try {
-            var messageWrapper =
-                    messageWrapperUtil.create(rawMessage, DropshipmentPurchaseOrderReturnNotifiedMessage.class);
-            var message = messageWrapper.getMessage();
+            DropshipmentPurchaseOrderReturnNotifiedMessage message, MessageWrapper messageWrapper) {
 
-            log.info("Received dropshipment purchase order return notified message with " +
-                            "Sales Order Number: {}, External Order Number: {}, Sender Id: {}, Received Count {}",
-                    message.getSalesOrderNumber(), message.getExternalOrderNumber(), senderId, receiveCount);
-
-            dropshipmentOrderService.handleDropshipmentPurchaseOrderReturnNotified(messageWrapper);
-        } catch (Exception e) {
-            messageErrorHandler.logErrorMessage(rawMessage, senderId, receiveCount, e);
-        }
+        log.info("Received dropshipment purchase order return notified message with " +
+                        "Sales Order Number: {}, External Order Number: {}, Sender Id: {}, Received Count {}",
+                message.getSalesOrderNumber(),
+                message.getExternalOrderNumber(),
+                messageWrapper.getSenderId(),
+                messageWrapper.getReceiveCount());
+        dropshipmentOrderService.handleDropshipmentPurchaseOrderReturnNotified(message);
     }
 }

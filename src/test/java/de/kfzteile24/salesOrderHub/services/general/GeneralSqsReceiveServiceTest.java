@@ -1,10 +1,8 @@
 package de.kfzteile24.salesOrderHub.services.general;
 
-import de.kfzteile24.salesOrderHub.configuration.SQSNamesConfig;
-import de.kfzteile24.salesOrderHub.helper.FileUtil;
-import lombok.SneakyThrows;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.RandomUtils;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
+import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ParcelShippedMessage;
+import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -12,9 +10,7 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-
+import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
 import static org.mockito.Mockito.verify;
 
 /**
@@ -22,33 +18,46 @@ import static org.mockito.Mockito.verify;
  */
 
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings("PMD.UnusedPrivateField")
 class GeneralSqsReceiveServiceTest {
 
-    private static final String ANY_SENDER_ID = RandomStringUtils.randomAlphabetic(10);
-    private static final int ANY_RECEIVE_COUNT = RandomUtils.nextInt();
     @InjectMocks
     @Spy
     private GeneralSqsReceiveService generalSqsReceiveService;
     @Mock
     private ParcelShippedService parcelShippedService;
     @Mock
-    private SQSNamesConfig sqsNamesConfig;
+    private CamundaHelper camundaHelper;
 
     @Test
     void testQueueListenerParcelShipped() {
 
-        String invoiceMsg = readResource("examples/parcelShipped.json");
-        String sqsName = sqsNamesConfig.getParcelShipped();
+        var message = getObjectByResource("parcelShipped.json", ParcelShippedMessage.class);
+        var messageWrapper = MessageWrapper.builder().build();
 
-        generalSqsReceiveService.queueListenerParcelShipped(invoiceMsg, ANY_SENDER_ID, ANY_RECEIVE_COUNT);
+        generalSqsReceiveService.queueListenerParcelShipped(message, messageWrapper);
 
-        verify(parcelShippedService).handleParcelShipped(invoiceMsg, ANY_RECEIVE_COUNT, sqsName);
-
+        verify(parcelShippedService).handleParcelShipped(message, messageWrapper);
     }
 
-    @SneakyThrows({URISyntaxException.class, IOException.class})
-    private String readResource(String path) {
-        return FileUtil.readResource(getClass(), path);
+    @Test
+    void testQueueListenerInvoiceReceivedFromCoreCreditNote() {
+
+        String message = "s3://production-k24-invoices/www-kfzteile24-de/2022/10/07/987654321-2022200001.pdf";
+        var messageWrapper = MessageWrapper.builder().build();
+
+        generalSqsReceiveService.queueListenerInvoiceReceivedFromCore(message, messageWrapper);
+
+        verify(camundaHelper).handleCreditNoteFromDropshipmentOrderReturn(message, messageWrapper);
+    }
+
+    @Test
+    void testQueueListenerInvoiceReceivedFromCoreInvoice() {
+
+        String message = "s3://production-k24-invoices/www-kfzteile24-de/2022/10/07/528023111-1-2022-1000000002300.pdf";
+        var messageWrapper = MessageWrapper.builder().build();
+
+        generalSqsReceiveService.queueListenerInvoiceReceivedFromCore(message, messageWrapper);
+
+        verify(camundaHelper).handleInvoiceFromCore(message, messageWrapper);
     }
 }

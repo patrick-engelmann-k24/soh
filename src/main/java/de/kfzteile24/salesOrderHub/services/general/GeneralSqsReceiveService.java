@@ -1,14 +1,14 @@
 package de.kfzteile24.salesOrderHub.services.general;
 
 import com.newrelic.api.agent.Trace;
-import de.kfzteile24.salesOrderHub.configuration.SQSNamesConfig;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
+import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ParcelShippedMessage;
 import de.kfzteile24.salesOrderHub.services.InvoiceUrlExtractor;
-import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapperUtil;
+import de.kfzteile24.salesOrderHub.services.sqs.AbstractSqsReceiveService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.aws.messaging.listener.annotation.SqsListener;
-import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
 
 import static org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy.ON_SUCCESS;
@@ -16,11 +16,9 @@ import static org.springframework.cloud.aws.messaging.listener.SqsMessageDeletio
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class GeneralSqsReceiveService {
+public class GeneralSqsReceiveService extends AbstractSqsReceiveService {
 
-    private final MessageWrapperUtil messageWrapperUtil;
     private final ParcelShippedService parcelShippedService;
-    private final SQSNamesConfig sqsNamesConfig;
     private final CamundaHelper camundaHelper;
 
     /**
@@ -28,21 +26,14 @@ public class GeneralSqsReceiveService {
      */
     @SqsListener(value = "${soh.sqs.queue.invoicesFromCore}", deletionPolicy = ON_SUCCESS)
     @Trace(metricName = "Handling InvoiceReceived message", dispatcher = true)
-    public void queueListenerInvoiceReceivedFromCore(String rawMessage,
-                                                     @Header("SenderId") String senderId,
-                                                     @Header("ApproximateReceiveCount") Integer receiveCount) {
-        var messageWrapper = messageWrapperUtil.create(rawMessage, String.class);
-        final var invoiceUrl = messageWrapper.getMessage();
+    public void queueListenerInvoiceReceivedFromCore(String message, MessageWrapper messageWrapper) {
 
-        try {
-            if (InvoiceUrlExtractor.matchesCreditNoteNumberPattern(invoiceUrl)) {
-                camundaHelper.handleCreditNoteFromDropshipmentOrderReturn(invoiceUrl);
-            } else {
-                camundaHelper.handleInvoiceFromCore(invoiceUrl);
-            }
-        } catch (Exception e) {
-            log.error("Invoice received from core message error - invoice url: {}\r\nErrorMessage: {}", invoiceUrl, e);
-            throw e;
+        if (InvoiceUrlExtractor.matchesCreditNoteNumberPattern(message)) {
+            log.info("url: {} is for credit note", message);
+            camundaHelper.handleCreditNoteFromDropshipmentOrderReturn(message, messageWrapper);
+        } else {
+            log.info("url: {} is for invoice", message);
+            camundaHelper.handleInvoiceFromCore(message, messageWrapper);
         }
     }
 
@@ -52,10 +43,7 @@ public class GeneralSqsReceiveService {
      */
     @SqsListener(value = "${soh.sqs.queue.parcelShipped}", deletionPolicy = ON_SUCCESS)
     @Trace(metricName = "Handling ParcelShipped message", dispatcher = true)
-    public void queueListenerParcelShipped(String rawMessage,
-                                           @Header("SenderId") String senderId,
-                                           @Header("ApproximateReceiveCount") Integer receiveCount) {
-        String sqsName = sqsNamesConfig.getParcelShipped();
-        parcelShippedService.handleParcelShipped(rawMessage, receiveCount, sqsName);
+    public void queueListenerParcelShipped(ParcelShippedMessage message, MessageWrapper messageWrapper) {
+        parcelShippedService.handleParcelShipped(message, messageWrapper);
     }
 }
