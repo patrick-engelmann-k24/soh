@@ -20,10 +20,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.SAVE_CREDIT_NOTE;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.CREDIT_NOTE_SAVED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.START_MSG_CREDIT_NOTE_CREATED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_CREDIT_NOTE_CREATED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.SAVE_CREDIT_NOTE_URL;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.CREDIT_NOTE_URL_SAVED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.START_MSG_CREDIT_NOTE_DOCUMENT_GENERATED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_CREDIT_NOTE_DOCUMENT_GENERATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.INVOICE_URL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.RETURN_ORDER_CREATED;
@@ -33,7 +33,7 @@ import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrderRet
 import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class SaveCreditNoteDelegateIntegrationTest extends AbstractIntegrationTest {
+class SaveCreditNoteUrlDelegateIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private RuntimeService runtimeService;
@@ -54,8 +54,8 @@ class SaveCreditNoteDelegateIntegrationTest extends AbstractIntegrationTest {
     private TimedPollingService pollingService;
 
     @Test
-    @DisplayName("When Save Credit Note Process Starts Then It Ends Successfully And No Exceptions Are Thrown")
-    void whenSaveCreditNoteProcessStartsThenItEndsSuccessfullyAndNoExceptionsAreThrown() {
+    @DisplayName("When Save Credit Note Url Process Starts Then It Ends Successfully And No Exceptions Are Thrown")
+    void whenSaveCreditNoteUrlProcessStartsThenItEndsSuccessfullyAndNoExceptionsAreThrown() {
         var expectedInvoiceUrl = "test";
         var orderNumber = UUID.randomUUID().toString();
         var message = getObjectByResource("ecpOrderMessageWithTwoRows.json", Order.class);
@@ -65,13 +65,13 @@ class SaveCreditNoteDelegateIntegrationTest extends AbstractIntegrationTest {
         SalesOrderReturn salesOrderReturn = getSalesOrderReturn(salesOrder, "123");
         salesOrderReturnService.save(salesOrderReturn, RETURN_ORDER_CREATED);
 
-        var creditNoteProcess = createSaveCreditNoteProcess(salesOrderReturn.getOrderNumber(), expectedInvoiceUrl);
+        var creditNoteProcess = createSaveCreditNoteUrlProcess(salesOrderReturn.getOrderNumber(), expectedInvoiceUrl);
 
         final var creditNoteProcessEndedCorrectly = pollingService.pollWithDefaultTiming(() -> {
             assertThat(creditNoteProcess).isEnded()
-                    .hasPassedInOrder(START_MSG_CREDIT_NOTE_CREATED.getName(),
-                            SAVE_CREDIT_NOTE.getName(),
-                            CREDIT_NOTE_SAVED.getName());
+                    .hasPassedInOrder(START_MSG_CREDIT_NOTE_DOCUMENT_GENERATED.getName(),
+                            SAVE_CREDIT_NOTE_URL.getName(),
+                            CREDIT_NOTE_URL_SAVED.getName());
             return true;
         });
 
@@ -79,12 +79,12 @@ class SaveCreditNoteDelegateIntegrationTest extends AbstractIntegrationTest {
 
     }
 
-    private ProcessInstance createSaveCreditNoteProcess(String orderNumber, String expectedInvoiceUrl) {
+    private ProcessInstance createSaveCreditNoteUrlProcess(String orderNumber, String expectedInvoiceUrl) {
         final Map<String, Object> processVariables = new HashMap<>();
         processVariables.put(INVOICE_URL.getName(), expectedInvoiceUrl);
         processVariables.put(ORDER_NUMBER.getName(), orderNumber);
 
-        return runtimeService.createMessageCorrelation(DROPSHIPMENT_CREDIT_NOTE_CREATED.getName())
+        return runtimeService.createMessageCorrelation(DROPSHIPMENT_CREDIT_NOTE_DOCUMENT_GENERATED.getName())
                 .setVariables(processVariables)
                 .correlateWithResult()
                 .getProcessInstance();

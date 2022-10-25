@@ -44,6 +44,9 @@ public class AwsSnsConfig {
     @Value("${soh.sns.topic.creditNoteCreatedV1}")
     private String snsCreditNoteCreatedV1;
 
+    @Value("${soh.sns.topic.creditNoteDocumentGeneratedV1}")
+    private String snsCreditNoteDocumentGeneratedV1;
+
     @Value("${soh.sns.topic.migrationOrderCreatedV2}")
     private String snsMigrationOrderCreatedV2;
 
