@@ -69,6 +69,7 @@ soh:
       coreInvoiceReceivedV1: ${sns_soh_core_invoice_received_v1}
       creditNoteReceivedV1: ${sns_soh_credit_note_received_v1}
       creditNoteCreatedV1: ${sns_soh_credit_note_created_v1}
+      creditNoteDocumentGeneratedV1: ${sns_soh_credit_note_document_generated_v1}
       migrationOrderCreatedV2: ${sns_migration_soh_order_created_v2}
       migrationSalesOrderRowCancelledV1: ${sns_migration_soh_sales_order_row_cancelled_v1}
       migrationSalesOrderCancelledV1: ${sns_migration_soh_sales_order_cancelled_v1}

@@ -31,8 +31,8 @@ public class CreditNoteServiceTest {
     private CreditNoteService creditNoteService;
 
     @Test
-    @DisplayName("When Build Sales Credit Note Created Event Then Return Expected Result")
-    void whenBuildSalesCreditNoteCreatedEventThenReturnExpectedResult() {
+    @DisplayName("When Build Sales Credit Note Document Generated Event Then Return Expected Result")
+    void whenBuildSalesCreditNoteDocumentGeneratedEventThenReturnExpectedResult() {
         final var expectedOrderNumber = "123";
         final var expectedCreditNoteDocumentLink = "https://test.com";
 
@@ -42,8 +42,8 @@ public class CreditNoteServiceTest {
 
         when(salesOrderReturnService.getByOrderNumber(eq(expectedOrderNumber))).thenReturn(Optional.of(salesOrderReturn));
 
-        var salesCreditNoteCreatedEvent = creditNoteService.buildSalesCreditNoteCreatedEvent(expectedOrderNumber, expectedCreditNoteDocumentLink);
-        assertThat(salesCreditNoteCreatedEvent.getCreditNoteDocumentLink()).isEqualTo(expectedCreditNoteDocumentLink);
-        assertThat(salesCreditNoteCreatedEvent.getReturnOrder()).isEqualTo(salesOrderReturn.getReturnOrderJson());
+        var creditNoteDocumentGeneratedEvent = creditNoteService.buildSalesCreditNoteDocumentGeneratedEvent(expectedOrderNumber, expectedCreditNoteDocumentLink);
+        assertThat(creditNoteDocumentGeneratedEvent.getCreditNoteDocumentLink()).isEqualTo(expectedCreditNoteDocumentLink);
+        assertThat(creditNoteDocumentGeneratedEvent.getReturnOrder()).isEqualTo(salesOrderReturn.getReturnOrderJson());
     }
 }

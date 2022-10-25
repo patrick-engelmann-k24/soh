@@ -1,7 +1,7 @@
 package de.kfzteile24.salesOrderHub.delegates.returnorder;
 
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
-import de.kfzteile24.salesOrderHub.dto.events.SalesCreditNoteCreatedEvent;
+import de.kfzteile24.salesOrderHub.dto.events.SalesCreditNoteDocumentGeneratedEvent;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.CreditNoteService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
@@ -28,7 +28,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class PublishCreditNoteCreatedDelegateTest {
+class PublishCreditNoteDocumentGeneratedDelegateTest {
 
     @Mock
     private DelegateExecution delegateExecution;
@@ -43,11 +43,11 @@ class PublishCreditNoteCreatedDelegateTest {
     private CreditNoteService creditNoteService;
 
     @InjectMocks
-    private PublishCreditNoteCreatedDelegate publishCreditNoteCreatedDelegate;
+    private PublishCreditNoteDocumentGeneratedDelegate publishCreditNoteDocumentGeneratedDelegate;
 
     @Test
-    @DisplayName("When Execute Publish Credit Note Created Delegate Then Expect Publish Credit Note Created Event")
-    void whenExecutePublishCreditNoteCreatedDelegateThenExpectPublishCreditNoteCreatedEvent() throws Exception {
+    @DisplayName("When Execute Publish Credit Note Document Generated Delegate Then Expect Publish Credit Note Document Generated Event")
+    void whenExecutePublishCreditNoteDocumentGeneratedDelegateThenExpectPublishCreditNoteDocumentGeneratedEvent() throws Exception {
         final var expectedOrderNumber = "123";
         final var expectedCreditNoteDocumentLink = "https://test.com";
 
@@ -55,7 +55,7 @@ class PublishCreditNoteCreatedDelegateTest {
         SalesOrderReturn salesOrderReturn = getSalesOrderReturn(salesOrder, "1234567");
         salesOrderReturn.setOrderNumber(expectedOrderNumber);
 
-        var salesCreditNoteCreatedEvent = SalesCreditNoteCreatedEvent
+        var creditNoteGeneratedEvent = SalesCreditNoteDocumentGeneratedEvent
                 .builder()
                 .returnOrder(salesOrderReturn.getReturnOrderJson())
                 .creditNoteDocumentLink(expectedCreditNoteDocumentLink)
@@ -64,17 +64,17 @@ class PublishCreditNoteCreatedDelegateTest {
         when(delegateExecution.getVariable(ORDER_NUMBER.getName())).thenReturn(expectedOrderNumber);
         when(delegateExecution.getVariable(INVOICE_URL.getName())).thenReturn(expectedCreditNoteDocumentLink);
         when(salesOrderReturnService.getByOrderNumber(eq(expectedOrderNumber))).thenReturn(Optional.of(salesOrderReturn));
-        when(creditNoteService.buildSalesCreditNoteCreatedEvent(
+        when(creditNoteService.buildSalesCreditNoteDocumentGeneratedEvent(
                 eq(salesOrderReturn.getOrderNumber()),
-                eq(expectedCreditNoteDocumentLink))).thenReturn(salesCreditNoteCreatedEvent);
+                eq(expectedCreditNoteDocumentLink))).thenReturn(creditNoteGeneratedEvent);
 
-        salesCreditNoteCreatedEvent = publishCreditNoteCreatedDelegate.buildSalesCreditNoteCreatedEvent(delegateExecution);
-        assertThat(salesCreditNoteCreatedEvent.getCreditNoteDocumentLink()).isEqualTo(expectedCreditNoteDocumentLink);
-        assertThat(salesCreditNoteCreatedEvent.getReturnOrder()).isEqualTo(salesOrderReturn.getReturnOrderJson());
+        creditNoteGeneratedEvent = publishCreditNoteDocumentGeneratedDelegate.buildSalesCreditNoteDocumentGeneratedEvent(delegateExecution);
+        assertThat(creditNoteGeneratedEvent.getCreditNoteDocumentLink()).isEqualTo(expectedCreditNoteDocumentLink);
+        assertThat(creditNoteGeneratedEvent.getReturnOrder()).isEqualTo(salesOrderReturn.getReturnOrderJson());
 
-        publishCreditNoteCreatedDelegate.execute(delegateExecution);
+        publishCreditNoteDocumentGeneratedDelegate.execute(delegateExecution);
 
-        verify(snsPublishService).publishCreditNoteCreatedEvent(salesCreditNoteCreatedEvent);
+        verify(snsPublishService).publishCreditNoteDocumentGeneratedEvent(creditNoteGeneratedEvent);
 
     }
 

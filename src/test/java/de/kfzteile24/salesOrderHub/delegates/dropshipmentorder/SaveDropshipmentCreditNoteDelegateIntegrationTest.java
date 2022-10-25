@@ -21,7 +21,7 @@ import java.util.Map;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_CREDIT_NOTE_CREATED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_CREDIT_NOTE_CREATED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_CREDIT_NOTE_DOCUMENT_GENERATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.INVOICE_URL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
@@ -64,15 +64,15 @@ class SaveDropshipmentCreditNoteDelegateIntegrationTest extends AbstractIntegrat
         processVariables.put(INVOICE_URL.getName(), invoiceUrl);
         processVariables.put(ORDER_NUMBER.getName(), salesOrderReturn.getOrderNumber());
         ProcessInstance processInstance =
-                runtimeService.createMessageCorrelation(DROPSHIPMENT_CREDIT_NOTE_CREATED.getName())
+                runtimeService.createMessageCorrelation(DROPSHIPMENT_CREDIT_NOTE_DOCUMENT_GENERATED.getName())
                 .processInstanceVariableEquals(ORDER_NUMBER.getName(), salesOrderReturn.getOrderNumber())
                 .setVariables(processVariables)
                 .correlateWithResult()
                 .getProcessInstance();
         assertTrue(pollingService.poll(Duration.ofMillis(100), Duration.ofSeconds(10), () -> {
-            assertThat(processInstance).hasPassed("eventStartMsgCreditNoteCreated",
-                            "activitySaveCreditNoteUrl",
-                            "eventCreditNoteSaved");
+            assertThat(processInstance).hasPassed("eventStartMsgCreditNoteUrlReceived",
+                            "activitySaveCreditNoteDocumentUrl",
+                            "eventCreditNoteDocumentGenerated");
             return true;
         }));
         SalesOrderReturn returnOrder = salesOrderReturnRepository.findByOrderNumber(salesOrderReturn.getOrderNumber())

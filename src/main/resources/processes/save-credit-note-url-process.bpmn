@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1yjlen3" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.12.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.15.0">
+  <bpmn:process id="SaveCreditNoteUrlProcess" name="Save Credit Note Url Process" isExecutable="true">
+    <bpmn:startEvent id="eventStartMsgCreditNoteUrlReceived" name="Credit note document url received" camunda:asyncBefore="true">
+      <bpmn:outgoing>Flow_0rod0sv</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_0wtyk5j" messageRef="Message_0m8kek4" />
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="activitySaveCreditNoteDocumentUrl" name="Save credit note document url" camunda:asyncBefore="true" camunda:delegateExpression="${saveCreditNoteUrlDelegate}">
+      <bpmn:incoming>Flow_0rod0sv</bpmn:incoming>
+      <bpmn:outgoing>Flow_0s3ygy3</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_0rod0sv" sourceRef="eventStartMsgCreditNoteUrlReceived" targetRef="activitySaveCreditNoteDocumentUrl" />
+    <bpmn:sequenceFlow id="Flow_0s3ygy3" sourceRef="activitySaveCreditNoteDocumentUrl" targetRef="eventCreditNoteDocumentGenerated" />
+    <bpmn:endEvent id="eventCreditNoteDocumentGenerated" name="Credit note document generated">
+      <bpmn:incoming>Flow_0s3ygy3</bpmn:incoming>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_1kty9eg" camunda:delegateExpression="${publishCreditNoteDocumentGeneratedDelegate}" />
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmn:message id="Message_0m8kek4" name="msgCreditNoteDocumentGenerated" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="SaveCreditNoteUrlProcess">
+      <bpmndi:BPMNEdge id="Flow_0rod0sv_di" bpmnElement="Flow_0rod0sv">
+        <di:waypoint x="215" y="117" />
+        <di:waypoint x="325" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0s3ygy3_di" bpmnElement="Flow_0s3ygy3">
+        <di:waypoint x="425" y="117" />
+        <di:waypoint x="552" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_1c51dyj_di" bpmnElement="eventStartMsgCreditNoteUrlReceived">
+        <dc:Bounds x="179" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="166" y="142" width="64" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0edojjh_di" bpmnElement="activitySaveCreditNoteDocumentUrl">
+        <dc:Bounds x="325" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_11dho0e_di" bpmnElement="eventCreditNoteDocumentGenerated">
+        <dc:Bounds x="552" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="544" y="142" width="54" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

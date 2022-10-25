@@ -30,7 +30,7 @@ class SaveDropshipmentCreditNoteDelegateTest {
     private SalesOrderReturnService salesOrderReturnService;
 
     @InjectMocks
-    private SaveCreditNoteDelegate saveCreditNoteDelegate;
+    private SaveCreditNoteUrlDelegate saveCreditNoteUrlDelegate;
 
     @Test
     void testSaveCreditNoteDelegate() throws Exception {
@@ -43,7 +43,7 @@ class SaveDropshipmentCreditNoteDelegateTest {
         when(delegateExecution.getVariable(ORDER_NUMBER.getName())).thenReturn(expectedOrderNumber);
         when(delegateExecution.getVariable(INVOICE_URL.getName())).thenReturn(invoiceUrl);
 
-        saveCreditNoteDelegate.execute(delegateExecution);
+        saveCreditNoteUrlDelegate.execute(delegateExecution);
         verify(salesOrderReturnService).updateUrl(expectedOrderNumber, invoiceUrl);
     }
 }

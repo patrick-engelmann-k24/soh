@@ -15,7 +15,7 @@ public enum Events implements BpmItem {
 
     INVOICE_ADDRESS_NOT_CHANGED("eventInvoiceAddressNotChanged"),
     INVOICE_SAVED("eventInvoiceSaved"),
-    CREDIT_NOTE_SAVED("eventCreditNoteSaved"),
+    CREDIT_NOTE_URL_SAVED("eventCreditNoteDocumentGenerated"),
 
     MSG_ORDER_PAYMENT_SECURED("eventMsgOrderPaymentSecured"),
 
@@ -23,7 +23,7 @@ public enum Events implements BpmItem {
 
     START_MSG_INVOICE_ADDRESS_CHANGE_RECEIVED("eventStartMsgInvoiceAddressChangeReceived"),
     START_MSG_INVOICE_CREATED("eventStartMsgInvoiceCreated"),
-    START_MSG_CREDIT_NOTE_CREATED("eventStartMsgCreditNoteCreated"),
+    START_MSG_CREDIT_NOTE_DOCUMENT_GENERATED("eventStartMsgCreditNoteUrlReceived"),
     START_MSG_ORDER_RECEIVED_FROM_BRANCH("eventStartMsgOrderReceivedFromBranch"),
     START_MSG_ORDER_RECEIVED_FROM_CUSTOMER_CARE("eventStartMsgOrderReceivedFromCustomerCare"),
     START_MSG_ORDER_RECEIVED_FROM_ECP("eventStartMsgOrderReceivedFromECP"),

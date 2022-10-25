@@ -42,6 +42,7 @@ soh:
       coreInvoiceReceivedV1:  arn:aws:sns:eu-central-1:000000000000:soh-core-invoice-received-v1
       creditNoteCreatedV1:    arn:aws:sns:eu-central-1:000000000000:soh-credit-note-created-v1
       creditNoteReceivedV1:   arn:aws:sns:eu-central-1:000000000000:soh-credit-note-received-v1
+      creditNoteDocumentGeneratedV1: arn:aws:sns:eu-central-1:000000000000:soh-credit-note-document-generated-v1
       migrationOrderCreatedV2: arn:aws:sns:eu-central-1:000000000000:migration-soh-order-created-v2
       migrationSalesOrderRowCancelledV1: arn:aws:sns:eu-central-1:000000000000:migration-soh-sales-order-row-cancelled-v1
       migrationSalesOrderCancelledV1: arn:aws:sns:eu-central-1:000000000000:migration-soh-sales-order-cancelled-v1

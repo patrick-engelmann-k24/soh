@@ -102,6 +102,10 @@ data "aws_sns_topic" "sns_soh_credit_note_created_v1" {
   name = "soh-credit-note-created-v1"
 }
 
+data "aws_sns_topic" "sns_soh_credit_note_document_generated_v1" {
+  name = "soh-credit-note-document-generated-v1"
+}
+
 data "aws_sns_topic" "sns_migration_core_sales_order_created_v1" {
   name = "migration-core-sales-order-created-v1"
 }
