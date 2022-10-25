@@ -169,6 +169,13 @@ public class SnsPublishService {
                 salesCreditNoteReceivedEvent, orderNumber);
     }
 
+    public void publishCreditNoteCreatedEvent(SalesCreditNoteReceivedEvent salesCreditNoteCreatedEvent) {
+        var orderNumber =
+                salesCreditNoteCreatedEvent.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber();
+        publishEvent(config.getSnsCreditNoteCreatedV1(), "Credit Note Created V1",
+                salesCreditNoteCreatedEvent, orderNumber);
+    }
+
     public void publishCreditNoteDocumentGeneratedEvent(SalesCreditNoteDocumentGeneratedEvent salesCreditNoteDocumentGeneratedEvent) {
         var orderNumber = salesCreditNoteDocumentGeneratedEvent.getReturnOrder().getOrderHeader().getOrderNumber();
         publishEvent(config.getSnsCreditNoteDocumentGeneratedV1(), "Credit Note Document Generated V1",
