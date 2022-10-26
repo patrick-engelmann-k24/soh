@@ -34,10 +34,9 @@ public class DropshipmentSqsReceiveService extends AbstractSqsReceiveService {
     @SqsListener(value = "${soh.sqs.queue.dropshipmentShipmentConfirmed}", deletionPolicy = ON_SUCCESS)
     @Trace(metricName = "Handling dropshipment shipment confirmed message", dispatcher = true)
     public void queueListenerDropshipmentShipmentConfirmed(
-            DropshipmentShipmentConfirmedMessage message) throws JsonProcessingException {
+            DropshipmentShipmentConfirmedMessage message, MessageWrapper messageWrapper) throws JsonProcessingException {
 
-        log.info("Received dropshipment shipment confirmed message with order number: {}", message.getSalesOrderNumber());
-        dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(message);
+        dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(message, messageWrapper);
     }
 
     /**
@@ -45,12 +44,10 @@ public class DropshipmentSqsReceiveService extends AbstractSqsReceiveService {
      */
     @SqsListener(value = "${soh.sqs.queue.dropshipmentPurchaseOrderBooked}", deletionPolicy = ON_SUCCESS)
     @Trace(metricName = "Handling Dropshipment Purchase Order Booked message", dispatcher = true)
-    public void queueListenerDropshipmentPurchaseOrderBooked(DropshipmentPurchaseOrderBookedMessage message) {
+    public void queueListenerDropshipmentPurchaseOrderBooked(
+            DropshipmentPurchaseOrderBookedMessage message, MessageWrapper messageWrapper) {
 
-        log.info("Received drop shipment order purchased booked message with Sales Order Number: {}, External Order " +
-                        "Number: {}",
-                message.getSalesOrderNumber(), message.getExternalOrderNumber());
-        dropshipmentOrderService.handleDropShipmentOrderConfirmed(message);
+        dropshipmentOrderService.handleDropShipmentOrderConfirmed(message, messageWrapper);
     }
 
     /**
@@ -59,7 +56,7 @@ public class DropshipmentSqsReceiveService extends AbstractSqsReceiveService {
     @SqsListener(value = "${soh.sqs.queue.dropshipmentPurchaseOrderReturnConfirmed}", deletionPolicy = ON_SUCCESS)
     @Trace(metricName = "Handling Dropshipment Purchase Order Return Confirmed Message", dispatcher = true)
     public void queueListenerDropshipmentPurchaseOrderReturnConfirmed(
-            DropshipmentPurchaseOrderReturnConfirmedMessage message) {
+            DropshipmentPurchaseOrderReturnConfirmedMessage message, MessageWrapper messageWrapper) {
 
         var preventDropshipmentOrderReturnConfirmed =
                 keyValuePropertyService.getPropertyByKey(PersistentProperties.PREVENT_DROPSHIPMENT_ORDER_RETURN_CONFIRMED)
@@ -80,7 +77,7 @@ public class DropshipmentSqsReceiveService extends AbstractSqsReceiveService {
             log.info("Received dropshipment purchase order return confirmed message with Sales Order Number: {}, External" +
                             " Order NUmber: {}",
                     orderNumber, message.getExternalOrderNumber());
-            dropshipmentOrderService.handleDropshipmentPurchaseOrderReturnConfirmed(message);
+            dropshipmentOrderService.handleDropshipmentPurchaseOrderReturnConfirmed(message, messageWrapper);
         }
     }
 
@@ -92,12 +89,6 @@ public class DropshipmentSqsReceiveService extends AbstractSqsReceiveService {
     public void queueListenerDropshipmentPurchaseOrderReturnNotified(
             DropshipmentPurchaseOrderReturnNotifiedMessage message, MessageWrapper messageWrapper) {
 
-        log.info("Received dropshipment purchase order return notified message with " +
-                        "Sales Order Number: {}, External Order Number: {}, Sender Id: {}, Received Count {}",
-                message.getSalesOrderNumber(),
-                message.getExternalOrderNumber(),
-                messageWrapper.getSenderId(),
-                messageWrapper.getReceiveCount());
-        dropshipmentOrderService.handleDropshipmentPurchaseOrderReturnNotified(message);
+        dropshipmentOrderService.handleDropshipmentPurchaseOrderReturnNotified(message, messageWrapper);
     }
 }

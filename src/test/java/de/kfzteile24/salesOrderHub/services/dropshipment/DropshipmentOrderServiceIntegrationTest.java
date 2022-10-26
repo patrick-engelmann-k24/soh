@@ -18,6 +18,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
+import de.kfzteile24.salesOrderHub.exception.SalesOrderReturnNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.EventType;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
@@ -27,6 +28,7 @@ import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceNumberCounterService;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.StringUtils;
@@ -44,14 +46,10 @@ import org.mockito.verification.VerificationMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.Commit;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -108,11 +106,14 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    private final MessageWrapper messageWrapper = MessageWrapper.builder().build();
+
     @BeforeEach
     public void setup() {
         super.setUp();
         invoiceNumberCounterRepository.deleteAll();
         invoiceNumberCounterService.init();
+        salesOrderRepository.deleteAllInBatch();
     }
 
     @Test
@@ -127,7 +128,7 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
                 .salesOrderNumber(salesOrder.getOrderNumber())
                 .externalOrderNumber("13.2")
                 .build();
-        dropshipmentOrderService.handleDropShipmentOrderConfirmed(message);
+        dropshipmentOrderService.handleDropShipmentOrderConfirmed(message, messageWrapper);
 
         SalesOrder updatedOrder = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber()).orElse(null);
         assertNotNull(updatedOrder);
@@ -149,10 +150,11 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
                 getObjectByResource("dropshipmentPurchaseOrderReturnConfirmed.json",  DropshipmentPurchaseOrderReturnConfirmedMessage.class);
         message.setSalesOrderNumber(salesOrder.getOrderNumber());
 
-        dropshipmentOrderService.handleDropshipmentPurchaseOrderReturnConfirmed(message);
+        dropshipmentOrderService.handleDropshipmentPurchaseOrderReturnConfirmed(message, messageWrapper);
 
         String returnOrderNumber = RETURN_ORDER_NUMBER_PREFIX + ORDER_NUMBER_SEPARATOR + nextCreditNoteNumber;
-        SalesOrderReturn updatedOrder = salesOrderReturnService.getByOrderNumber(returnOrderNumber);
+        SalesOrderReturn updatedOrder = salesOrderReturnService.getByOrderNumber(returnOrderNumber)
+                .orElseThrow(() -> new SalesOrderReturnNotFoundException(returnOrderNumber));
         SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage = updatedOrder.getSalesCreditNoteCreatedMessage();
         assertNotNull(updatedOrder);
         assertEquals(nextCreditNoteNumber, updatedOrder.getSalesCreditNoteCreatedMessage().getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteNumber());
@@ -175,7 +177,7 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
 
         var salesOrder = createSalesOrder();
         var message = createShipmentConfirmedMessage(salesOrder);
-        dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(message);
+        dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(message, messageWrapper);
 
         var optUpdatedSalesOrder = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber());
         assertThat(optUpdatedSalesOrder).isNotEmpty();
@@ -213,8 +215,8 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
         var salesOrder2 = createSalesOrder();
         createSalesOrderInvoice(salesOrder2);
 
-        dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(createShipmentConfirmedMessage(salesOrder1));
-        dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(createShipmentConfirmedMessage(salesOrder2));
+        dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(createShipmentConfirmedMessage(salesOrder1), messageWrapper);
+        dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(createShipmentConfirmedMessage(salesOrder2), messageWrapper);
 
         var optUpdatedSalesOrder = salesOrderService.getOrderByOrderNumber(salesOrder2.getOrderNumber());
         assertThat(optUpdatedSalesOrder).isNotEmpty();
@@ -236,7 +238,7 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
                         .trackingLink("http://abc5")
                         .serviceProviderName("abc5")
                         .build());
-        dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(message);
+        dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(message, messageWrapper);
 
         var optUpdatedSalesOrder = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber());
         assertThat(optUpdatedSalesOrder).isNotEmpty();
@@ -518,13 +520,6 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
         ((Order) salesOrder.getOriginalOrder()).getOrderHeader().setOrderFulfillment(DELTICOM.getName());
         salesOrderService.save(salesOrder, Action.ORDER_CREATED);
         return salesOrder;
-    }
-
-    @SneakyThrows({URISyntaxException.class, IOException.class})
-    private String readResource(String path) {
-        return java.nio.file.Files.readString(Paths.get(
-                Objects.requireNonNull(getClass().getClassLoader().getResource(path))
-                        .toURI()));
     }
 
     @AfterEach
