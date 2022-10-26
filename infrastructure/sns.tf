@@ -236,13 +236,13 @@ resource "aws_sns_topic_subscription" "sns_subscription_dropshipment_shipment_co
 }
 
 resource "aws_sns_topic_subscription" "dropshipment-purchase_order_booked" {
-  endpoint  = aws_sqs_queue.dropshipment_purchase_order_booked.arn
+  endpoint  = aws_sqs_queue.soh_dropshipment_purchase_order_booked.arn
   protocol  = "sqs"
   topic_arn = data.aws_sns_topic.sns_soh_dropshipment_purchase_order_booked_v1.arn
 }
 
 resource "aws_sns_topic_subscription" "dropshipment_purchase_order_return_confirmed" {
-  endpoint  = aws_sqs_queue.dropshipment_purchase_order_return_confirmed.arn
+  endpoint  = aws_sqs_queue.soh_dropshipment_purchase_order_return_confirmed.arn
   protocol  = "sqs"
   topic_arn = data.aws_sns_topic.sns_soh_dropshipment_purchase_order_return_confirmed_v1.arn
 }

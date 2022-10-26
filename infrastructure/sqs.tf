@@ -174,13 +174,13 @@ resource "aws_sqs_queue" "soh_dropshipment_shipment_confirmed" {
   visibility_timeout_seconds = 120
 }
 
-resource "aws_sqs_queue" "dropshipment_purchase_order_booked_dlq" {
+resource "aws_sqs_queue" "soh_dropshipment_purchase_order_booked_dlq" {
   name = local.sqs_queues.dropshipment_purchase_order_booked_dlq
 }
 
-resource "aws_sqs_queue" "dropshipment_purchase_order_booked" {
+resource "aws_sqs_queue" "soh_dropshipment_purchase_order_booked" {
   name = local.sqs_queues.dropshipment_purchase_order_booked
-  redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.dropshipment_purchase_order_booked_dlq.arn}\",\"maxReceiveCount\":4}"
+  redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.soh_dropshipment_purchase_order_booked_dlq.arn}\",\"maxReceiveCount\":4}"
   visibility_timeout_seconds = 120
 }
 
@@ -194,13 +194,13 @@ resource "aws_sqs_queue" "soh_dropshipment_purchase_order_return_notified" {
   visibility_timeout_seconds = 120
 }
 
-resource "aws_sqs_queue" "dropshipment_purchase_order_return_confirmed_dlq" {
+resource "aws_sqs_queue" "soh_dropshipment_purchase_order_return_confirmed_dlq" {
   name = local.sqs_queues.dropshipment_purchase_order_return_confirmed_dlq
 }
 
-resource "aws_sqs_queue" "dropshipment_purchase_order_return_confirmed" {
+resource "aws_sqs_queue" "soh_dropshipment_purchase_order_return_confirmed" {
   name = local.sqs_queues.dropshipment_purchase_order_return_confirmed
-  redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.dropshipment_purchase_order_return_confirmed_dlq.arn}\",\"maxReceiveCount\":4}"
+  redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.soh_dropshipment_purchase_order_return_confirmed_dlq.arn}\",\"maxReceiveCount\":4}"
   visibility_timeout_seconds = 120
 }
 

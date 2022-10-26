@@ -620,7 +620,7 @@ data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_dropshipment
     }
 
     resources = [
-      aws_sqs_queue.dropshipment_purchase_order_booked.arn
+      aws_sqs_queue.soh_dropshipment_purchase_order_booked.arn
     ]
   }
 
@@ -637,13 +637,13 @@ data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_dropshipment
     }
 
     resources = [
-      aws_sqs_queue.dropshipment_purchase_order_booked.arn
+      aws_sqs_queue.soh_dropshipment_purchase_order_booked.arn
     ]
   }
 }
 
 resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_dropshipment_purchase_order_booked" {
-  queue_url = aws_sqs_queue.dropshipment_purchase_order_booked.id
+  queue_url = aws_sqs_queue.soh_dropshipment_purchase_order_booked.id
   policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_dropshipment_purchase_order_booked.json
 }
 
@@ -662,7 +662,7 @@ data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_dropshipment
     }
 
     resources = [
-      aws_sqs_queue.dropshipment_purchase_order_return_confirmed.arn
+      aws_sqs_queue.soh_dropshipment_purchase_order_return_confirmed.arn
     ]
   }
 
@@ -679,13 +679,13 @@ data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_dropshipment
     }
 
     resources = [
-      aws_sqs_queue.dropshipment_purchase_order_return_confirmed.arn
+      aws_sqs_queue.soh_dropshipment_purchase_order_return_confirmed.arn
     ]
   }
 }
 
 resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_dropshipment_purchase_order_return_confirmed" {
-  queue_url = aws_sqs_queue.dropshipment_purchase_order_return_confirmed.id
+  queue_url = aws_sqs_queue.soh_dropshipment_purchase_order_return_confirmed.id
   policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_dropshipment_purchase_order_return_confirmed.json
 }
 
@@ -1488,4 +1488,172 @@ data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_d365_order_p
 resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_d365_order_payment_secured_dlq" {
   queue_url = aws_sqs_queue.d365_order_payment_secured_dlq.id
   policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_d365_order_payment_secured_dlq.json
+}
+
+data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_dropshipment_purchase_order_booked_dlq" {
+  statement {
+    sid = "SNS-dropshipment-purchase-order-booked-dlq"
+    effect = "Allow"
+
+    actions = [
+      "sqs:SendMessage",
+    ]
+
+    principals {
+      identifiers = ["*"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_dropshipment_purchase_order_booked_dlq.arn
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sqs:*",
+    ]
+
+    principals {
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_dropshipment_purchase_order_booked_dlq.arn
+    ]
+  }
+}
+
+resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_dropshipment_purchase_order_booked_dlq" {
+  queue_url = aws_sqs_queue.soh_dropshipment_purchase_order_booked_dlq.id
+  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_dropshipment_purchase_order_booked_dlq.json
+}
+
+data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_dropshipment_shipment_confirmed_dlq" {
+  statement {
+    sid = "SNS-dropshipment-shipment-confirmed-dlq"
+    effect = "Allow"
+
+    actions = [
+      "sqs:SendMessage",
+    ]
+
+    principals {
+      identifiers = ["*"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_dropshipment_purchase_order_return_confirmed_dlq.arn
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sqs:*",
+    ]
+
+    principals {
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_dropshipment_purchase_order_return_confirmed_dlq.arn
+    ]
+  }
+}
+
+resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_dropshipment_shipment_confirmed_dlq" {
+  queue_url = aws_sqs_queue.soh_dropshipment_shipment_confirmed_dlq.id
+  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_dropshipment_shipment_confirmed_dlq.json
+}
+
+data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_dropshipment_purchase_order_return_notified_dlq" {
+  statement {
+    sid = "SNS-dropshipment-purchase-order-booked-dlq"
+    effect = "Allow"
+
+    actions = [
+      "sqs:SendMessage",
+    ]
+
+    principals {
+      identifiers = ["*"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_dropshipment_purchase_order_return_notified_dlq.arn
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sqs:*",
+    ]
+
+    principals {
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_dropshipment_purchase_order_return_notified_dlq.arn
+    ]
+  }
+}
+
+resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_dropshipment_purchase_order_return_notified_dlq" {
+  queue_url = aws_sqs_queue.soh_dropshipment_purchase_order_return_notified_dlq.id
+  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_dropshipment_purchase_order_return_notified_dlq.json
+}
+
+data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_dropshipment_purchase_order_return_confirmed_dlq" {
+  statement {
+    sid = "SNS-dropshipment-purchase-order-booked-dlq"
+    effect = "Allow"
+
+    actions = [
+      "sqs:SendMessage",
+    ]
+
+    principals {
+      identifiers = ["*"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_dropshipment_purchase_order_return_confirmed_dlq.arn
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sqs:*",
+    ]
+
+    principals {
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_dropshipment_purchase_order_return_confirmed_dlq.arn
+    ]
+  }
+}
+
+resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_dropshipment_purchase_order_return_confirmed_dlq" {
+  queue_url = aws_sqs_queue.soh_dropshipment_purchase_order_return_confirmed_dlq.id
+  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_dropshipment_purchase_order_return_confirmed_dlq.json
 }
