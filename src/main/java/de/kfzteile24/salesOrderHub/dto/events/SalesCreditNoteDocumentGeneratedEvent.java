@@ -8,7 +8,7 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Value
 @Jacksonized
-public class SalesCreditNoteCreatedEvent {
+public class SalesCreditNoteDocumentGeneratedEvent {
 
     Order returnOrder;
     String creditNoteDocumentLink;

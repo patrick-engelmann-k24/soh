@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 @RequiredArgsConstructor
-public class SaveCreditNoteDelegate implements JavaDelegate {
+public class SaveCreditNoteUrlDelegate implements JavaDelegate {
 
     private final SalesOrderReturnService salesOrderReturnService;
 

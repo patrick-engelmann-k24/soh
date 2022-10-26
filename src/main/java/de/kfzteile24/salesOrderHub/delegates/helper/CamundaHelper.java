@@ -170,7 +170,7 @@ public class CamundaHelper {
         final var returnOrderNumber = InvoiceUrlExtractor.extractReturnOrderNumber(invoiceUrl);
         log.info("Received credit note from dropshipment with return order number: {} ", returnOrderNumber);
 
-        String message = Messages.DROPSHIPMENT_CREDIT_NOTE_CREATED.getName();
+        String message = Messages.DROPSHIPMENT_CREDIT_NOTE_DOCUMENT_GENERATED.getName();
         final Map<String, Object> processVariables = Map.of(
                 ORDER_NUMBER.getName(), returnOrderNumber,
                 INVOICE_URL.getName(), invoiceUrl

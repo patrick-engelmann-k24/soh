@@ -41,15 +41,15 @@ class SnsPublishServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @SneakyThrows(Exception.class)
-    @DisplayName("When Sales Credit Note Created Event Published Then Topic Is Found And No Exceptions Are Thrown")
-    void whenSalesCreditNoteCreatedEventPublishedThenTopicIsFoundAndNoExceptionsAreThrown() {
+    @DisplayName("When Sales Credit Note Document Generated Event Published Then Topic Is Found And No Exceptions Are Thrown")
+    void whenSalesCreditNoteDocumentGeneratedEventPublishedThenTopicIsFoundAndNoExceptionsAreThrown() {
         Order order = getObjectByResource("ecpOrderMessageWithTwoRows.json", Order.class);
         SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(order));
         SalesOrderReturn salesOrderReturn = getSalesOrderReturn(salesOrder, "123");
         salesOrderReturnService.save(salesOrderReturn, RETURN_ORDER_CREATED);
-        var salesCreditNoteCreatedEvent = creditNoteService.buildSalesCreditNoteCreatedEvent(salesOrderReturn.getOrderNumber(), "test");
+        var creditNoteDocumentGeneratedEvent = creditNoteService.buildSalesCreditNoteDocumentGeneratedEvent(salesOrderReturn.getOrderNumber(), "test");
         try {
-            snsPublishService.publishCreditNoteCreatedEvent(salesCreditNoteCreatedEvent);
+            snsPublishService.publishCreditNoteDocumentGeneratedEvent(creditNoteDocumentGeneratedEvent);
         } catch (Exception e) {
             Assertions.fail();
         }

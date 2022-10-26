@@ -17,7 +17,7 @@ public enum Messages implements BpmItem {
     DROPSHIPMENT_ORDER_CONFIRMED("msgDropShipmentOrderConfirmed"),
     DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED("msgDropShipmentOrderTrackingInformationReceived"),
     DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED("msgDropshipmentOrderRowCancellationReceived"),
-    DROPSHIPMENT_CREDIT_NOTE_CREATED("msgCreditNoteCreated"),
+    DROPSHIPMENT_CREDIT_NOTE_DOCUMENT_GENERATED("msgCreditNoteDocumentGenerated"),
     DROPSHIPMENT_ORDER_RETURN_CONFIRMED("msgDropshipmentOrderReturnConfirmed")
     ;
 
