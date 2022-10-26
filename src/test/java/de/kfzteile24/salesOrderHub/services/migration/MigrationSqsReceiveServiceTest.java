@@ -46,9 +46,9 @@ class MigrationSqsReceiveServiceTest {
 
         when(featureFlagConfig.getIgnoreMigrationCoreSalesOrder()).thenReturn(false);
 
-        migrationSqsReceiveService.queueListenerMigrationCoreSalesOrderCreated(message);
+        migrationSqsReceiveService.queueListenerMigrationCoreSalesOrderCreated(message, messageWrapper);
 
-        verify(migrationSalesOrderService).handleMigrationCoreSalesOrderCreated(message);
+        verify(migrationSalesOrderService).handleMigrationCoreSalesOrderCreated(message, messageWrapper);
     }
 
     @Test
@@ -71,8 +71,8 @@ class MigrationSqsReceiveServiceTest {
 
         when(featureFlagConfig.getIgnoreMigrationCoreSalesOrder()).thenReturn(false);
 
-        migrationSqsReceiveService.queueListenerMigrationCoreSalesOrderCreated(message);
+        migrationSqsReceiveService.queueListenerMigrationCoreSalesOrderCreated(message, messageWrapper);
 
-        verify(migrationSalesOrderService).handleMigrationCoreSalesOrderCreated(message);
+        verify(migrationSalesOrderService).handleMigrationCoreSalesOrderCreated(message, messageWrapper);
     }
 }
