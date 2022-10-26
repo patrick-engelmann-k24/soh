@@ -2,9 +2,11 @@ package de.kfzteile24.salesOrderHub.configuration;
 
 import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ParcelShippedMessage;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.FinancialDocumentsSqsReceiveService;
 import de.kfzteile24.salesOrderHub.services.general.GeneralSqsReceiveService;
+import de.kfzteile24.salesOrderHub.services.migration.MigrationSqsReceiveService;
 import de.kfzteile24.salesOrderHub.services.salesorder.SalesOrderSqsReceiveService;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
@@ -36,6 +38,8 @@ class LoggingAdviceIntegrationTest extends AbstractIntegrationTest {
     private FinancialDocumentsSqsReceiveService financialDocumentsSqsReceiveService;
     @Autowired
     private GeneralSqsReceiveService generalSqsReceiveService;
+    @Autowired
+    private MigrationSqsReceiveService migrationSqsReceiveService;
     @Autowired
     private SQSNamesConfig sqsNamesConfig;
 
@@ -146,6 +150,65 @@ class LoggingAdviceIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @DisplayName("Test Logging Advice Message Attribute Property for Migration Order Created Event")
+    void testMessageAttributeForMigrationOrderCreatedEvent(TestInfo testInfo) {
+
+        log.info(testInfo.getDisplayName());
+        var message = getRawMessageOfOrderWithoutOrderHeader();
+        var messageWrapper = MessageWrapper.builder()
+                .senderId(SENDER_ID)
+                .queueName(sqsNamesConfig.getMigrationCoreSalesOrderCreated())
+                .receiveCount(4)
+                .build();
+
+        migrationSqsReceiveService.queueListenerMigrationCoreSalesOrderCreated(message, messageWrapper);
+        verifyIfMessageIsSendingToDLQ(sqsNamesConfig.getMigrationCoreSalesOrderCreated() + "-dlq");
+
+        messageWrapper.setReceiveCount(3);
+
+        verifyErrorMessageIsLogged(() -> migrationSqsReceiveService.queueListenerMigrationCoreSalesOrderCreated(message, messageWrapper));
+    }
+
+    @Test
+    @DisplayName("Test Logging Advice Message Attribute Property for Migration Invoice Created Event")
+    void testMessageAttributeForMigrationInvoiceCreatedEvent(TestInfo testInfo) {
+
+        log.info(testInfo.getDisplayName());
+        var message = getObjectByResource("coreSalesInvoiceCreatedOneItem.json", CoreSalesInvoiceCreatedMessage.class);
+        var messageWrapper = MessageWrapper.builder()
+                .senderId(SENDER_ID)
+                .queueName(sqsNamesConfig.getMigrationCoreSalesInvoiceCreated())
+                .receiveCount(4)
+                .build();
+
+        migrationSqsReceiveService.queueListenerMigrationCoreSalesInvoiceCreated(message, messageWrapper);
+        verifyIfMessageIsSendingToDLQ(sqsNamesConfig.getMigrationCoreSalesInvoiceCreated() + "-dlq");
+
+        messageWrapper.setReceiveCount(3);
+
+        verifyErrorMessageIsLogged(() -> migrationSqsReceiveService.queueListenerMigrationCoreSalesInvoiceCreated(message, messageWrapper));
+    }
+
+    @Test
+    @DisplayName("Test Logging Advice Message Attribute Property for Migration Credit Note Created Event")
+    void testMessageAttributeForMigrationCreditNoteCreatedEvent(TestInfo testInfo) {
+
+        log.info(testInfo.getDisplayName());
+        var message = getObjectByResource("coreSalesCreditNoteCreated.json", SalesCreditNoteCreatedMessage.class);
+        var messageWrapper = MessageWrapper.builder()
+                .senderId(SENDER_ID)
+                .queueName(sqsNamesConfig.getMigrationCoreSalesCreditNoteCreated())
+                .receiveCount(4)
+                .build();
+
+        migrationSqsReceiveService.queueListenerMigrationCoreSalesCreditNoteCreated(message, messageWrapper);
+        verifyIfMessageIsSendingToDLQ(sqsNamesConfig.getMigrationCoreSalesCreditNoteCreated() + "-dlq");
+
+        messageWrapper.setReceiveCount(3);
+
+        verifyErrorMessageIsLogged(() -> migrationSqsReceiveService.queueListenerMigrationCoreSalesCreditNoteCreated(message, messageWrapper));
+    }
+
     @DisplayName("Test Logging Advice Message Attribute Property for Invoices From Core Event")
     void testMessageAttributeForInvoicesFromCoreEvent(TestInfo testInfo) {
 
@@ -169,6 +232,13 @@ class LoggingAdviceIntegrationTest extends AbstractIntegrationTest {
     private Order getRawMessageOfOrderWithoutCustomerNumber() {
         var message = getObjectByResource("ecpOrderMessageWithTwoRows.json", Order.class);
         message.getOrderHeader().getCustomer().setCustomerNumber(null);
+        return message;
+    }
+
+    @NotNull
+    private Order getRawMessageOfOrderWithoutOrderHeader() {
+        var message = getObjectByResource("ecpOrderMessageWithTwoRows.json", Order.class);
+        message.setOrderHeader(null);
         return message;
     }
 

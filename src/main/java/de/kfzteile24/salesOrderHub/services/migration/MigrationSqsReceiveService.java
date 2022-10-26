@@ -15,7 +15,6 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.aws.messaging.listener.annotation.SqsListener;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import static org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy.ON_SUCCESS;
@@ -36,13 +35,12 @@ public class MigrationSqsReceiveService extends AbstractSqsReceiveService {
     @SneakyThrows
     @SqsListener(value = "${soh.sqs.queue.migrationCoreSalesOrderCreated}", deletionPolicy = ON_SUCCESS)
     @Trace(metricName = "Handling migration core sales order created message", dispatcher = true)
-    @Transactional
-    public void queueListenerMigrationCoreSalesOrderCreated(@Validated Order message) {
+    public void queueListenerMigrationCoreSalesOrderCreated(@Validated Order message, MessageWrapper messageWrapper) {
 
         if (Boolean.TRUE.equals(featureFlagConfig.getIgnoreMigrationCoreSalesOrder())) {
             log.info("Migration Core Sales Order is ignored");
         } else {
-            migrationSalesOrderService.handleMigrationCoreSalesOrderCreated(message);
+            migrationSalesOrderService.handleMigrationCoreSalesOrderCreated(message, messageWrapper);
         }
     }
 
@@ -65,7 +63,6 @@ public class MigrationSqsReceiveService extends AbstractSqsReceiveService {
      */
     @SqsListener(value = "${soh.sqs.queue.migrationCoreSalesCreditNoteCreated}", deletionPolicy = ON_SUCCESS)
     @Trace(metricName = "Handling migration core sales credit note created message", dispatcher = true)
-    @Transactional
     public void queueListenerMigrationCoreSalesCreditNoteCreated(SalesCreditNoteCreatedMessage message, MessageWrapper messageWrapper) {
 
         if (Boolean.TRUE.equals(featureFlagConfig.getIgnoreMigrationCoreSalesCreditNote())) {
