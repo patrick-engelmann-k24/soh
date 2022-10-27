@@ -1,23 +1,19 @@
 package de.kfzteile24.salesOrderHub.services;
 
-import de.kfzteile24.salesOrderHub.helper.OrderUtil;
-import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.salesOrderHub.dto.mapper.CreditNoteEventMapper;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.FinancialDocumentsSqsReceiveService;
+import de.kfzteile24.salesOrderHub.services.sqs.EnrichMessageForDlq;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class MigrationCreditNoteService {
-
-    @NonNull
-    private final OrderUtil orderUtil;
 
     @NonNull
     private final SnsPublishService snsPublishService;
@@ -31,7 +27,7 @@ public class MigrationCreditNoteService {
     @NonNull
     private final FinancialDocumentsSqsReceiveService financialDocumentsSqsReceiveService;
 
-    @Transactional
+    @EnrichMessageForDlq
     public void handleMigrationCoreSalesCreditNoteCreated(SalesCreditNoteCreatedMessage message, MessageWrapper messageWrapper) {
 
         var salesCreditNoteHeader = message.getSalesCreditNote().getSalesCreditNoteHeader();

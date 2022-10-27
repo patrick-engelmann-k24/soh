@@ -5,6 +5,7 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderMapper;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderMapperImpl;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
@@ -51,11 +52,12 @@ class MigrationSalesOrderServiceTest {
     @Test
     void testHandleMigrationCoreSalesOrderCreatedDuplication() {
         var message = getObjectByResource("ecpOrderMessage.json", Order.class);
+        var messageWrapper = MessageWrapper.builder().build();
         SalesOrder salesOrder = getSalesOrder(message);
         when(orderUtil.copyOrderJson(any())).thenReturn(copyOrderJson(message));
         when(salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber())).thenReturn(Optional.of(salesOrder));
 
-        migrationSalesOrderService.handleMigrationCoreSalesOrderCreated(message);
+        migrationSalesOrderService.handleMigrationCoreSalesOrderCreated(message, messageWrapper);
 
         verify(salesOrderService).enrichSalesOrder(salesOrder, salesOrder.getLatestJson(), (Order) salesOrder.getOriginalOrder());
         verify(salesOrderService).save(argThat(so -> {
@@ -71,10 +73,11 @@ class MigrationSalesOrderServiceTest {
     void testHandleMigrationCoreSalesOrderCreatedNewOrder() {
 
         var message = getObjectByResource("ecpOrderMessage.json", Order.class);
+        var messageWrapper = MessageWrapper.builder().build();
         when(orderUtil.copyOrderJson(any())).thenReturn(copyOrderJson(message));
         when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.empty());
 
-        migrationSalesOrderService.handleMigrationCoreSalesOrderCreated(message);
+        migrationSalesOrderService.handleMigrationCoreSalesOrderCreated(message, messageWrapper);
 
         verify(salesOrderService).createSalesOrder(argThat(salesOrder -> {
                     assertThat(salesOrder.getOrderNumber()).isEqualTo(message.getOrderHeader().getOrderNumber());

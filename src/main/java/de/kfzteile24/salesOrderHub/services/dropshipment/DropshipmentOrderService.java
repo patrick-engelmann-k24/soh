@@ -23,6 +23,8 @@ import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
 import de.kfzteile24.salesOrderHub.services.property.KeyValuePropertyService;
+import de.kfzteile24.salesOrderHub.services.sqs.EnrichMessageForDlq;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import lombok.RequiredArgsConstructor;
@@ -69,7 +71,10 @@ public class DropshipmentOrderService {
     private final ReturnOrderHelper returnOrderHelper;
     private final ObjectMapper objectMapper;
 
-    public void handleDropShipmentOrderConfirmed(DropshipmentPurchaseOrderBookedMessage message) {
+    @EnrichMessageForDlq
+    public void handleDropShipmentOrderConfirmed(
+            DropshipmentPurchaseOrderBookedMessage message, MessageWrapper messageWrapper) {
+
         String orderNumber = message.getSalesOrderNumber();
         var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException("Could not find order: " + orderNumber));
@@ -81,7 +86,9 @@ public class DropshipmentOrderService {
                 Variables.putValue(IS_DROPSHIPMENT_ORDER_CONFIRMED.getName(), isDropshipmentOrderBooked));
     }
 
-    public void handleDropshipmentPurchaseOrderReturnConfirmed(DropshipmentPurchaseOrderReturnConfirmedMessage message) {
+    @EnrichMessageForDlq
+    public void handleDropshipmentPurchaseOrderReturnConfirmed(
+            DropshipmentPurchaseOrderReturnConfirmedMessage message, MessageWrapper messageWrapper) {
         var salesCreditNoteCreatedMessage = buildSalesCreditNoteCreatedMessage(message);
 
         var orderNumber = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber();
@@ -98,7 +105,10 @@ public class DropshipmentOrderService {
         return returnOrderHelper.buildSalesCreditNoteCreatedMessage(message, salesOrder, creditNoteNumber);
     }
 
-    public void handleDropShipmentOrderTrackingInformationReceived(DropshipmentShipmentConfirmedMessage message) throws JsonProcessingException {
+    @EnrichMessageForDlq
+    public void handleDropShipmentOrderTrackingInformationReceived(
+            DropshipmentShipmentConfirmedMessage message, MessageWrapper messageWrapper) throws JsonProcessingException {
+
         var orderNumber = message.getSalesOrderNumber();
         SalesOrder salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
@@ -223,7 +233,9 @@ public class DropshipmentOrderService {
                 newPreventDropshipmentOrderReturnConfirmed);
     }
 
-    public void handleDropshipmentPurchaseOrderReturnNotified(DropshipmentPurchaseOrderReturnNotifiedMessage message) {
+    @EnrichMessageForDlq
+    public void handleDropshipmentPurchaseOrderReturnNotified(
+            DropshipmentPurchaseOrderReturnNotifiedMessage message, MessageWrapper messageWrapper) {
 
         try {
             var salesOrder = salesOrderService.getOrderByOrderNumber(message.getSalesOrderNumber())

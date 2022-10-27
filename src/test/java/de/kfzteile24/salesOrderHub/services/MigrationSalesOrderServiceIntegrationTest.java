@@ -5,6 +5,7 @@ import com.github.tomakehurst.wiremock.client.WireMock;
 import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -47,7 +48,6 @@ class MigrationSalesOrderServiceIntegrationTest extends AbstractIntegrationTest 
     @Autowired
     private TimedPollingService pollingService;
 
-
     @Test
     void testHandleMigrationCoreSalesOrderCreated() throws URISyntaxException, IOException {
 
@@ -62,8 +62,9 @@ class MigrationSalesOrderServiceIntegrationTest extends AbstractIntegrationTest 
 
         var message = getObjectByResource("ecpOrderMessage.json", Order.class);
         Order originalOrder = copyOrderJson(message);
+        var messageWrapper = MessageWrapper.builder().build();
 
-        migrationSalesOrderService.handleMigrationCoreSalesOrderCreated(message);
+        migrationSalesOrderService.handleMigrationCoreSalesOrderCreated(message, messageWrapper);
 
         assertFalse(timedPollingService.poll(Duration.ofSeconds(7), Duration.ofSeconds(7),
                 () -> camundaHelper.checkIfActiveProcessExists(message.getOrderHeader().getOrderNumber())));
@@ -82,6 +83,7 @@ class MigrationSalesOrderServiceIntegrationTest extends AbstractIntegrationTest 
     void testHandleMigrationCoreSalesOrderCreatedDuplicateOrder() {
 
         var message = getObjectByResource("ecpOrderMessageWithTwoRows.json", Order.class);
+        var messageWrapper = MessageWrapper.builder().build();
         Order originalOrder = copyOrderJson(message);
         SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(message));
         camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
@@ -90,7 +92,7 @@ class MigrationSalesOrderServiceIntegrationTest extends AbstractIntegrationTest 
                 camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber()))
         );
 
-        migrationSalesOrderService.handleMigrationCoreSalesOrderCreated(message);
+        migrationSalesOrderService.handleMigrationCoreSalesOrderCreated(message, messageWrapper);
 
         assertTrue(timedPollingService.pollWithDefaultTiming(
                 () -> camundaHelper.checkIfActiveProcessExists(message.getOrderHeader().getOrderNumber())));
