@@ -2,8 +2,10 @@ package de.kfzteile24.salesOrderHub.controller.handler.impl;
 
 import de.kfzteile24.salesOrderHub.controller.dto.ActionType;
 import de.kfzteile24.salesOrderHub.controller.handler.AbstractActionHandler;
+import de.kfzteile24.salesOrderHub.dto.events.SalesCreditNoteReceivedEvent;
 import de.kfzteile24.salesOrderHub.dto.mapper.CreditNoteEventMapper;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderReturnNotFoundException;
+import de.kfzteile24.salesOrderHub.services.InvoiceUrlExtractor;
 import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -22,8 +24,14 @@ public class RepublishReturnOrderCreditNoteHandler extends AbstractActionHandler
         return orderNumber -> {
             var returnOrder = salesOrderReturnService.getByOrderNumber(orderNumber)
                     .orElseThrow(() -> new SalesOrderReturnNotFoundException(orderNumber));
-            snsPublishService.publishCreditNoteReceivedEvent(
-                    creditNoteEventMapper.toSalesCreditNoteReceivedEvent(returnOrder.getSalesCreditNoteCreatedMessage()));
+            SalesCreditNoteReceivedEvent creditNoteEvent =
+                    creditNoteEventMapper.toSalesCreditNoteReceivedEvent(returnOrder.getSalesCreditNoteCreatedMessage());
+
+            if (InvoiceUrlExtractor.isDropShipmentRelated(returnOrder.getReturnOrderJson().getOrderHeader().getOrderFulfillment())) {
+                snsPublishService.publishCreditNoteCreatedEvent(creditNoteEvent);
+            } else {
+                snsPublishService.publishCreditNoteReceivedEvent(creditNoteEvent);
+            }
         };
     }
 

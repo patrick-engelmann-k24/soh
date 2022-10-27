@@ -4,6 +4,7 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.dto.mapper.CreditNoteEventMapper;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderReturnNotFoundException;
+import de.kfzteile24.salesOrderHub.services.InvoiceUrlExtractor;
 import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import lombok.extern.slf4j.Slf4j;
@@ -34,7 +35,14 @@ public class PublishCreditNoteReceivedDelegate implements JavaDelegate {
         var salesCreditNoteCreatedMessage = salesOrderReturn.getSalesCreditNoteCreatedMessage();
         var salesCreditNoteReceivedEvent =
                 creditNoteEventMapper.toSalesCreditNoteReceivedEvent(salesCreditNoteCreatedMessage);
-        snsPublishService.publishCreditNoteReceivedEvent(salesCreditNoteReceivedEvent);
+
         log.info("{} delegate invoked", PublishCreditNoteReceivedDelegate.class.getSimpleName());
+        if (InvoiceUrlExtractor.isDropShipmentRelated(salesOrderReturn.getReturnOrderJson().getOrderHeader().getOrderFulfillment())) {
+            snsPublishService.publishCreditNoteCreatedEvent(salesCreditNoteReceivedEvent);
+            log.info("Dropshipment Credit Note Event is published from soh-credit-note-created-v1");
+        } else {
+            snsPublishService.publishCreditNoteReceivedEvent(salesCreditNoteReceivedEvent);
+            log.info("Core Sales Credit Note Event is published from soh-credit-note-received-v1");
+        }
     }
 }
