@@ -37,7 +37,7 @@ public class ReturnOrderHelper {
             for (DropshipmentPurchaseOrderPackageItemLine item : message.getPackages().stream()
                     .flatMap(c -> c.getItems().stream()).collect(Collectors.toList())) {
                 if (StringUtils.pathEquals(item.getProductNumber(), orderRow.getSku())) {
-                    var quantity = Optional.of(BigDecimal.valueOf(item.getQuantity())).orElse(BigDecimal.ZERO);
+                    var quantity = Optional.of(BigDecimal.valueOf(item.getQuantity()).negate()).orElse(BigDecimal.ZERO);
                     var unitNetAmount = Optional.ofNullable(orderRow.getUnitValues().getDiscountedNet()).orElse(BigDecimal.ZERO);
                     var lineNetAmount = round(getMultipliedValue(unitNetAmount, quantity));
                     var taxRate = Optional.ofNullable(orderRow.getTaxRate()).orElse(BigDecimal.ZERO);
