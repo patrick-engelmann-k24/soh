@@ -74,4 +74,16 @@ class PaypalRefundInstructionSuccessfulServiceTest {
 
         verify(snsPublishService, never()).publishPayoutReceiptConfirmationReceivedEvent(salesOrderReturn);
     }
+
+    @Test
+    void testHandlePaypalRefundInstructionSuccessfulCreditNoteMissing() {
+        var message = getObjectByResource("paypalRefundInstructionSuccessful.json", PaypalRefundInstructionSuccessfulEvent.class);
+        message.getEvent().getPaypalRequestPayload().setCreditNoteNumber(null);
+        var messageWrapper = MessageWrapper.builder().build();
+        SalesOrderReturn salesOrderReturn = SalesOrderReturn.builder().build();
+
+        paypalRefundInstructionSuccessfulService.handlePaypalRefundInstructionSuccessful(message, messageWrapper);
+
+        verify(snsPublishService, never()).publishPayoutReceiptConfirmationReceivedEvent(salesOrderReturn);
+    }
 }

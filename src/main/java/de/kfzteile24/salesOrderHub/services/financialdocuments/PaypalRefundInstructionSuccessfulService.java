@@ -11,6 +11,7 @@ import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -33,16 +34,21 @@ public class PaypalRefundInstructionSuccessfulService {
         log.info("Received core sales credit note created message with order group id: {} and credit note number:{}",
                 orderGroupId,
                 creditNoteNumber);
-        SalesOrderReturn salesOrderReturn = salesOrderReturnService.getReturnOrder(orderGroupId, creditNoteNumber)
-                .orElseThrow(() -> new SalesOrderReturnNotFoundException(orderGroupId, creditNoteNumber));
 
-        if (orderUtil.isDropshipmentOrder(salesOrderReturn.getReturnOrderJson())) {
-            snsPublishService.publishPayoutReceiptConfirmationReceivedEvent(salesOrderReturn);
+        if (StringUtils.isNotBlank(creditNoteNumber)) {
+
+            SalesOrderReturn salesOrderReturn = salesOrderReturnService.getReturnOrder(orderGroupId, creditNoteNumber)
+                    .orElseThrow(() -> new SalesOrderReturnNotFoundException(orderGroupId, creditNoteNumber));
+            if (orderUtil.isDropshipmentOrder(salesOrderReturn.getReturnOrderJson())) {
+                snsPublishService.publishPayoutReceiptConfirmationReceivedEvent(salesOrderReturn);
+            } else {
+                log.info("Return order searched with order group id {} and credit note number {} is not dropshipment, " +
+                                "paypal refund message is ignored",
+                        orderGroupId,
+                        creditNoteNumber);
+            }
         } else {
-            log.info("Return order searched with order group id {} and credit note number {} is not dropshipment, " +
-                            "paypal refund message is ignored",
-                    orderGroupId,
-                    creditNoteNumber);
+            log.info("Return order with order group id {} and missing credit note number is ignored", orderGroupId);
         }
     }
 }
