@@ -229,57 +229,6 @@ resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_invoices_from_core" 
   policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_invoices_from_core.json
 }
 
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_invoices_from_core" {
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sqs:*",
-    ]
-
-    principals {
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_invoices_from_core.arn
-    ]
-  }
-
-  statement {
-    sid = "SNS-invoices-from-core"
-    effect = "Allow"
-
-    actions = [
-      "sqs:SendMessage",
-    ]
-
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_invoices_from_core.arn
-    ]
-
-    condition {
-      test     = "ArnEquals"
-      variable = "aws:SourceArn"
-      values = [
-        var.invoices_from_core_sns
-      ]
-    }
-  }
-}
-
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_invoices_from_core" {
-  queue_url = aws_sqs_queue.soh_invoices_from_core.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_invoices_from_core.json
-}
-
 data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_d365_order_payment_secured" {
   statement {
     sid = "SNS-d365-order-payment-secured"
