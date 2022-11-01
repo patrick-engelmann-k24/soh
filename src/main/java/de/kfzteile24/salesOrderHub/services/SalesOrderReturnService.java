@@ -59,18 +59,18 @@ public class SalesOrderReturnService {
     @NonNull
     private final OrderUtil orderUtil;
 
-    public SalesOrderReturn getByOrderNumber(String orderNumber) {
+    public Optional<SalesOrderReturn> getByOrderNumber(String orderNumber) {
         return salesOrderReturnRepository.findByOrderNumber(orderNumber);
     }
 
     @Transactional(readOnly = true)
-    public SalesOrderReturn getReturnOrder(String orderNumber, String creditNoteNumber) {
+    public Optional<SalesOrderReturn> getReturnOrder(String orderNumber, String creditNoteNumber) {
 
         var oldReturnOrderNumber = orderUtil.createOldFormatReturnOrderNumberInSOH(orderNumber, creditNoteNumber);
         var newReturnOrderNumber = orderUtil.createReturnOrderNumberInSOH(creditNoteNumber);
 
-        SalesOrderReturn returnOrderWithNewPattern = getByOrderNumber(newReturnOrderNumber);
-        if (returnOrderWithNewPattern != null) {
+        Optional<SalesOrderReturn> returnOrderWithNewPattern = getByOrderNumber(newReturnOrderNumber);
+        if (returnOrderWithNewPattern.isPresent()) {
             return returnOrderWithNewPattern;
         }
 
@@ -79,7 +79,7 @@ public class SalesOrderReturnService {
 
     @Transactional(readOnly = true)
     public boolean checkReturnOrderNotExists(String orderNumber, final String creditNoteNumber) {
-        if (getReturnOrder(orderNumber, creditNoteNumber) != null) {
+        if (getReturnOrder(orderNumber, creditNoteNumber).isPresent()) {
             log.warn("The following order return won't be processed because it exists in SOH system already from another source. " +
                     "Order Number: {} and Credit Note Number: {}", orderNumber, creditNoteNumber);
             return false;
