@@ -65,10 +65,6 @@ public class OrderUtil {
         return lastRowKey;
     }
 
-    public String createSubsequentOrderNumberInSOH(String orderNumber, String invoiceNumber) {
-        return createOrderNumberInSOH(orderNumber, invoiceNumber);
-    }
-
     public String createOldFormatReturnOrderNumberInSOH(String orderNumber, String creditNoteNumber) {
         return createOrderNumberInSOH(orderNumber, creditNoteNumber);
     }

@@ -58,10 +58,6 @@ public class SnsPublishService {
                 "Sales order invoice address changed", orderNumber);
     }
 
-    public void publishDeliveryAddressChanged(String orderNumber) {
-        sendLatestOrderJson(config.getSnsDeliveryAddressChanged(), "Sales order delivery address changed", orderNumber);
-    }
-
     public void publishOrderRowCancelled(String orderNumber, String orderRowId) {
         final var orderRowCancelled = OrderRowCancelledEvent.builder()
                 .orderNumber(orderNumber)

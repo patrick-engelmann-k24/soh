@@ -125,8 +125,6 @@ class SaveInvoiceDelegateIntegrationTest extends AbstractIntegrationTest {
 
         assertTrue(invoicesWereUpdatedCorrectly);
 
-        util.finishOrderProcess(orderProcess, orderNumber);
-
         auditLogUtil.assertAuditLogExists(testOrder.getId(), ORDER_CREATED);
         for (SalesOrderInvoice invoice : salesOrderUtil.getSalesOrderInvoices(testOrder.getOrderNumber())) {
             auditLogUtil.assertAuditLogExists(invoice.getId(), INVOICE_RECEIVED, 1);
@@ -140,8 +138,6 @@ class SaveInvoiceDelegateIntegrationTest extends AbstractIntegrationTest {
         final var orderNumber = testOrder.getOrderNumber();
 
         assertTrue(util.isProcessWaitingAtExpectedToken(orderProcess, MSG_ORDER_PAYMENT_SECURED.getName()));
-
-        util.finishOrderProcess(orderProcess, orderNumber);
 
         final var expectedInvoice = createSalesOrderInvoice(orderNumber, false);
 

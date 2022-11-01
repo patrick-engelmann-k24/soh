@@ -1,4 +1,4 @@
-package de.kfzteile24.salesOrderHub.helper;
+package de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

@@ -216,18 +216,6 @@ class SnsPublishServiceTest {
 
     @Test
     @SneakyThrows(Exception.class)
-    void testPublishDeliveryAddressChanged() {
-        final var expectedTopic = "delivery-address changed";
-        final var expectedSubject = "Sales order delivery address changed";
-
-        given(awsSnsConfig.getSnsDeliveryAddressChanged()).willReturn(expectedTopic);
-
-        verifyPublishedEvent(expectedTopic, expectedSubject,
-                throwingConsumerWrapper(snsPublishService::publishDeliveryAddressChanged));
-    }
-
-    @Test
-    @SneakyThrows(Exception.class)
     void testPublishInvoiceAddressChanged() {
         final var expectedTopic = "invoice-address changed";
         final var expectedSubject = "Sales order invoice address changed";

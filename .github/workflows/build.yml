@@ -16,21 +16,14 @@ env:
   soh_order_created_v2: 'arn:aws:sns:eu-central-1:000000000000:soh-order-created-v2'
   soh_order_completed: 'arn:aws:sns:eu-central-1:000000000000:soh-order-completed'
   soh_invoice_address_changed: 'arn:aws:sns:eu-central-1:000000000000:soh-invoice-address-changed'
-  soh_delivery_address_changed: 'arn:aws:sns:eu-central-1:000000000000:soh-delivery-address-changed'
   soh_sales_order_row_cancellation: 'arn:aws:sns:eu-central-1:000000000000:soh-sales-order-row-cancellation'
   soh_sales_order_cancellation:  'arn:aws:sns:eu-central-1:000000000000:soh-sales-order-cancellation'
   soh_order_invoice_created_v1:  'arn:aws:sns:eu-central-1:000000000000:soh-order-invoice-created-v1'
   migration_soh_order_created_v2: 'arn:aws:sns:eu-central-1:000000000000:migration-soh-order-created-v2'
-
   soh_sqs_ecp_shop_orders: 'http://localhost:4566/000000000000/soh-ecp-shop-orders-queue'
   soh_sqs_bc_shop_orders: 'http://localhost:4566/000000000000/soh-bc-shop-orders-queue'
   soh_sqs_core_shop_orders: 'http://localhost:4566/000000000000/soh-core-shop-orders-queue'
-  soh_sqs_order_item_shipped: 'http://localhost:4566/000000000000/soh-order-item-shipped-queue'
   soh_sqs_order_payment_secured: 'http://localhost:4566/000000000000/soh-order-payment-secured-queue'
-  soh_sqs_order_item_transmitted_to_logistic: 'http://localhost:4566/000000000000/soh-order-item-transmitted-to-logistic-queue'
-  soh_sqs_order_item_packing_started: 'http://localhost:4566/000000000000/soh-order-item-packing-started-queue'
-  soh_sqs_order_item_tracking_id_received: 'http://localhost:4566/000000000000/soh-order-item-tracking-id-received-queue'
-  soh_sqs_order_item_tour_started: 'http://localhost:4566/000000000000/soh-order-item-tour-started-queue'
   soh_sqs_invoices_from_core: 'http://localhost:4566/000000000000/soh-invoices-from-core-queue'
   soh_sqs_d365_order_payment_secured: 'http://localhost:4566/000000000000/soh-d365-order-payment-secured-queue'
   soh_sqs_dropshipment_shipment_confirmed:  'http://localhost:4566/000000000000/soh-dropshipment-shipment-confirmed-queue'
@@ -43,8 +36,6 @@ env:
   soh_sqs_migration_core_sales_invoice_created: 'http://localhost:4566/000000000000/migration-core-sales-invoice-created-queue'
   soh_sqs_migration_core_sales_credit_note_created: 'http://localhost:4566/000000000000/migration-core-sales-credit-note-created-queue'
   soh_sqs_parcel_shipped: 'http://localhost:4566/000000000000/soh-parcel-shipped-queue'
-  soh_sqs_paypal_refund_instruction_successful: 'http://localhost:4566/000000000000/soh-paypal-refund-instruction-successful'
-
   ignore_core_sales_invoice: false
   ignore_core_credit_note: false
   ignore_migration_core_sales_invoice: false

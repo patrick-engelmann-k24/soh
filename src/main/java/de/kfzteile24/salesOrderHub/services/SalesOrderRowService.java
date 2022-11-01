@@ -1,19 +1,14 @@
 package de.kfzteile24.salesOrderHub.services;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
 import de.kfzteile24.salesOrderHub.dto.events.shipmentconfirmed.TrackingLink;
-import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ArticleItemsDto;
 import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ParcelShipped;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
-import de.kfzteile24.salesOrderHub.helper.EventMapper;
-import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Platform;
@@ -24,8 +19,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.RuntimeService;
-import org.camunda.bpm.engine.runtime.Execution;
-import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
@@ -34,12 +27,10 @@ import java.text.MessageFormat;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.COMBINED_ITEM_SEPARATOR;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_ROW_FULFILLMENT_PROCESS;
 
 @Service
 @Slf4j
@@ -54,9 +45,6 @@ public class SalesOrderRowService {
 
     @NonNull
     private final SalesOrderService salesOrderService;
-
-    @NonNull
-    private final OrderUtil orderUtil;
 
     @NonNull
     private final SnsPublishService snsPublishService;
@@ -92,55 +80,6 @@ public class SalesOrderRowService {
         }
     }
 
-    @Transactional
-    public void handleMigrationSubsequentOrder(CoreSalesInvoiceCreatedMessage salesInvoiceCreatedMessage,
-                                               SalesOrder salesOrder) {
-        var orderNumber = salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader().getOrderNumber();
-        var invoiceNumber = salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber();
-        var newOrderNumber = orderUtil.createOrderNumberInSOH(orderNumber, invoiceNumber);
-
-        if (!salesOrder.getOrderNumber().equals(orderNumber)) {
-            var originalSalesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
-                    .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
-            handleMigrationCancellationForOrderRows(
-                    originalSalesOrder,
-                    salesOrder.getLatestJson().getOrderRows(),
-                    invoiceNumber);
-            snsPublishService.publishMigrationOrderCreated(newOrderNumber);
-            log.info("Invoice with order number {} and invoice number: {} is duplicated with the original sales order. " +
-                    "Publishing event on migration topic", orderNumber, invoiceNumber);
-        }
-        snsPublishService.publishCoreInvoiceReceivedEvent(
-                EventMapper.INSTANCE.toCoreSalesInvoiceCreatedReceivedEvent(salesOrder.getInvoiceEvent()));
-        log.info("Publishing migration invoice created event with order number {} and invoice number: {}",
-                orderNumber,
-                invoiceNumber);
-    }
-
-    protected void handleMigrationCancellationForOrderRows(SalesOrder salesOrder,
-                                                           List<OrderRows> subsequentOrderRows,
-                                                           String invoiceNumber) {
-        List<OrderRows> salesOrderRowList = salesOrder.getLatestJson().getOrderRows();
-        Set<String> skuList = salesOrderRowList.stream().map(OrderRows::getSku).collect(Collectors.toSet());
-        subsequentOrderRows.stream()
-                .filter(row -> skuList.contains(row.getSku()))
-                .forEach(row -> {
-                    log.info("Invoice with invoice number: {} is duplicated with the subsequent sales order. " +
-                                    "Publishing event on sales order row cancelled migration topic for order number {} " +
-                                    "and order row id {}",
-                            invoiceNumber,
-                            salesOrder.getOrderNumber(),
-                            row.getSku());
-                    snsPublishService.publishMigrationOrderRowCancelled(salesOrder.getOrderNumber(), row.getSku());
-                });
-        if (salesOrderRowList.stream().allMatch(OrderRows::getIsCancelled)) {
-            log.info("Invoice with invoice number: {} is duplicated with the subsequent sales order. " +
-                            "Publishing event on sales order cancelled migration topic for order number {}",
-                    invoiceNumber, salesOrder.getOrderNumber());
-            snsPublishService.publishMigrationOrderCancelled(salesOrder.getLatestJson());
-        }
-    }
-
     private void cancelOrderRowsOfOrderGroup(String orderGroupId, String orderRowId) {
 
         List<String> orderNumberListByOrderGroupId = salesOrderService.getOrderNumberListByOrderGroupId(orderGroupId, orderRowId);
@@ -159,16 +98,8 @@ public class SalesOrderRowService {
             log.debug("Sales order process does not exist for order number {}", orderNumber);
         }
 
-        if (helper.checkIfOrderRowProcessExists(orderNumber, orderRowId)) {
-            correlateMessageForOrderRowCancelCancellation(orderNumber, orderRowId);
-
-        } else {
-            log.debug("Sales order row process does not exist for order number {} and order row: {}",
-                    orderNumber, orderRowId);
-
-            snsPublishService.publishOrderRowCancelled(orderNumber, orderRowId);
-            log.debug("Published Order row cancelled for order number: {} and order row: {}", orderNumber, orderRowId);
-        }
+        snsPublishService.publishOrderRowCancelled(orderNumber, orderRowId);
+        log.debug("Published Order row cancelled for order number: {} and order row: {}", orderNumber, orderRowId);
         log.info("Order row cancelled for order number: {} and order row: {}", orderNumber, orderRowId);
     }
 
@@ -248,66 +179,8 @@ public class SalesOrderRowService {
         return originalOrder.getOrderRows().stream().map(OrderRows::getSku).collect(Collectors.toList());
     }
 
-    private void correlateMessageForOrderRowCancelCancellation(String orderNumber, String orderRowId) {
-        log.info("Starting cancelling order row process for order number: {} and order row: {}", orderNumber, orderRowId);
-        List<Execution> processList = runtimeService.createExecutionQuery().
-                processDefinitionKey(SALES_ORDER_ROW_FULFILLMENT_PROCESS.getName())
-                .processInstanceBusinessKey(orderNumber + "#" + orderRowId)
-                .list();
-        if (!processList.isEmpty()) {
-            var processInstanceId = processList.stream().findFirst().orElseThrow().getProcessInstanceId();
-            runtimeService.createMessageCorrelation(RowMessages.ORDER_ROW_CANCELLATION_RECEIVED.getName())
-                    .processInstanceBusinessKey(orderNumber + "#" + orderRowId)
-                    .processInstanceId(processInstanceId)
-                    .correlateWithResult();
-        } else {
-            log.info("Could not find Order Row process for order number: {} and sku: {}", orderNumber, orderRowId);
-        }
-    }
-
-    public void correlateOrderRowMessage(RowMessages rowMessage,
-                                         String orderGroupId,
-                                         String orderItemSku,
-                                         String logMessage,
-                                         String rawMessage,
-                                         RowEvents rowEvents) {
-        if (isVirtualSku(orderItemSku)) {
-            log.info("sku: {} is a virtual item so it would be ignored for bpmn processes.", orderItemSku);
-        } else {
-            salesOrderService.getOrderNumberListByOrderGroupIdAndFilterNotCancelled(orderGroupId, orderItemSku).forEach(orderNumber -> {
-                try {
-                    MessageCorrelationResult result = helper.correlateMessageForOrderRowProcess(rowMessage, orderNumber, rowEvents, orderItemSku);
-
-                    if (!result.getExecution().getProcessInstanceId().isEmpty()) {
-                        log.info("{} message for order-number {} and sku {} successfully received",
-                                logMessage,
-                                orderNumber,
-                                orderItemSku
-                        );
-                    }
-                } catch (Exception e) {
-                    log.error("{} message error: \r\nOrderNumber: {}\r\nOrderItem-SKU: {}\r\nSQS-Message: {}\r\nError-Message: {}",
-                            logMessage,
-                            orderNumber,
-                            orderItemSku,
-                            rawMessage,
-                            e.getMessage()
-                    );
-                    throw e;
-                }
-            });
-        }
-    }
-
     private boolean isCorePlatformOrder(List<SalesOrder> salesOrders) {
         return Platform.CORE == ((Order)salesOrders.get(0).getOriginalOrder()).getOrderHeader().getPlatform();
-    }
-
-    private boolean isVirtualSku(String sku) {
-
-        return sku.startsWith("KBA") ||
-                sku.startsWith("MARK-") ||
-                (sku.startsWith("90") && sku.length() == 8 && !sku.contains("-"));
     }
 
     public void handleParcelShippedEvent(ParcelShipped event) {

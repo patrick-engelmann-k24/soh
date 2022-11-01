@@ -11,16 +11,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.ORDER_ROW_FULFILLMENT_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.MSG_ORDER_CORE_SALES_INVOICE_CREATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.MSG_ORDER_PAYMENT_SECURED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Gateways.XOR_CHECK_PAYMENT_TYPE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.POSITIVE_PAYMENT_TYPE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents.ROW_TRANSMITTED_TO_LOGISTICS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -44,17 +42,17 @@ class PaymentTypeGatewayModelTest extends AbstractWorkflowTest {
 
         processVariables.put(POSITIVE_PAYMENT_TYPE.getName(), true);
 
-        when(processScenario.waitsAtMessageIntermediateCatchEvent(ROW_TRANSMITTED_TO_LOGISTICS.getName()))
+        when(processScenario.waitsAtMessageIntermediateCatchEvent(MSG_ORDER_PAYMENT_SECURED.getName()))
+                .thenReturn(RECEIVED_MESSAGE_CATCH_EVENT_ACTION);
+
+        when(processScenario.waitsAtMessageIntermediateCatchEvent(MSG_ORDER_CORE_SALES_INVOICE_CREATED.getName()))
                 .thenReturn(WAIT_MESSAGE_CATCH_EVENT_ACTION);
-        when(processScenario.runsCallActivity(ORDER_ROW_FULFILLMENT_PROCESS.getName()))
-                .thenReturn(executeCallActivity());
 
         scenario = startBeforeActivity(SALES_ORDER_PROCESS, XOR_CHECK_PAYMENT_TYPE.getName(),
                 businessKey, processVariables);
 
         verify(processScenario, never()).hasStarted(MSG_ORDER_PAYMENT_SECURED.getName());
-        verify(processScenario, times(3)).waitsAtMockedCallActivity(ORDER_ROW_FULFILLMENT_PROCESS.getName());
-        verify(processScenario, times(3)).waitsAtMessageIntermediateCatchEvent(ROW_TRANSMITTED_TO_LOGISTICS.getName());
+        verify(processScenario).waitsAtMessageIntermediateCatchEvent(MSG_ORDER_CORE_SALES_INVOICE_CREATED.getName());
     }
 
     @Test
@@ -67,16 +65,13 @@ class PaymentTypeGatewayModelTest extends AbstractWorkflowTest {
 
         when(processScenario.waitsAtMessageIntermediateCatchEvent(MSG_ORDER_PAYMENT_SECURED.getName()))
                 .thenReturn(RECEIVED_MESSAGE_CATCH_EVENT_ACTION);
-        when(processScenario.waitsAtMessageIntermediateCatchEvent(ROW_TRANSMITTED_TO_LOGISTICS.getName()))
+        when(processScenario.waitsAtMessageIntermediateCatchEvent(MSG_ORDER_CORE_SALES_INVOICE_CREATED.getName()))
                 .thenReturn(WAIT_MESSAGE_CATCH_EVENT_ACTION);
-        when(processScenario.runsCallActivity(ORDER_ROW_FULFILLMENT_PROCESS.getName()))
-                .thenReturn(executeCallActivity());
 
         scenario = startBeforeActivity(SALES_ORDER_PROCESS, XOR_CHECK_PAYMENT_TYPE.getName(),
                 businessKey, processVariables);
 
         verify(processScenario).hasCompleted(MSG_ORDER_PAYMENT_SECURED.getName());
-        verify(processScenario, times(3)).waitsAtMockedCallActivity(ORDER_ROW_FULFILLMENT_PROCESS.getName());
-        verify(processScenario, times(3)).waitsAtMessageIntermediateCatchEvent(ROW_TRANSMITTED_TO_LOGISTICS.getName());
+        verify(processScenario).waitsAtMessageIntermediateCatchEvent(MSG_ORDER_CORE_SALES_INVOICE_CREATED.getName());
     }
 }

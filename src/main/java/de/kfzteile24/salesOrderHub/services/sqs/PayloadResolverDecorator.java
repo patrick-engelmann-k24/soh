@@ -7,7 +7,6 @@ import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessag
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnNotifiedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
-import de.kfzteile24.salesOrderHub.dto.sns.FulfillmentMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.OrderPaymentSecuredMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ParcelShippedMessage;
@@ -102,8 +101,6 @@ public class PayloadResolverDecorator extends PayloadMethodArgumentResolver {
         }
         if (json.getClass().isAssignableFrom(Order.class)) {
             return ((Order)json).getOrderHeader().getOrderNumber();
-        } else if (json.getClass().isAssignableFrom(FulfillmentMessage.class)) {
-            return ((FulfillmentMessage)json).getOrderNumber();
         } else if (json.getClass().isAssignableFrom(CoreDataReaderEvent.class)) {
             return ((CoreDataReaderEvent)json).getOrderNumber();
         } else if (json.getClass().isAssignableFrom(String.class)) {

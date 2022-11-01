@@ -27,6 +27,8 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.CustomEventName.SUBSEQUENT_ORDER_GENERATED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.MSG_ORDER_CORE_SALES_INVOICE_CREATED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toSet;
 
@@ -60,6 +62,13 @@ public class CoreSalesInvoiceCreatedService {
             try {
                 var originalSalesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                         .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
+
+                var processInstanceId = originalSalesOrder.getProcessId();
+
+                if (Objects.nonNull(processInstanceId) && camundaHelper.waitsOnActivityForMessage(originalSalesOrder.getProcessId(),
+                        MSG_ORDER_CORE_SALES_INVOICE_CREATED, ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED)) {
+                    camundaHelper.correlateMessage(ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED, originalSalesOrder);
+                }
 
                 boolean invoicePublished = isInvoicePublished(originalSalesOrder, invoiceNumber);
                 if (!invoicePublished && salesOrderService.isFullyMatchedWithOriginalOrder(originalSalesOrder, itemList)) {

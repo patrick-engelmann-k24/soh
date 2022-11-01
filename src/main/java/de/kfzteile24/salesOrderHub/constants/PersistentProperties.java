@@ -5,6 +5,6 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class PersistentProperties {
 
-    public String PAUSE_DROPSHIPMENT_PROCESSING ="pauseDropshipmentProcessing";
-    public String PREVENT_DROPSHIPMENT_ORDER_RETURN_CONFIRMED ="preventDropshipmentOrderReturnConfirmed";
+    public final String PAUSE_DROPSHIPMENT_PROCESSING ="pauseDropshipmentProcessing";
+    public final String PREVENT_DROPSHIPMENT_ORDER_RETURN_CONFIRMED ="preventDropshipmentOrderReturnConfirmed";
 }

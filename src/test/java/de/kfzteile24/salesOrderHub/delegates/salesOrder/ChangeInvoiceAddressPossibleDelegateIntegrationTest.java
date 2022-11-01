@@ -21,7 +21,6 @@ import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import de.kfzteile24.soh.order.dto.BillingAddress;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -35,7 +34,6 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.INVOICE_ADDRESS_CHANGED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
-import static org.camunda.bpm.engine.test.assertions.bpmn.AbstractAssertions.init;
 import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -113,8 +111,6 @@ class ChangeInvoiceAddressPossibleDelegateIntegrationTest extends AbstractIntegr
         assertEquals(updatedOrderOpt.get().getLatestJson().getOrderHeader().getBillingAddress(), newAddress);
         assertNotEquals(updatedOrderOpt.get().getOriginalOrder(), updatedOrderOpt.get().getLatestJson());
 
-        util.finishOrderProcess(orderProcess, orderNumber);
-
         auditLogUtil.assertAuditLogExists(testOrder.getId(), ORDER_CREATED);
         auditLogUtil.assertAuditLogExists(testOrder.getId(), INVOICE_ADDRESS_CHANGED);
     }
@@ -156,7 +152,6 @@ class ChangeInvoiceAddressPossibleDelegateIntegrationTest extends AbstractIntegr
         );
         assertThat(orderProcess).hasNotPassed(Events.END_MSG_INVOICE_ADDRESS_CHANGED.getName());
 
-        util.finishOrderProcess(orderProcess, orderNumber);
         auditLogUtil.assertAuditLogExists(testOrder.getId(), ORDER_CREATED);
         auditLogUtil.assertAuditLogDoesNotExist(testOrder.getId(), INVOICE_ADDRESS_CHANGED);
 

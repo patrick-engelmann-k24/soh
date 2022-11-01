@@ -12,7 +12,7 @@ spring:
   jpa:
     database: POSTGRESQL
     hibernate:
-      ddl-auto: none
+      ddl-auto: validate
   datasource:
     jdbcUrl: jdbc:postgresql://localhost:5432/soh?currentSchema=public
     username: soh
@@ -27,7 +27,6 @@ soh:
       orderCreatedV2:         arn:aws:sns:eu-central-1:000000000000:soh-order-created-v2
       orderCompleted:         arn:aws:sns:eu-central-1:000000000000:soh-sales-order-completed-v1
       invoiceAddressChanged:  arn:aws:sns:eu-central-1:000000000000:soh-invoice-address-changed
-      deliveryAddressChanged: arn:aws:sns:eu-central-1:000000000000:soh-delivery-address-changed
       salesOrderRowCancelled: arn:aws:sns:eu-central-1:000000000000:soh-sales-order-row-cancelled
       salesOrderCancelled:    arn:aws:sns:eu-central-1:000000000000:soh-sales-order-cancelled
       orderInvoiceCreatedV1:  arn:aws:sns:eu-central-1:000000000000:soh-order-invoice-created-v1
@@ -50,12 +49,7 @@ soh:
       ecpShopOrders:                  http://localhost:4566/000000000000/soh-ecp-shop-orders-queue
       bcShopOrders:                   http://localhost:4566/000000000000/soh-bc-shop-orders-queue
       coreShopOrders:                 http://localhost:4566/000000000000/soh-core-shop-orders-queue
-      orderItemShipped:               http://localhost:4566/000000000000/soh-order-item-shipped-queue
       orderPaymentSecured:            http://localhost:4566/000000000000/soh-order-payment-secured-queue
-      orderItemTransmittedToLogistic: http://localhost:4566/000000000000/soh-order-item-transmitted-to-logistic-queue
-      orderItemPackingStarted:        http://localhost:4566/000000000000/soh-order-item-packing-started-queue
-      orderItemTrackingIdReceived:    http://localhost:4566/000000000000/soh-order-item-tracking-id-received-queue
-      orderItemTourStarted:           http://localhost:4566/000000000000/soh-order-item-tour-started-queue
       invoicesFromCore:               http://localhost:4566/000000000000/soh-invoices-from-core-queue
       d365OrderPaymentSecured:        http://localhost:4566/000000000000/soh-d365-order-payment-secured-queue
       dropshipmentShipmentConfirmed:  http://localhost:4566/000000000000/soh-dropshipment-shipment-confirmed-queue

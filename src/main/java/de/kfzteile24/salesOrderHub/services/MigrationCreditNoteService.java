@@ -1,10 +1,10 @@
 package de.kfzteile24.salesOrderHub.services;
 
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.salesOrderHub.dto.mapper.CreditNoteEventMapper;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.FinancialDocumentsSqsReceiveService;
 import de.kfzteile24.salesOrderHub.services.sqs.EnrichMessageForDlq;
-import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

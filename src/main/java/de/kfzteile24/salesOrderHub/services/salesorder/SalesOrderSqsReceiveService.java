@@ -1,10 +1,7 @@
 package de.kfzteile24.salesOrderHub.services.salesorder;
 
 import com.newrelic.api.agent.Trace;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
-import de.kfzteile24.salesOrderHub.dto.sns.FulfillmentMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.OrderPaymentSecuredMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.services.SalesOrderPaymentSecuredService;
@@ -63,24 +60,6 @@ public class SalesOrderSqsReceiveService extends AbstractSqsReceiveService {
     }
 
     /**
-     * Consume messages from sqs for event order item shipped
-     */
-    @SqsListener(value = "${soh.sqs.queue.orderItemShipped}", deletionPolicy = ON_SUCCESS)
-    @Trace(metricName = "Handling ItemShipped message", dispatcher = true)
-    public void queueListenerItemShipped(FulfillmentMessage message, MessageWrapper messageWrapper) {
-
-        log.info("Received item shipped  message with order number: {} ", message.getOrderNumber());
-
-        salesOrderRowService.correlateOrderRowMessage(
-                RowMessages.ROW_SHIPPED,
-                message.getOrderNumber(),
-                message.getOrderItemSku(),
-                "Order item shipped",
-                messageWrapper.getPayload(),
-                RowEvents.ROW_SHIPPED);
-    }
-
-    /**
      * Consume messages from sqs for order payment secured
      */
     @SqsListener(value = "${soh.sqs.queue.orderPaymentSecured}", deletionPolicy = ON_SUCCESS)
@@ -95,78 +74,6 @@ public class SalesOrderSqsReceiveService extends AbstractSqsReceiveService {
                 .ifPresentOrElse(p -> salesOrderPaymentSecuredService.correlateOrderReceivedPaymentSecured(orderNumber),
                         () -> log.info("Order with order number: {} has paypal payment type. Prevent processing order" +
                                 " payment secured message", orderNumber));
-    }
-
-    /**
-     * Consume messages from sqs for order item transmitted to logistic
-     */
-    @SqsListener(value = "${soh.sqs.queue.orderItemTransmittedToLogistic}", deletionPolicy = ON_SUCCESS)
-    @Trace(metricName = "Handling OrderItemTransmittedToLogistic message", dispatcher = true)
-    public void queueListenerOrderItemTransmittedToLogistic(FulfillmentMessage message, MessageWrapper messageWrapper) {
-
-        log.info("Received order item transmitted to logistic message with order number: {} ", message.getOrderNumber());
-
-        salesOrderRowService.correlateOrderRowMessage(
-                RowMessages.ROW_TRANSMITTED_TO_LOGISTICS,
-                message.getOrderNumber(),
-                message.getOrderItemSku(),
-                "Order item transmitted to logistic",
-                messageWrapper.getPayload(),
-                RowEvents.ROW_TRANSMITTED_TO_LOGISTICS);
-    }
-
-    /**
-     * Consume messages from sqs for event order item packing started
-     */
-    @SqsListener(value = "${soh.sqs.queue.orderItemPackingStarted}", deletionPolicy = ON_SUCCESS)
-    @Trace(metricName = "Handling OrderItemPacking message", dispatcher = true)
-    public void queueListenerOrderItemPackingStarted(FulfillmentMessage message, MessageWrapper messageWrapper) {
-
-        log.info("Received order item packing message with order number: {} ", message.getOrderNumber());
-
-        salesOrderRowService.correlateOrderRowMessage(
-                RowMessages.PACKING_STARTED,
-                message.getOrderNumber(),
-                message.getOrderItemSku(),
-                "Order item packing started",
-                messageWrapper.getPayload(),
-                RowEvents.PACKING_STARTED);
-    }
-
-    /**
-     * Consume messages from sqs for event order item tracking id received
-     */
-    @SqsListener(value = "${soh.sqs.queue.orderItemTrackingIdReceived}", deletionPolicy = ON_SUCCESS)
-    @Trace(metricName = "Handling OrderItemTrackingIdReceived message", dispatcher = true)
-    public void queueListenerOrderItemTrackingIdReceived(FulfillmentMessage message, MessageWrapper messageWrapper) {
-
-        log.info("Received order item tracking id message with order number: {} ", message.getOrderNumber());
-
-        salesOrderRowService.correlateOrderRowMessage(
-                RowMessages.TRACKING_ID_RECEIVED,
-                message.getOrderNumber(),
-                message.getOrderItemSku(),
-                "Order item tracking id received",
-                messageWrapper.getPayload(),
-                RowEvents.TRACKING_ID_RECEIVED);
-    }
-
-    /**
-     * Consume messages from sqs for event order item tour started
-     */
-    @SqsListener(value = "${soh.sqs.queue.orderItemTourStarted}", deletionPolicy = ON_SUCCESS)
-    @Trace(metricName = "Handling OrderItemTourStarted message", dispatcher = true)
-    public void queueListenerOrderItemTourStarted(FulfillmentMessage message, MessageWrapper messageWrapper) {
-
-        log.info("Received order item tour started message with order number: {} ", message.getOrderNumber());
-
-        salesOrderRowService.correlateOrderRowMessage(
-                RowMessages.TOUR_STARTED,
-                message.getOrderNumber(),
-                message.getOrderItemSku(),
-                "Order item tour started",
-                messageWrapper.getPayload(),
-                RowEvents.TOUR_STARTED);
     }
 
     /**

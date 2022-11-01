@@ -1,7 +1,6 @@
 package de.kfzteile24.salesOrderHub.services.financialdocuments;
 
 import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
-import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
@@ -17,6 +16,7 @@ import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.InvoiceNumberCounterRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.GrandTotalTaxes;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
@@ -25,6 +25,7 @@ import de.kfzteile24.soh.order.dto.Totals;
 import de.kfzteile24.soh.order.dto.UnitValues;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.junit.jupiter.api.AfterEach;
@@ -43,8 +44,10 @@ import java.util.Map;
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.ORDER_NUMBER_SEPARATOR;
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.RETURN_ORDER_NUMBER_PREFIX;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.MSG_ORDER_CORE_SALES_INVOICE_CREATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.MSG_ORDER_PAYMENT_SECURED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_CREDIT_NOTE_CREATED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_GROUP_ID;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
@@ -55,11 +58,13 @@ import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResourc
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createOrderNumberInSOH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @Slf4j
@@ -253,7 +258,6 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
 
         String originalOrderNumber = salesOrder.getOrderNumber();
         String invoiceNumber = "10";
-        String rowSku = "2010-10183";
 
         var message = getObjectByResource("coreSalesInvoiceCreatedOneItem.json", CoreSalesInvoiceCreatedMessage.class);
         var messageWrapper = MessageWrapper.builder().build();
@@ -261,7 +265,12 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
         //Replace order number with randomly created order number as expected
         message.getSalesInvoice().getSalesInvoiceHeader().setOrderNumber(originalOrderNumber);
 
+        assertTrue(bpmUtil.isProcessWaitingAtExpectedToken(orderProcess, MSG_ORDER_CORE_SALES_INVOICE_CREATED.getName()));
+
         financialDocumentsSqsReceiveService.queueListenerCoreSalesInvoiceCreated(message, messageWrapper);
+
+        verify(camundaHelper).correlateMessage(eq(ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED),
+                argThat(order -> StringUtils.equals(order.getOrderNumber(), originalOrderNumber)));
 
         String newOrderNumberCreatedInSoh = createOrderNumberInSOH(originalOrderNumber, invoiceNumber);
         checkTotalsValues(newOrderNumberCreatedInSoh,
@@ -274,6 +283,33 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
                 "0");
 
         verifyThatNewRelicIsCalled(newOrderNumberCreatedInSoh);
+
+        assertTrue(bpmUtil.isProcessEnded(orderProcess));
+    }
+
+    @Test
+    void testQueueListenerCoreSalesInvoiceCreatedWaitingOnOrderPaymentSecured() {
+
+        var salesOrder = salesOrderUtil.createNewSalesOrder();
+        final ProcessInstance orderProcess = camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
+        assertTrue(bpmUtil.isProcessWaitingAtExpectedToken(orderProcess, MSG_ORDER_PAYMENT_SECURED.getName()));
+
+        String originalOrderNumber = salesOrder.getOrderNumber();
+
+        var message = getObjectByResource("coreSalesInvoiceCreatedOneItem.json", CoreSalesInvoiceCreatedMessage.class);
+        var messageWrapper = MessageWrapper.builder().build();
+
+        //Replace order number with randomly created order number as expected
+        message.getSalesInvoice().getSalesInvoiceHeader().setOrderNumber(originalOrderNumber);
+
+        assertFalse(bpmUtil.isProcessWaitingAtExpectedToken(orderProcess, MSG_ORDER_CORE_SALES_INVOICE_CREATED.getName()));
+
+        financialDocumentsSqsReceiveService.queueListenerCoreSalesInvoiceCreated(message, messageWrapper);
+
+        verify(camundaHelper, never()).correlateMessage(eq(ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED),
+                argThat(order -> StringUtils.equals(order.getOrderNumber(), originalOrderNumber)));
+
+        assertFalse(bpmUtil.isProcessEnded(orderProcess));
     }
 
     @Test

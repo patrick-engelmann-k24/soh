@@ -10,7 +10,6 @@ import de.kfzteile24.salesOrderHub.services.SalesOrderAddressService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.soh.order.dto.BillingAddress;
 import de.kfzteile24.soh.order.dto.Order;
-import de.kfzteile24.soh.order.dto.ShippingAddress;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -85,36 +84,6 @@ public class OrderController implements IBaseController {
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<String> updateBillingAddress(@PathVariable String orderNumber, @RequestBody final BillingAddress address) {
         return orderAddressService.updateBillingAddress(orderNumber, address);
-    }
-
-    /**
-     * Change delivery address for the order row if this is not over an defined state
-     *
-     * <P>Parcel: only before "Packing started"<br/>
-     * Own delivery: only before "Tour started"<br/>
-     * Pickup: n/a</P>
-     *
-     * @param orderNumber The order number from the order where the order row is part of it
-     * @param orderRowId The order row id where the address tried to changed
-     * @param address The new delivery address
-     * @return Response entity with the result of the delivery address update
-     */
-    @Operation(summary = "Change delivery address for the order row if this is not over an defined state",
-            parameters = {
-                @Parameter(in = ParameterIn.PATH, name = "orderNumber",
-                        description = "The order number from the order where the order row is part of it", example = "91345435"),
-                @Parameter(in = ParameterIn.PATH, name = "orderRowId",
-                        description = "The order row id where the address tried to changed", example = "11111")
-    })
-    @ApiResponses(value = {
-            @ApiResponse(responseCode  = "200", description  = "Delivery address updated successfully", content = {
-                    @Content(mediaType = "application/json", schema = @Schema(implementation = String.class))})
-    })
-    @PutMapping("/{orderNumber}/{orderItemId}/deliveryAddress")
-    @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<String> updateDeliveryAddress(
-            @PathVariable("orderNumber") final String orderNumber, @PathVariable("orderItemId") final String orderRowId, @RequestBody final ShippingAddress address) {
-        return orderAddressService.updateDeliveryAddress(orderNumber, orderRowId, address);
     }
 
     /**

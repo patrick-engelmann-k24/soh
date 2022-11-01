@@ -1,6 +1,5 @@
 package de.kfzteile24.salesOrderHub.services;
 
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowEvents;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.events.shipmentconfirmed.TrackingLink;
@@ -13,17 +12,12 @@ import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Totals;
 import org.assertj.core.util.Lists;
 import org.camunda.bpm.engine.RuntimeService;
-import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
-import org.camunda.bpm.engine.impl.runtime.CorrelationHandlerResult;
-import org.camunda.bpm.engine.impl.runtime.MessageCorrelationResultImpl;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.runtime.ProcessInstanceQuery;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -35,13 +29,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Stream;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROWS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.RowMessages.ROW_TRANSMITTED_TO_LOGISTICS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CANCELLED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ROW_CANCELLED;
@@ -62,9 +54,6 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class SalesOrderRowServiceTest {
-
-    private static final String ANY_PROCESS_INSTANCE_ID = UUID.randomUUID().toString();
-    private static final String ANY_PROCESS_ID = UUID.randomUUID().toString();
 
     @Mock
     private CamundaHelper camundaHelper;
@@ -113,62 +102,6 @@ class SalesOrderRowServiceTest {
         verify(runtimeService).getVariable(processId, ORDER_ROWS.getName());
         verify(runtimeService).setVariable(processId, ORDER_ROWS.getName(), orderRowIds);
         verify(snsPublishService).publishOrderRowCancelled(any(), any());
-    }
-
-    @ParameterizedTest
-    @MethodSource("provideArgumentsForCorrelateOrderRowMessageForNonVirtualItems")
-    void testCorrelateOrderRowMessageFilteredOIn(String orderItemSku) {
-
-        var executionEntity = new ExecutionEntity();
-        executionEntity.setId(ANY_PROCESS_ID);
-        executionEntity.setProcessInstanceId(ANY_PROCESS_INSTANCE_ID);
-        var messageCorrelationResult =
-                new MessageCorrelationResultImpl(CorrelationHandlerResult.matchedExecution(executionEntity));
-
-        when(salesOrderService.getOrderNumberListByOrderGroupIdAndFilterNotCancelled(anyString(), anyString()))
-                .thenReturn(List.of("fake_order_number"));
-        when(camundaHelper.correlateMessageForOrderRowProcess(any(), any(), any(), any()))
-                .thenReturn(messageCorrelationResult);
-
-        salesOrderRowService.correlateOrderRowMessage(
-                ROW_TRANSMITTED_TO_LOGISTICS,
-                "fake_order_number",
-                orderItemSku,
-                "",
-                "",
-                RowEvents.ROW_TRANSMITTED_TO_LOGISTICS);
-
-        verify(salesOrderService).getOrderNumberListByOrderGroupIdAndFilterNotCancelled(
-                "fake_order_number",
-                orderItemSku);
-        verify(camundaHelper).correlateMessageForOrderRowProcess(
-                ROW_TRANSMITTED_TO_LOGISTICS,
-                "fake_order_number",
-                RowEvents.ROW_TRANSMITTED_TO_LOGISTICS,
-                orderItemSku);
-
-    }
-
-    @ParameterizedTest
-    @MethodSource("provideArgumentsForCorrelateOrderRowMessageForVirtualItems")
-    void testCorrelateOrderRowMessageFilteredOut(String orderItemSku) {
-
-        salesOrderRowService.correlateOrderRowMessage(
-                ROW_TRANSMITTED_TO_LOGISTICS,
-                "fake_order_number",
-                orderItemSku,
-                "",
-                "",
-                RowEvents.ROW_TRANSMITTED_TO_LOGISTICS);
-
-        verify(salesOrderService, never()).getOrderNumberListByOrderGroupIdAndFilterNotCancelled(
-                "fake_order_number",
-                orderItemSku);
-        verify(camundaHelper, never()).correlateMessageForOrderRowProcess(
-                ROW_TRANSMITTED_TO_LOGISTICS,
-                "fake_order_number",
-                RowEvents.ROW_TRANSMITTED_TO_LOGISTICS,
-                orderItemSku);
     }
 
     @Test

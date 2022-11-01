@@ -6,7 +6,6 @@ import java.time.format.DateTimeFormatter;
 public final class SOHConstants {
 
     public static final BigDecimal TWO_CENTS = new BigDecimal("0.02");
-    public static final String INVOICE_NUMBER_SEPARATOR = "-";
     public static final String ORDER_NUMBER_SEPARATOR = "-";
 
     public static final String CREDIT_NOTE_NUMBER_SEPARATOR = "2";
