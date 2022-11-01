@@ -154,7 +154,7 @@ public class SalesOrderReturnService {
                         createReturnOrderJson(salesCreditNoteCreatedMessage, salesOrder, newReturnOrderNumber))
                 .salesOrder(salesOrder)
                 .salesCreditNoteCreatedMessage(
-                        createCreditNoteEventMessage(salesCreditNoteCreatedMessage, newReturnOrderNumber))
+                        createCreditNoteEventMessage(salesOrder, salesCreditNoteCreatedMessage, newReturnOrderNumber))
                 .build();
     }
 
@@ -244,13 +244,14 @@ public class SalesOrderReturnService {
                             ifPresent(tax -> tax.setValue(tax.getValue().add(taxValueToAdd)));
                 });
     }
-    private SalesCreditNoteCreatedMessage createCreditNoteEventMessage(SalesCreditNoteCreatedMessage message,
+    SalesCreditNoteCreatedMessage createCreditNoteEventMessage(SalesOrder salesOrder,
+                                                                       SalesCreditNoteCreatedMessage message,
                                                                        String newOrderNumber) {
         return SalesCreditNoteCreatedMessage.builder()
                 .salesCreditNote(SalesCreditNote.builder()
                         .salesCreditNoteHeader(SalesCreditNoteHeader.builder()
                                 .orderNumber(newOrderNumber)
-                                .orderGroupId(message.getSalesCreditNote().getSalesCreditNoteHeader().getOrderGroupId())
+                                .orderGroupId(salesOrder.getOrderGroupId())
                                 .creditNoteNumber(message.getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteNumber())
                                 .creditNoteDate(message.getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteDate())
                                 .currencyCode(message.getSalesCreditNote().getSalesCreditNoteHeader().getCurrencyCode())
