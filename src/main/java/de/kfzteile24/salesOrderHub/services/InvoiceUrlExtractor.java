@@ -145,6 +145,6 @@ public class InvoiceUrlExtractor {
     }
 
     public boolean isDropShipmentRelated(final String orderFulfillment) {
-        return !StringUtils.equalsIgnoreCase(orderFulfillment, K24.getName());
+        return orderFulfillment != null && !StringUtils.equalsIgnoreCase(orderFulfillment, K24.getName());
     }
 }
