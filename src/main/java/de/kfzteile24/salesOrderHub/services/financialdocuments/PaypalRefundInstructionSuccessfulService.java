@@ -38,8 +38,12 @@ public class PaypalRefundInstructionSuccessfulService {
         if (StringUtils.isNotBlank(creditNoteNumber)) {
 
             SalesOrderReturn salesOrderReturn = salesOrderReturnService.getReturnOrder(orderGroupId, creditNoteNumber)
-                    .orElseThrow(() -> new SalesOrderReturnNotFoundException(orderGroupId, creditNoteNumber));
-            if (orderUtil.isDropshipmentOrder(salesOrderReturn.getReturnOrderJson())) {
+                    .orElse(null);
+            if (salesOrderReturn == null) {
+                log.info("Return Order not found with order-grou-id {} and credit note number {}",
+                        orderGroupId,
+                        creditNoteNumber);
+            } else if (orderUtil.isDropshipmentOrder(salesOrderReturn.getReturnOrderJson())) {
                 snsPublishService.publishPayoutReceiptConfirmationReceivedEvent(salesOrderReturn);
             } else {
                 log.info("Return order searched with order group id {} and credit note number {} is not dropshipment, " +
