@@ -145,6 +145,8 @@ class InvoiceUrlExtractorTest {
     @Test
     void testIsDropShipmentRelatedTrue() {
         assertThat(InvoiceUrlExtractor.isDropShipmentRelated("delticom")).isTrue();
+        assertThat(InvoiceUrlExtractor.isDropShipmentRelated("K24")).isFalse();
+        assertThat(InvoiceUrlExtractor.isDropShipmentRelated(null)).isFalse();
     }
 
     @Test
