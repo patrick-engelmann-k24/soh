@@ -40,7 +40,7 @@ class PaypalRefundInstructionSuccessfulServiceTest {
         var message = getObjectByResource("paypalRefundInstructionSuccessful.json", PaypalRefundInstructionSuccessfulEvent.class);
         var messageWrapper = MessageWrapper.builder().build();
 
-        when(salesOrderReturnService.getReturnOrder("123456789", "123456789")).thenReturn(null);
+        when(salesOrderReturnService.getReturnOrder("123456789", "123456789")).thenReturn(Optional.empty());
 
         paypalRefundInstructionSuccessfulService.handlePaypalRefundInstructionSuccessful(message, messageWrapper);
 

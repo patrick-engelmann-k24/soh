@@ -40,7 +40,7 @@ public class PaypalRefundInstructionSuccessfulService {
 
             var salesOrderReturn = salesOrderReturnService.getReturnOrder(orderGroupId, creditNoteNumber);
 
-            if (salesOrderReturn == null) {
+            if (salesOrderReturn.isEmpty()) {
                 log.info("Return Order not found with order-group-id {} and credit note number {}",
                         orderGroupId,
                         creditNoteNumber);
