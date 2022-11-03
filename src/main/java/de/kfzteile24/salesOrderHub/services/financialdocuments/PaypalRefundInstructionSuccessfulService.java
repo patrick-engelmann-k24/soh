@@ -2,7 +2,6 @@ package de.kfzteile24.salesOrderHub.services.financialdocuments;
 
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.dto.sns.PaypalRefundInstructionSuccessfulEvent;
-import de.kfzteile24.salesOrderHub.exception.SalesOrderReturnNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
@@ -37,10 +36,14 @@ public class PaypalRefundInstructionSuccessfulService {
 
         if (StringUtils.isNotBlank(creditNoteNumber)) {
 
-            SalesOrderReturn salesOrderReturn = salesOrderReturnService.getReturnOrder(orderGroupId, creditNoteNumber)
-                    .orElseThrow(() -> new SalesOrderReturnNotFoundException(orderGroupId, creditNoteNumber));
-            if (orderUtil.isDropshipmentOrder(salesOrderReturn.getReturnOrderJson())) {
-                snsPublishService.publishPayoutReceiptConfirmationReceivedEvent(salesOrderReturn);
+            var salesOrderReturn = salesOrderReturnService.getReturnOrder(orderGroupId, creditNoteNumber);
+
+            if (salesOrderReturn.isEmpty()) {
+                log.info("Return Order not found with order-group-id {} and credit note number {}",
+                        orderGroupId,
+                        creditNoteNumber);
+            } else if (orderUtil.isDropshipmentOrder(salesOrderReturn.get().getReturnOrderJson())) {
+                snsPublishService.publishPayoutReceiptConfirmationReceivedEvent(salesOrderReturn.get());
             } else {
                 log.info("Return order searched with order group id {} and credit note number {} is not dropshipment, " +
                                 "paypal refund message is ignored",

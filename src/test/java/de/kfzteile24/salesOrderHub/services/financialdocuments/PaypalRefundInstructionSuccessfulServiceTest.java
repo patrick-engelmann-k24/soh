@@ -17,6 +17,7 @@ import java.util.Optional;
 
 import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -41,10 +42,9 @@ class PaypalRefundInstructionSuccessfulServiceTest {
 
         when(salesOrderReturnService.getReturnOrder("123456789", "123456789")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> paypalRefundInstructionSuccessfulService.handlePaypalRefundInstructionSuccessful(
-                message, messageWrapper))
-                .isExactlyInstanceOf(SalesOrderReturnNotFoundException.class)
-                .hasMessageContaining("Sales order return not found for the given order number 123456789 and credit note number 123456789 ");
+        paypalRefundInstructionSuccessfulService.handlePaypalRefundInstructionSuccessful(message, messageWrapper);
+
+        verify(snsPublishService, never()).publishPayoutReceiptConfirmationReceivedEvent(any());
     }
 
     @Test
