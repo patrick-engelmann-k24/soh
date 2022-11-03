@@ -41,7 +41,7 @@ public class PaypalRefundInstructionSuccessfulService {
             var salesOrderReturn = salesOrderReturnService.getReturnOrder(orderGroupId, creditNoteNumber);
 
             if (salesOrderReturn == null) {
-                log.info("Return Order not found with order-grou-id {} and credit note number {}",
+                log.info("Return Order not found with order-group-id {} and credit note number {}",
                         orderGroupId,
                         creditNoteNumber);
             } else if (orderUtil.isDropshipmentOrder(salesOrderReturn.get().getReturnOrderJson())) {
