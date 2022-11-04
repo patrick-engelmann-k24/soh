@@ -9,6 +9,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnNotifi
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.OrderPaymentSecuredMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesOrderCancelledMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ParcelShippedMessage;
 import de.kfzteile24.salesOrderHub.helper.SleuthHelper;
 import de.kfzteile24.salesOrderHub.services.InvoiceUrlExtractor;
@@ -121,6 +122,8 @@ public class PayloadResolverDecorator extends PayloadMethodArgumentResolver {
             return ((CoreSalesInvoiceCreatedMessage)json).getSalesInvoice().getSalesInvoiceHeader().getOrderNumber();
         } else if (json.getClass().isAssignableFrom(ParcelShippedMessage.class)) {
             return ((ParcelShippedMessage)json).getMessage().getOrderNumber();
+        } else if (json.getClass().isAssignableFrom(CoreSalesOrderCancelledMessage.class)) {
+            return ((CoreSalesOrderCancelledMessage)json).getOrderNumber();
         }
 
         return StringUtils.EMPTY;

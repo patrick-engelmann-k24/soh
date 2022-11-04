@@ -50,20 +50,29 @@ public class SalesOrderRowService {
     private final SnsPublishService snsPublishService;
 
     public boolean cancelOrderProcessIfFullyCancelled(SalesOrder salesOrder) {
-
         if (salesOrder.getLatestJson().getOrderRows().stream().allMatch(OrderRows::getIsCancelled)) {
-            log.info("Order with order number: {} is fully cancelled", salesOrder.getOrderNumber());
+            cancelOrder(salesOrder, true);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public void cancelOrder(SalesOrder salesOrder) {
+        cancelOrder(salesOrder, false);
+    }
+
+    private void cancelOrder(SalesOrder salesOrder, boolean cancelOrderRows) {
+        log.info("Order with order number: {} is fully cancelled", salesOrder.getOrderNumber());
+        if (cancelOrderRows) {
             for (OrderRows orderRow : salesOrder.getLatestJson().getOrderRows()) {
                 if (!helper.isShipped(orderRow.getShippingType())) {
                     orderRow.setIsCancelled(true);
                 }
             }
-            salesOrder.setCancelled(true);
-            salesOrderService.save(salesOrder, Action.ORDER_CANCELLED);
-            return true;
-        } else {
-            return false;
         }
+        salesOrder.setCancelled(true);
+        salesOrderService.save(salesOrder, Action.ORDER_CANCELLED);
     }
 
     @SneakyThrows
