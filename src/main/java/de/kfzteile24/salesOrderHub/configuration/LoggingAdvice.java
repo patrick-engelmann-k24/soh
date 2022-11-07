@@ -3,6 +3,7 @@ package de.kfzteile24.salesOrderHub.configuration;
 import com.amazonaws.services.sqs.AmazonSQSAsync;
 import com.amazonaws.services.sqs.model.MessageAttributeValue;
 import com.amazonaws.services.sqs.model.SendMessageRequest;
+import de.kfzteile24.salesOrderHub.helper.CustomValidator;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.salesOrderHub.helper.SleuthHelper;
 import de.kfzteile24.salesOrderHub.services.sqs.EnrichMessageForDlq;
@@ -15,6 +16,7 @@ import org.aspectj.lang.annotation.Aspect;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.springframework.context.annotation.Configuration;
 
+import javax.validation.ConstraintViolationException;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -28,6 +30,7 @@ class LoggingAdvice {
 
     private final SleuthHelper sleuthHelper;
     private final AmazonSQSAsync amazonSQSAsync;
+    private final CustomValidator customValidator;
 
     @Around("execution(public void *.notify(org.camunda.bpm.engine.delegate.DelegateExecution))")
     Object updateTraceContext(ProceedingJoinPoint joinPoint) throws Throwable {
@@ -40,11 +43,15 @@ class LoggingAdvice {
     @Around("@annotation(enrichMessageForDlq)")
     Object moveMessageToDlq(ProceedingJoinPoint joinPoint, EnrichMessageForDlq enrichMessageForDlq) {
 
+        var message = joinPoint.getArgs()[0];
         var messageWrapper = (MessageWrapper) joinPoint.getArgs()[1];
         log.info("This is the logging advice with received count: {}", messageWrapper.getReceiveCount());
 
         try {
+            customValidator.validate(message);
             return joinPoint.proceed();
+        } catch (ConstraintViolationException e) {
+            moveToDlq(messageWrapper, e);
         } catch (Throwable e) {
             if (messageWrapper.getReceiveCount() < 4) {
                 logErrorMessage(messageWrapper, e);
