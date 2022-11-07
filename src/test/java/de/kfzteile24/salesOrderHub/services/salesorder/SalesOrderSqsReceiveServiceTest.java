@@ -150,7 +150,7 @@ class SalesOrderSqsReceiveServiceTest {
     @Test
     @SneakyThrows
     void testQueueListenerCoreSalesOrderCancelled() {
-        var message = getObjectByResource("coreSalesOrderCancelledMessage.json",  CoreSalesOrderCancelledMessage.class);
+        var message = CoreSalesOrderCancelledMessage.builder().build();
         var messageWrapper = MessageWrapper.builder().build();
 
         salesOrderSqsReceiveService.queueListenerCoreSalesOrderCancelled(message, messageWrapper);
