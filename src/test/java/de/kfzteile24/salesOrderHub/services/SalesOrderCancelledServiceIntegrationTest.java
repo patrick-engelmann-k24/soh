@@ -55,46 +55,7 @@ class SalesOrderCancelledServiceIntegrationTest extends AbstractIntegrationTest 
 
 
     @Test
-    public void testHandleCoreSalesOrderCancelledForDropshipmentOrder() {
-        var message = CoreSalesOrderCancelledMessage.builder().build();
-        var messageWrapper = MessageWrapper.builder().build();
-        final var salesOrder =
-                salesOrderUtil.createDropshipmentPersistedSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
-        var orderNumber = salesOrder.getOrderNumber();
-        message.setOrderNumber(orderNumber);
-
-        ProcessInstance processInstance = camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
-        assertTrue(util.isProcessWaitingAtExpectedToken(processInstance, Events.START_MSG_ORDER_RECEIVED_FROM_ECP.getName()));
-        util.sendMessage(ORDER_RECEIVED_ECP, salesOrder.getOrderNumber());
-
-        salesOrderCancelledService.handleCoreSalesOrderCancelled(message, messageWrapper);
-
-        final var updatedSalesOrder = salesOrderService.getOrderByOrderNumber(orderNumber).get();
-        assertTrue(updatedSalesOrder.isCancelled());
-
-        Order latestJson = updatedSalesOrder.getLatestJson();
-        for (OrderRows orderRows : latestJson.getOrderRows()) {
-            assertTrue(orderRows.getIsCancelled());
-        }
-
-        auditLogUtil.assertAuditLogExists(salesOrder.getId(), ORDER_CANCELLED, 1);
-        auditLogUtil.assertAuditLogExists(salesOrder.getId(), ORDER_ROW_CANCELLED, 3);
-
-        verify(camundaHelper, times(3)).correlateMessage(
-                argThat(bpmItem -> bpmItem == DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED),
-                argThat(order -> {
-                    assertThat(order.getOrderNumber()).isEqualTo(salesOrder.getOrderNumber());
-                    var orderRows = order.getLatestJson().getOrderRows();
-                    assertThat(orderRows).hasSize(3);
-                    return true;
-                }),
-                argThat(variableMap -> variableMap.getValue(ORDER_ROW_ID.getName(), String.class).startsWith("sku-"))
-        );
-    }
-
-
-    @Test
-    public void testHandleCoreSalesOrderCancelledForRegularOrder() {
+    public void testHandleCoreSalesOrderCancelled() {
         var message = CoreSalesOrderCancelledMessage.builder().build();
         var messageWrapper = MessageWrapper.builder().build();
         final var salesOrder =
@@ -117,8 +78,5 @@ class SalesOrderCancelledServiceIntegrationTest extends AbstractIntegrationTest 
         }
 
         auditLogUtil.assertAuditLogExists(salesOrder.getId(), ORDER_CANCELLED, 1);
-        auditLogUtil.assertAuditLogDoesNotExist(salesOrder.getId(), ORDER_ROW_CANCELLED);
-
-        verify(camundaHelper, never()).correlateMessage(eq(DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED), any(), any());
     }
 }

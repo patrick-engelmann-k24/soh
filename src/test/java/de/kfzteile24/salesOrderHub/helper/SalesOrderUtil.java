@@ -114,33 +114,13 @@ public class SalesOrderUtil {
         return testOrder;
     }
 
-    public SalesOrder createDropshipmentPersistedSalesOrderV3(
-            boolean shouldContainVirtualItem,
-            ShipmentMethod shipmentMethod,
-            PaymentType paymentType,
-            CustomerType customerType) {
-        return createPersistedSalesOrderV3(shouldContainVirtualItem, shipmentMethod, paymentType, customerType, s -> {
-            ((Order) s.getOriginalOrder()).getOrderHeader().setOrderFulfillment(DELTICOM.getName());
-        });
-    }
-
     public SalesOrder createPersistedSalesOrderV3(
             boolean shouldContainVirtualItem,
             ShipmentMethod shipmentMethod,
             PaymentType paymentType,
             CustomerType customerType) {
-        return createPersistedSalesOrderV3(shouldContainVirtualItem, shipmentMethod, paymentType, customerType, s -> {});
-    }
-
-    private SalesOrder createPersistedSalesOrderV3(
-            boolean shouldContainVirtualItem,
-            ShipmentMethod shipmentMethod,
-            PaymentType paymentType,
-            CustomerType customerType,
-            Consumer<SalesOrder> consumer) {
         final var salesOrder = createNewSalesOrderV3(
                 shouldContainVirtualItem, shipmentMethod, paymentType, customerType);
-        consumer.accept(salesOrder);
         salesOrderService.save(salesOrder, ORDER_CREATED);
 
         return salesOrder;

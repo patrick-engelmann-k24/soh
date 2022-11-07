@@ -9,7 +9,6 @@ import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ArticleItemsDto;
 import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ParcelShipped;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
-import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Platform;
@@ -31,9 +30,6 @@ import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.COMBINED_ITEM_SEPARATOR;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROW_ID;
-import static java.util.stream.Collectors.toList;
 
 @Service
 @Slf4j
@@ -51,9 +47,6 @@ public class SalesOrderRowService {
 
     @NonNull
     private final SnsPublishService snsPublishService;
-
-    @NonNull
-    private final OrderUtil orderUtil;
 
     public boolean cancelOrderProcessIfFullyCancelled(SalesOrder salesOrder) {
         if (salesOrder.getLatestJson().getOrderRows().stream().allMatch(OrderRows::getIsCancelled)) {
@@ -76,15 +69,6 @@ public class SalesOrderRowService {
         var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException("Could not find order: " + orderNumber));
         log.info("Order with order number: {} is being fully cancelled", salesOrder.getOrderNumber());
-        if (orderUtil.isDropshipmentOrder(salesOrder.getLatestJson())) {
-            final var orderRows = salesOrder.getLatestJson().getOrderRows().stream().collect(toList());
-            for (OrderRows orderRow: orderRows) {
-                orderRow.setIsCancelled(true);
-                salesOrderService.save(salesOrder, Action.ORDER_ROW_CANCELLED);
-                helper.correlateMessage(DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED, salesOrder,
-                        org.camunda.bpm.engine.variable.Variables.putValue(ORDER_ROW_ID.getName(), orderRow.getSku()));
-            }
-        }
         salesOrder.setCancelled(true);
         return salesOrderService.save(salesOrder, Action.ORDER_CANCELLED);
     }
