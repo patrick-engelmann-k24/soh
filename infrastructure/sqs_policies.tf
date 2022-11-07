@@ -1534,6 +1534,48 @@ resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_soh_migration_core_s
   policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_migration_core_sales_credit_note_created_dlq.json
 }
 
+data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_soh_core_sales_order_cancelled" {
+  statement {
+    sid = "SNS-core-sales-order-cancelled"
+    effect = "Allow"
+
+    actions = [
+      "sqs:SendMessage",
+    ]
+
+    principals {
+      identifiers = ["*"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_core_sales_order_cancelled.arn
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sqs:*",
+    ]
+
+    principals {
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+      type        = "AWS"
+    }
+
+    resources = [
+      aws_sqs_queue.soh_core_sales_order_cancelled.arn
+    ]
+  }
+}
+
+resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_soh_core_sales_order_cancelled" {
+  queue_url = aws_sqs_queue.soh_core_sales_order_cancelled.id
+  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_soh_core_sales_order_cancelled.json
+}
+
 data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_soh_core_sales_order_cancelled_dlq" {
   statement {
     sid = "SNS-core-sales-order-cancelled-dlq"

@@ -9,6 +9,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ArticleItemsDto;
 import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ParcelShipped;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
+import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Platform;
@@ -16,7 +17,6 @@ import de.kfzteile24.soh.order.dto.SumValues;
 import de.kfzteile24.soh.order.dto.Totals;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.RuntimeService;
 import org.springframework.stereotype.Service;
@@ -31,6 +31,9 @@ import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.COMBINED_ITEM_SEPARATOR;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROW_ID;
+import static java.util.stream.Collectors.toList;
 
 @Service
 @Slf4j
@@ -49,52 +52,41 @@ public class SalesOrderRowService {
     @NonNull
     private final SnsPublishService snsPublishService;
 
+    @NonNull
+    private final OrderUtil orderUtil;
+
     public boolean cancelOrderProcessIfFullyCancelled(SalesOrder salesOrder) {
         if (salesOrder.getLatestJson().getOrderRows().stream().allMatch(OrderRows::getIsCancelled)) {
-            cancelOrder(salesOrder, true);
+            log.info("Order with order number: {} is fully cancelled", salesOrder.getOrderNumber());
+            for (OrderRows orderRow : salesOrder.getLatestJson().getOrderRows()) {
+                if (!helper.isShipped(orderRow.getShippingType())) {
+                    orderRow.setIsCancelled(true);
+                }
+            }
+            salesOrder.setCancelled(true);
+            salesOrderService.save(salesOrder, Action.ORDER_CANCELLED);
             return true;
         } else {
             return false;
         }
     }
 
-    public void cancelOrder(SalesOrder salesOrder) {
-        cancelOrder(salesOrder, false);
-    }
-
-    private void cancelOrder(SalesOrder salesOrder, boolean cancelOrderRows) {
-        log.info("Order with order number: {} is fully cancelled", salesOrder.getOrderNumber());
-        if (cancelOrderRows) {
-            for (OrderRows orderRow : salesOrder.getLatestJson().getOrderRows()) {
-                if (!helper.isShipped(orderRow.getShippingType())) {
-                    orderRow.setIsCancelled(true);
-                }
+    @Transactional
+    public SalesOrder cancelOrder(String orderNumber) {
+        var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
+                .orElseThrow(() -> new SalesOrderNotFoundException("Could not find order: " + orderNumber));
+        log.info("Order with order number: {} is being fully cancelled", salesOrder.getOrderNumber());
+        if (orderUtil.isDropshipmentOrder(salesOrder.getLatestJson())) {
+            final var orderRows = salesOrder.getLatestJson().getOrderRows().stream().collect(toList());
+            for (OrderRows orderRow: orderRows) {
+                orderRow.setIsCancelled(true);
+                salesOrderService.save(salesOrder, Action.ORDER_ROW_CANCELLED);
+                helper.correlateMessage(DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED, salesOrder,
+                        org.camunda.bpm.engine.variable.Variables.putValue(ORDER_ROW_ID.getName(), orderRow.getSku()));
             }
         }
         salesOrder.setCancelled(true);
-        salesOrderService.save(salesOrder, Action.ORDER_CANCELLED);
-    }
-
-    @SneakyThrows
-    @Transactional
-    public void cancelOrderRows(String orderNumber, List<String> skuList) {
-
-        for (String sku : skuList) {
-            List<String> originalOrderSkus = getOriginalOrderSkus(orderNumber);
-            if (originalOrderSkus.contains(sku)) {
-                cancelOrderRowsOfOrderGroup(orderNumber, sku);
-            } else {
-                log.error("Sku: {} is not in original order with order number: {}", sku, orderNumber);
-            }
-        }
-    }
-
-    private void cancelOrderRowsOfOrderGroup(String orderGroupId, String orderRowId) {
-
-        List<String> orderNumberListByOrderGroupId = salesOrderService.getOrderNumberListByOrderGroupId(orderGroupId, orderRowId);
-        for (String orderNumber : orderNumberListByOrderGroupId) {
-            cancelOrderRow(orderRowId, orderNumber);
-        }
+        return salesOrderService.save(salesOrder, Action.ORDER_CANCELLED);
     }
 
     public void cancelOrderRow(String orderRowId, String orderNumber) {
