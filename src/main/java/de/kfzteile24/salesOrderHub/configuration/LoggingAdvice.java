@@ -41,7 +41,7 @@ class LoggingAdvice {
 
     @SneakyThrows
     @Around("@annotation(enrichMessageForDlq)")
-    Object moveMessageToDlq(ProceedingJoinPoint joinPoint, EnrichMessageForDlq enrichMessageForDlq) {
+    Object aroundServiceAdvice(ProceedingJoinPoint joinPoint, EnrichMessageForDlq enrichMessageForDlq) {
 
         var message = joinPoint.getArgs()[0];
         var messageWrapper = (MessageWrapper) joinPoint.getArgs()[1];
