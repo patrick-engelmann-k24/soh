@@ -415,6 +415,7 @@
   <bpmn:message id="Message_0rbxapr" name="msgOrderReceivedCustomerCare" />
   <bpmn:message id="Message_1p947gv" name="msgOrderReceivedBranch" />
   <bpmn:message id="Message_0qljm9c" name="msgOrderReceivedGarage" />
+  <bpmn:message id="Message_0u9ctv5" name="msgOrderCancellationReceived" />
   <bpmn:message id="Message_0cew8en" name="msgOrderCreatedInSoh" />
   <bpmn:message id="Message_116ff3q" name="msgDropShipmentOrderTrackingInformationReceived" />
   <bpmn:message id="Message_00ce2ea" name="msgDropShipmentOrderConfirmed" />
