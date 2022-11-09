@@ -63,10 +63,6 @@ class LoggingAdviceIntegrationTest extends AbstractIntegrationTest {
 
         salesOrderSqsReceiveService.queueListenerEcpShopOrders(message, messageWrapper);
         verifyIfMessageIsSendingToDLQ(sqsNamesConfig.getEcpShopOrders() + "-dlq");
-
-        messageWrapper.setReceiveCount(3);
-
-        verifyErrorMessageIsLogged(() -> salesOrderSqsReceiveService.queueListenerEcpShopOrders(message, messageWrapper));
     }
 
     @Test
@@ -83,10 +79,6 @@ class LoggingAdviceIntegrationTest extends AbstractIntegrationTest {
 
         salesOrderSqsReceiveService.queueListenerBcShopOrders(message, messageWrapper);
         verifyIfMessageIsSendingToDLQ(sqsNamesConfig.getBcShopOrders() + "-dlq");
-
-        messageWrapper.setReceiveCount(3);
-
-        verifyErrorMessageIsLogged(() -> salesOrderSqsReceiveService.queueListenerBcShopOrders(message, messageWrapper));
     }
 
     @Test
@@ -103,10 +95,6 @@ class LoggingAdviceIntegrationTest extends AbstractIntegrationTest {
 
         salesOrderSqsReceiveService.queueListenerCoreShopOrders(message, messageWrapper);
         verifyIfMessageIsSendingToDLQ(sqsNamesConfig.getCoreShopOrders() + "-dlq");
-
-        messageWrapper.setReceiveCount(3);
-
-        verifyErrorMessageIsLogged(() -> salesOrderSqsReceiveService.queueListenerCoreShopOrders(message, messageWrapper));
     }
 
     @Test
@@ -163,10 +151,6 @@ class LoggingAdviceIntegrationTest extends AbstractIntegrationTest {
 
         migrationSqsReceiveService.queueListenerMigrationCoreSalesOrderCreated(message, messageWrapper);
         verifyIfMessageIsSendingToDLQ(sqsNamesConfig.getMigrationCoreSalesOrderCreated() + "-dlq");
-
-        messageWrapper.setReceiveCount(3);
-
-        verifyErrorMessageIsLogged(() -> migrationSqsReceiveService.queueListenerMigrationCoreSalesOrderCreated(message, messageWrapper));
     }
 
     @Test
@@ -209,6 +193,7 @@ class LoggingAdviceIntegrationTest extends AbstractIntegrationTest {
         verifyErrorMessageIsLogged(() -> migrationSqsReceiveService.queueListenerMigrationCoreSalesCreditNoteCreated(message, messageWrapper));
     }
 
+    @Test
     @DisplayName("Test Logging Advice Message Attribute Property for Invoices From Core Event")
     void testMessageAttributeForInvoicesFromCoreEvent(TestInfo testInfo) {
 
