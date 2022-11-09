@@ -23,7 +23,7 @@ public enum Messages implements BpmItem {
     DROPSHIPMENT_CREDIT_NOTE_DOCUMENT_GENERATED("msgCreditNoteDocumentGenerated"),
     DROPSHIPMENT_ORDER_RETURN_CONFIRMED("msgDropshipmentOrderReturnConfirmed"),
     ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED("msgOrderReceivedCoreSalesInvoiceCreated"),
-    ORDER_CANCELLATION_RECEIVED("msgOrderCancellationReceived"),
+    CORE_SALES_ORDER_CANCELLED("msgCoreSalesOrderCancelled"),
     ;
 
     @Getter

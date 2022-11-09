@@ -11,10 +11,18 @@ import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
+import org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.time.Duration;
+
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.CORE_SALES_ORDER_CANCELLED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_ORDER_CREATED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.SUB_PROCESS_CORE_SALES_ORDER_CANCELLED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.END_MSG_CORE_SALES_ORDER_CANCELLED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.START_MSG_CORE_SALES_ORDER_CANCELLED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_ECP;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_PAYMENT_SECURED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
@@ -38,10 +46,16 @@ class SalesOrderCancelledServiceIntegrationTest extends AbstractIntegrationTest 
     private SalesOrderUtil salesOrderUtil;
 
     @Autowired
+    private TimedPollingService timerService;
+
+    @Autowired
     private CamundaHelper camundaHelper;
 
     @Autowired
     private SalesOrderCancelledService salesOrderCancelledService;
+
+    @Autowired
+    private TimedPollingService pollingService;
 
 
     @Test
@@ -50,14 +64,31 @@ class SalesOrderCancelledServiceIntegrationTest extends AbstractIntegrationTest 
         var messageWrapper = MessageWrapper.builder().build();
         final var salesOrder =
                 salesOrderUtil.createPersistedSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
-        var orderNumber = salesOrder.getOrderNumber();
-        message.setOrderNumber(orderNumber);
-
         ProcessInstance processInstance = camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
         assertTrue(util.isProcessWaitingAtExpectedToken(processInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName()));
         util.sendMessage(ORDER_RECEIVED_PAYMENT_SECURED, salesOrder.getOrderNumber());
 
+        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+                camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
+
+        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+                camundaHelper.hasPassed(processInstance.getId(), EVENT_THROW_MSG_ORDER_CREATED.getName())));
+
+        var orderNumber = salesOrder.getOrderNumber();
+        message.setOrderNumber(orderNumber);
+
         salesOrderCancelledService.handleCoreSalesOrderCancelled(message, messageWrapper);
+
+        final var correctActivityOrder = pollingService.pollWithDefaultTiming(() -> {
+            BpmnAwareTests.assertThat(processInstance).hasPassedInOrder(
+                    START_MSG_CORE_SALES_ORDER_CANCELLED.getName(),
+                    CORE_SALES_ORDER_CANCELLED.getName(),
+                    END_MSG_CORE_SALES_ORDER_CANCELLED.getName(),
+                    SUB_PROCESS_CORE_SALES_ORDER_CANCELLED.getName()
+            );
+            return true;
+        });
+        assertTrue(correctActivityOrder);
 
         final var updatedSalesOrder = salesOrderService.getOrderByOrderNumber(orderNumber).get();
         assertTrue(updatedSalesOrder.isCancelled());

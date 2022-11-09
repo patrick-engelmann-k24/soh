@@ -64,15 +64,6 @@ public class SalesOrderRowService {
         }
     }
 
-    @Transactional
-    public SalesOrder cancelOrder(String orderNumber) {
-        var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
-                .orElseThrow(() -> new SalesOrderNotFoundException("Could not find order: " + orderNumber));
-        log.info("Order with order number: {} is being fully cancelled", salesOrder.getOrderNumber());
-        salesOrder.setCancelled(true);
-        return salesOrderService.save(salesOrder, Action.ORDER_CANCELLED);
-    }
-
     public void cancelOrderRow(String orderRowId, String orderNumber) {
 
         markOrderRowAsCancelled(orderNumber, orderRowId);
@@ -154,14 +145,6 @@ public class SalesOrderRowService {
         totals.setGrandTotalNet(grantTotalNet);
         totals.setPaymentTotal(grandTotalGross);
         latestJson.getOrderHeader().setTotals(totals);
-    }
-
-    private List<String> getOriginalOrderSkus(String orderNumber) {
-
-        final var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
-                .orElseThrow(() -> new SalesOrderNotFoundException("Could not find order: " + orderNumber));
-        Order originalOrder = (Order) salesOrder.getOriginalOrder();
-        return originalOrder.getOrderRows().stream().map(OrderRows::getSku).collect(Collectors.toList());
     }
 
     private boolean isCorePlatformOrder(List<SalesOrder> salesOrders) {

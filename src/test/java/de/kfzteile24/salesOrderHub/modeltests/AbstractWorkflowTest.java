@@ -12,6 +12,7 @@ import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.listener.CheckPro
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.listener.NewRelicAwareTimerListener;
 import de.kfzteile24.salesOrderHub.delegates.returnorder.PublishCreditNoteReceivedDelegate;
 import de.kfzteile24.salesOrderHub.delegates.returnorder.PublishReturnOrderCreatedDelegate;
+import de.kfzteile24.salesOrderHub.delegates.salesOrder.CancelOrderDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.ChangeInvoiceAddressDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.ChangeInvoiceAddressPossibleDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.InvoiceAddressChangedDelegate;
@@ -104,7 +105,8 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Paymen
         InvoiceAddressChangedDelegate.class,
         CheckOrderTypeDelegate.class,
         CheckPaymentTypeDelegate.class,
-        CheckPlatformTypeDelegate.class
+        CheckPlatformTypeDelegate.class,
+        CancelOrderDelegate.class
 
 })
 public abstract class AbstractWorkflowTest implements ApplicationContextAware {
