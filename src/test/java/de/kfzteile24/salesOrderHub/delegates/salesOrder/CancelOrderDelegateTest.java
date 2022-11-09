@@ -32,7 +32,6 @@ class CancelOrderDelegateTest {
         when(delegateExecution.getVariable(Variables.ORDER_NUMBER.getName())).thenReturn(expectedOrderNumber);
         cancelOrderDelegate.execute(delegateExecution);
         verify(salesOrderService).cancelOrder(expectedOrderNumber);
-        verify(delegateExecution).setVariable(Variables.IS_ORDER_CANCELLED.getName(), true);
     }
 
 }
