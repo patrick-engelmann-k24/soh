@@ -24,7 +24,6 @@ public class CancelOrderDelegate implements JavaDelegate {
         final var orderNumber = (String) delegateExecution.getVariable(Variables.ORDER_NUMBER.getName());
         log.info("Cancel Order Delegate for order number {}", orderNumber);
         salesOrderService.cancelOrder(orderNumber);
-        delegateExecution.setVariable(Variables.IS_ORDER_CANCELLED.getName(), true);
     }
 
 }
