@@ -1,10 +1,7 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
-import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
-import de.kfzteile24.salesOrderHub.services.SnsPublishService;
-import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.junit.jupiter.api.Test;
@@ -12,8 +9,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.Optional;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;

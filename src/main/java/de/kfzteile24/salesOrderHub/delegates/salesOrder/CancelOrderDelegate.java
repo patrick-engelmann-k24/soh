@@ -1,11 +1,7 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
-import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.domain.audit.Action;
-import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
-import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
