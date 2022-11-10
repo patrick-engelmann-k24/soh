@@ -250,7 +250,7 @@ resource "aws_sns_topic_subscription" "sns_subscription_paypal_refund_instructio
 
 # subscription for core sales order cancelled
 resource "aws_sns_topic_subscription" "sns_subscription_core_sales_order_cancelled" {
-  endpoint = aws_sqs_queue.soh_core_sales_order_cancelled
+  endpoint = aws_sqs_queue.soh_core_sales_order_cancelled.arn
   protocol = "sqs"
   topic_arn = data.aws_sns_topic.sns_core_sales_order_cancelled_v1.arn
 }
