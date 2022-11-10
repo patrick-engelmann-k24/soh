@@ -2,12 +2,13 @@ package de.kfzteile24.salesOrderHub.services.salesorder;
 
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesOrderCancelledMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.OrderPaymentSecuredMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
+import de.kfzteile24.salesOrderHub.services.SalesOrderCancelledService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderPaymentSecuredService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
-import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentOrderService;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
@@ -46,7 +47,7 @@ class SalesOrderSqsReceiveServiceTest {
     @Mock
     private SalesOrderPaymentSecuredService salesOrderPaymentSecuredService;
     @Mock
-    private DropshipmentOrderService dropshipmentOrderService;
+    private SalesOrderCancelledService salesOrderCancelledService;
     @InjectMocks
     @Spy
     private SalesOrderSqsReceiveService salesOrderSqsReceiveService;
@@ -144,5 +145,18 @@ class SalesOrderSqsReceiveServiceTest {
         verify(salesOrderPaymentSecuredService).handleD365OrderPaymentSecured(message, messageWrapper);
 
         verifyNoMoreInteractions(salesOrderPaymentSecuredService);
+    }
+
+    @Test
+    @SneakyThrows
+    void testQueueListenerCoreSalesOrderCancelled() {
+        var message = CoreSalesOrderCancelledMessage.builder().build();
+        var messageWrapper = MessageWrapper.builder().build();
+
+        salesOrderSqsReceiveService.queueListenerCoreSalesOrderCancelled(message, messageWrapper);
+
+        verify(salesOrderCancelledService).handleCoreSalesOrderCancelled(message, messageWrapper);
+
+        verifyNoMoreInteractions(salesOrderCancelledService);
     }
 }

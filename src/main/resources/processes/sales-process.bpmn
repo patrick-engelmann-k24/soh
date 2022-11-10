@@ -352,6 +352,26 @@
       <bpmn:outgoing>Flow_0iqhjmi</bpmn:outgoing>
       <bpmn:messageEventDefinition id="MessageEventDefinition_0vnfvh8" messageRef="Message_049kh94" />
     </bpmn:intermediateCatchEvent>
+    <bpmn:subProcess id="activitySubProcessCoreSalesOrderCancelled" triggeredByEvent="true">
+      <bpmn:endEvent id="eventEndMsgCoreSalesOrderCancelled" name="Order cancelled">
+        <bpmn:incoming>Flow_1jmyhbn</bpmn:incoming>
+        <bpmn:messageEventDefinition id="MessageEventDefinition_0jf7lcj" camunda:delegateExpression="${orderCancelledDelegate}" />
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_157j73s" sourceRef="eventStartMsgCoreSalesOrderCancelled" targetRef="activityCoreSalesOrderCancelled" />
+      <bpmn:startEvent id="eventStartMsgCoreSalesOrderCancelled" name="Order cancellation received">
+        <bpmn:outgoing>Flow_157j73s</bpmn:outgoing>
+        <bpmn:messageEventDefinition id="MessageEventDefinition_1crxomf" messageRef="Message_0fmwvkq" />
+      </bpmn:startEvent>
+      <bpmn:sequenceFlow id="Flow_1jmyhbn" sourceRef="activityCoreSalesOrderCancelled" targetRef="eventEndMsgCoreSalesOrderCancelled" />
+      <bpmn:serviceTask id="activityCoreSalesOrderCancelled" name="Cancel order" camunda:delegateExpression="${cancelOrderDelegate}">
+        <bpmn:incoming>Flow_157j73s</bpmn:incoming>
+        <bpmn:outgoing>Flow_1jmyhbn</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:textAnnotation id="TextAnnotation_1780bqe">
+        <bpmn:text>Set cancelled flag to true</bpmn:text>
+      </bpmn:textAnnotation>
+      <bpmn:association id="Association_0gqiwa4" sourceRef="activityCoreSalesOrderCancelled" targetRef="TextAnnotation_1780bqe" />
+    </bpmn:subProcess>
     <bpmn:textAnnotation id="TextAnnotation_0m998uh">
       <bpmn:text>Create Purchase order (to P&amp;R)</bpmn:text>
     </bpmn:textAnnotation>
@@ -394,13 +414,14 @@
   <bpmn:message id="Message_07x4crw" name="msgOrderReceivedEcp" />
   <bpmn:message id="Message_0rbxapr" name="msgOrderReceivedCustomerCare" />
   <bpmn:message id="Message_1p947gv" name="msgOrderReceivedBranch" />
-  <bpmn:message id="Message_0qljm9c" name="msgOrderReceivedGarage" /> <bpmn:message id="Message_0u9ctv5" name="msgOrderCancellationReceived" />
+  <bpmn:message id="Message_0qljm9c" name="msgOrderReceivedGarage" />
   <bpmn:message id="Message_0cew8en" name="msgOrderCreatedInSoh" />
   <bpmn:message id="Message_116ff3q" name="msgDropShipmentOrderTrackingInformationReceived" />
   <bpmn:message id="Message_00ce2ea" name="msgDropShipmentOrderConfirmed" />
   <bpmn:message id="Message_0yjip36" name="msgDropshipmentOrderRowCancellationReceived" />
   <bpmn:signal id="Signal_10il7ck" name="signalContinueProcessingDropShipmentOrders" />
   <bpmn:message id="Message_049kh94" name="msgOrderReceivedCoreSalesInvoiceCreated" />
+  <bpmn:message id="Message_0fmwvkq" name="msgCoreSalesOrderCancelled" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="SalesOrderProcess_v2">
       <bpmndi:BPMNEdge id="Flow_0iqhjmi_di" bpmnElement="Flow_0iqhjmi">
@@ -905,6 +926,39 @@
       <bpmndi:BPMNShape id="TextAnnotation_059iq3s_di" bpmnElement="TextAnnotation_059iq3s">
         <dc:Bounds x="1520" y="440" width="230" height="39" />
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1tw70lz_di" bpmnElement="activitySubProcessCoreSalesOrderCancelled" isExpanded="true">
+        <dc:Bounds x="1845" y="910" width="370" height="270" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_1780bqe_di" bpmnElement="TextAnnotation_1780bqe">
+        <dc:Bounds x="2060" y="940" width="100" height="40" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_157j73s_di" bpmnElement="Flow_157j73s">
+        <di:waypoint x="1913" y="1040" />
+        <di:waypoint x="1980" y="1040" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1jmyhbn_di" bpmnElement="Flow_1jmyhbn">
+        <di:waypoint x="2080" y="1040" />
+        <di:waypoint x="2147" y="1040" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_1fh8m46_di" bpmnElement="eventEndMsgCoreSalesOrderCancelled">
+        <dc:Bounds x="2147" y="1022" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2128" y="1065" width="78" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0dt2qhl_di" bpmnElement="eventStartMsgCoreSalesOrderCancelled">
+        <dc:Bounds x="1877" y="1022" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1851" y="1065" width="90" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0cvagld_di" bpmnElement="activityCoreSalesOrderCancelled">
+        <dc:Bounds x="1980" y="1000" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_0gqiwa4_di" bpmnElement="Association_0gqiwa4">
+        <di:waypoint x="2068" y="1000" />
+        <di:waypoint x="2086" y="980" />
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="Event_0mgem75_di" bpmnElement="eventTimerDropShipmentOrderTrackingInformationReceived">
         <dc:Bounds x="1382" y="712" width="36" height="36" />
       </bpmndi:BPMNShape>

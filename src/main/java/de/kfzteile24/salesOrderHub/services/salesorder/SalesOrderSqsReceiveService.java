@@ -3,7 +3,9 @@ package de.kfzteile24.salesOrderHub.services.salesorder;
 import com.newrelic.api.agent.Trace;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
 import de.kfzteile24.salesOrderHub.dto.sns.OrderPaymentSecuredMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesOrderCancelledMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
+import de.kfzteile24.salesOrderHub.services.SalesOrderCancelledService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderPaymentSecuredService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderProcessService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
@@ -28,6 +30,7 @@ public class SalesOrderSqsReceiveService extends AbstractSqsReceiveService {
     private final SalesOrderService salesOrderService;
     private final SalesOrderPaymentSecuredService salesOrderPaymentSecuredService;
     private final SalesOrderProcessService salesOrderCreateService;
+    private final SalesOrderCancelledService salesOrderCancelledService;
 
     /**
      * Consume sqs for new orders from ecp, bc and core shops
@@ -80,5 +83,15 @@ public class SalesOrderSqsReceiveService extends AbstractSqsReceiveService {
     @Trace(metricName = "Handling d365OrderPaymentSecured message", dispatcher = true)
     public void queueListenerD365OrderPaymentSecured(OrderPaymentSecuredMessage message, MessageWrapper messageWrapper) {
         salesOrderPaymentSecuredService.handleD365OrderPaymentSecured(message, messageWrapper);
+    }
+
+
+    /**
+     * Consume messages from sqs for core sales order cancelled
+     */
+    @SqsListener(value = "${soh.sqs.queue.coreSalesOrderCancelled}", deletionPolicy = ON_SUCCESS)
+    @Trace(metricName = "Handling coreSalesOrderCancelled message", dispatcher = true)
+    public void queueListenerCoreSalesOrderCancelled(CoreSalesOrderCancelledMessage message, MessageWrapper messageWrapper) {
+        salesOrderCancelledService.handleCoreSalesOrderCancelled(message, messageWrapper);
     }
 }

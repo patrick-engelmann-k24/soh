@@ -180,6 +180,15 @@ public class SalesOrderService {
         return createSalesOrder(salesOrder);
     }
 
+    @Transactional
+    public SalesOrder cancelOrder(String orderNumber) {
+        var salesOrder = getOrderByOrderNumber(orderNumber)
+                .orElseThrow(() -> new SalesOrderNotFoundException("Could not find order: " + orderNumber));
+        log.info("Order with order number: {} is being fully cancelled", salesOrder.getOrderNumber());
+        salesOrder.setCancelled(true);
+        return save(salesOrder, Action.ORDER_CANCELLED);
+    }
+
     private String getCustomerEmailByOrderJson(Order order) {
         if (order.getOrderHeader().getCustomer() != null) {
             return order.getOrderHeader().getCustomer().getCustomerEmail();

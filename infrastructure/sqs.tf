@@ -40,7 +40,9 @@ locals {
     tmp_core_sales_credit_note_created = "${var.environment}-${local.service_prefix}-tmp-core-sales-credit-note-created-${local.version}",
     tmp_core_sales_credit_note_created_dlq = "${var.environment}-${local.service_prefix}-tmp-core-sales-credit-note-created-${local.version}-dlq",
     paypal_refund_instruction_successful = "${var.environment}-${local.service_prefix}-paypal-refund-instruction-successful-${local.version}",
-    paypal_refund_instruction_successful_dlq = "${var.environment}-${local.service_prefix}-paypal-refund-instruction-successful-${local.version}-dlq"
+    paypal_refund_instruction_successful_dlq = "${var.environment}-${local.service_prefix}-paypal-refund-instruction-successful-${local.version}-dlq",
+    core_sales_order_cancelled = "${var.environment}-${local.service_prefix}-core-sales-order-cancelled-${local.version}",
+    core_sales_order_cancelled_dlq = "${var.environment}-${local.service_prefix}-core-sales-order-cancelled-${local.version}-dlq"
   }
 }
 
@@ -242,5 +244,15 @@ resource "aws_sqs_queue" "soh_paypal_refund_instruction_successful_dlq" {
 resource "aws_sqs_queue" "soh_paypal_refund_instruction_successful" {
   name = local.sqs_queues.paypal_refund_instruction_successful
   redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.soh_paypal_refund_instruction_successful_dlq.arn}\",\"maxReceiveCount\":4}"
+  visibility_timeout_seconds = 120
+}
+
+resource "aws_sqs_queue" "soh_core_sales_order_cancelled_dlq" {
+  name = local.sqs_queues.core_sales_order_cancelled_dlq
+}
+
+resource "aws_sqs_queue" "soh_core_sales_order_cancelled" {
+  name = local.sqs_queues.core_sales_order_cancelled
+  redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.soh_core_sales_order_cancelled_dlq.arn}\",\"maxReceiveCount\":4}"
   visibility_timeout_seconds = 120
 }

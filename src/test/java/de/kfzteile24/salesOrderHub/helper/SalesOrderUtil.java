@@ -120,7 +120,6 @@ public class SalesOrderUtil {
             CustomerType customerType) {
         final var salesOrder = createNewSalesOrderV3(
                 shouldContainVirtualItem, shipmentMethod, paymentType, customerType);
-
         salesOrderService.save(salesOrder, ORDER_CREATED);
 
         return salesOrder;
