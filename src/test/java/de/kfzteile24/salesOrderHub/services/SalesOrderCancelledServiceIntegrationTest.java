@@ -79,7 +79,7 @@ class SalesOrderCancelledServiceIntegrationTest extends AbstractIntegrationTest 
 
         salesOrderCancelledService.handleCoreSalesOrderCancelled(message, messageWrapper);
 
-        final var correctActivityOrder = pollingService.pollWithDefaultTiming(() -> {
+        final var correctActivityOrder = pollingService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () -> {
             BpmnAwareTests.assertThat(processInstance).hasPassedInOrder(
                     START_MSG_CORE_SALES_ORDER_CANCELLED.getName(),
                     CORE_SALES_ORDER_CANCELLED.getName(),
