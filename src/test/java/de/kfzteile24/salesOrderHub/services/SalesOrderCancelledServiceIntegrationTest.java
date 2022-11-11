@@ -68,10 +68,10 @@ class SalesOrderCancelledServiceIntegrationTest extends AbstractIntegrationTest 
         assertTrue(util.isProcessWaitingAtExpectedToken(processInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName()));
         util.sendMessage(ORDER_RECEIVED_PAYMENT_SECURED, salesOrder.getOrderNumber());
 
-        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+        assertTrue(timerService.pollWithDefaultTiming(() ->
                 camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
 
-        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+        assertTrue(timerService.pollWithDefaultTiming(() ->
                 camundaHelper.hasPassed(processInstance.getId(), EVENT_THROW_MSG_ORDER_CREATED.getName())));
 
         var orderNumber = salesOrder.getOrderNumber();
@@ -79,7 +79,7 @@ class SalesOrderCancelledServiceIntegrationTest extends AbstractIntegrationTest 
 
         salesOrderCancelledService.handleCoreSalesOrderCancelled(message, messageWrapper);
 
-        final var correctActivityOrder = pollingService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () -> {
+        final var correctActivityOrder = pollingService.poll(Duration.ofSeconds(10), Duration.ofSeconds(2), () -> {
             BpmnAwareTests.assertThat(processInstance).hasPassedInOrder(
                     START_MSG_CORE_SALES_ORDER_CANCELLED.getName(),
                     CORE_SALES_ORDER_CANCELLED.getName(),
