@@ -92,7 +92,7 @@ public class OrderUtil {
         return OrderRows.builder()
                 .rowKey(originalOrderRow.getRowKey() != null ? originalOrderRow.getRowKey() : lastRowKey + 1)
                 .isCancelled(false)
-                .isPriceHammer(originalOrderRow.getIsPriceHammer())
+                .isPriceHammer(originalOrderRow.getIsPriceHammer() != null && originalOrderRow.getIsPriceHammer())
                 .sku(item.getItemNumber())
                 .name(Optional.ofNullable(originalOrderRow.getName()).orElse(item.getDescription()))
                 .dataSupplierNumber(originalOrderRow.getDataSupplierNumber())
