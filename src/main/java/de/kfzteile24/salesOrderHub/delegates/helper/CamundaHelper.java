@@ -370,4 +370,20 @@ public class CamundaHelper {
             log.error("An error occurred while deleting process instance. ID: {}. Error: {}", processInstanceId, ex.getLocalizedMessage());
         }
     }
+
+
+    public void startDropshipmentSubsequentOrderCreatedProcess(SalesOrder subsequentOrder) {
+        String orderNumber = subsequentOrder.getOrderNumber();
+        ProcessInstance result = runtimeService.startProcessInstanceByMessage(
+                Messages.DROPSHIPMENT_SUBSEQUENT_ORDER_CREATED.getName(),
+                orderNumber,
+                Map.of(ORDER_NUMBER.getName(), orderNumber));
+        if (result != null) {
+            log.info("The process of Dropshipment Subsequent Order Created for order number {} successfully started",
+                    orderNumber);
+        } else {
+            log.error("The process of Dropshipment Subsequent Order Created for order number {} could not be started",
+                    orderNumber);
+        }
+    }
 }
