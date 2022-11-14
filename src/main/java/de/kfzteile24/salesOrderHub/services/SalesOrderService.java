@@ -274,17 +274,6 @@ public class SalesOrderService {
         return isNotNullAndEqual(shippingCostGross != null ? shippingCostGross : BigDecimal.ZERO, orderHeaderShippingCostGross);
     }
 
-    public List<String> getOrderNumberListByOrderGroupId(String orderGroupId, String orderItemSku) {
-        var fetchedSalesOrders = getOrderByOrderGroupId(orderGroupId);
-
-        if (CollectionUtils.isNotEmpty(fetchedSalesOrders)) {
-            return filterBySku(orderGroupId, orderItemSku, fetchedSalesOrders);
-        }
-
-        throw new SalesOrderNotFoundCustomException(
-                format("for the given order group id {0}", orderGroupId));
-    }
-
     public List<String> getOrderNumberListByOrderGroupIdAndFilterNotCancelled(String orderGroupId, String orderItemSku) {
         var fetchedSalesOrders = getOrderByOrderGroupId(orderGroupId);
 
@@ -294,22 +283,6 @@ public class SalesOrderService {
 
         throw new SalesOrderNotFoundCustomException(
                 format("for the given order group id {0}", orderGroupId));
-    }
-
-    protected List<String> filterBySku(String orderGroupId, String orderItemSku, List<SalesOrder> fetchedSalesOrders) {
-        var foundSalesOrders = fetchedSalesOrders.stream()
-                .filter(salesOrder -> salesOrder.getLatestJson().getOrderRows().stream()
-                        .anyMatch(row -> row.getSku().equals(orderItemSku)))
-                .collect(toList());
-
-        if (foundSalesOrders.isEmpty()) {
-            throw new SalesOrderNotFoundCustomException(
-                    format("for the given order group id {0} and given order row sku number {1}",
-                            orderGroupId,
-                            orderItemSku));
-        }
-
-        return foundSalesOrders.stream().map(SalesOrder::getOrderNumber).distinct().collect(toList());
     }
 
     protected List<String> filterBySkuAndIsCancelled(String orderGroupId, String orderItemSku, List<SalesOrder> fetchedSalesOrders) {
@@ -331,8 +304,8 @@ public class SalesOrderService {
     }
 
     private void recalculateTotals(Order order, CoreSalesFinancialDocumentLine shippingCostLine) {
-        BigDecimal shippingCostNet = shippingCostLine != null ? shippingCostLine.getUnitNetAmount() : BigDecimal.ZERO;
-        BigDecimal shippingCostGross = shippingCostLine != null ? shippingCostLine.getUnitGrossAmount() : BigDecimal.ZERO;
+        BigDecimal shippingCostNet = shippingCostLine != null ? shippingCostLine.getLineNetAmount() : BigDecimal.ZERO;
+        BigDecimal shippingCostGross = shippingCostLine != null ? shippingCostLine.getLineGrossAmount() : BigDecimal.ZERO;
         recalculateTotals(order, shippingCostNet, shippingCostGross, shippingCostLine != null);
     }
 
