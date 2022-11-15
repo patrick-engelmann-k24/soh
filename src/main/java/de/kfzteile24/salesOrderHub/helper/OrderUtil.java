@@ -49,7 +49,7 @@ public class OrderUtil {
 
     public Integer getLastRowKey(SalesOrder originalSalesOrder) {
 
-        return getLastRowKey((Order) originalSalesOrder.getOriginalOrder());
+        return getLastRowKey(originalSalesOrder.getLatestJson());
     }
 
     public Integer getLastRowKey(Order order) {

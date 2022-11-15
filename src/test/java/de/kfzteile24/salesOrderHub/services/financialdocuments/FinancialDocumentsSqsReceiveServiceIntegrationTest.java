@@ -16,6 +16,8 @@ import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.InvoiceNumberCounterRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
+import de.kfzteile24.salesOrderHub.services.salesorder.SalesOrderSqsReceiveService;
+import de.kfzteile24.salesOrderHub.services.splitter.decorator.ItemSplitService;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.GrandTotalTaxes;
 import de.kfzteile24.soh.order.dto.Order;
@@ -34,8 +36,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
@@ -56,14 +61,18 @@ import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.RETURN_ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createOrderNumberInSOH;
+import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
+import static de.kfzteile24.soh.order.dto.Platform.ECP;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -90,6 +99,10 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
     private SalesOrderUtil salesOrderUtil;
     @Autowired
     private ObjectUtil objectUtil;
+    @Autowired
+    private SalesOrderSqsReceiveService salesOrderSqsReceiveService;
+    @Autowired
+    private ItemSplitService itemSplitService;
 
     @BeforeEach
     public void setup() {
@@ -474,6 +487,45 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
                 subsequentSalesOrder.getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getOrderGroupId());
         assertEquals(subsequentSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber(),
                 subsequentSalesOrder.getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber());
+    }
+
+    @Test
+    void testRowKeyIncrementationAfterSetDissolvement() {
+
+        var message = getObjectByResource("coreOrderMessage.json", Order.class);
+        message.getOrderHeader().setPlatform(ECP);
+        var messageWrapper = MessageWrapper.builder().build();
+        SalesOrder salesOrder = getSalesOrder(message);
+
+        doAnswer((Answer<Void>) invocation -> {
+            Object[] args = invocation.getArguments();
+            Order order = (Order) args[0];
+            List<@NotNull @Valid OrderRows> orderRows = order.getOrderRows();
+            orderRows.add(OrderRows.builder()
+                            .sku("1")
+                            .rowKey(2)
+                            .isCancelled(false)
+                            .isPriceHammer(false)
+                    .build());
+            order.setOrderRows(orderRows);
+            return null;
+        }).when(itemSplitService).processOrder(any());
+
+        salesOrderSqsReceiveService.queueListenerEcpShopOrders(message, messageWrapper);
+
+
+        var invoiceMsg = getObjectByResource("coreSalesInvoiceCreatedOneItem.json", CoreSalesInvoiceCreatedMessage.class);
+        var invoiceNumber = "10";
+        invoiceMsg.getSalesInvoice().getSalesInvoiceHeader().setOrderNumber(salesOrder.getOrderNumber());
+
+        financialDocumentsSqsReceiveService.queueListenerCoreSalesInvoiceCreated(invoiceMsg, messageWrapper);
+
+        String newOrderNumberCreatedInSoh = createOrderNumberInSOH(salesOrder.getOrderNumber(), invoiceNumber);
+        SalesOrder subsequentSalesOrder = salesOrderService.getOrderByOrderNumber(newOrderNumberCreatedInSoh).orElseThrow();
+        int expectedRowKey = 3;
+        for (OrderRows orderRow : subsequentSalesOrder.getLatestJson().getOrderRows()) {
+            assertEquals(expectedRowKey++, orderRow.getRowKey());
+        }
     }
 
     private boolean checkIfInvoiceCreatedReceivedProcessExists(String newOrderNumberCreatedInSoh) {
