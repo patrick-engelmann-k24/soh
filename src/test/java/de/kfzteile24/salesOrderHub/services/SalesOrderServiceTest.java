@@ -28,17 +28,20 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.MIGRATION_SALES_ORDER_RECEIVED;
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CANCELLED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.copyOrderJson;
 import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
@@ -50,6 +53,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -68,6 +73,7 @@ class SalesOrderServiceTest {
     @Mock
     private OrderUtil orderUtil;
 
+    @Spy
     @InjectMocks
     private SalesOrderService salesOrderService;
 
@@ -678,6 +684,22 @@ class SalesOrderServiceTest {
                 .externalPaymentStatus(providerData.getExternalPaymentStatus())
                 .billingAgreement(providerData.getBillingAgreement())
                 .build();
+    }
+
+    @Test
+    void testCancelOrder(){
+        // Prepare input
+        var orderNumber = UUID.randomUUID().toString();
+        var salesOrder = getSalesOrder(getObjectByResource("testmessage.json", Order.class));
+        doReturn(Optional.of(salesOrder)).when(salesOrderService).getOrderByOrderNumber(orderNumber);
+        doReturn(null).when(salesOrderService).save(any(), any());
+
+        // Prepare expected value
+        var expected = getSalesOrder(getObjectByResource("testmessage.json", Order.class));
+        expected.setCancelled(true);
+
+        salesOrderService.cancelOrder(orderNumber);
+        verify(salesOrderService).save(eq(expected), eq(ORDER_CANCELLED));
     }
 
 }
