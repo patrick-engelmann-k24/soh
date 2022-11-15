@@ -1,10 +1,184 @@
+locals {
+  sqs_queues_info = {
+    ecp_shop_orders = tomap({
+      id  = aws_sqs_queue.ecp_shop_orders.id
+      arn = aws_sqs_queue.ecp_shop_orders.arn
+    })
+    ecp_shop_orders_dlq = tomap({
+      id  = aws_sqs_queue.ecp_shop_orders_dlq.id
+      arn = aws_sqs_queue.ecp_shop_orders_dlq.arn
+    })
+    bc_shop_orders = tomap({
+      id  = aws_sqs_queue.bc_shop_orders.id
+      arn = aws_sqs_queue.bc_shop_orders.arn
+    })
+    bc_shop_orders_dlq = tomap({
+      id  = aws_sqs_queue.bc_shop_orders_dlq.id
+      arn = aws_sqs_queue.bc_shop_orders_dlq.arn
+    })
+    core_shop_orders = tomap({
+      id  = aws_sqs_queue.core_shop_orders.id
+      arn = aws_sqs_queue.core_shop_orders.arn
+    })
+    core_shop_orders_dlq = tomap({
+      id  = aws_sqs_queue.core_shop_orders_dlq.id
+      arn = aws_sqs_queue.core_shop_orders_dlq.arn
+    })
+    soh_order_payment_secured = tomap({
+      id  = aws_sqs_queue.soh_order_payment_secured.id
+      arn = aws_sqs_queue.soh_order_payment_secured.arn
+    })
+    soh_order_payment_secured_dlq = tomap({
+      id  = aws_sqs_queue.soh_order_payment_secured_dlq.id
+      arn = aws_sqs_queue.soh_order_payment_secured_dlq.arn
+    })
+    soh_invoices_from_core = tomap({
+      id  = aws_sqs_queue.soh_invoices_from_core.id
+      arn = aws_sqs_queue.soh_invoices_from_core.arn
+    })
+    invoices_from_core_dlq = tomap({
+      id  = aws_sqs_queue.soh_invoices_from_core_dlq.id
+      arn = aws_sqs_queue.soh_invoices_from_core_dlq.arn
+    })
+    d365_order_payment_secured = tomap({
+      id  = aws_sqs_queue.d365_order_payment_secured.id
+      arn = aws_sqs_queue.d365_order_payment_secured.arn
+    })
+    d365_order_payment_secured_dlq = tomap({
+      id  = aws_sqs_queue.d365_order_payment_secured_dlq.id
+      arn = aws_sqs_queue.d365_order_payment_secured_dlq.arn
+    })
+    dropshipment_shipment_confirmed = tomap({
+      id  = aws_sqs_queue.soh_dropshipment_shipment_confirmed.id
+      arn = aws_sqs_queue.soh_dropshipment_shipment_confirmed.arn
+    })
+    dropshipment_shipment_confirmed_dlq = tomap({
+      id  = aws_sqs_queue.soh_dropshipment_shipment_confirmed_dlq.id
+      arn = aws_sqs_queue.soh_dropshipment_shipment_confirmed_dlq.arn
+    })
+    dropshipment_purchase_order_booked = tomap({
+      id  = aws_sqs_queue.soh_dropshipment_purchase_order_booked.id
+      arn = aws_sqs_queue.soh_dropshipment_purchase_order_booked.arn
+    })
+    dropshipment_purchase_order_booked_dlq = tomap({
+      id  = aws_sqs_queue.soh_dropshipment_purchase_order_booked_dlq.id
+      arn = aws_sqs_queue.soh_dropshipment_purchase_order_booked_dlq.arn
+    })
+    dropshipment_purchase_order_return_notified = tomap({
+      id  = aws_sqs_queue.soh_dropshipment_purchase_order_return_notified.id
+      arn = aws_sqs_queue.soh_dropshipment_purchase_order_return_notified.arn
+    })
+    dropshipment_purchase_order_return_notified_dlq = tomap({
+      id  = aws_sqs_queue.soh_dropshipment_purchase_order_return_notified_dlq.id
+      arn = aws_sqs_queue.soh_dropshipment_purchase_order_return_notified_dlq.arn
+    })
+    dropshipment_purchase_order_return_confirmed = tomap({
+      id  = aws_sqs_queue.soh_dropshipment_purchase_order_return_confirmed.id
+      arn = aws_sqs_queue.soh_dropshipment_purchase_order_return_confirmed.arn
+    })
+    dropshipment_purchase_order_return_confirmed_dlq = tomap({
+      id  = aws_sqs_queue.soh_dropshipment_purchase_order_return_confirmed_dlq.id
+      arn = aws_sqs_queue.soh_dropshipment_purchase_order_return_confirmed_dlq.arn
+    })
+    core_sales_credit_note_created = tomap({
+      id  = aws_sqs_queue.soh_core_sales_credit_note_created.id
+      arn = aws_sqs_queue.soh_core_sales_credit_note_created.arn
+    })
+    core_sales_credit_note_created_dlq = tomap({
+      id  = aws_sqs_queue.soh_core_sales_credit_note_created_dlq.id
+      arn = aws_sqs_queue.soh_core_sales_credit_note_created_dlq.arn
+    })
+    core_sales_invoice_created = tomap({
+      id  = aws_sqs_queue.soh_core_sales_invoice_created.id
+      arn = aws_sqs_queue.soh_core_sales_invoice_created.arn
+    })
+    core_sales_invoice_created_dlq = tomap({
+      id  = aws_sqs_queue.soh_core_sales_invoice_created_dlq.id
+      arn = aws_sqs_queue.soh_core_sales_invoice_created_dlq.arn
+    })
+    migration_core_sales_order_created = tomap({
+      id  = aws_sqs_queue.soh_migration_core_sales_order_created.id
+      arn = aws_sqs_queue.soh_migration_core_sales_order_created.arn
+    })
+    migration_core_sales_order_created_dlq = tomap({
+      id  = aws_sqs_queue.soh_migration_core_sales_order_created_dlq.id
+      arn = aws_sqs_queue.soh_migration_core_sales_order_created_dlq.arn
+    })
+    migration_core_sales_invoice_created = tomap({
+      id  = aws_sqs_queue.soh_migration_core_sales_invoice_created.id
+      arn = aws_sqs_queue.soh_migration_core_sales_invoice_created.arn
+    })
+    migration_core_sales_invoice_created_dlq = tomap({
+      id  = aws_sqs_queue.soh_migration_core_sales_invoice_created_dlq.id
+      arn = aws_sqs_queue.soh_migration_core_sales_invoice_created_dlq.arn
+    })
+    migration_core_sales_credit_note_created = tomap({
+      id  = aws_sqs_queue.soh_migration_core_sales_credit_note_created.id
+      arn = aws_sqs_queue.soh_migration_core_sales_credit_note_created.arn
+    })
+    migration_core_sales_credit_note_created_dlq = tomap({
+      id  = aws_sqs_queue.soh_migration_core_sales_credit_note_created_dlq.id
+      arn = aws_sqs_queue.soh_migration_core_sales_credit_note_created_dlq.arn
+    })
+    parcel_shipped = tomap({
+      id  = aws_sqs_queue.soh_parcel_shipped.id
+      arn = aws_sqs_queue.soh_parcel_shipped.arn
+    })
+    parcel_shipped_dlq = tomap({
+      id  = aws_sqs_queue.soh_parcel_shipped_dlq.id
+      arn = aws_sqs_queue.soh_parcel_shipped_dlq.arn
+    })
+    tmp_core_sales_order_created = tomap({
+      id  = aws_sqs_queue.soh_tmp_core_sales_order_created.id
+      arn = aws_sqs_queue.soh_tmp_core_sales_order_created.arn
+    })
+    tmp_core_sales_order_created_dlq = tomap({
+      id  = aws_sqs_queue.soh_tmp_core_sales_order_created_dlq.id
+      arn = aws_sqs_queue.soh_tmp_core_sales_order_created_dlq.arn
+    })
+    tmp_core_sales_invoice_created = tomap({
+      id  = aws_sqs_queue.soh_tmp_core_sales_credit_note_created.id
+      arn = aws_sqs_queue.soh_tmp_core_sales_credit_note_created.arn
+    })
+    tmp_core_sales_invoice_created_dlq = tomap({
+      id  = aws_sqs_queue.soh_tmp_core_sales_invoice_created_dlq.id
+      arn = aws_sqs_queue.soh_tmp_core_sales_invoice_created_dlq.arn
+    })
+    tmp_core_sales_credit_note_created = tomap({
+      id  = aws_sqs_queue.soh_tmp_core_sales_credit_note_created.id
+      arn = aws_sqs_queue.soh_tmp_core_sales_credit_note_created.arn
+    })
+    tmp_core_sales_credit_note_created_dlq = tomap({
+      id  = aws_sqs_queue.soh_tmp_core_sales_credit_note_created_dlq.id
+      arn = aws_sqs_queue.soh_tmp_core_sales_credit_note_created_dlq.arn
+    })
+    paypal_refund_instruction_successful = tomap({
+      id  = aws_sqs_queue.soh_paypal_refund_instruction_successful.id
+      arn = aws_sqs_queue.soh_paypal_refund_instruction_successful.arn
+    })
+    paypal_refund_instruction_successful_dlq = tomap({
+      id  = aws_sqs_queue.soh_paypal_refund_instruction_successful_dlq.id
+      arn = aws_sqs_queue.soh_paypal_refund_instruction_successful_dlq.arn
+    })
+    core_sales_order_cancelled = tomap({
+      id  = aws_sqs_queue.soh_core_sales_order_cancelled.id
+      arn = aws_sqs_queue.soh_core_sales_order_cancelled.arn
+    })
+    paypal_refund_instruction_successful_dlq = tomap({
+      id  = aws_sqs_queue.soh_core_sales_order_cancelled_dlq.id
+      arn = aws_sqs_queue.soh_core_sales_order_cancelled_dlq.arn
+    })
+  }
+}
+
 data "aws_caller_identity" "current" {}
 
-#policies
-#ecp_shop_orders
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_soh_ecp_shop_orders" {
+data "aws_iam_policy_document" "sns_sqs_send_message_policy_document" {
+
+  for_each = local.sqs_queues_info
+
   statement {
-    sid = "SNS-ecp-shop-orders"
+    sid    = "SNS-${each.key}"
     effect = "Allow"
 
     actions = [
@@ -17,7 +191,7 @@ data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_soh_ecp_shop
     }
 
     resources = [
-      aws_sqs_queue.ecp_shop_orders.arn
+      (each.value).arn
     ]
   }
 
@@ -34,1502 +208,13 @@ data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_soh_ecp_shop
     }
 
     resources = [
-      aws_sqs_queue.ecp_shop_orders.arn
+      (each.value).arn
     ]
   }
 }
 
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_ecp_order" {
-  queue_url = aws_sqs_queue.ecp_shop_orders.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_soh_ecp_shop_orders.json
-}
-
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_soh_bc_shop_orders" {
-  statement {
-    sid = "SNS-bc-shop-orders"
-    effect = "Allow"
-
-    actions = [
-      "sqs:SendMessage",
-    ]
-
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.bc_shop_orders.arn
-    ]
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sqs:*",
-    ]
-
-    principals {
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.bc_shop_orders.arn
-    ]
-  }
-}
-
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_bc_order" {
-  queue_url = aws_sqs_queue.bc_shop_orders.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_soh_bc_shop_orders.json
-}
-
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_soh_core_shop_orders" {
-  statement {
-    sid = "SNS-core-shop-orders"
-    effect = "Allow"
-
-    actions = [
-      "sqs:SendMessage",
-    ]
-
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.core_shop_orders.arn
-    ]
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sqs:*",
-    ]
-
-    principals {
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.core_shop_orders.arn
-    ]
-  }
-}
-
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_core_order" {
-  queue_url = aws_sqs_queue.core_shop_orders.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_soh_core_shop_orders.json
-}
-
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_soh_order_payment_secured" {
-  statement {
-    sid = "SNS-order-payment-secured"
-    effect = "Allow"
-
-    actions = [
-      "sqs:SendMessage",
-    ]
-
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_order_payment_secured.arn
-    ]
-
-    condition {
-      test     = "ArnEquals"
-      variable = "aws:SourceArn"
-      values = [
-        data.aws_sns_topic.sns_soh_order_payment_secured.arn,
-      ]
-    }
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sqs:*",
-    ]
-
-    principals {
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_order_payment_secured.arn
-    ]
-  }
-}
-
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_order_payment_secured" {
-  queue_url = aws_sqs_queue.soh_order_payment_secured.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_soh_order_payment_secured.json
-}
-
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_invoices_from_core" {
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sqs:*",
-    ]
-
-    principals {
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_invoices_from_core.arn
-    ]
-  }
-
-  statement {
-    sid = "SNS-invoices-from-core"
-    effect = "Allow"
-
-    actions = [
-      "sqs:SendMessage",
-    ]
-
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_invoices_from_core.arn
-    ]
-
-    condition {
-      test     = "ArnEquals"
-      variable = "aws:SourceArn"
-      values = [
-        var.invoices_from_core_sns
-      ]
-    }
-  }
-}
-
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_invoices_from_core" {
-  queue_url = aws_sqs_queue.soh_invoices_from_core.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_invoices_from_core.json
-}
-
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_d365_order_payment_secured" {
-  statement {
-    sid = "SNS-d365-order-payment-secured"
-    effect = "Allow"
-
-    actions = [
-      "sqs:SendMessage",
-    ]
-
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.d365_order_payment_secured.arn
-    ]
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sqs:*",
-    ]
-
-    principals {
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.d365_order_payment_secured.arn
-    ]
-  }
-}
-
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_d365_order_payment_secured" {
-  queue_url = aws_sqs_queue.d365_order_payment_secured.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_d365_order_payment_secured.json
-}
-
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_dropshipment_shipment_confirmed" {
-  statement {
-    sid = "SNS-dropshipment-shipment-confirmed"
-    effect = "Allow"
-
-    actions = [
-      "sqs:SendMessage",
-    ]
-
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_dropshipment_shipment_confirmed.arn
-    ]
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sqs:*",
-    ]
-
-    principals {
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_dropshipment_shipment_confirmed.arn
-    ]
-  }
-}
-
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_dropshipment_shipment_confirmed" {
-  queue_url = aws_sqs_queue.soh_dropshipment_shipment_confirmed.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_dropshipment_shipment_confirmed.json
-}
-
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_core_sales_credit_note_created" {
-  statement {
-    sid = "SNS-core-sales-credit-note-created"
-    effect = "Allow"
-
-    actions = [
-      "sqs:SendMessage",
-    ]
-
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_core_sales_credit_note_created.arn
-    ]
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sqs:*",
-    ]
-
-    principals {
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_core_sales_credit_note_created.arn
-    ]
-  }
-}
-
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_core_sales_credit_note_created" {
-  queue_url = aws_sqs_queue.soh_core_sales_credit_note_created.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_core_sales_credit_note_created.json
-}
-
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_dropshipment_purchase_order_booked" {
-  statement {
-    sid = "SNS-dropshipment-purchase-order-booked"
-    effect = "Allow"
-
-    actions = [
-      "sqs:SendMessage",
-    ]
-
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_dropshipment_purchase_order_booked.arn
-    ]
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sqs:*",
-    ]
-
-    principals {
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_dropshipment_purchase_order_booked.arn
-    ]
-  }
-}
-
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_dropshipment_purchase_order_booked" {
-  queue_url = aws_sqs_queue.soh_dropshipment_purchase_order_booked.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_dropshipment_purchase_order_booked.json
-}
-
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_dropshipment_purchase_order_return_confirmed" {
-  statement {
-    sid = "SNS-dropshipment-purchase-order-return-confirmed"
-    effect = "Allow"
-
-    actions = [
-      "sqs:SendMessage",
-    ]
-
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_dropshipment_purchase_order_return_confirmed.arn
-    ]
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sqs:*",
-    ]
-
-    principals {
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_dropshipment_purchase_order_return_confirmed.arn
-    ]
-  }
-}
-
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_dropshipment_purchase_order_return_confirmed" {
-  queue_url = aws_sqs_queue.soh_dropshipment_purchase_order_return_confirmed.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_dropshipment_purchase_order_return_confirmed.json
-}
-
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_dropshipment_purchase_order_return_notified" {
-  statement {
-    sid = "SNS-dropshipment-purchase-order-return-notified"
-    effect = "Allow"
-
-    actions = [
-      "sqs:SendMessage",
-    ]
-
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_dropshipment_purchase_order_return_notified.arn
-    ]
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sqs:*",
-    ]
-
-    principals {
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_dropshipment_purchase_order_return_notified.arn
-    ]
-  }
-}
-
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_dropshipment_purchase_order_return_notified" {
-  queue_url = aws_sqs_queue.soh_dropshipment_purchase_order_return_notified.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_dropshipment_purchase_order_return_notified.json
-}
-
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_soh_core_sales_invoice_created" {
-  statement {
-    sid = "SNS-soh-core-sales-invoice-created"
-    effect = "Allow"
-
-    actions = [
-      "sqs:SendMessage",
-    ]
-
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_core_sales_invoice_created.arn
-    ]
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sqs:*",
-    ]
-
-    principals {
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_core_sales_invoice_created.arn
-    ]
-  }
-}
-
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_soh_core_sales_invoice_created" {
-  queue_url = aws_sqs_queue.soh_core_sales_invoice_created.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_soh_core_sales_invoice_created.json
-}
-
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_migration_sales_order_created" {
-  statement {
-    sid = "SNS-migration-sales-order-created"
-    effect = "Allow"
-
-    actions = [
-      "sqs:SendMessage",
-    ]
-
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_migration_core_sales_order_created.arn
-    ]
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sqs:*",
-    ]
-
-    principals {
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_migration_core_sales_order_created.arn
-    ]
-  }
-}
-
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_migration_sales_order_created" {
-  queue_url = aws_sqs_queue.soh_migration_core_sales_order_created.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_migration_sales_order_created.json
-}
-
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_migration_core_sales_invoice_created" {
-  statement {
-    sid = "SNS-migration-core-sales-invoice-created"
-    effect = "Allow"
-
-    actions = [
-      "sqs:SendMessage",
-    ]
-
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_migration_core_sales_invoice_created.arn
-    ]
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sqs:*",
-    ]
-
-    principals {
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_migration_core_sales_invoice_created.arn
-    ]
-  }
-}
-
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_soh_migration_core_sales_invoice_created" {
-  queue_url = aws_sqs_queue.soh_migration_core_sales_invoice_created.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_migration_core_sales_invoice_created.json
-}
-
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_migration_core_sales_credit_note_created" {
-  statement {
-    sid = "SNS-migration-core-sales-credit-note-created"
-    effect = "Allow"
-
-    actions = [
-      "sqs:SendMessage",
-    ]
-
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_migration_core_sales_credit_note_created.arn
-    ]
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sqs:*",
-    ]
-
-    principals {
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_migration_core_sales_credit_note_created.arn
-    ]
-  }
-}
-
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_soh_migration_core_sales_credit_note_created" {
-  queue_url = aws_sqs_queue.soh_migration_core_sales_credit_note_created.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_migration_core_sales_credit_note_created.json
-}
-
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_parcel_shipped" {
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sqs:*",
-    ]
-
-    principals {
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_parcel_shipped.arn
-    ]
-  }
-
-  statement {
-    sid = "SNS-parce-shipped"
-    effect = "Allow"
-
-    actions = [
-      "sqs:SendMessage",
-    ]
-
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_parcel_shipped.arn
-    ]
-  }
-}
-
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_parcel_shipped" {
-  queue_url = aws_sqs_queue.soh_parcel_shipped.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_parcel_shipped.json
-}
-
-#tmp migration policies
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_tmp_sales_order_created" {
-  statement {
-    sid = "SNS-tmp-sales-order-created"
-    effect = "Allow"
-
-    actions = [
-      "sqs:SendMessage",
-    ]
-
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_tmp_core_sales_order_created_dlq.arn
-    ]
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sqs:*",
-    ]
-
-    principals {
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_tmp_core_sales_order_created_dlq.arn
-    ]
-  }
-}
-
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_tmp_sales_order_created" {
-  queue_url = aws_sqs_queue.soh_tmp_core_sales_order_created_dlq.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_tmp_sales_order_created.json
-}
-
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_tmp_core_sales_invoice_created" {
-  statement {
-    sid = "SNS-tmp-core-sales-invoice-created"
-    effect = "Allow"
-
-    actions = [
-      "sqs:SendMessage",
-    ]
-
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_tmp_core_sales_invoice_created_dlq.arn
-    ]
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sqs:*",
-    ]
-
-    principals {
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_tmp_core_sales_invoice_created_dlq.arn
-    ]
-  }
-}
-
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_soh_tmp_core_sales_invoice_created" {
-  queue_url = aws_sqs_queue.soh_tmp_core_sales_invoice_created_dlq.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_tmp_core_sales_invoice_created.json
-}
-
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_tmp_core_sales_credit_note_created" {
-  statement {
-    sid = "SNS-tmp-core-sales-credit-note-created"
-    effect = "Allow"
-
-    actions = [
-      "sqs:SendMessage",
-    ]
-
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_tmp_core_sales_credit_note_created_dlq.arn
-    ]
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sqs:*",
-    ]
-
-    principals {
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_tmp_core_sales_credit_note_created_dlq.arn
-    ]
-  }
-}
-
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_soh_tmp_core_sales_credit_note_created" {
-  queue_url = aws_sqs_queue.soh_tmp_core_sales_credit_note_created_dlq.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_tmp_core_sales_credit_note_created.json
-}
-
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_soh_core_sales_invoice_created_dlq" {
-  statement {
-    sid = "SNS-soh-core-sales-invoice-created_dlq"
-    effect = "Allow"
-
-    actions = [
-      "sqs:SendMessage",
-    ]
-
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_core_sales_invoice_created_dlq.arn
-    ]
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sqs:*",
-    ]
-
-    principals {
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_core_sales_invoice_created_dlq.arn
-    ]
-  }
-}
-
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_soh_core_sales_invoice_created_dlq" {
-  queue_url = aws_sqs_queue.soh_core_sales_invoice_created_dlq.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_soh_core_sales_invoice_created_dlq.json
-}
-
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_soh_parcel_shipped_dlq" {
-  statement {
-    sid = "SNS-soh-parcel-shipped-dlq"
-    effect = "Allow"
-
-    actions = [
-      "sqs:SendMessage",
-    ]
-
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_parcel_shipped_dlq.arn
-    ]
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sqs:*",
-    ]
-
-    principals {
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_parcel_shipped_dlq.arn
-    ]
-  }
-}
-
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_soh_parcel_shipped_dlq" {
-  queue_url = aws_sqs_queue.soh_parcel_shipped_dlq.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_soh_parcel_shipped_dlq.json
-}
-
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_soh_ecp_shop_orders_dlq" {
-  statement {
-    sid = "SNS-ecp-shop-orders-dlq"
-    effect = "Allow"
-
-    actions = [
-      "sqs:SendMessage",
-    ]
-
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.ecp_shop_orders_dlq.arn
-    ]
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sqs:*",
-    ]
-
-    principals {
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.ecp_shop_orders_dlq.arn
-    ]
-  }
-}
-
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_ecp_order_dlq" {
-  queue_url = aws_sqs_queue.ecp_shop_orders_dlq.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_soh_ecp_shop_orders_dlq.json
-}
-
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_soh_bc_shop_orders_dlq" {
-  statement {
-    sid = "SNS-bc-shop-orders-dlq"
-    effect = "Allow"
-
-    actions = [
-      "sqs:SendMessage",
-    ]
-
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.bc_shop_orders_dlq.arn
-    ]
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sqs:*",
-    ]
-
-    principals {
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.bc_shop_orders_dlq.arn
-    ]
-  }
-}
-
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_bc_order_dlq" {
-  queue_url = aws_sqs_queue.bc_shop_orders_dlq.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_soh_bc_shop_orders_dlq.json
-}
-
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_soh_core_shop_orders_dlq" {
-  statement {
-    sid = "SNS-core-shop-orders-dlq"
-    effect = "Allow"
-
-    actions = [
-      "sqs:SendMessage",
-    ]
-
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.core_shop_orders_dlq.arn
-    ]
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sqs:*",
-    ]
-
-    principals {
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.core_shop_orders_dlq.arn
-    ]
-  }
-}
-
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_core_order_dlq" {
-  queue_url = aws_sqs_queue.core_shop_orders_dlq.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_soh_core_shop_orders_dlq.json
-}
-
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_soh_core_sales_credit_note_created_dlq" {
-  statement {
-    sid = "SNS-soh-core-sales-credit-note-created-dlq"
-    effect = "Allow"
-
-    actions = [
-      "sqs:SendMessage",
-    ]
-
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_core_sales_credit_note_created_dlq.arn
-    ]
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sqs:*",
-    ]
-
-    principals {
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_core_sales_credit_note_created_dlq.arn
-    ]
-  }
-}
-
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_soh_core_sales_credit_note_created_dlq" {
-  queue_url = aws_sqs_queue.soh_core_sales_credit_note_created_dlq.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_soh_core_sales_credit_note_created_dlq.json
-}
-
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_soh_paypal_refund_instruction_successful" {
-  statement {
-    sid = "SNS-soh-paypal-refund-instruction-successful"
-    effect = "Allow"
-
-    actions = [
-      "sqs:SendMessage",
-    ]
-
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_paypal_refund_instruction_successful.arn
-    ]
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sqs:*",
-    ]
-
-    principals {
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_paypal_refund_instruction_successful.arn
-    ]
-  }
-}
-
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_soh_paypal_refund_instruction_successful" {
-  queue_url = aws_sqs_queue.soh_paypal_refund_instruction_successful.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_soh_paypal_refund_instruction_successful.json
-}
-
-
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_soh_paypal_refund_instruction_successful_dlq" {
-  statement {
-    sid = "SNS-soh-paypal-refund-instruction-successful-dlq"
-    effect = "Allow"
-
-    actions = [
-      "sqs:SendMessage",
-    ]
-
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_paypal_refund_instruction_successful_dlq.arn
-    ]
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sqs:*",
-    ]
-
-    principals {
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_paypal_refund_instruction_successful_dlq.arn
-    ]
-  }
-}
-
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_soh_paypal_refund_instruction_successful_dlq" {
-  queue_url = aws_sqs_queue.soh_paypal_refund_instruction_successful_dlq.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_soh_paypal_refund_instruction_successful_dlq.json
-}
-
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_invoices_from_core_dlq" {
-  statement {
-    sid = "SNS-invoices-from-core-dlq"
-    effect = "Allow"
-
-    actions = [
-      "sqs:SendMessage",
-    ]
-
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_invoices_from_core_dlq.arn
-    ]
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sqs:*",
-    ]
-
-    principals {
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_invoices_from_core_dlq.arn
-    ]
-  }
-}
-
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_invoices_from_core_dlq" {
-  queue_url = aws_sqs_queue.soh_invoices_from_core_dlq.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_invoices_from_core_dlq.json
-}
-
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_d365_order_payment_secured_dlq" {
-  statement {
-    sid = "SNS-d365-order-payment-secured-dlq"
-    effect = "Allow"
-
-    actions = [
-      "sqs:SendMessage",
-    ]
-
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.d365_order_payment_secured_dlq.arn
-    ]
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sqs:*",
-    ]
-
-    principals {
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.d365_order_payment_secured_dlq.arn
-    ]
-  }
-}
-
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_d365_order_payment_secured_dlq" {
-  queue_url = aws_sqs_queue.d365_order_payment_secured_dlq.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_d365_order_payment_secured_dlq.json
-}
-
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_dropshipment_purchase_order_booked_dlq" {
-  statement {
-    sid = "SNS-dropshipment-purchase-order-booked-dlq"
-    effect = "Allow"
-
-    actions = [
-      "sqs:SendMessage",
-    ]
-
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_dropshipment_purchase_order_booked_dlq.arn
-    ]
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sqs:*",
-    ]
-
-    principals {
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_dropshipment_purchase_order_booked_dlq.arn
-    ]
-  }
-}
-
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_dropshipment_purchase_order_booked_dlq" {
-  queue_url = aws_sqs_queue.soh_dropshipment_purchase_order_booked_dlq.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_dropshipment_purchase_order_booked_dlq.json
-}
-
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_dropshipment_shipment_confirmed_dlq" {
-  statement {
-    sid = "SNS-dropshipment-shipment-confirmed-dlq"
-    effect = "Allow"
-
-    actions = [
-      "sqs:SendMessage",
-    ]
-
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_dropshipment_purchase_order_return_confirmed_dlq.arn
-    ]
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sqs:*",
-    ]
-
-    principals {
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_dropshipment_purchase_order_return_confirmed_dlq.arn
-    ]
-  }
-}
-
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_dropshipment_shipment_confirmed_dlq" {
-  queue_url = aws_sqs_queue.soh_dropshipment_shipment_confirmed_dlq.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_dropshipment_shipment_confirmed_dlq.json
-}
-
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_dropshipment_purchase_order_return_notified_dlq" {
-  statement {
-    sid = "SNS-dropshipment-purchase-order-booked-dlq"
-    effect = "Allow"
-
-    actions = [
-      "sqs:SendMessage",
-    ]
-
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_dropshipment_purchase_order_return_notified_dlq.arn
-    ]
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sqs:*",
-    ]
-
-    principals {
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_dropshipment_purchase_order_return_notified_dlq.arn
-    ]
-  }
-}
-
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_dropshipment_purchase_order_return_notified_dlq" {
-  queue_url = aws_sqs_queue.soh_dropshipment_purchase_order_return_notified_dlq.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_dropshipment_purchase_order_return_notified_dlq.json
-}
-
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_dropshipment_purchase_order_return_confirmed_dlq" {
-  statement {
-    sid = "SNS-dropshipment-purchase-order-booked-dlq"
-    effect = "Allow"
-
-    actions = [
-      "sqs:SendMessage",
-    ]
-
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_dropshipment_purchase_order_return_confirmed_dlq.arn
-    ]
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sqs:*",
-    ]
-
-    principals {
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_dropshipment_purchase_order_return_confirmed_dlq.arn
-    ]
-  }
-}
-
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_dropshipment_purchase_order_return_confirmed_dlq" {
-  queue_url = aws_sqs_queue.soh_dropshipment_purchase_order_return_confirmed_dlq.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_dropshipment_purchase_order_return_confirmed_dlq.json
-}
-
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_migration_sales_order_created_dlq" {
-  statement {
-    sid = "SNS-migration-sales-order-created-dlq"
-    effect = "Allow"
-
-    actions = [
-      "sqs:SendMessage",
-    ]
-
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_migration_core_sales_order_created_dlq.arn
-    ]
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sqs:*",
-    ]
-
-    principals {
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_migration_core_sales_order_created_dlq.arn
-    ]
-  }
-}
-
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_migration_sales_order_created_dlq" {
-  queue_url = aws_sqs_queue.soh_migration_core_sales_order_created_dlq.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_migration_sales_order_created_dlq.json
-}
-
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_migration_core_sales_invoice_created_dlq" {
-  statement {
-    sid = "SNS-migration-core-sales-invoice-created-dlq"
-    effect = "Allow"
-
-    actions = [
-      "sqs:SendMessage",
-    ]
-
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_migration_core_sales_invoice_created_dlq.arn
-    ]
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sqs:*",
-    ]
-
-    principals {
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_migration_core_sales_invoice_created_dlq.arn
-    ]
-  }
-}
-
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_soh_migration_core_sales_invoice_created_dlq" {
-  queue_url = aws_sqs_queue.soh_migration_core_sales_invoice_created_dlq.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_migration_core_sales_invoice_created_dlq.json
-}
-
-data "aws_iam_policy_document" "sns_sqs_sendmessage_policy_document_migration_core_sales_credit_note_created_dlq" {
-  statement {
-    sid = "SNS-migration-core-sales-credit-note-created-dlq"
-    effect = "Allow"
-
-    actions = [
-      "sqs:SendMessage",
-    ]
-
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_migration_core_sales_credit_note_created_dlq.arn
-    ]
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sqs:*",
-    ]
-
-    principals {
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-      type        = "AWS"
-    }
-
-    resources = [
-      aws_sqs_queue.soh_migration_core_sales_credit_note_created_dlq.arn
-    ]
-  }
-}
-
-resource "aws_sqs_queue_policy" "sns_sqs_sendmessage_policy_soh_migration_core_sales_credit_note_created_dlq" {
-  queue_url = aws_sqs_queue.soh_migration_core_sales_credit_note_created_dlq.id
-  policy    = data.aws_iam_policy_document.sns_sqs_sendmessage_policy_document_migration_core_sales_credit_note_created_dlq.json
+resource "aws_sqs_queue_policy" "sns_sqs_send_message_policy" {
+  for_each  = local.sqs_queues_info
+  queue_url = (each.value).id
+  policy    = data.aws_iam_policy_document.sns_sqs_send_message_policy_document[each.key].json
 }

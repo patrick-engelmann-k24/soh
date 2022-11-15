@@ -2,6 +2,7 @@ package de.kfzteile24.salesOrderHub.services;
 
 import de.kfzteile24.salesOrderHub.configuration.FeatureFlagConfig;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.helper.CustomValidator;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderMapper;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderMapperImpl;
@@ -30,6 +31,7 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class MigrationSalesOrderServiceTest {
+
     @Mock
     private OrderUtil orderUtil;
 
@@ -41,6 +43,9 @@ class MigrationSalesOrderServiceTest {
 
     @Mock
     private FeatureFlagConfig featureFlagConfig;
+
+    @Mock
+    private CustomValidator customValidator;
 
     @Spy
     private final SalesOrderMapper salesOrderMapper = new SalesOrderMapperImpl();

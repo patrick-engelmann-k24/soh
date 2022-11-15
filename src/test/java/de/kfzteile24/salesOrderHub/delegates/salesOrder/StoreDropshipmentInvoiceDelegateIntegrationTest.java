@@ -20,7 +20,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -87,7 +86,7 @@ class StoreDropshipmentInvoiceDelegateIntegrationTest extends AbstractIntegratio
 
     private ProcessInstance createAndVerifyOrderProcess(SalesOrder testOrder) {
         var orderProcess = camundaHelper.createOrderProcess(testOrder, Messages.ORDER_RECEIVED_ECP);
-        assertTrue(pollingService.poll(Duration.ofSeconds(5), Duration.ofSeconds(10), () -> {
+        assertTrue(pollingService.pollWithDefaultTiming(() -> {
             assertThat(orderProcess).hasPassedInOrder(
                     START_MSG_ORDER_RECEIVED_FROM_ECP.getName(),
                     XOR_CHECK_DROPSHIPMENT_ORDER.getName(),
@@ -102,7 +101,7 @@ class StoreDropshipmentInvoiceDelegateIntegrationTest extends AbstractIntegratio
         bpmUtil.sendMessage(Messages.DROPSHIPMENT_ORDER_CONFIRMED,
                 orderNumber,
                 Map.of(IS_DROPSHIPMENT_ORDER_CONFIRMED.getName(), true));
-        assertTrue(pollingService.poll(Duration.ofSeconds(5), Duration.ofSeconds(10), () -> {
+        assertTrue(pollingService.pollWithDefaultTiming(() -> {
             assertThat(orderProcess).hasPassedInOrder(
                     EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED.getName(),
                     XOR_CHECK_DROPSHIPMENT_ORDER_SUCCESSFUL.getName(),
@@ -119,7 +118,7 @@ class StoreDropshipmentInvoiceDelegateIntegrationTest extends AbstractIntegratio
                                 "{\"url\":\"http://abc1\", \"order_items\":[\"1440-47378\"]}",
                                 "{\"url\":\"http://abc2\", \"order_items\":[\"2010-10183\"]}"))
         );
-        assertTrue(pollingService.poll(Duration.ofSeconds(5), Duration.ofSeconds(10), () -> {
+        assertTrue(pollingService.pollWithDefaultTiming(() -> {
             assertThat(orderProcess).hasPassedInOrder(
                     EVENT_MSG_DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED.getName(),
                     "eventThrowMsgPublishInvoiceData"

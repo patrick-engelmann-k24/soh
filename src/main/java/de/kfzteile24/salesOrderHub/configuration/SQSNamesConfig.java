@@ -41,4 +41,7 @@ public class SQSNamesConfig {
     @Value("$soh.sqs.queue.paypalRefundInstructionSuccessful}")
     private String paypalRefundInstructionSuccessful;
 
+    @Value("$soh.sqs.queue.coreSalesOrderCancelled}")
+    private String coreSalesOrderCancelled;
+
 }

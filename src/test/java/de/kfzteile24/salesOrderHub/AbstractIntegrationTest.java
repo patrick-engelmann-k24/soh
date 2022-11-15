@@ -7,10 +7,7 @@ import de.kfzteile24.salesOrderHub.configuration.SQSNamesConfig;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.PublishDropshipmentOrderCreatedDelegate;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
-import de.kfzteile24.salesOrderHub.helper.SleuthHelper;
-import de.kfzteile24.salesOrderHub.services.SalesOrderProcessService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
-import de.kfzteile24.salesOrderHub.services.SalesOrderRowService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentOrderService;
@@ -74,11 +71,7 @@ public abstract class AbstractIntegrationTest implements ApplicationContextAware
     @SpyBean
     protected DropshipmentOrderService dropshipmentOrderService;
     @SpyBean
-    protected SleuthHelper sleuthHelper;
-    @SpyBean
     protected CamundaHelper camundaHelper;
-    @SpyBean
-    protected SalesOrderRowService salesOrderRowService;
     @SpyBean
     protected SalesOrderReturnService salesOrderReturnService;
     @SpyBean
@@ -91,8 +84,6 @@ public abstract class AbstractIntegrationTest implements ApplicationContextAware
     protected PayloadResolverDecorator payloadResolverDecorator;
     @SpyBean
     protected SQSNamesConfig sqsNamesConfig;
-    @SpyBean
-    protected SalesOrderProcessService salesOrderCreateService;
     @SpyBean
     protected SalesOrderSqsReceiveService salesOrderSqsReceiveService;
     @SpyBean

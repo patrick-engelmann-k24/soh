@@ -32,6 +32,9 @@ public enum Events implements BpmItem {
     START_MSG_CORE_CREDIT_NOTE_CREATED("eventStartMsgCoreCreditNoteCreated"),
     START_MSG_DROPSHIPMENT_ORDER_RETURN_CONFIRMED("eventStartMsgDropshipmentOrderReturnConfirmed"),
     MSG_ORDER_CORE_SALES_INVOICE_CREATED("eventMsgOrderCoreSalesInvoiceCreated"),
+
+    START_MSG_CORE_SALES_ORDER_CANCELLED("eventStartMsgCoreSalesOrderCancelled"),
+    END_MSG_CORE_SALES_ORDER_CANCELLED("eventEndMsgCoreSalesOrderCancelled")
     ;
 
     @Getter

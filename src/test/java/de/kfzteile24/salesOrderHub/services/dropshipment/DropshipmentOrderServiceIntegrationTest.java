@@ -46,7 +46,6 @@ import org.mockito.verification.VerificationMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.Commit;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -352,10 +351,10 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
 
         ProcessInstance processInstance = camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
 
-        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+        assertTrue(timerService.pollWithDefaultTiming(() ->
                 camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
 
-        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+        assertTrue(timerService.pollWithDefaultTiming(() ->
                 camundaHelper.hasPassed(processInstance.getId(), EVENT_THROW_MSG_PURCHASE_ORDER_CREATED.getName())));
 
         var messageCorrelationResult = bpmUtil.sendMessage(Messages.DROPSHIPMENT_ORDER_CONFIRMED, salesOrder.getOrderNumber(),
@@ -365,14 +364,14 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
 
         salesOrder.getLatestJson().getOrderRows().forEach(orderRow -> {
 
-            assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+            assertTrue(timerService.pollWithDefaultTiming(() ->
                     camundaHelper.hasPassed(processInstance.getId(), EVENT_MSG_DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED.getName())));
 
-            assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+            assertTrue(timerService.pollWithDefaultTiming(() ->
                     camundaHelper.hasPassed(processInstance.getId(), EVENT_END_MSG_DROPSHIPMENT_ORDER_ROW_CANCELLED.getName())));
         });
 
-        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+        assertTrue(timerService.pollWithDefaultTiming(() ->
                 camundaHelper.hasPassed(processInstance.getId(), Events.END_MSG_ORDER_CANCELLED.getName())));
 
     }
@@ -393,14 +392,14 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
                 .map(salesOrder -> camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP))
                 .collect(Collectors.toUnmodifiableList());
 
-        salesOrders.forEach(salesOrder -> assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+        salesOrders.forEach(salesOrder -> assertTrue(timerService.pollWithDefaultTiming(() ->
                 camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber()))));
 
         processInstances.forEach(processInstance -> {
-            assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+            assertTrue(timerService.pollWithDefaultTiming(() ->
                     camundaHelper.hasPassed(processInstance.getId(), XOR_CHECK_PAUSE_PROCESSING_DROPSHIPMENT_ORDER_FLAG.getName())));
 
-            assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+            assertTrue(timerService.pollWithDefaultTiming(() ->
                     camundaHelper.hasNotPassed(processInstance.getId(), EVENT_THROW_MSG_PURCHASE_ORDER_CREATED.getName())));
 
             bpmUtil.isProcessWaitingAtExpectedToken(processInstance, EVENT_SIGNAL_PAUSE_PROCESSING_DROPSHIPMENT_ORDER.getName());
@@ -421,10 +420,10 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
         assertThat(processInstanceIds).isNotIn(waitingProcessInstancesAfterSignal);
 
         processInstances.forEach(processInstance -> {
-            assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+            assertTrue(timerService.pollWithDefaultTiming(() ->
                     camundaHelper.hasPassed(processInstance.getId(), EVENT_SIGNAL_PAUSE_PROCESSING_DROPSHIPMENT_ORDER.getName())));
 
-            assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(5), () ->
+            assertTrue(timerService.pollWithDefaultTiming(() ->
                     camundaHelper.hasPassed(processInstance.getId(), EVENT_THROW_MSG_PURCHASE_ORDER_CREATED.getName())));
         });
 
@@ -439,12 +438,12 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
 
         var processInstance = camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
 
-        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+        assertTrue(timerService.pollWithDefaultTiming(() ->
                 camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
 
         bpmUtil.isProcessWaitingAtExpectedToken(processInstance, EVENT_SIGNAL_PAUSE_PROCESSING_DROPSHIPMENT_ORDER.getName());
 
-        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+        assertTrue(timerService.pollWithDefaultTiming(() ->
                 camundaHelper.hasNotPassed(processInstance.getId(), EVENT_THROW_MSG_PURCHASE_ORDER_CREATED.getName())));
 
     }
@@ -456,13 +455,13 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
 
         var processInstance = camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
 
-        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+        assertTrue(timerService.pollWithDefaultTiming(() ->
                 camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
 
-        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(2), () ->
+        assertTrue(timerService.pollWithDefaultTiming(() ->
                 camundaHelper.hasNotPassed(processInstance.getId(), EVENT_SIGNAL_PAUSE_PROCESSING_DROPSHIPMENT_ORDER.getName())));
 
-        assertTrue(timerService.poll(Duration.ofSeconds(7), Duration.ofSeconds(5), () ->
+        assertTrue(timerService.pollWithDefaultTiming(() ->
                 camundaHelper.hasPassed(processInstance.getId(), EVENT_THROW_MSG_PURCHASE_ORDER_CREATED.getName())));
 
     }

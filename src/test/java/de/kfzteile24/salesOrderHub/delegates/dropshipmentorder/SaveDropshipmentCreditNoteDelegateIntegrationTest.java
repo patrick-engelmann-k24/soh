@@ -15,7 +15,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -69,10 +68,10 @@ class SaveDropshipmentCreditNoteDelegateIntegrationTest extends AbstractIntegrat
                 .setVariables(processVariables)
                 .correlateWithResult()
                 .getProcessInstance();
-        assertTrue(pollingService.poll(Duration.ofMillis(100), Duration.ofSeconds(10), () -> {
+        assertTrue(pollingService.pollWithDefaultTiming(() -> {
             assertThat(processInstance).hasPassed("eventStartMsgCreditNoteUrlReceived",
-                            "activitySaveCreditNoteDocumentUrl",
-                            "eventCreditNoteDocumentGenerated");
+                    "activitySaveCreditNoteDocumentUrl",
+                    "eventCreditNoteDocumentGenerated");
             return true;
         }));
         SalesOrderReturn returnOrder = salesOrderReturnRepository.findByOrderNumber(salesOrderReturn.getOrderNumber())

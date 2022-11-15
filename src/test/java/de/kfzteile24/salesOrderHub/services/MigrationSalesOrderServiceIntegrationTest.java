@@ -19,7 +19,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.time.Duration;
 import java.util.Objects;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -66,7 +65,7 @@ class MigrationSalesOrderServiceIntegrationTest extends AbstractIntegrationTest 
 
         migrationSalesOrderService.handleMigrationCoreSalesOrderCreated(message, messageWrapper);
 
-        assertFalse(timedPollingService.poll(Duration.ofSeconds(7), Duration.ofSeconds(7),
+        assertFalse(timedPollingService.pollWithDefaultTiming(
                 () -> camundaHelper.checkIfActiveProcessExists(message.getOrderHeader().getOrderNumber())));
 
         SalesOrder updated = salesOrderService.getOrderByOrderNumber(message.getOrderHeader().getOrderNumber()).orElse(null);

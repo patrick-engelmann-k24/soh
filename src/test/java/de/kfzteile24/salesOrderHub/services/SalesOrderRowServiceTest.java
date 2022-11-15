@@ -7,10 +7,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ArticleItemsDto;
 import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ParcelShipped;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
-import de.kfzteile24.soh.order.dto.Order;
-import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Totals;
-import org.assertj.core.util.Lists;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.runtime.ProcessInstanceQuery;
@@ -28,19 +25,15 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROWS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CANCELLED;
-import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ROW_CANCELLED;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createNewSalesOrderV3;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrder;
 import static java.util.stream.Collectors.toList;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -72,37 +65,6 @@ class SalesOrderRowServiceTest {
 
     @InjectMocks
     private SalesOrderRowService salesOrderRowService;
-
-    @Test
-    void testCancellingAnOrderRow() {
-        final String processId = prepareOrderProcessMocks();
-        final var salesOrder = createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
-        final var orderNumber = salesOrder.getOrderNumber();
-
-        Order latestJson = salesOrder.getLatestJson();
-        var orderRowIds = latestJson.getOrderRows().stream().map(OrderRows::getSku).collect(toList());
-        final var originalOrderRowCount = orderRowIds.size();
-        final var indexToCancel = 0;
-        OrderRows orderRowsToCancel = latestJson.getOrderRows().get(indexToCancel);
-
-        when(salesOrderService.getOrderNumberListByOrderGroupId(orderNumber, orderRowsToCancel.getSku())).thenReturn(List.of(salesOrder.getOrderNumber()));
-        when(salesOrderService.getOrderByOrderNumber(orderNumber)).thenReturn(Optional.of(salesOrder));
-        when(runtimeService.getVariable(any(), any())).thenReturn(orderRowIds);
-        when(camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())).thenReturn(true);
-
-        salesOrderRowService.cancelOrderRows(salesOrder.getOrderNumber(), Lists.newArrayList(orderRowsToCancel.getSku()));
-
-        checkTotalsValues(salesOrder.getLatestJson().getOrderHeader().getTotals());
-        assertThat(orderRowIds.size()).isEqualTo(originalOrderRowCount - 1);
-        verify(salesOrderService).save(
-                argThat(order -> order.getLatestJson().getOrderRows().get(indexToCancel).getIsCancelled()),
-                eq(ORDER_ROW_CANCELLED)
-        );
-
-        verify(runtimeService).getVariable(processId, ORDER_ROWS.getName());
-        verify(runtimeService).setVariable(processId, ORDER_ROWS.getName(), orderRowIds);
-        verify(snsPublishService).publishOrderRowCancelled(any(), any());
-    }
 
     @Test
     void testHandleParcelShippedEvent() {

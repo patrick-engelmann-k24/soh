@@ -47,6 +47,7 @@ TOPICS="
     soh-paypal-refund-instruction-successful
     soh-payout-receipt-confirmation-received-v1
     soh-invoice-pdf-generation-triggered-v1
+    soh-core-sales-order-cancelled
     "
 
 # Outdated topics

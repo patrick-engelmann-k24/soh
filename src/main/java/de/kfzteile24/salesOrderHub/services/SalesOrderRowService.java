@@ -16,7 +16,6 @@ import de.kfzteile24.soh.order.dto.SumValues;
 import de.kfzteile24.soh.order.dto.Totals;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.RuntimeService;
 import org.springframework.stereotype.Service;
@@ -50,7 +49,6 @@ public class SalesOrderRowService {
     private final SnsPublishService snsPublishService;
 
     public boolean cancelOrderProcessIfFullyCancelled(SalesOrder salesOrder) {
-
         if (salesOrder.getLatestJson().getOrderRows().stream().allMatch(OrderRows::getIsCancelled)) {
             log.info("Order with order number: {} is fully cancelled", salesOrder.getOrderNumber());
             for (OrderRows orderRow : salesOrder.getLatestJson().getOrderRows()) {
@@ -63,28 +61,6 @@ public class SalesOrderRowService {
             return true;
         } else {
             return false;
-        }
-    }
-
-    @SneakyThrows
-    @Transactional
-    public void cancelOrderRows(String orderNumber, List<String> skuList) {
-
-        for (String sku : skuList) {
-            List<String> originalOrderSkus = getOriginalOrderSkus(orderNumber);
-            if (originalOrderSkus.contains(sku)) {
-                cancelOrderRowsOfOrderGroup(orderNumber, sku);
-            } else {
-                log.error("Sku: {} is not in original order with order number: {}", sku, orderNumber);
-            }
-        }
-    }
-
-    private void cancelOrderRowsOfOrderGroup(String orderGroupId, String orderRowId) {
-
-        List<String> orderNumberListByOrderGroupId = salesOrderService.getOrderNumberListByOrderGroupId(orderGroupId, orderRowId);
-        for (String orderNumber : orderNumberListByOrderGroupId) {
-            cancelOrderRow(orderRowId, orderNumber);
         }
     }
 
@@ -169,14 +145,6 @@ public class SalesOrderRowService {
         totals.setGrandTotalNet(grantTotalNet);
         totals.setPaymentTotal(grandTotalGross);
         latestJson.getOrderHeader().setTotals(totals);
-    }
-
-    private List<String> getOriginalOrderSkus(String orderNumber) {
-
-        final var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
-                .orElseThrow(() -> new SalesOrderNotFoundException("Could not find order: " + orderNumber));
-        Order originalOrder = (Order) salesOrder.getOriginalOrder();
-        return originalOrder.getOrderRows().stream().map(OrderRows::getSku).collect(Collectors.toList());
     }
 
     private boolean isCorePlatformOrder(List<SalesOrder> salesOrders) {

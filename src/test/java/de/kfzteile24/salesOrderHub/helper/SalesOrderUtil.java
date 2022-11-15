@@ -92,27 +92,6 @@ public class SalesOrderUtil {
         return testOrder;
     }
 
-    public SalesOrder createNewSalesOrderWithCustomSkusAndGroupId(String orderGroupId, String sku1, String sku2) {
-
-        Order order = getObjectByResource("testmessage.json", Order.class);
-        order.getOrderHeader().setOrderNumber(bpmUtil.getRandomOrderNumber());
-        order.getOrderHeader().setOrderGroupId(orderGroupId);
-        order.getOrderRows().get(0).setSku(sku1);
-        order.getOrderRows().get(1).setSku(sku2);
-
-        final SalesOrder testOrder = SalesOrder.builder()
-                .orderNumber(order.getOrderHeader().getOrderNumber())
-                .orderGroupId(order.getOrderHeader().getOrderGroupId())
-                .salesChannel(order.getOrderHeader().getSalesChannel())
-                .originalOrder(order)
-                .latestJson(order)
-                .build();
-
-        testOrder.setSalesOrderInvoiceList(new HashSet<>());
-        salesOrderService.save(testOrder, ORDER_CREATED);
-        return testOrder;
-    }
-
     public SalesOrder createPersistedSalesOrderV3(
             boolean shouldContainVirtualItem,
             ShipmentMethod shipmentMethod,
@@ -120,7 +99,6 @@ public class SalesOrderUtil {
             CustomerType customerType) {
         final var salesOrder = createNewSalesOrderV3(
                 shouldContainVirtualItem, shipmentMethod, paymentType, customerType);
-
         salesOrderService.save(salesOrder, ORDER_CREATED);
 
         return salesOrder;
@@ -263,7 +241,7 @@ public class SalesOrderUtil {
         assertThat(salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getCurrencyCode()).isEqualTo(salesOrder.getLatestJson().getOrderHeader().getOrderCurrency());
 
         List<CreditNoteLine> creditNoteLines = new ArrayList<>(salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteLines());
-        assertThat(creditNoteLines.size()).isEqualTo(2);
+        assertThat(creditNoteLines).hasSize(2);
         assertThat(creditNoteLines.get(0).getIsShippingCost()).isFalse();
         assertThat(creditNoteLines.get(0).getQuantity()).isEqualTo(BigDecimal.valueOf(-2));
         assertThat(creditNoteLines.get(0).getUnitNetAmount()).isEqualTo(BigDecimal.valueOf(10.84));

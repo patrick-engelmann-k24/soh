@@ -24,7 +24,6 @@ import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -81,7 +80,7 @@ class ChangeInvoiceAddressPossibleDelegateIntegrationTest extends AbstractIntegr
         );
 
         // check if the delegate sets the variable
-        final var invoiceExistsVariableHasBeenAdded = pollingService.poll(Duration.ofSeconds(5), Duration.ofSeconds(10), () -> {
+        final var invoiceExistsVariableHasBeenAdded = pollingService.pollWithDefaultTiming(() -> {
             assertThat(orderProcess)
                     .hasVariables(Variables.INVOICE_EXISTS.getName());
             return true;

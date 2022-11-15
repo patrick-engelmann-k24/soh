@@ -130,6 +130,10 @@ data aws_sns_topic "sns_soh_invoice_pdf_generation_triggered_v1" {
   name = "soh-invoice-pdf-generation-triggered-v1"
 }
 
+data aws_sns_topic "sns_core_sales_order_cancelled_v1" {
+  name = "core-sales-order-cancelled-v1"
+}
+
 # subscriptions of sqs to sns
 resource "aws_sns_topic_subscription" "sns_subscription_ecp_orders_v3" {
   endpoint = aws_sqs_queue.ecp_shop_orders.arn
@@ -242,4 +246,11 @@ resource "aws_sns_topic_subscription" "sns_subscription_paypal_refund_instructio
   endpoint = aws_sqs_queue.soh_paypal_refund_instruction_successful.arn
   protocol = "sqs"
   topic_arn = var.paypal_refund_success_sns
+}
+
+# subscription for core sales order cancelled
+resource "aws_sns_topic_subscription" "sns_subscription_core_sales_order_cancelled" {
+  endpoint = aws_sqs_queue.soh_core_sales_order_cancelled.arn
+  protocol = "sqs"
+  topic_arn = data.aws_sns_topic.sns_core_sales_order_cancelled_v1.arn
 }

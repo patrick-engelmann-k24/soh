@@ -9,6 +9,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnNotifi
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.OrderPaymentSecuredMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesOrderCancelledMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ParcelShippedMessage;
 import de.kfzteile24.salesOrderHub.helper.SleuthHelper;
 import de.kfzteile24.salesOrderHub.services.InvoiceUrlExtractor;
@@ -99,30 +100,35 @@ public class PayloadResolverDecorator extends PayloadMethodArgumentResolver {
         if (json == null) {
             return StringUtils.EMPTY;
         }
-        if (json.getClass().isAssignableFrom(Order.class)) {
-            return ((Order)json).getOrderHeader().getOrderNumber();
-        } else if (json.getClass().isAssignableFrom(CoreDataReaderEvent.class)) {
-            return ((CoreDataReaderEvent)json).getOrderNumber();
-        } else if (json.getClass().isAssignableFrom(String.class)) {
-            return InvoiceUrlExtractor.extractOrderNumber((String)json);
-        } else if (json.getClass().isAssignableFrom(OrderPaymentSecuredMessage.class)) {
-            return ((OrderPaymentSecuredMessage)json).getData().getOrderGroupId();
-        } else if (json.getClass().isAssignableFrom(DropshipmentShipmentConfirmedMessage.class)) {
-            return ((DropshipmentShipmentConfirmedMessage)json).getSalesOrderNumber();
-        } else if (json.getClass().isAssignableFrom(DropshipmentPurchaseOrderBookedMessage.class)) {
-            return ((DropshipmentPurchaseOrderBookedMessage)json).getSalesOrderNumber();
-        } else if (json.getClass().isAssignableFrom(DropshipmentPurchaseOrderReturnConfirmedMessage.class)) {
-            return ((DropshipmentPurchaseOrderReturnConfirmedMessage)json).getSalesOrderNumber();
-        } else if (json.getClass().isAssignableFrom(DropshipmentPurchaseOrderReturnNotifiedMessage.class)) {
-            return ((DropshipmentPurchaseOrderReturnNotifiedMessage)json).getSalesOrderNumber();
-        } else if (json.getClass().isAssignableFrom(SalesCreditNoteCreatedMessage.class)) {
-            return ((SalesCreditNoteCreatedMessage)json).getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber();
-        } else if (json.getClass().isAssignableFrom(CoreSalesInvoiceCreatedMessage.class)) {
-            return ((CoreSalesInvoiceCreatedMessage)json).getSalesInvoice().getSalesInvoiceHeader().getOrderNumber();
-        } else if (json.getClass().isAssignableFrom(ParcelShippedMessage.class)) {
-            return ((ParcelShippedMessage)json).getMessage().getOrderNumber();
+        try {
+            if (json.getClass().isAssignableFrom(Order.class)) {
+                return ((Order) json).getOrderHeader().getOrderNumber();
+            } else if (json.getClass().isAssignableFrom(CoreDataReaderEvent.class)) {
+                return ((CoreDataReaderEvent) json).getOrderNumber();
+            } else if (json.getClass().isAssignableFrom(String.class)) {
+                return InvoiceUrlExtractor.extractOrderNumber((String) json);
+            } else if (json.getClass().isAssignableFrom(OrderPaymentSecuredMessage.class)) {
+                return ((OrderPaymentSecuredMessage) json).getData().getOrderGroupId();
+            } else if (json.getClass().isAssignableFrom(DropshipmentShipmentConfirmedMessage.class)) {
+                return ((DropshipmentShipmentConfirmedMessage) json).getSalesOrderNumber();
+            } else if (json.getClass().isAssignableFrom(DropshipmentPurchaseOrderBookedMessage.class)) {
+                return ((DropshipmentPurchaseOrderBookedMessage) json).getSalesOrderNumber();
+            } else if (json.getClass().isAssignableFrom(DropshipmentPurchaseOrderReturnConfirmedMessage.class)) {
+                return ((DropshipmentPurchaseOrderReturnConfirmedMessage) json).getSalesOrderNumber();
+            } else if (json.getClass().isAssignableFrom(DropshipmentPurchaseOrderReturnNotifiedMessage.class)) {
+                return ((DropshipmentPurchaseOrderReturnNotifiedMessage) json).getSalesOrderNumber();
+            } else if (json.getClass().isAssignableFrom(SalesCreditNoteCreatedMessage.class)) {
+                return ((SalesCreditNoteCreatedMessage) json).getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber();
+            } else if (json.getClass().isAssignableFrom(CoreSalesInvoiceCreatedMessage.class)) {
+                return ((CoreSalesInvoiceCreatedMessage) json).getSalesInvoice().getSalesInvoiceHeader().getOrderNumber();
+            } else if (json.getClass().isAssignableFrom(ParcelShippedMessage.class)) {
+                return ((ParcelShippedMessage) json).getMessage().getOrderNumber();
+            } else if (json.getClass().isAssignableFrom(CoreSalesOrderCancelledMessage.class)) {
+                return ((CoreSalesOrderCancelledMessage) json).getOrderNumber();
+            }
+        } catch (NullPointerException ex) {
+            return StringUtils.EMPTY;
         }
-
         return StringUtils.EMPTY;
     }
 }

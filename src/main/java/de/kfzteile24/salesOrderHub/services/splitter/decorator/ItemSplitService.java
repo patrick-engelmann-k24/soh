@@ -199,7 +199,7 @@ public class ItemSplitService {
 
         return OrderRows.builder()
                 .isCancelled(originItem.getIsCancelled())
-                .isPriceHammer(originItem.getIsPriceHammer())
+                .isPriceHammer(originItem.getIsPriceHammer() != null && originItem.getIsPriceHammer())
                 .sku(product.getSku())
                 .name(productName)
                 .ean(ean)

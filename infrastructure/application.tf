@@ -71,6 +71,7 @@ module "application_module" {
     soh_sqs_migration_core_sales_credit_note_created = aws_sqs_queue.soh_migration_core_sales_credit_note_created.id
     soh_sqs_parcel_shipped                     = aws_sqs_queue.soh_parcel_shipped.id
     soh_sqs_paypal_refund_instruction_successful = aws_sqs_queue.soh_paypal_refund_instruction_successful.id
+    soh_sqs_core_sales_order_cancelled         = aws_sqs_queue.soh_core_sales_order_cancelled.id
 
     ignore_core_sales_invoice                  = var.ignore_core_sales_invoice
     ignore_core_credit_note                    = var.ignore_core_credit_note

@@ -1,6 +1,5 @@
 package de.kfzteile24.salesOrderHub.services;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderMapper;
 import de.kfzteile24.salesOrderHub.services.sqs.EnrichMessageForDlq;
@@ -31,7 +30,8 @@ public class MigrationSalesOrderService {
 
     @Transactional
     @EnrichMessageForDlq
-    public void handleMigrationCoreSalesOrderCreated(Order order, MessageWrapper messageWrapper) throws JsonProcessingException {
+    public void handleMigrationCoreSalesOrderCreated(Order order, MessageWrapper messageWrapper) {
+
         Order originalOrder = orderUtil.copyOrderJson(order);
         String orderNumber = order.getOrderHeader().getOrderNumber();
 

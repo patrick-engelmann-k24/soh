@@ -1,5 +1,6 @@
 package de.kfzteile24.salesOrderHub.services;
 
+import de.kfzteile24.salesOrderHub.helper.CustomValidator;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
@@ -45,6 +46,9 @@ class SalesOrderProcessServiceTest {
     private OrderUtil orderUtil;
     @Mock
     private SnsPublishService snsPublishService;
+    @Mock
+    private CustomValidator customValidator;
+
     @InjectMocks
     @Spy
     private SalesOrderProcessService salesOrderProcessService;

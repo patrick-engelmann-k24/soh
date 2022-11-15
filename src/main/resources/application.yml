@@ -96,6 +96,7 @@ soh:
       migrationCoreSalesCreditNoteCreated: ${soh_sqs_migration_core_sales_credit_note_created}
       parcelShipped: ${soh_sqs_parcel_shipped}
       paypalRefundInstructionSuccessful: ${soh_sqs_paypal_refund_instruction_successful}
+      coreSalesOrderCancelled: ${soh_sqs_core_sales_order_cancelled}
   aws:
     config:
       maxNumberOfMessages: 10

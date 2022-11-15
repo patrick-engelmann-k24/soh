@@ -394,6 +394,26 @@
       <bpmn:incoming>Flow_06j0uo5</bpmn:incoming>
       <bpmn:outgoing>Flow_1uebiov</bpmn:outgoing>
     </bpmn:callActivity>
+    <bpmn:subProcess id="activitySubProcessCoreSalesOrderCancelled" triggeredByEvent="true">
+      <bpmn:endEvent id="eventEndMsgCoreSalesOrderCancelled" name="Order cancelled">
+        <bpmn:incoming>Flow_1jmyhbn</bpmn:incoming>
+        <bpmn:messageEventDefinition id="MessageEventDefinition_0jf7lcj" camunda:delegateExpression="${orderCancelledDelegate}" />
+      </bpmn:endEvent>
+      <bpmn:startEvent id="eventStartMsgCoreSalesOrderCancelled" name="Order cancellation received">
+        <bpmn:outgoing>Flow_157j73s</bpmn:outgoing>
+        <bpmn:messageEventDefinition id="MessageEventDefinition_1crxomf" messageRef="Message_1sv99nz" />
+      </bpmn:startEvent>
+      <bpmn:serviceTask id="activityCoreSalesOrderCancelled" name="Cancel order" camunda:delegateExpression="${cancelOrderDelegate}">
+        <bpmn:incoming>Flow_157j73s</bpmn:incoming>
+        <bpmn:outgoing>Flow_1jmyhbn</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="Flow_1jmyhbn" sourceRef="activityCoreSalesOrderCancelled" targetRef="eventEndMsgCoreSalesOrderCancelled" />
+      <bpmn:sequenceFlow id="Flow_157j73s" sourceRef="eventStartMsgCoreSalesOrderCancelled" targetRef="activityCoreSalesOrderCancelled" />
+      <bpmn:textAnnotation id="TextAnnotation_1780bqe">
+        <bpmn:text>Set cancelled flag to true</bpmn:text>
+      </bpmn:textAnnotation>
+      <bpmn:association id="Association_0gqiwa4" sourceRef="activityCoreSalesOrderCancelled" targetRef="TextAnnotation_1780bqe" />
+    </bpmn:subProcess>
     <bpmn:textAnnotation id="TextAnnotation_0m998uh">
       <bpmn:text>Create Purchase order (to P&amp;R)</bpmn:text>
     </bpmn:textAnnotation>
@@ -441,6 +461,7 @@
   <bpmn:message id="Message_0leltal" name="msgDropshipmentSubsequentOrderCreated" />
   <bpmn:signal id="Signal_0523l1d" name="alert-${execution.processBusinessKey}" />
   <bpmn:message id="Message_1t80a7d" name="msgDropshipmentOrderCancelled" />
+  <bpmn:message id="Message_1sv99nz" name="msgCoreSalesOrderCancelled" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="SalesOrderProcess_v2">
       <bpmndi:BPMNEdge id="Flow_0ctfq3l_di" bpmnElement="Flow_0ctfq3l">
@@ -1002,6 +1023,39 @@
       <bpmndi:BPMNShape id="TextAnnotation_0vs7qok_di" bpmnElement="TextAnnotation_0vs7qok">
         <dc:Bounds x="1980" y="845" width="130" height="55" />
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="activitySubProcessCoreSalesOrderCancelled_di" bpmnElement="activitySubProcessCoreSalesOrderCancelled" isExpanded="true">
+        <dc:Bounds x="1840" y="950" width="370" height="270" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_1780bqe_di" bpmnElement="TextAnnotation_1780bqe">
+        <dc:Bounds x="2055" y="980" width="100" height="40" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1jmyhbn_di" bpmnElement="Flow_1jmyhbn">
+        <di:waypoint x="2075" y="1080" />
+        <di:waypoint x="2142" y="1080" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_157j73s_di" bpmnElement="Flow_157j73s">
+        <di:waypoint x="1908" y="1080" />
+        <di:waypoint x="1975" y="1080" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="eventEndMsgCoreSalesOrderCancelled_di" bpmnElement="eventEndMsgCoreSalesOrderCancelled">
+        <dc:Bounds x="2142" y="1062" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2123" y="1105" width="78" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="eventStartMsgCoreSalesOrderCancelled_di" bpmnElement="eventStartMsgCoreSalesOrderCancelled">
+        <dc:Bounds x="1872" y="1062" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1846" y="1105" width="90" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="activityCoreSalesOrderCancelled_di" bpmnElement="activityCoreSalesOrderCancelled">
+        <dc:Bounds x="1975" y="1040" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_0gqiwa4_di" bpmnElement="Association_0gqiwa4">
+        <di:waypoint x="2063" y="1040" />
+        <di:waypoint x="2081" y="1020" />
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="Event_05dl94k_di" bpmnElement="eventTimerDropShipmentOrderConfirmed">
         <dc:Bounds x="862" y="562" width="36" height="36" />
       </bpmndi:BPMNShape>

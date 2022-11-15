@@ -3,10 +3,11 @@ package de.kfzteile24.salesOrderHub.services.salesorder;
 import com.newrelic.api.agent.Trace;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
 import de.kfzteile24.salesOrderHub.dto.sns.OrderPaymentSecuredMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesOrderCancelledMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
+import de.kfzteile24.salesOrderHub.services.SalesOrderCancelledService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderPaymentSecuredService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderProcessService;
-import de.kfzteile24.salesOrderHub.services.SalesOrderRowService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.sqs.AbstractSqsReceiveService;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
@@ -15,7 +16,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.aws.messaging.listener.annotation.SqsListener;
 import org.springframework.stereotype.Service;
-import org.springframework.validation.annotation.Validated;
 
 import java.util.Optional;
 
@@ -28,16 +28,16 @@ import static org.springframework.cloud.aws.messaging.listener.SqsMessageDeletio
 public class SalesOrderSqsReceiveService extends AbstractSqsReceiveService {
 
     private final SalesOrderService salesOrderService;
-    private final SalesOrderRowService salesOrderRowService;
     private final SalesOrderPaymentSecuredService salesOrderPaymentSecuredService;
     private final SalesOrderProcessService salesOrderCreateService;
+    private final SalesOrderCancelledService salesOrderCancelledService;
 
     /**
      * Consume sqs for new orders from ecp, bc and core shops
      */
     @SqsListener(value = {"${soh.sqs.queue.ecpShopOrders}"}, deletionPolicy = ON_SUCCESS)
     @Trace(metricName = "Handling shop order message", dispatcher = true)
-    public void queueListenerEcpShopOrders(@Validated Order message, MessageWrapper messageWrapper) {
+    public void queueListenerEcpShopOrders(Order message, MessageWrapper messageWrapper) {
         salesOrderCreateService.handleShopOrdersReceived(message, messageWrapper);
     }
 
@@ -46,7 +46,7 @@ public class SalesOrderSqsReceiveService extends AbstractSqsReceiveService {
      */
     @SqsListener(value = {"${soh.sqs.queue.bcShopOrders}"}, deletionPolicy = ON_SUCCESS)
     @Trace(metricName = "Handling shop order message", dispatcher = true)
-    public void queueListenerBcShopOrders(@Validated Order message, MessageWrapper messageWrapper) {
+    public void queueListenerBcShopOrders(Order message, MessageWrapper messageWrapper) {
         salesOrderCreateService.handleShopOrdersReceived(message, messageWrapper);
     }
 
@@ -55,7 +55,7 @@ public class SalesOrderSqsReceiveService extends AbstractSqsReceiveService {
      */
     @SqsListener(value = {"${soh.sqs.queue.coreShopOrders}"}, deletionPolicy = ON_SUCCESS)
     @Trace(metricName = "Handling shop order message", dispatcher = true)
-    public void queueListenerCoreShopOrders(@Validated Order message, MessageWrapper messageWrapper) {
+    public void queueListenerCoreShopOrders(Order message, MessageWrapper messageWrapper) {
         salesOrderCreateService.handleShopOrdersReceived(message, messageWrapper);
     }
 
@@ -83,5 +83,15 @@ public class SalesOrderSqsReceiveService extends AbstractSqsReceiveService {
     @Trace(metricName = "Handling d365OrderPaymentSecured message", dispatcher = true)
     public void queueListenerD365OrderPaymentSecured(OrderPaymentSecuredMessage message, MessageWrapper messageWrapper) {
         salesOrderPaymentSecuredService.handleD365OrderPaymentSecured(message, messageWrapper);
+    }
+
+
+    /**
+     * Consume messages from sqs for core sales order cancelled
+     */
+    @SqsListener(value = "${soh.sqs.queue.coreSalesOrderCancelled}", deletionPolicy = ON_SUCCESS)
+    @Trace(metricName = "Handling coreSalesOrderCancelled message", dispatcher = true)
+    public void queueListenerCoreSalesOrderCancelled(CoreSalesOrderCancelledMessage message, MessageWrapper messageWrapper) {
+        salesOrderCancelledService.handleCoreSalesOrderCancelled(message, messageWrapper);
     }
 }
