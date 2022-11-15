@@ -70,6 +70,7 @@ public class DropshipmentOrderService {
     private final SnsPublishService snsPublishService;
     private final ReturnOrderHelper returnOrderHelper;
     private final ObjectMapper objectMapper;
+    private final CamundaHelper camundaHelper;
 
     @EnrichMessageForDlq
     public void handleDropShipmentOrderConfirmed(
@@ -286,5 +287,9 @@ public class DropshipmentOrderService {
 
     private void setDocumentRefNumber(SalesOrder salesOrder) {
         salesOrder.getLatestJson().getOrderHeader().setDocumentRefNumber(invoiceService.createInvoiceNumber());
+    }
+
+    public void publishDropshipmentSubsequentOrderCreated(SalesOrder subsequentOrder) {
+        camundaHelper.startDropshipmentSubsequentOrderCreatedProcess(subsequentOrder);
     }
 }
