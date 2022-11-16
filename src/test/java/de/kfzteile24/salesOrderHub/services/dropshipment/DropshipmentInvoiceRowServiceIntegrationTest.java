@@ -37,4 +37,17 @@ class DropshipmentInvoiceRowServiceIntegrationTest extends AbstractIntegrationTe
         assertThat(test.get().getOrderNumber()).isEqualTo("orderNumber");
     }
 
+    @Test
+    void testDeleteAll() {
+
+        DropshipmentInvoiceRow dropshipmentInvoiceRow1 = dropshipmentHelper.createDropshipmentInvoiceRow("sku1", "orderNumber1");
+        DropshipmentInvoiceRow dropshipmentInvoiceRow2 = dropshipmentHelper.createDropshipmentInvoiceRow("sku2", "orderNumber2");
+        dropshipmentInvoiceRowRepository.save(dropshipmentInvoiceRow1);
+        dropshipmentInvoiceRowRepository.save(dropshipmentInvoiceRow2);
+
+        dropshipmentInvoiceRowService.deleteAll();
+
+        assertThat(dropshipmentInvoiceRowRepository.findAll()).hasSize(0);
+    }
+
 }

@@ -170,7 +170,7 @@
       </bpmn:dataOutputAssociation>
     </bpmn:serviceTask>
     <bpmn:sequenceFlow id="Flow_0mi7tr2" sourceRef="activityDeleteTmpInvoiceEntries" targetRef="eventEndInvoicingProcess" />
-    <bpmn:serviceTask id="activityDeleteTmpInvoiceEntries" name="Clean up invoice table" camunda:expression="${true}">
+    <bpmn:serviceTask id="activityDeleteTmpInvoiceEntries" name="Clean up invoice table" camunda:delegateExpression="${cleanupDropshipmentInvoiceRowTableDelegate}">
       <bpmn:incoming>Flow_1qsgjdq</bpmn:incoming>
       <bpmn:outgoing>Flow_0mi7tr2</bpmn:outgoing>
     </bpmn:serviceTask>
