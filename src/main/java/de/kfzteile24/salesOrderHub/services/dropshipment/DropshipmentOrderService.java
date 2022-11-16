@@ -138,7 +138,7 @@ public class DropshipmentOrderService {
                         .filter(row -> StringUtils.pathEquals(row.getSku(), item.getProductNumber()))
                         .forEach(row -> {
                             camundaHelper.startDropshipmentInvoiceRowProcess(savedSalesOrder, row.getSku(),
-                                    Collections.singletonList(getTrackingLink(row, shippedItems, orderNumber, skuMap)));
+                                    Collections.singletonList(getTrackingLink(item, skuMap)));
                         })
         );
 
@@ -161,20 +161,7 @@ public class DropshipmentOrderService {
     }
 
     @SneakyThrows
-    private String getTrackingLink(OrderRows orderRow, Collection<ShipmentItem> shipmentItems, String orderNumber,
-                                   Map<String, List<String>> skuMap) {
-        return getTrackingLink(getShipmentItem(orderRow, shipmentItems, orderNumber), skuMap);
-    }
-
-    private ShipmentItem getShipmentItem(OrderRows orderRow, Collection<ShipmentItem> shipmentItems, String orderNumber) {
-        return shipmentItems.stream()
-                .filter(item -> StringUtils.pathEquals(orderRow.getSku(), item.getProductNumber()))
-                .findFirst()
-                .orElseThrow(() -> new NotFoundException(format("Could not find order row with SKU {0} for order {1}",
-                        orderRow.getSku(), orderNumber)));
-    }
-
-    private String getTrackingLink(ShipmentItem shipmentItem, Map<String, List<String>> skuMap) throws JsonProcessingException {
+    private String getTrackingLink(ShipmentItem shipmentItem, Map<String, List<String>> skuMap) {
         return objectMapper.writeValueAsString(TrackingLink.builder()
                     .url(shipmentItem.getTrackingLink())
                     .orderItems(skuMap.get(shipmentItem.getTrackingLink()))
