@@ -10,6 +10,8 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
 import java.util.UUID;
 
 @Entity
@@ -18,6 +20,7 @@ import java.util.UUID;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@Valid
 public class DropshipmentInvoiceRow {
 
     @Id
@@ -26,9 +29,11 @@ public class DropshipmentInvoiceRow {
     private UUID id;
 
     @Column(name = "sku")
+    @NotNull
     private String sku;
 
     @Column(name = "order_number")
+    @NotNull
     private String orderNumber;
 
     @Column(name = "invoice_number")
