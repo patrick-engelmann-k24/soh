@@ -37,7 +37,7 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -48,9 +48,8 @@ import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.K24;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_RETURN_CONFIRMED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_ROW_TRACKING_INFORMATION_RECEIVED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_DROPSHIPMENT_ORDER_CONFIRMED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.TRACKING_LINKS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_INVOICE_STORED;
@@ -70,6 +69,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -221,12 +221,10 @@ class DropshipmentOrderServiceTest {
                 .salesOrderNumber(salesOrder.getOrderNumber())
                 .items(items)
                 .build();
-        Collection<String> expectedTrackingLinks = getExpectedTrackingLinks(items);
+        List<String> expectedTrackingLinks = getExpectedTrackingLinks(items);
 
         when(salesOrderService.getOrderByOrderNumber(message.getSalesOrderNumber())).thenReturn(Optional.of(salesOrder));
         when(salesOrderService.save(salesOrder, ORDER_ITEM_SHIPPED)).thenReturn(salesOrder);
-        doNothing().when(camundaHelper).correlateMessage(
-                eq(DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED), eq(salesOrder), any());
 
         dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(message, messageWrapper);
 
@@ -241,13 +239,15 @@ class DropshipmentOrderServiceTest {
                 }),
                 eq(ORDER_ITEM_SHIPPED));
 
-        verify(camundaHelper).correlateMessage(
-                eq(DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED),
-                eq(salesOrder),
-                eq(Variables.putValue(TRACKING_LINKS.getName(), expectedTrackingLinks)));
+            verify(camundaHelper, times(3)).startDropshipmentInvoiceRowProcess(
+                    eq(salesOrder),
+                    any(),
+                    any()
+            );
+
     }
 
-    private Collection<String> getExpectedTrackingLinks(List<ShipmentItem> items) {
+    private List<String> getExpectedTrackingLinks(List<ShipmentItem> items) {
 
         return items.stream()
                 .map(item -> {
