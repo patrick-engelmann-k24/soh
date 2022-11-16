@@ -34,6 +34,11 @@ public class DropshipmentInvoiceRowService {
         return dropshipmentInvoiceRowRepository.save(dropshipmentInvoiceRow);
     }
 
+    @Transactional
+    public void deleteAll() {
+        dropshipmentInvoiceRowRepository.deleteAll();
+    }
+
 
 
 }
