@@ -1,11 +1,13 @@
 package de.kfzteile24.salesOrderHub.utils;
 
 import de.kfzteile24.salesOrderHub.configuration.DropShipmentConfig;
+import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesFinancialDocumentLine;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderHeader;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.UnitValues;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -146,7 +148,7 @@ class OrderUtilTest {
         assertThat(shippingCostLine.getLineGrossAmount()).isEqualTo(salesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostGross());
         assertThat(shippingCostLine.getLineTaxAmount()).isEqualTo(
                 salesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostGross()
-                .subtract(salesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostNet()));
+                        .subtract(salesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostNet()));
         assertThat(shippingCostLine.getTaxRate()).isEqualTo(salesOrder.getLatestJson().getOrderHeader().getTotals().getGrandTotalTaxes().get(0).getRate());
     }
 
@@ -162,5 +164,39 @@ class OrderUtilTest {
 
         Order order = Order.builder().orderHeader(OrderHeader.builder().orderFulfillment(DELTICOM.getName()).build()).build();
         assertTrue(orderUtil.isDropshipmentOrder(order));
+    }
+
+    @Test
+    void testCreateNewOrderRow() {
+
+        final var salesOrder = getSalesOrder(getObjectByResource("ecpOrderMessageWithTwoRows.json", Order.class));
+        var lastRowKey = 2;
+
+        CoreSalesFinancialDocumentLine orderItem = CoreSalesFinancialDocumentLine.builder()
+                .itemNumber(RandomStringUtils.randomAlphabetic(9))
+                .quantity(BigDecimal.ONE)
+                .unitGrossAmount(BigDecimal.ONE)
+                .unitNetAmount(BigDecimal.ONE)
+                .lineGrossAmount(BigDecimal.ONE)
+                .lineNetAmount(BigDecimal.ONE)
+                .taxRate(BigDecimal.TEN)
+                .isShippingCost(false)
+                .build();
+
+        OrderRows newOrderRow = orderUtil.createNewOrderRow(orderItem, salesOrder, lastRowKey);
+
+        assertThat(newOrderRow.getSku()).isEqualTo(orderItem.getItemNumber());
+        assertThat(newOrderRow.getRowKey()).isEqualTo(3);
+        assertThat(newOrderRow.getName()).isEqualTo(orderItem.getItemNumber());
+        assertThat(newOrderRow.getQuantity()).isEqualTo(BigDecimal.ONE);
+        assertThat(newOrderRow.getTaxRate()).isEqualTo(BigDecimal.TEN);
+        assertThat(newOrderRow.getUnitValues().getGoodsValueGross()).isEqualTo(BigDecimal.ONE);
+        assertThat(newOrderRow.getUnitValues().getDiscountedGross()).isEqualTo(BigDecimal.ONE);
+        assertThat(newOrderRow.getUnitValues().getGoodsValueNet()).isEqualTo(BigDecimal.ONE);
+        assertThat(newOrderRow.getUnitValues().getDiscountedNet()).isEqualTo(BigDecimal.ONE);
+        assertThat(newOrderRow.getSumValues().getGoodsValueGross()).isEqualTo(BigDecimal.ONE);
+        assertThat(newOrderRow.getSumValues().getTotalDiscountedGross()).isEqualTo(BigDecimal.ONE);
+        assertThat(newOrderRow.getSumValues().getGoodsValueNet()).isEqualTo(BigDecimal.ONE);
+        assertThat(newOrderRow.getSumValues().getTotalDiscountedNet()).isEqualTo(BigDecimal.ONE);
     }
 }
