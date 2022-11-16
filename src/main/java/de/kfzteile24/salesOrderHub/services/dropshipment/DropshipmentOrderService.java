@@ -1,5 +1,6 @@
 package de.kfzteile24.salesOrderHub.services.dropshipment;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.constants.PersistentProperties;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Signals;
@@ -53,7 +54,6 @@ import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCH
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ITEM_SHIPPED;
 import static java.text.MessageFormat.format;
-import static java.util.function.Predicate.not;
 
 @Service
 @Slf4j
@@ -106,25 +106,15 @@ public class DropshipmentOrderService {
 
     @EnrichMessageForDlq
     public void handleDropShipmentOrderTrackingInformationReceived(
-            DropshipmentShipmentConfirmedMessage message, MessageWrapper messageWrapper) {
+            DropshipmentShipmentConfirmedMessage message, MessageWrapper messageWrapper) throws JsonProcessingException {
 
         final var orderNumber = message.getSalesOrderNumber();
         SalesOrder salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
 
-        final var shippedItems = message.getItems();
         final var orderRows = salesOrder.getLatestJson().getOrderRows();
+        final var shippedItems = message.getItems();
 
-        final var savedSalesOrder = updateSalesOrderWithTrackingInformation(
-                salesOrder, shippedItems, orderRows);
-
-        sendShipmentConfirmedMessageForEachOrderRow(savedSalesOrder, shippedItems, orderRows);
-
-    }
-
-    private SalesOrder updateSalesOrderWithTrackingInformation(SalesOrder salesOrder,
-                                                               Collection<ShipmentItem> shippedItems,
-                                                               List<OrderRows> orderRows) {
         shippedItems.forEach(item ->
                 orderRows.stream()
                         .filter(row -> StringUtils.pathEquals(row.getSku(), item.getProductNumber()))
@@ -135,31 +125,25 @@ public class DropshipmentOrderService {
                         }, () -> {
                             throw new NotFoundException(
                                     format("Could not find order row with SKU {0} for order {1}",
-                                            item.getProductNumber(), salesOrder.getOrderNumber()));
+                                            item.getProductNumber(), orderNumber));
                         })
         );
 
         setDocumentRefNumber(salesOrder);
-        return salesOrderService.save(salesOrder, ORDER_ITEM_SHIPPED);
-    }
-
-    private void sendShipmentConfirmedMessageForEachOrderRow(SalesOrder savedSalesOrder,
-                                                             Collection<ShipmentItem> shippedItems,
-                                                             List<OrderRows> orderRows) {
+        final var savedSalesOrder = salesOrderService.save(salesOrder, ORDER_ITEM_SHIPPED);
         final var skuMap = getSkuMap(shippedItems);
+
         shippedItems.forEach(item ->
                 orderRows.stream()
                         .filter(row -> StringUtils.pathEquals(row.getSku(), item.getProductNumber()))
-                        .forEach(row ->
-                                camundaHelper.correlateDropshipmentOrderRowShipmentConfirmedMessage(savedSalesOrder, row.getSku(),
-                                        Collections.singletonList(getTrackingLink(item, skuMap)))
-                        )
+                        .forEach(row -> {
+                            camundaHelper.startDropshipmentInvoiceRowProcess(savedSalesOrder, row.getSku(),
+                                    Collections.singletonList(getTrackingLink(row, shippedItems, orderNumber, skuMap)));
+                        })
         );
+
     }
 
-    /*
-        This method groups the sku names according to tracking link information if the tracking link is the same for multiple sku
-     */
     private Map<String, List<String>> getSkuMap(Collection<ShipmentItem> shippedItems) {
         Map<String, List<String>> skuMap = new HashMap<>();
         shippedItems.forEach(item -> {
@@ -177,11 +161,24 @@ public class DropshipmentOrderService {
     }
 
     @SneakyThrows
-    private String getTrackingLink(ShipmentItem shipmentItem, Map<String, List<String>> skuMap) {
+    private String getTrackingLink(OrderRows orderRow, Collection<ShipmentItem> shipmentItems, String orderNumber,
+                                   Map<String, List<String>> skuMap) {
+        return getTrackingLink(getShipmentItem(orderRow, shipmentItems, orderNumber), skuMap);
+    }
+
+    private ShipmentItem getShipmentItem(OrderRows orderRow, Collection<ShipmentItem> shipmentItems, String orderNumber) {
+        return shipmentItems.stream()
+                .filter(item -> StringUtils.pathEquals(orderRow.getSku(), item.getProductNumber()))
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException(format("Could not find order row with SKU {0} for order {1}",
+                        orderRow.getSku(), orderNumber)));
+    }
+
+    private String getTrackingLink(ShipmentItem shipmentItem, Map<String, List<String>> skuMap) throws JsonProcessingException {
         return objectMapper.writeValueAsString(TrackingLink.builder()
-                .url(shipmentItem.getTrackingLink())
-                .orderItems(skuMap.get(shipmentItem.getTrackingLink()))
-                .build());
+                    .url(shipmentItem.getTrackingLink())
+                    .orderItems(skuMap.get(shipmentItem.getTrackingLink()))
+                    .build());
     }
 
     @Transactional
@@ -190,7 +187,6 @@ public class DropshipmentOrderService {
                 .orElseThrow(() -> new SalesOrderNotFoundException("Could not find dropshipment order: " + orderNumber));
 
         salesOrder.getLatestJson().getOrderRows().stream()
-                .filter(not(OrderRows::getIsCancelled))
                 .filter(orderRow -> StringUtils.pathEquals(orderRow.getSku(), sku))
                 .findFirst()
                 .ifPresentOrElse(orderRow -> {
