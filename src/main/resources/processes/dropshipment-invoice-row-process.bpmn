@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_0csmsqq" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.12.0">
-  <bpmn:process id="DropshipmentInvoiceRowProcess" name="Dropshipment Invoice Row process" isExecutable="true">
+  <bpmn:process id="DropshipmentInvoiceRowProcess" name="Dropshipment Invoice Row process" isExecutable="true" camunda:isStartableInTasklist="false">
     <bpmn:startEvent id="eventStartDropshipmentInvoiceRowProcess" name="Invoice row received">
       <bpmn:extensionElements>
         <camunda:executionListener expression="${execution.setVariableLocal(&#39;trackingIdReceived&#39;,false)}" event="start" />
