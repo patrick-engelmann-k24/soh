@@ -107,7 +107,7 @@ public class DropshipmentOrderService {
 
     @EnrichMessageForDlq
     public void handleDropShipmentOrderTrackingInformationReceived(
-            DropshipmentShipmentConfirmedMessage message, MessageWrapper messageWrapper) throws JsonProcessingException {
+            DropshipmentShipmentConfirmedMessage message, MessageWrapper messageWrapper) {
 
         final var orderNumber = message.getSalesOrderNumber();
         SalesOrder salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
@@ -132,19 +132,28 @@ public class DropshipmentOrderService {
 
         setDocumentRefNumber(salesOrder);
         final var savedSalesOrder = salesOrderService.save(salesOrder, ORDER_ITEM_SHIPPED);
-        final var skuMap = getSkuMap(shippedItems);
 
-        shippedItems.forEach(item ->
-                orderRows.stream()
-                        .filter(row -> StringUtils.pathEquals(row.getSku(), item.getProductNumber()))
-                        .forEach(row -> {
-                            camundaHelper.startDropshipmentInvoiceRowProcess(savedSalesOrder, row.getSku(),
-                                    Collections.singletonList(getTrackingLink(item, skuMap)));
-                        })
-        );
+        startDropshipmentInvoiceRowProcessForEachOrderRow(savedSalesOrder, shippedItems, orderRows);
 
     }
 
+    private void startDropshipmentInvoiceRowProcessForEachOrderRow(SalesOrder savedSalesOrder,
+                                                                   Collection<ShipmentItem> shippedItems,
+                                                                   List<OrderRows> orderRows) {
+        final var skuMap = getSkuMap(shippedItems);
+        shippedItems.forEach(item ->
+                orderRows.stream()
+                        .filter(row -> StringUtils.pathEquals(row.getSku(), item.getProductNumber()))
+                        .forEach(row ->
+                            camundaHelper.startDropshipmentInvoiceRowProcess(savedSalesOrder, row.getSku(),
+                                    Collections.singletonList(getTrackingLink(item, skuMap)))
+                        )
+        );
+    }
+
+    /*
+        This method groups the sku names according to tracking link information if the tracking link is same for multiple sku
+     */
     private Map<String, List<String>> getSkuMap(Collection<ShipmentItem> shippedItems) {
         Map<String, List<String>> skuMap = new HashMap<>();
         shippedItems.forEach(item -> {
