@@ -53,7 +53,7 @@ class LoggingAdvice {
         } catch (ConstraintViolationException e) {
             moveToDlq(messageWrapper, e);
         } catch (Throwable e) {
-            if (messageWrapper.getReceiveCount() < 4) {
+            if (messageWrapper.getReceiveCount() == null || messageWrapper.getReceiveCount() < 4) {
                 logErrorMessage(messageWrapper, e);
             } else {
                 moveToDlq(messageWrapper, e);
