@@ -4,8 +4,10 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.DropshipmentOrderRowsCancellationDelegate;
+import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.PublishDropshipmentInvoiceRowTrackingInformationDelegate;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.PublishDropshipmentOrderCreatedDelegate;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.PublishDropshipmentTrackingInformationDelegate;
+import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.SaveDropshipmentInvoiceRowDelegate;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.StoreDropshipmentInvoiceDelegate;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.listener.CheckIsDropshipmentOrderListener;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.listener.CheckProcessingDropshipmentOrderListener;
@@ -106,7 +108,9 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Paymen
         CheckOrderTypeDelegate.class,
         CheckPaymentTypeDelegate.class,
         CheckPlatformTypeDelegate.class,
-        CancelOrderDelegate.class
+        CancelOrderDelegate.class,
+        PublishDropshipmentInvoiceRowTrackingInformationDelegate.class,
+        SaveDropshipmentInvoiceRowDelegate.class
 
 })
 public abstract class AbstractWorkflowTest implements ApplicationContextAware {
