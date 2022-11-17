@@ -346,7 +346,8 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
 
         var salesOrder =
                 SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
-        ((Order) salesOrder.getOriginalOrder()).getOrderHeader().setOrderFulfillment(DELTICOM.getName());
+        salesOrder.getLatestJson().getOrderHeader().setOrderFulfillment(DELTICOM.getName());
+        salesOrder.getLatestJson().getOrderHeader().setOrderGroupId(salesOrder.getOrderNumber());
         salesOrderService.save(salesOrder, Action.ORDER_CREATED);
 
         ProcessInstance processInstance = camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);

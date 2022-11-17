@@ -13,6 +13,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.shared.Address;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
+import de.kfzteile24.soh.order.dto.Customer;
 import de.kfzteile24.soh.order.dto.GrandTotalTaxes;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderHeader;
@@ -122,6 +123,9 @@ public class SalesOrderUtil {
                         .build()
         );
 
+        final Customer customer = Customer.builder()
+                .customerNumber(RandomStringUtils.randomAlphabetic(10)).build();
+
         final OrderHeader orderHeader = OrderHeader.builder()
                 .orderNumber(orderNumber)
                 .totals(Totals.builder()
@@ -148,6 +152,7 @@ public class SalesOrderUtil {
                                 .build()))
                         .build())
                 .payments(payments)
+                .customer(customer)
                 .salesChannel("www-k24-at")
                 .platform(Platform.ECP)
                 .build();
