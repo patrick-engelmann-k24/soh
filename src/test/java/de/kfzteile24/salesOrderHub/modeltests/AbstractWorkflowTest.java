@@ -4,9 +4,10 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.DropshipmentOrderRowsCancellationDelegate;
+import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.PublishDropshipmentInvoiceRowTrackingInformationDelegate;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.PublishDropshipmentOrderCreatedDelegate;
-import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.PublishDropshipmentOrderRowTrackingInformationDelegate;
-import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.SaveDropshipmentOrderRowDelegate;
+import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.PublishDropshipmentTrackingInformationDelegate;
+import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.SaveDropshipmentInvoiceRowDelegate;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.StoreDropshipmentInvoiceDelegate;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.listener.CheckIsDropshipmentOrderListener;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.listener.CheckProcessingDropshipmentOrderListener;
@@ -94,6 +95,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Paymen
         OrderCreatedDelegate.class,
         OrderCancelledDelegate.class,
         PublishDropshipmentOrderCreatedDelegate.class,
+        PublishDropshipmentTrackingInformationDelegate.class,
         PublishCoreSalesInvoiceCreatedReceivedDelegate.class,
         StoreDropshipmentInvoiceDelegate.class,
         OrderCompletedDelegate.class,
@@ -107,8 +109,8 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Paymen
         CheckPaymentTypeDelegate.class,
         CheckPlatformTypeDelegate.class,
         CancelOrderDelegate.class,
-        PublishDropshipmentOrderRowTrackingInformationDelegate.class,
-        SaveDropshipmentOrderRowDelegate.class
+        PublishDropshipmentInvoiceRowTrackingInformationDelegate.class,
+        SaveDropshipmentInvoiceRowDelegate.class
 
 })
 public abstract class AbstractWorkflowTest implements ApplicationContextAware {
