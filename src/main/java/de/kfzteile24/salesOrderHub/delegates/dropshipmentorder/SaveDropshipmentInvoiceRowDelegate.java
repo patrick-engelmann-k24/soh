@@ -28,8 +28,7 @@ public class SaveDropshipmentInvoiceRowDelegate implements JavaDelegate {
         final var orderNumber = (String) delegateExecution.getVariable(ORDER_NUMBER.getName());
         final var sku = (String) delegateExecution.getVariable(ORDER_ROW.getName());
         log.info("Create Invoice tmp Entry based on sku {} and orderNumber {} in shipment tracking", sku, orderNumber);
-        final var dropshipmentInvoiceRow = dropshipmentHelper.createDropshipmentInvoiceRow(sku, orderNumber);
-        dropshipmentInvoiceRowService.save(dropshipmentInvoiceRow);
+        dropshipmentInvoiceRowService.create(sku, orderNumber);
     }
 
 }

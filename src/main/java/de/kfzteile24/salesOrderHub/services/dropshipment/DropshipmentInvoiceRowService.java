@@ -1,6 +1,7 @@
 package de.kfzteile24.salesOrderHub.services.dropshipment;
 
 import de.kfzteile24.salesOrderHub.domain.dropshipment.DropshipmentInvoiceRow;
+import de.kfzteile24.salesOrderHub.helper.DropshipmentHelper;
 import de.kfzteile24.salesOrderHub.repositories.DropshipmentInvoiceRowRepository;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,14 @@ public class DropshipmentInvoiceRowService {
 
     @NonNull
     private final DropshipmentInvoiceRowRepository dropshipmentInvoiceRowRepository;
+
+    private final DropshipmentHelper dropshipmentHelper;
+
+    @Transactional
+    public DropshipmentInvoiceRow create(String sku, String orderNumber) {
+        final var dropshipmentInvoiceRow = dropshipmentHelper.createDropshipmentInvoiceRow(sku, orderNumber);
+        return save(dropshipmentInvoiceRow);
+    }
 
     @Transactional(readOnly = true)
     public Optional<DropshipmentInvoiceRow> getBySkuAndOrderNumber(String sku, String orderNumber) {
