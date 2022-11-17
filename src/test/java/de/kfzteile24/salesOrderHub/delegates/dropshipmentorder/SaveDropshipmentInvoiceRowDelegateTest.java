@@ -1,6 +1,5 @@
 package de.kfzteile24.salesOrderHub.delegates.dropshipmentorder;
 
-import de.kfzteile24.salesOrderHub.domain.dropshipment.DropshipmentInvoiceRow;
 import de.kfzteile24.salesOrderHub.helper.DropshipmentHelper;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentInvoiceRowService;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
@@ -12,7 +11,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROW;
-import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
