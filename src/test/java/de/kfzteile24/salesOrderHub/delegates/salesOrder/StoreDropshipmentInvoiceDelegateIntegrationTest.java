@@ -31,7 +31,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.START_MSG_ORDER_RECEIVED_FROM_ECP;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Gateways.XOR_CHECK_DROPSHIPMENT_ORDER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Gateways.XOR_CHECK_DROPSHIPMENT_ORDER_SUCCESSFUL;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_ROW_TRACKING_INFORMATION_RECEIVED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_INVOICE_ROW_TRACKING_INFORMATION_RECEIVED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_DROPSHIPMENT_ORDER_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.TRACKING_LINKS;
 import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
@@ -112,7 +112,7 @@ class StoreDropshipmentInvoiceDelegateIntegrationTest extends AbstractIntegratio
     }
 
     private void sendAndVerifyTrackingInfoReceived(String orderNumber, ProcessInstance orderProcess) {
-        util.sendMessage(DROPSHIPMENT_ORDER_ROW_TRACKING_INFORMATION_RECEIVED, orderNumber,
+        util.sendMessage(DROPSHIPMENT_INVOICE_ROW_TRACKING_INFORMATION_RECEIVED, orderNumber,
                 Map.of(TRACKING_LINKS.getName(),
                         List.of(
                                 "{\"url\":\"http://abc1\", \"order_items\":[\"1440-47378\"]}",
