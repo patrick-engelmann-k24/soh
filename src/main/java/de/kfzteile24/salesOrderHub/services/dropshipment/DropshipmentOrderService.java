@@ -113,9 +113,19 @@ public class DropshipmentOrderService {
         SalesOrder salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
 
-        final var orderRows = salesOrder.getLatestJson().getOrderRows();
         final var shippedItems = message.getItems();
+        final var orderRows = salesOrder.getLatestJson().getOrderRows();
 
+        final var savedSalesOrder = updateSalesOrderWithTrackingInformation(
+                salesOrder, shippedItems, orderRows);
+
+        startDropshipmentInvoiceRowProcessForEachOrderRow(savedSalesOrder, shippedItems, orderRows);
+
+    }
+
+    private SalesOrder updateSalesOrderWithTrackingInformation(SalesOrder salesOrder,
+                                                               Collection<ShipmentItem> shippedItems,
+                                                               List<OrderRows> orderRows) {
         shippedItems.forEach(item ->
                 orderRows.stream()
                         .filter(row -> StringUtils.pathEquals(row.getSku(), item.getProductNumber()))
@@ -126,15 +136,12 @@ public class DropshipmentOrderService {
                         }, () -> {
                             throw new NotFoundException(
                                     format("Could not find order row with SKU {0} for order {1}",
-                                            item.getProductNumber(), orderNumber));
+                                            item.getProductNumber(), salesOrder.getOrderNumber()));
                         })
         );
 
         setDocumentRefNumber(salesOrder);
-        final var savedSalesOrder = salesOrderService.save(salesOrder, ORDER_ITEM_SHIPPED);
-
-        startDropshipmentInvoiceRowProcessForEachOrderRow(savedSalesOrder, shippedItems, orderRows);
-
+        return salesOrderService.save(salesOrder, ORDER_ITEM_SHIPPED);
     }
 
     private void startDropshipmentInvoiceRowProcessForEachOrderRow(SalesOrder savedSalesOrder,
