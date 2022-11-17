@@ -47,7 +47,7 @@ public class PublishDropshipmentInvoiceRowTrackingInformationDelegate implements
     }
 
     private List<TrackingLink> getTrackingLinks(List<String> trackingLinks) {
-        return trackingLinks.stream().map(l -> getTrackingLink(l)).collect(Collectors.toList());
+        return trackingLinks.stream().map(link -> getTrackingLink(link)).collect(Collectors.toList());
     }
 
     private TrackingLink getTrackingLink(String trackingLink) {

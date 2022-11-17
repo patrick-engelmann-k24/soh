@@ -35,16 +35,13 @@ class SaveDropshipmentInvoiceRowDelegateTest {
     void testSaveDropshipmentInvoiceRowDelegate() throws Exception {
         final var expectedOrderNumber = "123";
         final var expectedSku = "456";
-        final var expectedDropshipmentInvoiceRow = DropshipmentInvoiceRow.builder()
-                        .sku(expectedSku).orderNumber(expectedOrderNumber).build();
 
         when(delegateExecution.getVariable(ORDER_ROW.getName())).thenReturn(expectedSku);
         when(delegateExecution.getVariable(ORDER_NUMBER.getName())).thenReturn(expectedOrderNumber);
-        when(dropshipmentHelper.createDropshipmentInvoiceRow(eq(expectedSku), eq(expectedOrderNumber))).thenReturn(expectedDropshipmentInvoiceRow);
 
         saveDropshipmentInvoiceRowDelegate.execute(delegateExecution);
 
-        verify(dropshipmentInvoiceRowService).save(expectedDropshipmentInvoiceRow);
+        verify(dropshipmentInvoiceRowService).create(expectedSku, expectedOrderNumber);
 
     }
 }
