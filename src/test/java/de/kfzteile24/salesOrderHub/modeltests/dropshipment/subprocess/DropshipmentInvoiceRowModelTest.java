@@ -66,28 +66,4 @@ class DropshipmentInvoiceRowModelTest extends AbstractWorkflowTest {
 
     }
 
-    /*@Test
-    @Tags(@Tag("IsBranchOrderGatewayTest"))
-    @DisplayName("Start process before gwXORCheckBranchType. isBranchOrder is false")
-    void testIsBranchOrderGatewayTestisBranchOrderFalse(TestInfo testinfo) {
-        log.info("{} - {}", testinfo.getDisplayName(), testinfo.getTags());
-
-        processVariables.put(IS_BRANCH_ORDER.getName(), false);
-        processVariables.put(POSITIVE_PAYMENT_TYPE.getName(), true);
-
-        when(processScenario.waitsAtMessageIntermediateCatchEvent(MSG_ORDER_PAYMENT_SECURED.getName()))
-                .thenReturn(RECEIVED_MESSAGE_CATCH_EVENT_ACTION);
-        when(processScenario.waitsAtMessageIntermediateCatchEvent(ROW_TRANSMITTED_TO_LOGISTICS.getName()))
-                .thenReturn(WAIT_MESSAGE_CATCH_EVENT_ACTION);
-        when(processScenario.runsCallActivity(ORDER_ROW_FULFILLMENT_PROCESS.getName()))
-                .thenReturn(executeCallActivity());
-
-        scenario = startBeforeActivity(SALES_ORDER_PROCESS, XOR_CHECK_BRANCH_TYPE.getName(),
-                businessKey, processVariables);
-
-        verify(processScenario).hasCompleted(XOR_CHECK_BRANCH_TYPE.getName());
-        verify(processScenario).hasCompleted(XOR_CHECK_PAYMENT_TYPE.getName());
-        verify(processScenario, times(3)).waitsAtMockedCallActivity(ORDER_ROW_FULFILLMENT_PROCESS.getName());
-        verify(processScenario, times(3)).waitsAtMessageIntermediateCatchEvent(ROW_TRANSMITTED_TO_LOGISTICS.getName());
-    }*/
 }
