@@ -37,6 +37,7 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -219,7 +220,7 @@ class DropshipmentOrderServiceTest {
                 .salesOrderNumber(salesOrder.getOrderNumber())
                 .items(items)
                 .build();
-        List<String> expectedTrackingLinks = getExpectedTrackingLinks(items);
+        Collection<String> expectedTrackingLinks = getExpectedTrackingLinks(items);
 
         when(salesOrderService.getOrderByOrderNumber(message.getSalesOrderNumber())).thenReturn(Optional.of(salesOrder));
         when(salesOrderService.save(salesOrder, ORDER_ITEM_SHIPPED)).thenReturn(salesOrder);
@@ -245,7 +246,7 @@ class DropshipmentOrderServiceTest {
 
     }
 
-    private List<String> getExpectedTrackingLinks(List<ShipmentItem> items) {
+    private Collection<String> getExpectedTrackingLinks(List<ShipmentItem> items) {
 
         return items.stream()
                 .map(item -> {
