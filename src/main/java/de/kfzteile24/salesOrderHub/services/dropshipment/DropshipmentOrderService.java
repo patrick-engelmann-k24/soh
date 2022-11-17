@@ -56,6 +56,7 @@ import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCH
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ITEM_SHIPPED;
 import static java.text.MessageFormat.format;
+import static java.util.function.Predicate.not;
 
 @Service
 @Slf4j
@@ -176,6 +177,7 @@ public class DropshipmentOrderService {
                 .orElseThrow(() -> new SalesOrderNotFoundException("Could not find dropshipment order: " + orderNumber));
 
         salesOrder.getLatestJson().getOrderRows().stream()
+                .filter(not(OrderRows::getIsCancelled))
                 .filter(orderRow -> StringUtils.pathEquals(orderRow.getSku(), sku))
                 .findFirst()
                 .ifPresentOrElse(orderRow -> {
