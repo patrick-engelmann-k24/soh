@@ -17,6 +17,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.DROPSHIPMENT_INVOICE_ROW_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.DROPSHIPMENT_INVOICE_ROW_PUBLISH_TRACKING_INFORMATION;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_INVOICE_ROW_TRACKING_INFORMATION_RECEIVED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Gateways.XOR_CHECK_DROPSHIPMENT_ORDER_SUCCESSFUL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_DROPSHIPMENT_ORDER_CONFIRMED;
@@ -30,8 +31,6 @@ import static org.mockito.Mockito.when;
 @DisplayName("DropshipmentInvoiceRowSubProcess model test")
 @Slf4j(topic = "DropshipmentInvoiceRowSubProcess model test")
 class DropshipmentInvoiceRowModelTest extends AbstractWorkflowTest {
-
-    public static final String DEFER_PERIOD_SECONDS_25 = "PT25S";
 
     @BeforeEach
     protected void setUp() {
@@ -51,8 +50,10 @@ class DropshipmentInvoiceRowModelTest extends AbstractWorkflowTest {
 
         processVariables.put(IS_DROPSHIPMENT_ORDER_CONFIRMED.getName(), true);
 
-        when(processScenario.waitsAtMessageIntermediateCatchEvent(EVENT_MSG_DROPSHIPMENT_INVOICE_ROW_TRACKING_INFORMATION_RECEIVED.getName()))
-                .thenReturn(WAIT_MESSAGE_CATCH_EVENT_ACTION);
+        when(processScenario.waitsAtMessageIntermediateCatchEvent(EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED.getName()))
+                .thenReturn(RECEIVED_MESSAGE_CATCH_EVENT_ACTION);
+        //when(processScenario.waitsAtMessageIntermediateCatchEvent(EVENT_MSG_DROPSHIPMENT_INVOICE_ROW_TRACKING_INFORMATION_RECEIVED.getName()))
+        //        .thenReturn(WAIT_MESSAGE_CATCH_EVENT_ACTION);
         when(processScenario.runsCallActivity(DROPSHIPMENT_INVOICE_ROW_PROCESS.getName()))
                 .thenReturn(executeCallActivity());
 

@@ -48,7 +48,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.RECURRING;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_SALES_INVOICE_CREATED_RECEIVED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_ROW_TRACKING_INFORMATION_RECEIVED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_INVOICE_ROW_TRACKING_INFORMATION_RECEIVED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.CUSTOMER_TYPE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.INVOICE_URL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_ORDER_CANCELLED;
@@ -137,7 +137,7 @@ public class CamundaHelper {
                 ORDER_ROW.getName(), sku,
                 TRACKING_LINKS.getName(), trackingLinks);
 
-        return runtimeService.createMessageCorrelation(DROPSHIPMENT_ORDER_ROW_TRACKING_INFORMATION_RECEIVED.getName())
+        return runtimeService.createMessageCorrelation(DROPSHIPMENT_INVOICE_ROW_TRACKING_INFORMATION_RECEIVED.getName())
                 .processInstanceBusinessKey(salesOrder.getOrderNumber() + "#" + sku)
                 .setVariables(variables)
                 .correlateWithResult().getProcessInstance();
