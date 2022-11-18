@@ -12,7 +12,7 @@ import org.junit.jupiter.api.TestInfo;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.DROPSHIPMENT_INVOICE_ROW_CREATE_INVOICE_ENTRY;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.DROPSHIPMENT_INVOICE_ROW_PROCESS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.DROPSHIPMENT_INVOICE_ROW_SUB_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.DROPSHIPMENT_INVOICE_ROW_PUBLISH_TRACKING_INFORMATION;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_INVOICE_ROW_TRACKING_INFORMATION_RECEIVED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED;
@@ -51,7 +51,7 @@ class DropshipmentInvoiceRowModelTest extends AbstractWorkflowTest {
                 .thenReturn(RECEIVED_RECEIVER_TASK_ACTION);
         when(processScenario.waitsAtReceiveTask(EVENT_MSG_DROPSHIPMENT_INVOICE_ROW_TRACKING_INFORMATION_RECEIVED.getName()))
                 .thenReturn(RECEIVED_RECEIVER_TASK_ACTION);
-        when(processScenario.runsCallActivity(DROPSHIPMENT_INVOICE_ROW_PROCESS.getName()))
+        when(processScenario.runsCallActivity(DROPSHIPMENT_INVOICE_ROW_SUB_PROCESS.getName()))
                 .thenReturn(executeCallActivity());
 
         scenario = startBeforeActivity(SALES_ORDER_PROCESS, XOR_CHECK_DROPSHIPMENT_ORDER_SUCCESSFUL.getName(),

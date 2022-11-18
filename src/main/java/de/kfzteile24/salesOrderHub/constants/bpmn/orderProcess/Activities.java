@@ -27,7 +27,7 @@ public enum Activities implements BpmItem {
     SUB_PROCESS_CORE_SALES_ORDER_CANCELLED("activitySubProcessCoreSalesOrderCancelled"),
     CORE_SALES_ORDER_CANCELLED("activityCoreSalesOrderCancelled"),
 
-    DROPSHIPMENT_INVOICE_ROW_PROCESS("activityDropshipmentInvoiceRowProcess"),
+    DROPSHIPMENT_INVOICE_ROW_SUB_PROCESS("activityDropshipmentInvoiceRowProcess"),
     DROPSHIPMENT_INVOICE_ROW_CREATE_INVOICE_ENTRY("activityCreateInvoiceEntry"),
     DROPSHIPMENT_INVOICE_ROW_PUBLISH_TRACKING_INFORMATION("eventEndMsgPublishTrackingInformation")
 
