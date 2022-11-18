@@ -1,6 +1,5 @@
 package de.kfzteile24.salesOrderHub.delegates.dropshipmentorder;
 
-import de.kfzteile24.salesOrderHub.helper.DropshipmentHelper;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentInvoiceRowService;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -15,13 +14,10 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 @Component
 @Slf4j
 @RequiredArgsConstructor
-public class SaveDropshipmentInvoiceRowDelegate implements JavaDelegate {
+public class SaveDropshipmentOrderRowDelegate implements JavaDelegate {
 
     @NonNull
     private final DropshipmentInvoiceRowService dropshipmentInvoiceRowService;
-
-    @NonNull
-    private final DropshipmentHelper dropshipmentHelper;
 
     @Override
     public void execute(DelegateExecution delegateExecution) throws Exception {
