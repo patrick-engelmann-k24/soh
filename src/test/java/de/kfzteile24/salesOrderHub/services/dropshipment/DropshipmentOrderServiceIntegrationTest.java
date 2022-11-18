@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import de.kfzteile24.salesOrderHub.constants.PersistentProperties;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.EventType;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Signals;
@@ -21,7 +21,6 @@ import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderReturnNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.EventType;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.InvoiceNumberCounterRepository;
@@ -33,6 +32,7 @@ import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.StringUtils;
+import org.apache.tomcat.jni.Proc;
 import org.assertj.core.api.AutoCloseableSoftAssertions;
 import org.camunda.bpm.engine.runtime.EventSubscription;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
@@ -58,7 +58,6 @@ import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.ORDER_NUMBER_SEPARATOR;
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.RETURN_ORDER_NUMBER_PREFIX;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_END_MSG_DROPSHIPMENT_ORDER_ROW_CANCELLED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_INVOICE_ROW_TRACKING_INFORMATION_RECEIVED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_SIGNAL_PAUSE_PROCESSING_DROPSHIPMENT_ORDER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_PURCHASE_ORDER_CREATED;
@@ -177,32 +176,12 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
     @Test
     void testHandleDropShipmentOrderTrackingInformationReceived() throws JsonProcessingException {
 
-        var salesOrder =
-                SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
-        ((Order) salesOrder.getOriginalOrder()).getOrderHeader().setOrderFulfillment(DELTICOM.getName());
-        salesOrderService.save(salesOrder, Action.ORDER_CREATED);
+        var salesOrder = createDropshipmentSalesOrder();
 
-        ProcessInstance processInstance = camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
-
-        assertTrue(timerService.pollWithDefaultTiming(() ->
-                camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
-
-        assertTrue(timerService.pollWithDefaultTiming(() ->
-                camundaHelper.hasPassed(processInstance.getId(), EVENT_THROW_MSG_PURCHASE_ORDER_CREATED.getName())));
-
-        var messageCorrelationResult = bpmUtil.sendMessage(Messages.DROPSHIPMENT_ORDER_CONFIRMED, salesOrder.getOrderNumber(),
-                Variables.putValue(IS_DROPSHIPMENT_ORDER_CONFIRMED.getName(), true));
-
-        assertThat(messageCorrelationResult.getExecution().getProcessInstanceId()).isNotBlank();
-
-        assertTrue(timerService.pollWithDefaultTiming(() ->
-                camundaHelper.hasPassed(processInstance.getId(), EVENT_THROW_MSG_PURCHASE_ORDER_SUCCESSFUL.getName())));
+        startDropshipmentConfirmedProcess(salesOrder, true);
 
         var message = createShipmentConfirmedMessage(salesOrder);
         dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(message, messageWrapper);
-
-        assertTrue(timerService.pollWithDefaultTiming(() ->
-                camundaHelper.hasPassed(processInstance.getId(), EVENT_MSG_DROPSHIPMENT_INVOICE_ROW_TRACKING_INFORMATION_RECEIVED.getName())));
 
         var optUpdatedSalesOrder = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber());
         assertThat(optUpdatedSalesOrder).isNotEmpty();
@@ -235,10 +214,13 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
     @Test
     void testHandleDropShipmentOrderTrackingInformationReceivedWhenThereIsAnotherInvoiceForSameYear() throws JsonProcessingException {
 
-        var salesOrder1 = createSalesOrder();
+        var salesOrder1 = createDropshipmentSalesOrder();
         createSalesOrderInvoice(salesOrder1);
-        var salesOrder2 = createSalesOrder();
+        var salesOrder2 = createDropshipmentSalesOrder();
         createSalesOrderInvoice(salesOrder2);
+
+        startDropshipmentConfirmedProcess(salesOrder1, true);
+        startDropshipmentConfirmedProcess(salesOrder2, true);
 
         dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(createShipmentConfirmedMessage(salesOrder1), messageWrapper);
         dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(createShipmentConfirmedMessage(salesOrder2), messageWrapper);
@@ -254,7 +236,7 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
     @Test
     void testHandleDropShipmentOrderTrackingInformationReceivedWhenTrackingNumberListIsNullAndMultipleParcelNumbersReceived() throws JsonProcessingException {
 
-        var salesOrder = createSalesOrder();
+        var salesOrder = createDropshipmentSalesOrder();
         createSalesOrderInvoice(salesOrder);
         var message = createShipmentConfirmedMessage(salesOrder);
         message.getItems().add(ShipmentItem.builder()
@@ -263,6 +245,8 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
                         .trackingLink("http://abc5")
                         .serviceProviderName("abc5")
                         .build());
+
+        startDropshipmentConfirmedProcess(salesOrder, true);
         dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(message, messageWrapper);
 
         var optUpdatedSalesOrder = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber());
@@ -301,8 +285,9 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
                 .build();
     }
 
-    private SalesOrder createSalesOrder() {
+    private SalesOrder createDropshipmentSalesOrder() {
         var salesOrder = SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
+        ((Order) salesOrder.getOriginalOrder()).getOrderHeader().setOrderFulfillment(DELTICOM.getName());
 
         salesOrderService.save(salesOrder, Action.ORDER_CREATED);
 
@@ -370,24 +355,9 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
     // Has to be removed and replaced with the corresponding model test (once model tests are integrated in soh)
     void testModelDropShipmentOrderRowsCancellation() {
 
-        var salesOrder =
-                SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
-        salesOrder.getLatestJson().getOrderHeader().setOrderFulfillment(DELTICOM.getName());
-        salesOrder.getLatestJson().getOrderHeader().setOrderGroupId(salesOrder.getOrderNumber());
-        salesOrderService.save(salesOrder, Action.ORDER_CREATED);
+        var salesOrder = createDropshipmentSalesOrder();
 
-        ProcessInstance processInstance = camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
-
-        assertTrue(timerService.pollWithDefaultTiming(() ->
-                camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
-
-        assertTrue(timerService.pollWithDefaultTiming(() ->
-                camundaHelper.hasPassed(processInstance.getId(), EVENT_THROW_MSG_PURCHASE_ORDER_CREATED.getName())));
-
-        var messageCorrelationResult = bpmUtil.sendMessage(Messages.DROPSHIPMENT_ORDER_CONFIRMED, salesOrder.getOrderNumber(),
-                Variables.putValue(IS_DROPSHIPMENT_ORDER_CONFIRMED.getName(), false));
-
-        assertThat(messageCorrelationResult.getExecution().getProcessInstanceId()).isNotBlank();
+        final var processInstance = startDropshipmentConfirmedProcess(salesOrder, false);
 
         salesOrder.getLatestJson().getOrderRows().forEach(orderRow -> {
 
@@ -536,6 +506,28 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
                 }, () -> {
                     throw new NotFoundException("Could not found persistent property. Key:  " + PersistentProperties.PAUSE_DROPSHIPMENT_PROCESSING);
                 });
+    }
+
+    private ProcessInstance startDropshipmentConfirmedProcess(SalesOrder salesOrder, boolean dropshipmentConfirmed) {
+        ProcessInstance processInstance = camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
+
+        assertTrue(timerService.pollWithDefaultTiming(() ->
+                camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
+
+        assertTrue(timerService.pollWithDefaultTiming(() ->
+                camundaHelper.hasPassed(processInstance.getId(), EVENT_THROW_MSG_PURCHASE_ORDER_CREATED.getName())));
+
+        var messageCorrelationResult = bpmUtil.sendMessage(Messages.DROPSHIPMENT_ORDER_CONFIRMED, salesOrder.getOrderNumber(),
+                Variables.putValue(IS_DROPSHIPMENT_ORDER_CONFIRMED.getName(), dropshipmentConfirmed));
+
+        assertThat(messageCorrelationResult.getExecution().getProcessInstanceId()).isNotBlank();
+
+        if (dropshipmentConfirmed) {
+            assertTrue(timerService.pollWithDefaultTiming(() ->
+                    camundaHelper.hasPassed(processInstance.getId(), EVENT_THROW_MSG_PURCHASE_ORDER_SUCCESSFUL.getName())));
+        }
+
+        return processInstance;
     }
 
     @Commit
