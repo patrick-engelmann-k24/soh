@@ -22,7 +22,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 @Component
 @Slf4j
 @RequiredArgsConstructor
-public class PublishDropshipmentInvoiceRowTrackingInformationDelegate implements JavaDelegate {
+public class PublishDropshipmentOrderRowTrackingInformationDelegate implements JavaDelegate {
 
     @NonNull
     private final SnsPublishService snsPublishService;

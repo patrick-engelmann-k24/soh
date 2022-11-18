@@ -238,7 +238,7 @@ class DropshipmentOrderServiceTest {
                 }),
                 eq(ORDER_ITEM_SHIPPED));
 
-            verify(camundaHelper, times(3)).startDropshipmentInvoiceRowProcess(
+            verify(camundaHelper, times(3)).correlateDropshipmentOrderRowShipmentConfirmedMessage(
                     eq(salesOrder),
                     any(),
                     any()
