@@ -41,6 +41,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_CONFIRMED;
@@ -145,41 +146,50 @@ public class DropshipmentOrderService {
     private void startDropshipmentInvoiceRowProcessForEachOrderRow(SalesOrder savedSalesOrder,
                                                                    Collection<ShipmentItem> shippedItems,
                                                                    List<OrderRows> orderRows) {
-        final var skuMap = getSkuMap(shippedItems);
-        shippedItems.forEach(item ->
-                orderRows.stream()
-                        .filter(row -> StringUtils.pathEquals(row.getSku(), item.getProductNumber()))
-                        .forEach(row ->
-                            camundaHelper.startDropshipmentInvoiceRowProcess(savedSalesOrder, row.getSku(),
-                                    Collections.singletonList(getTrackingLink(item, skuMap)))
-                        )
+        final var skuToTrackingLinks = getSkuMap(shippedItems, orderRows, false);
+        final var trackingLinkToSkus = getSkuMap(shippedItems, orderRows, true);
+        skuToTrackingLinks.entrySet().forEach(entry -> {
+                    var sku = entry.getKey();
+                    var trackingLinks = entry.getValue();
+                    camundaHelper.startDropshipmentInvoiceRowProcess(savedSalesOrder, sku,
+                        formatTrackingLinks(trackingLinks, trackingLinkToSkus));
+                }
         );
     }
 
     /*
-        This method groups the sku names according to tracking link information if the tracking link is same for multiple sku
-     */
-    private Map<String, List<String>> getSkuMap(Collection<ShipmentItem> shippedItems) {
+    This method maps skus to tracking links or tracking links to skus (the relation is many to many)
+    */
+    private Map<String, List<String>> getSkuMap(Collection<ShipmentItem> shippedItems, Collection<OrderRows> orderRows, boolean trackingLinkToSkus) {
         Map<String, List<String>> skuMap = new HashMap<>();
         shippedItems.forEach(item -> {
-            var key = item.getTrackingLink();
-            var value = item.getProductNumber();
-            var valueList = skuMap.get(key);
-            if (valueList == null) {
-                valueList = new ArrayList<>(List.of(value));
-            } else {
-                valueList.add(value);
-            }
-            skuMap.put(key, valueList);
+            orderRows.stream()
+                    .filter(row -> StringUtils.pathEquals(row.getSku(), item.getProductNumber()))
+                    .forEach(row -> {
+                        var key = trackingLinkToSkus ? item.getProductNumber() : row.getSku();
+                        var value = trackingLinkToSkus ? row.getSku() : item.getProductNumber();
+                        var valueList = skuMap.get(key);
+                        if (valueList == null) {
+                            valueList = new ArrayList<>(List.of(value));
+                        } else {
+                            valueList.add(value);
+                        }
+                        skuMap.put(key, valueList);
+                    });
         });
         return skuMap;
     }
 
+    private List<String> formatTrackingLinks(List<String> trackingLinks, Map<String, List<String>> trackingLinkSkusMap) {
+        return trackingLinks.stream().map(link -> formatTrackingLink(
+                link, trackingLinkSkusMap)).collect(Collectors.toList());
+    }
+
     @SneakyThrows
-    private String getTrackingLink(ShipmentItem shipmentItem, Map<String, List<String>> skuMap) {
+    private String formatTrackingLink(String trackingLink, Map<String, List<String>> trackingLinkSkusMap) {
         return objectMapper.writeValueAsString(TrackingLink.builder()
-                    .url(shipmentItem.getTrackingLink())
-                    .orderItems(skuMap.get(shipmentItem.getTrackingLink()))
+                    .url(trackingLink)
+                    .orderItems(trackingLinkSkusMap.get(trackingLink))
                     .build());
     }
 
