@@ -13,6 +13,7 @@ import de.kfzteile24.soh.order.dto.UnitValues;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -94,7 +95,7 @@ public class OrderUtil {
                 .isCancelled(false)
                 .isPriceHammer(originalOrderRow.getIsPriceHammer() != null && originalOrderRow.getIsPriceHammer())
                 .sku(item.getItemNumber())
-                .name(Optional.ofNullable(originalOrderRow.getName()).orElse(item.getDescription()))
+                .name(getName(originalOrderRow, item))
                 .dataSupplierNumber(originalOrderRow.getDataSupplierNumber())
                 .manufacturerProductNumber(originalOrderRow.getManufacturerProductNumber())
                 .ean(originalOrderRow.getEan())
@@ -125,6 +126,17 @@ public class OrderUtil {
                         .totalDiscountedNet(sumOfGoodsPriceNet)
                         .build()))
                 .build();
+    }
+
+    private String getName(OrderRows orderRow, OrderItem item) {
+
+        if (ObjectUtils.isNotEmpty(orderRow.getName())) {
+            return orderRow.getName();
+        } else if (ObjectUtils.isNotEmpty(item.getDescription())) {
+            return item.getDescription();
+        } else {
+            return item.getItemNumber();
+        }
     }
 
     public boolean containsDropShipmentItems(Order order) {
