@@ -15,7 +15,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class SaveDropshipmentInvoiceRowDelegateTest {
+class SaveDropshipmentOrderRowDelegateTest {
 
     @Mock
     private DelegateExecution delegateExecution;
@@ -27,7 +27,7 @@ class SaveDropshipmentInvoiceRowDelegateTest {
     private DropshipmentHelper dropshipmentHelper;
 
     @InjectMocks
-    private SaveDropshipmentInvoiceRowDelegate saveDropshipmentInvoiceRowDelegate;
+    private SaveDropshipmentOrderRowDelegate saveDropshipmentInvoiceRowDelegate;
 
     @Test
     void testSaveDropshipmentInvoiceRowDelegate() throws Exception {

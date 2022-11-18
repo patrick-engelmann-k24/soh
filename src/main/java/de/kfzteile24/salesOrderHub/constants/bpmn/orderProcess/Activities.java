@@ -17,7 +17,7 @@ public enum Activities implements BpmItem {
     EVENT_END_MSG_DROPSHIPMENT_ORDER_CANCELLED("eventEndMsgDropShipmentOrderCancelled"),
     EVENT_THROW_MSG_PURCHASE_ORDER_SUCCESSFUL("eventThrowMsgPurchaseOrderSuccessful"),
     EVENT_MSG_DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED("eventMsgDropShipmentOrderTrackingInformationReceived"),
-    EVENT_MSG_DROPSHIPMENT_INVOICE_ROW_TRACKING_INFORMATION_RECEIVED("eventMsgDropShipmentInvoiceRowTrackingInformationReceived"),
+    EVENT_MSG_DROPSHIPMENT_ORDER_ROW_SHIPMENT_CONFIRMED("eventMsgDropshipmentOrderRowShipmentConfirmed"),
     EVENT_MSG_DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED("eventMsgDropshipmentOrderRowCancellationReceived"),
     EVENT_END_MSG_DROPSHIPMENT_ORDER_ROW_CANCELLED("eventEndMsgDropshipmentOrderRowCancelled"),
     DROPSHIPMENT_ORDER_ROWS_CANCELLATION("activityDropshipmentOrderRowsCancellation"),
@@ -27,9 +27,9 @@ public enum Activities implements BpmItem {
     SUB_PROCESS_CORE_SALES_ORDER_CANCELLED("activitySubProcessCoreSalesOrderCancelled"),
     CORE_SALES_ORDER_CANCELLED("activityCoreSalesOrderCancelled"),
 
-    DROPSHIPMENT_INVOICE_ROW_SUB_PROCESS("activityDropshipmentInvoiceRowProcess"),
-    DROPSHIPMENT_INVOICE_ROW_CREATE_INVOICE_ENTRY("activityCreateInvoiceEntry"),
-    DROPSHIPMENT_INVOICE_ROW_PUBLISH_TRACKING_INFORMATION("eventEndMsgPublishTrackingInformation")
+    DROPSHIPMENT_ORDER_ROW_SHIPMENT_CONFIRMED_SUB_PROCESS("activityDropshipmentOrderRowShipmentConfirmedProcess"),
+    DROPSHIPMENT_ORDER_ROW_CREATE_ENTRY("activityDropshipmentOrderRowCreateEntry"),
+    EVENT_END_MSG_DROPSHIPMENT_ORDER_ROW_PUBLISH_TRACKING_INFORMATION("eventEndMsgDropshipmentOrderRowPublishTrackingInformation")
 
 
     ;

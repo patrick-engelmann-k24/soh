@@ -32,7 +32,6 @@ import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.StringUtils;
-import org.apache.tomcat.jni.Proc;
 import org.assertj.core.api.AutoCloseableSoftAssertions;
 import org.camunda.bpm.engine.runtime.EventSubscription;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
@@ -231,29 +230,6 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
 
         assertThat(updatedSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber()).hasSize(18);
         assertThat(updatedSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber()).isEqualTo(LocalDateTime.now().getYear() + "-1000000000002");
-    }
-
-    @Test
-    void testHandleDropShipmentOrderTrackingInformationReceivedWhenTrackingNumberListIsNullAndMultipleParcelNumbersReceived() throws JsonProcessingException {
-
-        var salesOrder = createDropshipmentSalesOrder();
-        createSalesOrderInvoice(salesOrder);
-        var message = createShipmentConfirmedMessage(salesOrder);
-        message.getItems().add(ShipmentItem.builder()
-                        .productNumber("sku-1")
-                        .parcelNumber("00F8F0LT5")
-                        .trackingLink("http://abc5")
-                        .serviceProviderName("abc5")
-                        .build());
-
-        startDropshipmentConfirmedProcess(salesOrder, true);
-        dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(message, messageWrapper);
-
-        var optUpdatedSalesOrder = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber());
-        assertThat(optUpdatedSalesOrder).isNotEmpty();
-        var updatedSalesOrder = optUpdatedSalesOrder.get();
-
-        assertThat(updatedSalesOrder.getLatestJson().getOrderRows().get(0).getTrackingNumbers()).hasSize(2);
     }
 
     private void createSalesOrderInvoice(SalesOrder salesOrder) {
