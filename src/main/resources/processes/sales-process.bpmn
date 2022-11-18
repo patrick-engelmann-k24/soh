@@ -367,7 +367,7 @@
       </bpmn:textAnnotation>
       <bpmn:association id="Association_0gqiwa4" sourceRef="activityCoreSalesOrderCancelled" targetRef="TextAnnotation_1780bqe" />
     </bpmn:subProcess>
-    <bpmn:callActivity id="activityDropshipmentInvoiceRowProcess" name="Handle Dropshipment Invoice Rows" calledElement="DropshipmentInvoiceRowProcess">
+    <bpmn:callActivity id="activityDropshipmentOrderRowShipmentConfirmedProcess" name="Dropshipment Order Row Shipment Confirmed" calledElement="DropshipmentOrderRowShipmentConfirmedProcess">
       <bpmn:extensionElements>
         <camunda:in businessKey="${orderNumber}#${orderRow}" />
         <camunda:in source="all" target="all" />
@@ -376,8 +376,8 @@
       <bpmn:outgoing>Flow_114s9h3</bpmn:outgoing>
       <bpmn:multiInstanceLoopCharacteristics camunda:collection="orderRows" camunda:elementVariable="orderRow" />
     </bpmn:callActivity>
-    <bpmn:sequenceFlow id="Flow_03j5qb6" sourceRef="eventThrowMsgPurchaseOrderSuccessful" targetRef="activityDropshipmentInvoiceRowProcess" />
-    <bpmn:sequenceFlow id="Flow_114s9h3" sourceRef="activityDropshipmentInvoiceRowProcess" targetRef="gwEventCancelOrComplete" />
+    <bpmn:sequenceFlow id="Flow_03j5qb6" sourceRef="eventThrowMsgPurchaseOrderSuccessful" targetRef="activityDropshipmentOrderRowShipmentConfirmedProcess" />
+    <bpmn:sequenceFlow id="Flow_114s9h3" sourceRef="activityDropshipmentOrderRowShipmentConfirmedProcess" targetRef="gwEventCancelOrComplete" />
     <bpmn:textAnnotation id="TextAnnotation_0m998uh">
       <bpmn:text>Create Purchase order (to P&amp;R)</bpmn:text>
     </bpmn:textAnnotation>
@@ -395,7 +395,7 @@
     </bpmn:textAnnotation>
     <bpmn:association id="Association_0abcks6" sourceRef="gwEventCancelOrComplete" targetRef="TextAnnotation_0vs7qok" />
     <bpmn:textAnnotation id="TextAnnotation_08nju3g">
-      <bpmn:text>This call activity creates for every received invoice row a new subprocess (DropshipmentInvoiceRowProcess)</bpmn:text>
+      <bpmn:text>This call activity creates a new subprocess for every Dropshipment Order Row</bpmn:text>
     </bpmn:textAnnotation>
   </bpmn:process>
   <bpmn:message id="Message_00gxny4" name="msgOrderReceivedPaymentSecured" />
@@ -698,7 +698,7 @@
           <dc:Bounds x="1184" y="305" width="74" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="activityDropshipmentInvoiceRowProcess_di" bpmnElement="activityDropshipmentInvoiceRowProcess">
+      <bpmndi:BPMNShape id="activityDropshipmentOrderRowShipmentConfirmedProcess_di" bpmnElement="activityDropshipmentOrderRowShipmentConfirmedProcess">
         <dc:Bounds x="1555" y="700" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_0ttoph5_di" bpmnElement="activitySubProcessInvoiceAddressChange" isExpanded="true">
