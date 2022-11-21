@@ -401,4 +401,8 @@ public class CamundaHelper {
                     orderNumber);
         }
     }
+
+    public void updateVariable(String processInstanceId, String variableName, Object variableValue) {
+        runtimeService.setVariable(processInstanceId, variableName, variableValue);
+    }
 }

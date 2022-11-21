@@ -4,7 +4,7 @@
     <bpmn:startEvent id="StartEvent_1">
       <bpmn:outgoing>Flow_0bel4es</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:sequenceFlow id="Flow_1qs0acs" sourceRef="Activity_1ckqgu8" targetRef="Event_1h1elcy" />
+    <bpmn:sequenceFlow id="Flow_1qs0acs" sourceRef="Activity_1ckqgu8" targetRef="activityDropshipmentOrderCancellation" />
     <bpmn:subProcess id="Activity_1ckqgu8" name="foreach order row">
       <bpmn:incoming>Flow_0bel4es</bpmn:incoming>
       <bpmn:outgoing>Flow_1qs0acs</bpmn:outgoing>
@@ -24,9 +24,14 @@
       <bpmn:sequenceFlow id="Flow_01z69xc" sourceRef="activityDropshipmentOrderRowsCancellation" targetRef="eventEndMsgDropshipmentOrderRowCancelled" />
     </bpmn:subProcess>
     <bpmn:endEvent id="Event_1h1elcy">
-      <bpmn:incoming>Flow_1qs0acs</bpmn:incoming>
+      <bpmn:incoming>Flow_0xmc3ze</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_0bel4es" sourceRef="StartEvent_1" targetRef="Activity_1ckqgu8" />
+    <bpmn:serviceTask id="activityDropshipmentOrderCancellation" name="Cancel order if it is fully cancelled" camunda:delegateExpression="${dropshipmentOrderCancellationDelegate}">
+      <bpmn:incoming>Flow_1qs0acs</bpmn:incoming>
+      <bpmn:outgoing>Flow_0xmc3ze</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_0xmc3ze" sourceRef="activityDropshipmentOrderCancellation" targetRef="Event_1h1elcy" />
   </bpmn:process>
   <bpmn:message id="Message_0i3m6n4" name="msgDropshipmentOrderRowCancellationReceived" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
@@ -37,10 +42,20 @@
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1qs0acs_di" bpmnElement="Flow_1qs0acs">
         <di:waypoint x="710" y="170" />
-        <di:waypoint x="782" y="170" />
+        <di:waypoint x="770" y="170" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0xmc3ze_di" bpmnElement="Flow_0xmc3ze">
+        <di:waypoint x="870" y="170" />
+        <di:waypoint x="932" y="170" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
         <dc:Bounds x="162" y="157" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0b05hus_di" bpmnElement="Event_1h1elcy">
+        <dc:Bounds x="932" y="152" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1hqk9sg_di" bpmnElement="activityDropshipmentOrderCancellation">
+        <dc:Bounds x="770" y="130" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_1c71rkf_di" bpmnElement="Activity_1ckqgu8" isExpanded="true">
         <dc:Bounds x="280" y="80" width="430" height="190" />
@@ -67,9 +82,6 @@
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_1o5ecdr_di" bpmnElement="activityDropshipmentOrderRowsCancellation">
         <dc:Bounds x="440" y="130" width="100" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_0b05hus_di" bpmnElement="Event_1h1elcy">
-        <dc:Bounds x="782" y="152" width="36" height="36" />
       </bpmndi:BPMNShape>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

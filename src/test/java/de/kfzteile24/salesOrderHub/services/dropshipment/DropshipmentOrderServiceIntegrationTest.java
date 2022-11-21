@@ -56,6 +56,7 @@ import java.util.stream.Stream;
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.ORDER_NUMBER_SEPARATOR;
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.RETURN_ORDER_NUMBER_PREFIX;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.DROPSHIPMENT_ORDER_CANCELLATION;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_END_MSG_DROPSHIPMENT_ORDER_ROW_CANCELLED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_SIGNAL_PAUSE_PROCESSING_DROPSHIPMENT_ORDER;
@@ -345,8 +346,14 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
         });
 
         assertTrue(timerService.pollWithDefaultTiming(() ->
+                camundaHelper.hasPassed(processInstance.getId(), DROPSHIPMENT_ORDER_CANCELLATION.getName())));
+
+        assertTrue(timerService.pollWithDefaultTiming(() ->
                 camundaHelper.hasPassed(processInstance.getId(), Events.END_MSG_ORDER_CANCELLED.getName())));
 
+        var updatedSalesOrder =
+                salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber()).orElseThrow();
+        assertThat(updatedSalesOrder.isCancelled()).isTrue();
     }
 
     @Test
