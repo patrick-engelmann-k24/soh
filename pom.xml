@@ -91,6 +91,12 @@
       <version>${spring-cloud-version}</version>
     </dependency>
     <dependency>
+      <groupId>com.sun.mail</groupId>
+      <artifactId>javax.mail</artifactId>
+      <version>1.6.2</version>
+    </dependency>
+
+    <dependency>
       <groupId>de.kfzteile24.json.schema</groupId>
       <artifactId>json-schema-java-bundle</artifactId>
       <version>${json-schema-java-bundle.version}</version>
