@@ -48,11 +48,13 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.RECURRING;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_SALES_INVOICE_CREATED_RECEIVED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_ROW_SHIPMENT_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.CUSTOMER_TYPE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.INVOICE_URL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_ORDER_CANCELLED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_GROUP_ID;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROWS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.PAYMENT_TYPE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.PLATFORM_TYPE;
@@ -60,6 +62,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SALES_CHANNEL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SALES_ORDER_ID;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SHIPMENT_METHOD;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.TRACKING_LINKS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.VIRTUAL_ORDER_ROWS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.VOUCHER;
 import static java.util.function.Predicate.not;
@@ -124,6 +127,18 @@ public class CamundaHelper {
 
         return runtimeService.createMessageCorrelation(CORE_SALES_INVOICE_CREATED_RECEIVED.getName())
                 .processInstanceBusinessKey(salesOrder.getId().toString())
+                .setVariables(variables)
+                .correlateWithResult().getProcessInstance();
+    }
+
+    public ProcessInstance correlateDropshipmentOrderRowShipmentConfirmedMessage(SalesOrder salesOrder, String sku, List<String> trackingLinks) {
+        Map<String, Object> variables = Map.of(
+                ORDER_NUMBER.getName(), salesOrder.getOrderNumber(),
+                ORDER_ROW.getName(), sku,
+                TRACKING_LINKS.getName(), trackingLinks);
+
+        return runtimeService.createMessageCorrelation(DROPSHIPMENT_ORDER_ROW_SHIPMENT_CONFIRMED.getName())
+                .processInstanceBusinessKey(salesOrder.getOrderNumber() + "#" + sku)
                 .setVariables(variables)
                 .correlateWithResult().getProcessInstance();
     }

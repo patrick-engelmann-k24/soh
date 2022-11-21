@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_0csmsqq" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.12.0">
+  <bpmn:process id="DropshipmentOrderRowShipmentConfirmedProcess" name="Dropshipment Order Row Shipment Confirmed Process" isExecutable="true" camunda:isStartableInTasklist="false">
+    <bpmn:startEvent id="eventStartDropshipmentOrderRowShipmentConfirmedProcess" name="Dropshipment Order Row Shipment Confirmed">
+      <bpmn:extensionElements>
+        <camunda:executionListener expression="${execution.setVariableLocal(&#39;trackingIdReceived&#39;,false)}" event="start" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_0aeitx8</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:receiveTask id="eventMsgDropshipmentOrderRowShipmentConfirmed" name="shipment &#38; tracking information received" messageRef="Message_116ff3q">
+      <bpmn:incoming>Flow_0aeitx8</bpmn:incoming>
+      <bpmn:outgoing>Flow_1tm0ay8</bpmn:outgoing>
+    </bpmn:receiveTask>
+    <bpmn:boundaryEvent id="eventTimerDropshipmentOrderRowShipmentConfirmed" cancelActivity="false" attachedToRef="eventMsgDropshipmentOrderRowShipmentConfirmed">
+      <bpmn:extensionElements>
+        <camunda:executionListener delegateExpression="${newRelicAwareTimerListener}" event="start" />
+        <camunda:properties>
+          <camunda:property name="newRelicEvent" value="DROPSHIPMENT_SHIPMENT_CONFIRMED_MISSING" />
+          <camunda:property name="temporalUnit" value="DAYS" />
+        </camunda:properties>
+      </bpmn:extensionElements>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_0qzs9t1">
+        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">#{projectConfig.processConfig.salesOrderProcess.dropshipmentShipmentConfirmedTimer}</bpmn:timeCycle>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:serviceTask id="activityDropshipmentOrderRowCreateEntry" name="Create Order Row Temporary Entry based on sku in shipment tracking" camunda:delegateExpression="${saveDropshipmentOrderRowDelegate}">
+      <bpmn:incoming>Flow_1tm0ay8</bpmn:incoming>
+      <bpmn:outgoing>Flow_10nr9wc</bpmn:outgoing>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_0atpkgb">
+        <bpmn:targetRef>DataStoreReference_1bwrw95</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+    </bpmn:serviceTask>
+    <bpmn:dataStoreReference id="DataStoreReference_1bwrw95" />
+    <bpmn:endEvent id="eventEndMsgDropshipmentOrderRowPublishTrackingInformation" name="Publish tracking information">
+      <bpmn:incoming>Flow_10nr9wc</bpmn:incoming>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_0pi527z" camunda:delegateExpression="${publishDropshipmentOrderRowTrackingInformationDelegate}" />
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0aeitx8" sourceRef="eventStartDropshipmentOrderRowShipmentConfirmedProcess" targetRef="eventMsgDropshipmentOrderRowShipmentConfirmed" />
+    <bpmn:sequenceFlow id="Flow_1tm0ay8" sourceRef="eventMsgDropshipmentOrderRowShipmentConfirmed" targetRef="activityDropshipmentOrderRowCreateEntry" />
+    <bpmn:sequenceFlow id="Flow_10nr9wc" sourceRef="activityDropshipmentOrderRowCreateEntry" targetRef="eventEndMsgDropshipmentOrderRowPublishTrackingInformation" />
+  </bpmn:process>
+  <bpmn:message id="Message_116ff3q" name="msgDropshipmentOrderRowShipmentConfirmed" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="DropshipmentOrderRowShipmentConfirmedProcess">
+      <bpmndi:BPMNEdge id="Flow_0aeitx8_di" bpmnElement="Flow_0aeitx8">
+        <di:waypoint x="238" y="120" />
+        <di:waypoint x="330" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1tm0ay8_di" bpmnElement="Flow_1tm0ay8">
+        <di:waypoint x="430" y="120" />
+        <di:waypoint x="510" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_10nr9wc_di" bpmnElement="Flow_10nr9wc">
+        <di:waypoint x="610" y="120" />
+        <di:waypoint x="692" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_1wtixd7_di" bpmnElement="eventStartDropshipmentOrderRowShipmentConfirmedProcess">
+        <dc:Bounds x="202" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="194" y="145" width="56" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="eventMsgDropshipmentOrderRowShipmentConfirmed_di" bpmnElement="eventMsgDropshipmentOrderRowShipmentConfirmed">
+        <dc:Bounds x="330" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="activityDropshipmentOrderRowCreateEntry_di" bpmnElement="activityDropshipmentOrderRowCreateEntry">
+        <dc:Bounds x="510" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="eventEndMsgDropshipmentOrderRowPublishTrackingInformation_di" bpmnElement="eventEndMsgDropshipmentOrderRowPublishTrackingInformation">
+        <dc:Bounds x="692" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="671" y="145" width="78" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="DataStoreReference_1bwrw95_di" bpmnElement="DataStoreReference_1bwrw95">
+        <dc:Bounds x="535" y="195" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="555" y="312" width="10" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="eventTimerDropshipmentOrderRowShipmentConfirmed_di" bpmnElement="eventTimerDropshipmentOrderRowShipmentConfirmed">
+        <dc:Bounds x="412" y="142" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="DataOutputAssociation_0atpkgb_di" bpmnElement="DataOutputAssociation_0atpkgb">
+        <di:waypoint x="560" y="160" />
+        <di:waypoint x="560" y="195" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
