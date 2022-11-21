@@ -18,6 +18,7 @@ import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.ReturnOrderHelper;
 import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
+import de.kfzteile24.salesOrderHub.services.SalesOrderRowService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
@@ -47,6 +48,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.D
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_RETURN_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_DROPSHIPMENT_ORDER_CONFIRMED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_ORDER_CANCELLED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROW_ID;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_INVOICE_STORED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_BOOKED;
@@ -61,6 +63,7 @@ public class DropshipmentOrderService {
 
     private final CamundaHelper helper;
     private final SalesOrderService salesOrderService;
+    private final SalesOrderRowService salesOrderRowService;
     private final InvoiceService invoiceService;
     private final KeyValuePropertyService keyValuePropertyService;
     private final SalesOrderReturnService salesOrderReturnService;
@@ -201,6 +204,16 @@ public class DropshipmentOrderService {
                             format("Could not find order row with SKU {0} for order {1}",
                                     sku, orderNumber));
                 });
+    }
+
+    @Transactional
+    public void handleDropShipmentOrderCancellation(String orderNumber, String processInstanceId) {
+        var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
+                .orElseThrow(() -> new SalesOrderNotFoundException("Could not find dropshipment order: " + orderNumber));
+
+        if (salesOrderRowService.cancelOrderProcessIfFullyCancelled(salesOrder)) {
+            camundaHelper.updateVariable(processInstanceId, IS_ORDER_CANCELLED.getName(), true);
+        }
     }
 
     public boolean isDropShipmentOrder(String orderNumber) {

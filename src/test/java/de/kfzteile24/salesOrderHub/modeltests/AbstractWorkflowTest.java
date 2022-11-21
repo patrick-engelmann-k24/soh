@@ -3,6 +3,7 @@ package de.kfzteile24.salesOrderHub.modeltests;
 import de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
+import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.DropshipmentOrderCancellationDelegate;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.DropshipmentOrderRowsCancellationDelegate;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.PublishDropshipmentOrderCreatedDelegate;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.PublishDropshipmentOrderRowTrackingInformationDelegate;
@@ -91,6 +92,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Paymen
         CheckIsDropshipmentOrderListener.class,
         CheckProcessingDropshipmentOrderListener.class,
         DropshipmentOrderRowsCancellationDelegate.class,
+        DropshipmentOrderCancellationDelegate.class,
         OrderCreatedDelegate.class,
         OrderCancelledDelegate.class,
         PublishDropshipmentOrderCreatedDelegate.class,
