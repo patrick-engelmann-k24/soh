@@ -25,6 +25,7 @@ public enum Messages implements BpmItem {
     ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED("msgOrderReceivedCoreSalesInvoiceCreated"),
     CORE_SALES_ORDER_CANCELLED("msgCoreSalesOrderCancelled"),
     DROPSHIPMENT_SUBSEQUENT_ORDER_CREATED("msgDropshipmentSubsequentOrderCreated"),
+    DROPSHIPMENT_ORDER_CANCELLED("msgDropshipmentOrderCancelled")
     ;
 
     @Getter

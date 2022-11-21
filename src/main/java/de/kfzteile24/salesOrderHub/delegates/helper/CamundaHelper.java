@@ -48,6 +48,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.RECURRING;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_SALES_INVOICE_CREATED_RECEIVED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_CANCELLED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_ROW_SHIPMENT_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.CUSTOMER_TYPE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.INVOICE_URL;
@@ -128,6 +129,12 @@ public class CamundaHelper {
         return runtimeService.createMessageCorrelation(CORE_SALES_INVOICE_CREATED_RECEIVED.getName())
                 .processInstanceBusinessKey(salesOrder.getId().toString())
                 .setVariables(variables)
+                .correlateWithResult().getProcessInstance();
+    }
+
+    public ProcessInstance correlateDropshipmentOrderCancelledMessage(String orderNumber) {
+        return runtimeService.createMessageCorrelation(DROPSHIPMENT_ORDER_CANCELLED.getName())
+                .processInstanceBusinessKey(orderNumber)
                 .correlateWithResult().getProcessInstance();
     }
 
