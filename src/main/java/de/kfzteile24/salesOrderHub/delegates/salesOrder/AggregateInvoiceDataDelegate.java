@@ -3,12 +3,10 @@ package de.kfzteile24.salesOrderHub.delegates.salesOrder;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.bpmn.orderProcess.InvoiceDataVariable;
 import de.kfzteile24.salesOrderHub.domain.dropshipment.DropshipmentInvoiceRow;
-import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentInvoiceRowService;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentOrderService;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
-import de.kfzteile24.soh.order.dto.OrderRows;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +16,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.INVOICE_DATA_LIST;
 
@@ -40,36 +37,18 @@ public class AggregateInvoiceDataDelegate implements JavaDelegate {
     @Override
     @Transactional
     public void execute(DelegateExecution delegateExecution) throws Exception {
-        log.info("Aggregate invoice data");
+        log.info("Daily aggregation of invoice data has started.");
 
-        //process
-        //salesOrderService.cancelOrder(orderNumber);
+        var invoiceDataMap =
+                generateInvoiceDataMap(dropshipmentInvoiceRowService.findAllOrderByOrderNumberAsc());
 
-        //1. Fetch all data from ‘dropshipment_invoice_row’ table by ordering according to order number.
-        var dropshipmentInvoiceRows = dropshipmentInvoiceRowService.findAllOrderByOrderNumberAsc();
-
-        //Put row data into a map of which order numbers are the key values
-        //
-        //Loop all data based on order number (map data)
-        var invoiceDataMap = generateInvoiceDataMap(dropshipmentInvoiceRows);
-
-        //For each order number
-        //
         Collection<InvoiceDataVariable> invoiceDataVariableList = new ArrayList<>();
         for (var orderNumber : invoiceDataMap.keySet()) {
 
-            //Create an invoice number save it to the invoice number field of the table for each of the order row entities related with that order number
             var invoiceNumber = invoiceService.createInvoiceNumber();
             dropshipmentInvoiceRowService.saveInvoiceNumber(orderNumber, invoiceNumber);
 
-            //Check if the row list is partly covered or not and invoiced flag is set
-            // source: skuList (value in map)
-            // target: original dropshipment order sku list fetched by orderNumber (key in map)
-            var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
-                    .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
-            var salesOrderSkuList = salesOrder.getLatestJson().getOrderRows().stream().map(OrderRows::getSku).collect(Collectors.toList());
-
-            boolean isPartialInvoice = invoiceDataMap.get(orderNumber).stream().allMatch(sku -> salesOrderSkuList.contains(sku));
+            boolean isPartialInvoice = !salesOrderService.isFullyMatched(invoiceDataMap.get(orderNumber), orderNumber);
 
             InvoiceDataVariable invoiceDataVariable = new InvoiceDataVariable(invoiceNumber, isPartialInvoice);
             invoiceDataVariableList.add(invoiceDataVariable);
