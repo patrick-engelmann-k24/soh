@@ -1,4 +1,4 @@
-package de.kfzteile24.salesOrderHub.modeltests.saveinvoice;
+package de.kfzteile24.salesOrderHub.modeltests.invoice;
 
 import de.kfzteile24.salesOrderHub.modeltests.AbstractWorkflowTest;
 import org.junit.jupiter.api.Test;
