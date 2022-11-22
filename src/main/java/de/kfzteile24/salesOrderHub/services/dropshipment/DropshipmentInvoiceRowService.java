@@ -47,6 +47,15 @@ public class DropshipmentInvoiceRowService {
         dropshipmentInvoiceRowRepository.deleteAll();
     }
 
+    public List<DropshipmentInvoiceRow> findAllOrderByOrderNumberAsc() {
+        return dropshipmentInvoiceRowRepository.findAllOrderByOrderNumberAsc();
+    }
 
-
+    @Transactional
+    public void saveInvoiceNumber(String orderNumber, String invoiceNumber) {
+        for (var dropshipmentInvoiceRow : dropshipmentInvoiceRowRepository.findByOrderNumber(orderNumber)) {
+            dropshipmentInvoiceRow.setInvoiceNumber(invoiceNumber);
+            save(dropshipmentInvoiceRow);
+        }
+    }
 }
