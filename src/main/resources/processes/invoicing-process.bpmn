@@ -77,7 +77,7 @@
       <bpmn:intermediateThrowEvent id="eventThrowMsgCancelDropshipmentOrder" name="Cancel dropshipment order">
         <bpmn:incoming>Flow_119p30k</bpmn:incoming>
         <bpmn:outgoing>Flow_0gvmfno</bpmn:outgoing>
-        <bpmn:messageEventDefinition id="MessageEventDefinition_1n6deoy" camunda:expression="${true}" />
+        <bpmn:messageEventDefinition id="MessageEventDefinition_1n6deoy" camunda:expression="${cancelDropshipmentOrderDelegate}" />
       </bpmn:intermediateThrowEvent>
       <bpmn:sequenceFlow id="Flow_0gvmfno" sourceRef="eventThrowMsgCancelDropshipmentOrder" targetRef="Gateway_0ffxjjr" />
       <bpmn:exclusiveGateway id="Gateway_0ffxjjr">
