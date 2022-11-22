@@ -12,6 +12,7 @@ import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.StoreDropshipment
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.listener.CheckIsDropshipmentOrderListener;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.listener.CheckProcessingDropshipmentOrderListener;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.listener.NewRelicAwareTimerListener;
+import de.kfzteile24.salesOrderHub.delegates.invoice.GenerateInvoicePdfDelegateTest;
 import de.kfzteile24.salesOrderHub.delegates.returnorder.PublishCreditNoteReceivedDelegate;
 import de.kfzteile24.salesOrderHub.delegates.returnorder.PublishReturnOrderCreatedDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.CancelOrderDelegate;
@@ -38,9 +39,11 @@ import org.camunda.bpm.extension.process_test_coverage.spring_test.ProcessEngine
 import org.camunda.bpm.extension.process_test_coverage.spring_test.ProcessEngineCoverageTestExecutionListener;
 import org.camunda.bpm.scenario.ProcessScenario;
 import org.camunda.bpm.scenario.Scenario;
+import org.camunda.bpm.scenario.act.EventBasedGatewayAction;
 import org.camunda.bpm.scenario.act.MessageIntermediateCatchEventAction;
 import org.camunda.bpm.scenario.act.ReceiveTaskAction;
 import org.camunda.bpm.scenario.act.SignalIntermediateCatchEventAction;
+import org.camunda.bpm.scenario.delegate.EventBasedGatewayDelegate;
 import org.camunda.bpm.scenario.delegate.EventSubscriptionDelegate;
 import org.camunda.bpm.scenario.impl.ProcessRunnerImpl;
 import org.camunda.bpm.scenario.run.Runner;
@@ -110,7 +113,8 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Paymen
         CheckPlatformTypeDelegate.class,
         CancelOrderDelegate.class,
         PublishDropshipmentOrderRowTrackingInformationDelegate.class,
-        SaveDropshipmentOrderRowDelegate.class
+        SaveDropshipmentOrderRowDelegate.class,
+        GenerateInvoicePdfDelegateTest.class
 
 })
 public abstract class AbstractWorkflowTest implements ApplicationContextAware {
@@ -126,6 +130,8 @@ public abstract class AbstractWorkflowTest implements ApplicationContextAware {
             EventSubscriptionDelegate::receive;
     public static final SignalIntermediateCatchEventAction RECEIVED_SIGNAL_CATCH_EVENT_ACTION =
             EventSubscriptionDelegate::receive;
+    public static final EventBasedGatewayAction RECEIVED_SIGNAL_EVENT_GATEWAY_ACTION =
+            EventBasedGatewayDelegate::getEventSubscriptions;
 
     protected static ProcessEngine processEngine;
 
