@@ -48,7 +48,7 @@ public class DropshipmentInvoiceRowService {
     }
 
     public List<DropshipmentInvoiceRow> findAllOrderByOrderNumberAsc() {
-        var list = dropshipmentInvoiceRowRepository.findAllOrderByOrderNumberAsc();
+        var list = dropshipmentInvoiceRowRepository.findAllByOrderByOrderNumberAsc();
         log.info("All aggregated invoice data are retrieved from table. Count of entries: {}", list.size());
         return list;
     }

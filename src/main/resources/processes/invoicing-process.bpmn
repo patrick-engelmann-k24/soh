@@ -9,6 +9,9 @@
         <bpmn:outgoing>Flow_1lfs5oh</bpmn:outgoing>
       </bpmn:startEvent>
       <bpmn:exclusiveGateway id="gwXORIsPartialInvoice" name="Is partial invoice?">
+        <bpmn:extensionElements>
+          <camunda:executionListener class="${isPartialInvoiceDelegate}" event="start" />
+        </bpmn:extensionElements>
         <bpmn:incoming>Flow_1lfs5oh</bpmn:incoming>
         <bpmn:outgoing>Flow_1ejtcut</bpmn:outgoing>
         <bpmn:outgoing>Flow_1fa784o</bpmn:outgoing>
@@ -16,10 +19,10 @@
       <bpmn:sequenceFlow id="Flow_1lfs5oh" sourceRef="eventStartSubInvoicing" targetRef="gwXORIsPartialInvoice" />
       <bpmn:sequenceFlow id="Flow_1c4hln3" sourceRef="activityCreateInvoiceSubsequentOrder" targetRef="eventThrowMsgStartDropshipmentSubsequentProcess" />
       <bpmn:sequenceFlow id="Flow_1ejtcut" name="yes" sourceRef="gwXORIsPartialInvoice" targetRef="activityCreateInvoiceSubsequentOrder">
-        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${yes}</bpmn:conditionExpression>
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${isPartialInvoice}</bpmn:conditionExpression>
       </bpmn:sequenceFlow>
       <bpmn:sequenceFlow id="Flow_1fa784o" name="no" sourceRef="gwXORIsPartialInvoice" targetRef="activityCreateDropshipmentSalesOrderInvoice">
-        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${false}</bpmn:conditionExpression>
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${not isPartialInvoice}</bpmn:conditionExpression>
       </bpmn:sequenceFlow>
       <bpmn:intermediateThrowEvent id="eventThrowMsgPublishFullyInvoicedData" name="Publish invoice data">
         <bpmn:incoming>Flow_1cr9zf7</bpmn:incoming>
@@ -170,7 +173,7 @@
       <bpmn:incoming>Flow_0mi7tr2</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_1qsgjdq" sourceRef="subProcessInvoicing" targetRef="activityDeleteTmpInvoiceEntries" />
-    <bpmn:serviceTask id="activityAggregateInvoiceData" name="aggregate invoice data and create invoice number for dropshipment" camunda:expression="${true}">
+    <bpmn:serviceTask id="activityAggregateInvoiceData" name="aggregate invoice data and create invoice number for dropshipment" camunda:expression="${aggregateInvoiceDataDelegate}">
       <bpmn:incoming>Flow_1nbtjia</bpmn:incoming>
       <bpmn:outgoing>Flow_1dr9c2m</bpmn:outgoing>
       <bpmn:dataOutputAssociation id="DataOutputAssociation_1s9tvet">
@@ -328,7 +331,7 @@
         <di:waypoint x="560" y="580" />
         <di:waypoint x="630" y="580" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="567" y="473" width="18" height="14" />
+          <dc:Bounds x="568" y="473" width="17" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1c4hln3_di" bpmnElement="Flow_1c4hln3">

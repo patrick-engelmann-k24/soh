@@ -1,11 +1,9 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder;
 
-import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.bpmn.orderProcess.InvoiceDataVariable;
 import de.kfzteile24.salesOrderHub.domain.dropshipment.DropshipmentInvoiceRow;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentInvoiceRowService;
-import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentOrderService;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -24,13 +22,10 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 @RequiredArgsConstructor
 public class AggregateInvoiceDataDelegate implements JavaDelegate {
 
-    private final CamundaHelper camundaHelper;
     @NonNull
     private final SalesOrderService salesOrderService;
     @NonNull
     private final InvoiceService invoiceService;
-    @NonNull
-    private final DropshipmentOrderService dropshipmentOrderService;
     @NonNull
     private final DropshipmentInvoiceRowService dropshipmentInvoiceRowService;
 
@@ -54,7 +49,7 @@ public class AggregateInvoiceDataDelegate implements JavaDelegate {
             invoiceDataVariableList.add(invoiceDataVariable);
         }
 
-        camundaHelper.setVariable(delegateExecution.getProcessInstanceId(), INVOICE_DATA_LIST.getName(), invoiceDataVariableList);
+        delegateExecution.setVariable(INVOICE_DATA_LIST.getName(), invoiceDataVariableList);
 
     }
 

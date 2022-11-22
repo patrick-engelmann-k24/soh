@@ -36,7 +36,8 @@ public enum Variables implements BpmItem {
     IS_DUPLICATE_DROPSHIPMENT_INVOICE("isDuplicateDropshipmentInvoice"),
     INVOICE_DATA_LIST("invoiceDataList"),
     INVOICE_DATA("invoiceData"),
-    ORDER_ROW_ID("orderRowId")
+    ORDER_ROW_ID("orderRowId"),
+    IS_PARTIAL_INVOICE("isPartialInvoice")
     ;
 
     private final String name;
