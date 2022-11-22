@@ -101,10 +101,10 @@
         <bpmn:outgoing>Flow_0ttl7c0</bpmn:outgoing>
       </bpmn:callActivity>
       <bpmn:sequenceFlow id="Flow_1cr9zf7" sourceRef="gwParallelForkFullyInvoiced" targetRef="eventThrowMsgPublishFullyInvoicedData" />
-      <bpmn:intermediateThrowEvent id="eventEndMsgDropshipmentOrderFullyInvoiced" name="Dropshipment fully order invoiced">
+      <bpmn:intermediateThrowEvent id="eventEndMsgDropshipmentOrderFullyInvoiced" name="Dropshipment order fully invoiced">
         <bpmn:incoming>Flow_0s5vdpw</bpmn:incoming>
         <bpmn:outgoing>Flow_0asd4k3</bpmn:outgoing>
-        <bpmn:messageEventDefinition id="MessageEventDefinition_0lm0abo" camunda:expression="${true}" />
+        <bpmn:messageEventDefinition id="MessageEventDefinition_0lm0abo" camunda:expression="${dropshipmentOrderFullyInvoicedDelegate}" />
       </bpmn:intermediateThrowEvent>
       <bpmn:sequenceFlow id="Flow_0s5vdpw" sourceRef="gwParallelForkFullyInvoiced" targetRef="eventEndMsgDropshipmentOrderFullyInvoiced" />
       <bpmn:intermediateThrowEvent id="eventThrowMsgGenerateFullyInvoicedPdf" name="Generate invoice PDF">
