@@ -164,7 +164,7 @@
     <bpmn:startEvent id="eventStartTimerInvoicingProcess" name="Start daily invoicing">
       <bpmn:outgoing>Flow_1nbtjia</bpmn:outgoing>
       <bpmn:timerEventDefinition id="TimerEventDefinition_1hga37f">
-        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">R/P5M</bpmn:timeCycle>
+        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">R/PT5M</bpmn:timeCycle>
       </bpmn:timerEventDefinition>
     </bpmn:startEvent>
     <bpmn:sequenceFlow id="Flow_1dr9c2m" sourceRef="activityAggregateInvoiceData" targetRef="subProcessInvoicing" />
