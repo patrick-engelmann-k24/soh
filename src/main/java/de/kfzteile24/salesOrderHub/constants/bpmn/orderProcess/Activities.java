@@ -34,8 +34,7 @@ public enum Activities implements BpmItem {
     INVOICING_CREATE_DROPSHIPMENT_SALES_ORDER_INVOICE("activityCreateDropshipmentSalesOrderInvoice"),
     EVENT_THROW_MSG_INVOICING_PUBLISH_FULLY_INVOICED_DATA("eventThrowMsgPublishFullyInvoicedData"),
     EVENT_THROW_MSG_INVOICING_DROPSHIPMENT_ORDER_FULLY_INVOICED("eventThrowMsgDropshipmentOrderFullyInvoiced"),
-    EVENT_THROW_MSG_INVOICING_GENERATE_FULLY_INVOICED_PDF("eventThrowMsgGenerateFullyInvoicedPdf"),
-    EVENT_MSG_DROPSHIPMENT_ORDER_FULLY_INVOICED("eventMsgDropshipmentOrderFullyInvoiced")
+    EVENT_THROW_MSG_INVOICING_GENERATE_FULLY_INVOICED_PDF("eventThrowMsgGenerateFullyInvoicedPdf")
     ;
 
     @Getter
