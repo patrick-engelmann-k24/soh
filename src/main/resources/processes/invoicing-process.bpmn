@@ -4,7 +4,7 @@
     <bpmn:subProcess id="subProcessInvoicing" name="foreach invoice">
       <bpmn:incoming>Flow_1dr9c2m</bpmn:incoming>
       <bpmn:outgoing>Flow_1qsgjdq</bpmn:outgoing>
-      <bpmn:multiInstanceLoopCharacteristics camunda:collection="invoiceDataList" camunda:elementVariable="invoiceData" />
+      <bpmn:multiInstanceLoopCharacteristics camunda:collection="invoiceNumberList" camunda:elementVariable="invoiceNumber" />
       <bpmn:startEvent id="eventStartSubInvoicing">
         <bpmn:outgoing>Flow_1lfs5oh</bpmn:outgoing>
       </bpmn:startEvent>
