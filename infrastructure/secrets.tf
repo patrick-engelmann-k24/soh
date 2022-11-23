@@ -40,3 +40,55 @@ resource "aws_ssm_parameter" "pricing_service_api_key" {
     GitRepoName = local.service
   }
 }
+
+resource "aws_ssm_parameter" "soh_source_email" {
+  name      = "/${local.service}/soh_source_email"
+  type      = "SecureString"
+  overwrite = true
+  value     = data.sops_file.secrets.data["soh_source_email"]
+
+  tags = {
+    Name        = "${local.service} soh source email"
+    Group       = local.service
+    GitRepoName = local.service
+  }
+}
+
+resource "aws_ssm_parameter" "finance_destination_email" {
+  name      = "/${local.service}/finance_destination_email"
+  type      = "SecureString"
+  overwrite = true
+  value     = data.sops_file.secrets.data["finance_destination_email"]
+
+  tags = {
+    Name        = "${local.service} finance destination email"
+    Group       = local.service
+    GitRepoName = local.service
+  }
+}
+
+resource "aws_ssm_parameter" "refund_cc_email" {
+  name      = "/${local.service}/refund_cc_email"
+  type      = "SecureString"
+  overwrite = true
+  value     = data.sops_file.secrets.data["refund_cc_email"]
+
+  tags = {
+    Name        = "${local.service} refund cc email"
+    Group       = local.service
+    GitRepoName = local.service
+  }
+}
+
+resource "aws_ssm_parameter" "soh_source_password" {
+  name      = "/${local.service}/soh_source_password"
+  type      = "SecureString"
+  overwrite = true
+  value     = data.sops_file.secrets.data["soh_source_password"]
+
+  tags = {
+    Name        = "${local.service} soh source passwrod"
+    Group       = local.service
+    GitRepoName = local.service
+  }
+}

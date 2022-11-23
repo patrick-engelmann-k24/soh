@@ -98,7 +98,7 @@ camunda:
     history-level: FULL
     history-level-default: FULL
 
-
+infrastructureEnvironment: stage
 
 kfzteile:
   pricing-service:
@@ -124,6 +124,11 @@ kfzteile:
     - key: preventDropshipmentOrderReturnConfirmed
       value: true
       overwrite-on-startup: true
+  email:
+    source: ${soh_source_email:fake.email@kfzteile24.de}
+    destination: ${finance_destination_email:${kfzteile.email.source}}
+    cc: ${refund_cc_email:${kfzteile.email.source}}
+    password: password
 
 ignoreCoreSalesInvoice: false
 ignoreCoreCreditNote: false
