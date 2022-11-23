@@ -17,4 +17,5 @@ public interface DropshipmentInvoiceRowRepository extends JpaRepository<Dropship
 
     List<DropshipmentInvoiceRow> findAllByOrderByOrderNumberAsc();
 
+    List<DropshipmentInvoiceRow> findByInvoiceNumber(String invoiceNumber);
 }
