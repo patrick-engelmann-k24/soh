@@ -48,6 +48,8 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.RECURRING;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_SALES_INVOICE_CREATED_RECEIVED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_CANCELLED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_FULLY_INVOICED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_ROW_SHIPMENT_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.CUSTOMER_TYPE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.INVOICE_URL;
@@ -131,6 +133,12 @@ public class CamundaHelper {
                 .correlateWithResult().getProcessInstance();
     }
 
+    public ProcessInstance correlateDropshipmentOrderCancelledMessage(String orderNumber) {
+        return runtimeService.createMessageCorrelation(DROPSHIPMENT_ORDER_CANCELLED.getName())
+                .processInstanceBusinessKey(orderNumber)
+                .correlateWithResult().getProcessInstance();
+    }
+
     public ProcessInstance correlateDropshipmentOrderRowShipmentConfirmedMessage(SalesOrder salesOrder, String sku, List<String> trackingLinks) {
         Map<String, Object> variables = Map.of(
                 ORDER_NUMBER.getName(), salesOrder.getOrderNumber(),
@@ -140,6 +148,12 @@ public class CamundaHelper {
         return runtimeService.createMessageCorrelation(DROPSHIPMENT_ORDER_ROW_SHIPMENT_CONFIRMED.getName())
                 .processInstanceBusinessKey(salesOrder.getOrderNumber() + "#" + sku)
                 .setVariables(variables)
+                .correlateWithResult().getProcessInstance();
+    }
+
+    public ProcessInstance correlateDropshipmentOrderFullyInvoicedMessage(String orderNumber) {
+        return runtimeService.createMessageCorrelation(DROPSHIPMENT_ORDER_FULLY_INVOICED.getName())
+                .processInstanceBusinessKey(orderNumber)
                 .correlateWithResult().getProcessInstance();
     }
 
