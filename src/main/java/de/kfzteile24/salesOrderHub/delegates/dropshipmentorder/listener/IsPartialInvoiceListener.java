@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 @RequiredArgsConstructor
-public class IsPartialInvoiceDelegate implements ExecutionListener {
+public class IsPartialInvoiceListener implements ExecutionListener {
 
     @Override
     public void notify(DelegateExecution delegateExecution) throws Exception {

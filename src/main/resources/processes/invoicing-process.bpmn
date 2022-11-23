@@ -10,7 +10,7 @@
       </bpmn:startEvent>
       <bpmn:exclusiveGateway id="gwXORIsPartialInvoice" name="Is partial invoice?">
         <bpmn:extensionElements>
-          <camunda:executionListener class="${isPartialInvoiceDelegate}" event="start" />
+          <camunda:executionListener delegateExpression="${isPartialInvoiceListener}" event="start" />
         </bpmn:extensionElements>
         <bpmn:incoming>Flow_1lfs5oh</bpmn:incoming>
         <bpmn:outgoing>Flow_1ejtcut</bpmn:outgoing>
