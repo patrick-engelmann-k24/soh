@@ -29,7 +29,7 @@
         <bpmn:outgoing>Flow_1a17xuf</bpmn:outgoing>
         <bpmn:messageEventDefinition id="MessageEventDefinition_1g8rf6h" camunda:expression="${true}" />
       </bpmn:intermediateThrowEvent>
-      <bpmn:serviceTask id="activityCreateInvoiceSubsequentOrder" name="create subsequent order for invoice and update invoice data" camunda:expression="${true}">
+      <bpmn:serviceTask id="activityCreateInvoiceSubsequentOrder" name="create subsequent order for invoice and update invoice data" camunda:expression="${false}">
         <bpmn:incoming>Flow_1ejtcut</bpmn:incoming>
         <bpmn:outgoing>Flow_1c4hln3</bpmn:outgoing>
       </bpmn:serviceTask>
@@ -143,7 +143,7 @@
         <bpmn:outgoing>Flow_1d7auhq</bpmn:outgoing>
       </bpmn:serviceTask>
       <bpmn:sequenceFlow id="Flow_1s78nkb" sourceRef="activityCreateDropshipmentSalesOrderInvoice" targetRef="gwParallelForkFullyInvoiced" />
-      <bpmn:serviceTask id="activityCreateDropshipmentSalesOrderInvoice" name="Create invoice data for sales order and store it" camunda:expression="${true}">
+      <bpmn:serviceTask id="activityCreateDropshipmentSalesOrderInvoice" name="Create invoice data for sales order and store it" camunda:expression="${false}">
         <bpmn:incoming>Flow_1fa784o</bpmn:incoming>
         <bpmn:outgoing>Flow_1s78nkb</bpmn:outgoing>
       </bpmn:serviceTask>
@@ -164,7 +164,7 @@
     <bpmn:startEvent id="eventStartTimerInvoicingProcess" name="Start daily invoicing">
       <bpmn:outgoing>Flow_1nbtjia</bpmn:outgoing>
       <bpmn:timerEventDefinition id="TimerEventDefinition_1hga37f">
-        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">R/2022-11-30T00:00/P1D</bpmn:timeCycle>
+        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">R/2022-11-30T00:00/P59S         </bpmn:timeCycle>
       </bpmn:timerEventDefinition>
     </bpmn:startEvent>
     <bpmn:sequenceFlow id="Flow_1dr9c2m" sourceRef="activityAggregateInvoiceData" targetRef="subProcessInvoicing" />
