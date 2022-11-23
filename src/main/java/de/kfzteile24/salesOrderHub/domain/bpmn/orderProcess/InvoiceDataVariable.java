@@ -9,5 +9,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class InvoiceDataVariable {
     private String invoiceNumber;
+    private String orderNumber;
     private boolean isPartialInvoice;
 }

@@ -1,5 +1,6 @@
 package de.kfzteile24.salesOrderHub.delegates.salesOrder;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.domain.bpmn.orderProcess.InvoiceDataVariable;
 import de.kfzteile24.salesOrderHub.domain.dropshipment.DropshipmentInvoiceRow;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
@@ -28,7 +29,8 @@ public class AggregateInvoiceDataDelegate implements JavaDelegate {
     private final InvoiceService invoiceService;
     @NonNull
     private final DropshipmentInvoiceRowService dropshipmentInvoiceRowService;
-
+    @NonNull
+    private final ObjectMapper objectMapper;
     @Override
     @Transactional
     public void execute(DelegateExecution delegateExecution) throws Exception {
@@ -37,7 +39,7 @@ public class AggregateInvoiceDataDelegate implements JavaDelegate {
         var invoiceDataMap =
                 generateInvoiceDataMap(dropshipmentInvoiceRowService.findAllOrderByOrderNumberAsc());
 
-        Collection<InvoiceDataVariable> invoiceDataVariableList = new ArrayList<>();
+        List<String> invoiceDataVariableList = new ArrayList<>();
         for (var orderNumber : invoiceDataMap.keySet()) {
 
             var invoiceNumber = invoiceService.createInvoiceNumber();
@@ -45,8 +47,8 @@ public class AggregateInvoiceDataDelegate implements JavaDelegate {
 
             boolean isPartialInvoice = !salesOrderService.isFullyMatched(invoiceDataMap.get(orderNumber), orderNumber);
 
-            InvoiceDataVariable invoiceDataVariable = new InvoiceDataVariable(invoiceNumber, isPartialInvoice);
-            invoiceDataVariableList.add(invoiceDataVariable);
+            InvoiceDataVariable invoiceDataVariable = new InvoiceDataVariable(invoiceNumber, orderNumber, isPartialInvoice);
+            invoiceDataVariableList.add(objectMapper.writeValueAsString(invoiceDataVariable));
         }
 
         delegateExecution.setVariable(INVOICE_DATA_LIST.getName(), invoiceDataVariableList);
