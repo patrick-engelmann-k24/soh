@@ -214,7 +214,7 @@ public class DropshipmentOrderService {
                 .orElseThrow(() -> new SalesOrderNotFoundException("Could not find dropshipment order: " + orderNumber));
 
         if (salesOrderRowService.cancelOrderProcessIfFullyCancelled(salesOrder)) {
-            camundaHelper.updateVariable(processInstanceId, IS_ORDER_CANCELLED.getName(), true);
+            camundaHelper.setVariable(processInstanceId, IS_ORDER_CANCELLED.getName(), true);
         }
     }
 

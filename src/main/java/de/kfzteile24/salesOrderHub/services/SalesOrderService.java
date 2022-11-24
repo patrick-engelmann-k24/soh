@@ -260,6 +260,12 @@ public class SalesOrderService {
                 && isShippingCostGrossMatch(originalSalesOrder, shippingCostDocumentLine);
     }
 
+    public boolean isFullyMatched(List<String> skuList, String orderNumber) {
+        var salesOrder = getOrderByOrderNumber(orderNumber)
+                .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
+        return salesOrder.getLatestJson().getOrderRows().stream().allMatch(row -> skuList.contains(row.getSku()));
+    }
+
     private boolean isShippingCostNetMatch(SalesOrder originalSalesOrder, CoreSalesFinancialDocumentLine shippingCostDocumentLine) {
         var shippingCostNet = shippingCostDocumentLine != null
                 ? shippingCostDocumentLine.getUnitNetAmount() : BigDecimal.ZERO;
