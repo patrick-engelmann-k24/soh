@@ -2,10 +2,14 @@ package de.kfzteile24.salesOrderHub.delegates.invoicing;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
+import de.kfzteile24.salesOrderHub.helper.EventMapper;
+import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentInvoiceRowService;
 import de.kfzteile24.soh.order.dto.Order;
+import de.kfzteile24.soh.order.dto.OrderHeader;
 import lombok.SneakyThrows;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.junit.jupiter.api.Test;
@@ -21,7 +25,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class GenerateInvoicePdfDelegateTest {
+public class DropshipmentOrderPublishInvoiceDataDelegateTest {
 
     @Mock
     private DelegateExecution delegateExecution;
@@ -35,19 +39,25 @@ public class GenerateInvoicePdfDelegateTest {
     @Mock
     private DropshipmentInvoiceRowService dropshipmentInvoiceRowService;
 
+    @Mock
+    private MetricsHelper metricsHelper;
+
     @InjectMocks
-    private GenerateInvoicePdfDelegate generateInvoicePdfDelegate;
+    private DropshipmentOrderPublishInvoiceDataDelegate dropshipmentOrderPublishInvoiceDataDelegate;
 
     @Test
     @SneakyThrows(Exception.class)
-    void testGenerateInvoicePdfDelegate() {
+    void testPublishInvoiceDataDelegate() {
         final var expectedInvoiceNumber = "123";
         final var expectedOrderNumber = "456";
-        final var expectedOrder = SalesOrder.builder().orderNumber(expectedOrderNumber).latestJson(Order.builder().build()).build();
+        final var expectedOrder = SalesOrder.builder().orderNumber(expectedOrderNumber).invoiceEvent(
+                CoreSalesInvoiceCreatedMessage.builder().build())
+                .latestJson(Order.builder().orderHeader(OrderHeader.builder().build()).build())
+                .build();
         when(delegateExecution.getVariable(Variables.INVOICE_NUMBER.getName())).thenReturn(expectedInvoiceNumber);
         when(dropshipmentInvoiceRowService.getOrderNumberByInvoiceNumber(eq(expectedInvoiceNumber))).thenReturn(expectedOrderNumber);
         when(salesOrderService.getOrderByOrderNumber(expectedOrder.getOrderNumber())).thenReturn(Optional.of(expectedOrder));
-        generateInvoicePdfDelegate.execute(delegateExecution);
-        verify(snsPublishService).publishInvoicePdfGenerationTriggeredEvent(expectedOrder.getLatestJson());
+        dropshipmentOrderPublishInvoiceDataDelegate.execute(delegateExecution);
+        verify(snsPublishService).publishCoreInvoiceReceivedEvent(EventMapper.INSTANCE.toCoreSalesInvoiceCreatedReceivedEvent(expectedOrder.getInvoiceEvent()));
     }
 }

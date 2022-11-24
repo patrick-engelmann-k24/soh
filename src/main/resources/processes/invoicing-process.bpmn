@@ -27,7 +27,7 @@
       <bpmn:intermediateThrowEvent id="eventThrowMsgPublishFullyInvoicedData" name="Publish invoice data">
         <bpmn:incoming>Flow_1cr9zf7</bpmn:incoming>
         <bpmn:outgoing>Flow_1a17xuf</bpmn:outgoing>
-        <bpmn:messageEventDefinition id="MessageEventDefinition_1g8rf6h" camunda:delegateExpression="${publishInvoiceDataDelegate}" />
+        <bpmn:messageEventDefinition id="MessageEventDefinition_1g8rf6h" camunda:delegateExpression="${dropshipmentOrderPublishInvoiceDataDelegate}" />
       </bpmn:intermediateThrowEvent>
       <bpmn:serviceTask id="activityCreateInvoiceSubsequentOrder" name="create subsequent order for invoice and update invoice data" camunda:delegateExpression="${createDropshipmentSubsequentOrderDelegate}">
         <bpmn:incoming>Flow_1ejtcut</bpmn:incoming>
@@ -111,7 +111,7 @@
       <bpmn:intermediateThrowEvent id="eventThrowMsgGenerateFullyInvoicedPdf" name="Generate invoice PDF">
         <bpmn:incoming>Flow_1qziygm</bpmn:incoming>
         <bpmn:outgoing>Flow_0zvor0f</bpmn:outgoing>
-        <bpmn:messageEventDefinition id="MessageEventDefinition_1ha7gjo" camunda:delegateExpression="${generateInvoicePdfDelegate}" />
+        <bpmn:messageEventDefinition id="MessageEventDefinition_1ha7gjo" camunda:delegateExpression="${dropshipmentOrderGenerateInvoicePdfDelegate}" />
       </bpmn:intermediateThrowEvent>
       <bpmn:sequenceFlow id="Flow_1qziygm" sourceRef="gwParallelForkFullyInvoiced" targetRef="eventThrowMsgGenerateFullyInvoicedPdf" />
       <bpmn:parallelGateway id="gwParallelForkFullyInvoiced">
