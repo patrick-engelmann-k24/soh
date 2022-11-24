@@ -28,6 +28,6 @@ public class RecreateOrderInvoiceHandler extends AbstractActionHandler {
 
     @Override
     public boolean supports(ActionType orderType) {
-        return orderType == ActionType.RECREATE_ORDER_INVOICE;
+        return false;
     }
 }

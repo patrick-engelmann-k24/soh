@@ -95,6 +95,17 @@ data "aws_iam_policy_document" "sns_sqs_access_policy" {
     ]
 
   }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "ses:*"
+    ]
+
+    resources = ["*"]
+  }
+
 }
 
 resource "aws_iam_role_policy" "task_role_policy" {

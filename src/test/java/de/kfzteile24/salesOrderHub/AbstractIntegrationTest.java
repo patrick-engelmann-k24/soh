@@ -11,6 +11,7 @@ import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentOrderService;
+import de.kfzteile24.salesOrderHub.services.email.AmazonEmailService;
 import de.kfzteile24.salesOrderHub.services.general.GeneralSqsReceiveService;
 import de.kfzteile24.salesOrderHub.services.property.KeyValuePropertyService;
 import de.kfzteile24.salesOrderHub.services.salesorder.SalesOrderSqsReceiveService;
@@ -90,6 +91,8 @@ public abstract class AbstractIntegrationTest implements ApplicationContextAware
     protected OrderUtil orderUtil;
     @SpyBean
     protected GeneralSqsReceiveService generalSqsReceiveService;
+    @SpyBean
+    protected AmazonEmailService amazonEmailService;
 
     /**
      * The application context gets created only once for all the model tests
@@ -117,5 +120,6 @@ public abstract class AbstractIntegrationTest implements ApplicationContextAware
         reset();
         init(processEngine);
         doNothing().when(notificationMessagingTemplate).sendNotification(any(), any(), any());
+        doNothing().when(amazonEmailService).sendOrderCancelledEmail(any());
     }
 }

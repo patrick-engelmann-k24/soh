@@ -85,7 +85,7 @@ module "application_module" {
     prevent_set_processing                     = var.prevent_set_processing
   }
 
-  ssm_secrets_count = 10
+  ssm_secrets_count = 14
 
   ssm_secrets = {
 
@@ -103,6 +103,11 @@ module "application_module" {
     pdh_client_secret          = aws_ssm_parameter.pdh_client_secret.arn
 
     pricing_service_api_key    = aws_ssm_parameter.pricing_service_api_key.arn
+
+    soh_source_email           = aws_ssm_parameter.soh_source_email.arn
+    finance_destination_email  = aws_ssm_parameter.finance_destination_email.arn
+    refund_cc_email            = aws_ssm_parameter.refund_cc_email.arn
+    soh_source_password        = aws_ssm_parameter.soh_source_password.arn
   }
 
   github_token = var.github_token
