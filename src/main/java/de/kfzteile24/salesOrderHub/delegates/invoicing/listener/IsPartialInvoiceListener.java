@@ -30,6 +30,5 @@ public class IsPartialInvoiceListener implements ExecutionListener {
                 !salesOrderService.isFullyMatched(invoiceData.getOrderRows(), invoiceData.getOrderNumber());
 
         delegateExecution.setVariable(Variables.IS_PARTIAL_INVOICE.getName(), isPartialInvoice);
-        delegateExecution.setVariable(Variables.ORDER_ROWS.getName(), new ArrayList<>());
     }
 }

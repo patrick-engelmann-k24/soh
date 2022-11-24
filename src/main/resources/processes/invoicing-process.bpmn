@@ -163,7 +163,7 @@
     <bpmn:dataStoreReference id="DataStoreReference_0d39n4p" />
     <bpmn:startEvent id="eventStartTimerInvoicingProcess" name="Start daily invoicing">
       <bpmn:extensionElements>
-        <camunda:executionListener delegateExpression="${aggregateInvoiceDataListener}" event="start" />
+        <camunda:executionListener delegateExpression="${initializeProcessListener}" event="start" />
       </bpmn:extensionElements>
       <bpmn:outgoing>Flow_1nbtjia</bpmn:outgoing>
       <bpmn:timerEventDefinition id="TimerEventDefinition_1hga37f">
@@ -176,7 +176,7 @@
       <bpmn:incoming>Flow_0mi7tr2</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_1qsgjdq" sourceRef="subProcessInvoicing" targetRef="activityDeleteTmpInvoiceEntries" />
-    <bpmn:serviceTask id="activityAggregateInvoiceData" name="aggregate invoice data and create invoice number for dropshipment" camunda:expression="${aggregateInvoiceDataDelegate}">
+    <bpmn:serviceTask id="activityAggregateInvoiceData" name="aggregate invoice data and create invoice number for dropshipment" camunda:delegateExpression="${aggregateInvoiceDataDelegate}">
       <bpmn:incoming>Flow_1nbtjia</bpmn:incoming>
       <bpmn:outgoing>Flow_1dr9c2m</bpmn:outgoing>
       <bpmn:dataOutputAssociation id="DataOutputAssociation_1s9tvet">
