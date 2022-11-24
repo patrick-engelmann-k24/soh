@@ -27,7 +27,7 @@
       <bpmn:intermediateThrowEvent id="eventThrowMsgPublishFullyInvoicedData" name="Publish invoice data">
         <bpmn:incoming>Flow_1cr9zf7</bpmn:incoming>
         <bpmn:outgoing>Flow_1a17xuf</bpmn:outgoing>
-        <bpmn:messageEventDefinition id="MessageEventDefinition_1g8rf6h" camunda:expression="${true}" />
+        <bpmn:messageEventDefinition id="MessageEventDefinition_1g8rf6h" camunda:delegateExpression="${publishInvoiceDataDelegate}" />
       </bpmn:intermediateThrowEvent>
       <bpmn:serviceTask id="activityCreateInvoiceSubsequentOrder" name="create subsequent order for invoice and update invoice data" camunda:delegateExpression="${createDropshipmentSubsequentOrderDelegate}">
         <bpmn:incoming>Flow_1ejtcut</bpmn:incoming>
@@ -102,16 +102,16 @@
         <bpmn:outgoing>Flow_0ttl7c0</bpmn:outgoing>
       </bpmn:callActivity>
       <bpmn:sequenceFlow id="Flow_1cr9zf7" sourceRef="gwParallelForkFullyInvoiced" targetRef="eventThrowMsgPublishFullyInvoicedData" />
-      <bpmn:intermediateThrowEvent id="eventEndMsgDropshipmentOrderFullyInvoiced" name="Dropshipment order fully invoiced">
+      <bpmn:intermediateThrowEvent id="eventThrowMsgDropshipmentOrderFullyInvoiced" name="Dropshipment order fully invoiced">
         <bpmn:incoming>Flow_0s5vdpw</bpmn:incoming>
         <bpmn:outgoing>Flow_0asd4k3</bpmn:outgoing>
         <bpmn:messageEventDefinition id="MessageEventDefinition_0lm0abo" camunda:delegateExpression="${dropshipmentOrderFullyInvoicedDelegate}" />
       </bpmn:intermediateThrowEvent>
-      <bpmn:sequenceFlow id="Flow_0s5vdpw" sourceRef="gwParallelForkFullyInvoiced" targetRef="eventEndMsgDropshipmentOrderFullyInvoiced" />
+      <bpmn:sequenceFlow id="Flow_0s5vdpw" sourceRef="gwParallelForkFullyInvoiced" targetRef="eventThrowMsgDropshipmentOrderFullyInvoiced" />
       <bpmn:intermediateThrowEvent id="eventThrowMsgGenerateFullyInvoicedPdf" name="Generate invoice PDF">
         <bpmn:incoming>Flow_1qziygm</bpmn:incoming>
         <bpmn:outgoing>Flow_0zvor0f</bpmn:outgoing>
-        <bpmn:messageEventDefinition id="MessageEventDefinition_1ha7gjo" camunda:expression="${true}" />
+        <bpmn:messageEventDefinition id="MessageEventDefinition_1ha7gjo" camunda:delegateExpression="${generateInvoicePdfDelegate}" />
       </bpmn:intermediateThrowEvent>
       <bpmn:sequenceFlow id="Flow_1qziygm" sourceRef="gwParallelForkFullyInvoiced" targetRef="eventThrowMsgGenerateFullyInvoicedPdf" />
       <bpmn:parallelGateway id="gwParallelForkFullyInvoiced">
@@ -121,7 +121,7 @@
         <bpmn:outgoing>Flow_1qziygm</bpmn:outgoing>
       </bpmn:parallelGateway>
       <bpmn:sequenceFlow id="Flow_1a17xuf" sourceRef="eventThrowMsgPublishFullyInvoicedData" targetRef="gwParallelJoinFullyInvoiced" />
-      <bpmn:sequenceFlow id="Flow_0asd4k3" sourceRef="eventEndMsgDropshipmentOrderFullyInvoiced" targetRef="gwParallelJoinFullyInvoiced" />
+      <bpmn:sequenceFlow id="Flow_0asd4k3" sourceRef="eventThrowMsgDropshipmentOrderFullyInvoiced" targetRef="gwParallelJoinFullyInvoiced" />
       <bpmn:sequenceFlow id="Flow_0zvor0f" sourceRef="eventThrowMsgGenerateFullyInvoicedPdf" targetRef="gwParallelJoinFullyInvoiced" />
       <bpmn:parallelGateway id="gwParallelJoinFullyInvoiced">
         <bpmn:incoming>Flow_0zvor0f</bpmn:incoming>
@@ -154,7 +154,7 @@
       <bpmn:textAnnotation id="TextAnnotation_0dk3h2q">
         <bpmn:text>Complete main process</bpmn:text>
       </bpmn:textAnnotation>
-      <bpmn:association id="Association_1802kga" sourceRef="eventEndMsgDropshipmentOrderFullyInvoiced" targetRef="TextAnnotation_0dk3h2q" />
+      <bpmn:association id="Association_1802kga" sourceRef="eventThrowMsgDropshipmentOrderFullyInvoiced" targetRef="TextAnnotation_0dk3h2q" />
       <bpmn:textAnnotation id="TextAnnotation_12hbwxi">
         <bpmn:text>Cancel main process</bpmn:text>
       </bpmn:textAnnotation>
@@ -405,7 +405,7 @@
       <bpmndi:BPMNShape id="Activity_0pcp54o_di" bpmnElement="callActivityDropshipmentOrderRowsCancellation">
         <dc:Bounds x="1080" y="540" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_10l7kx6_di" bpmnElement="eventEndMsgDropshipmentOrderFullyInvoiced">
+      <bpmndi:BPMNShape id="Event_10l7kx6_di" bpmnElement="eventThrowMsgDropshipmentOrderFullyInvoiced">
         <dc:Bounds x="1482" y="222" width="36" height="36" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="1466" y="263" width="69" height="40" />
