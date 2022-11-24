@@ -162,9 +162,6 @@
     </bpmn:subProcess>
     <bpmn:dataStoreReference id="DataStoreReference_0d39n4p" />
     <bpmn:startEvent id="eventStartTimerInvoicingProcess" name="Start daily invoicing">
-      <bpmn:extensionElements>
-        <camunda:executionListener delegateExpression="${initializeProcessListener}" event="start" />
-      </bpmn:extensionElements>
       <bpmn:outgoing>Flow_1nbtjia</bpmn:outgoing>
       <bpmn:timerEventDefinition id="TimerEventDefinition_1hga37f">
         <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">R/2022-11-30T00:00/P1D</bpmn:timeCycle>

@@ -10,8 +10,6 @@ import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.ExecutionListener;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-
 @Component
 @Slf4j
 @RequiredArgsConstructor
