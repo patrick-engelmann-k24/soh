@@ -73,12 +73,12 @@ public class DropshipmentInvoiceRowService {
         }
     }
 
+    @Transactional(readOnly = true)
     public InvoiceData getInvoiceData(String invoiceNumber) {
 
-        List<DropshipmentInvoiceRow> invoiceData =
-                getByInvoiceNumber(invoiceNumber);
+        List<DropshipmentInvoiceRow> invoiceData = getByInvoiceNumber(invoiceNumber);
 
-        if (invoiceData == null || invoiceData.size() == 0) {
+        if (invoiceData == null || invoiceData.isEmpty()) {
             throw new InvoiceNotFoundException(invoiceNumber);
         }
 
@@ -102,12 +102,8 @@ public class DropshipmentInvoiceRowService {
         dropshipmentInvoiceRows.forEach(item -> {
             var key = item.getOrderNumber();
             var value = item.getSku();
-            var valueList = dropshipmentInvoiceRowMap.get(key);
-            if (valueList == null) {
-                valueList = new ArrayList<>(List.of(value));
-            } else {
-                valueList.add(value);
-            }
+            var valueList = dropshipmentInvoiceRowMap.computeIfAbsent(key, k -> new ArrayList<>());
+            valueList.add(value);
             dropshipmentInvoiceRowMap.put(key, valueList);
         });
         return dropshipmentInvoiceRowMap;
