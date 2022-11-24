@@ -1,8 +1,6 @@
 package de.kfzteile24.salesOrderHub.delegates.invoicing;
 
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
-import de.kfzteile24.salesOrderHub.delegates.salesOrder.DropshipmentOrderFullyInvoicedDelegate;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentInvoiceRowService;
 import lombok.SneakyThrows;
 import org.camunda.bpm.engine.delegate.DelegateExecution;

@@ -13,7 +13,7 @@ import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.listener.CheckIsD
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.listener.CheckProcessingDropshipmentOrderListener;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.listener.NewRelicAwareTimerListener;
 import de.kfzteile24.salesOrderHub.delegates.invoicing.AggregateInvoiceDataDelegate;
-import de.kfzteile24.salesOrderHub.delegates.invoicing.GenerateInvoicePdfDelegate;
+import de.kfzteile24.salesOrderHub.delegates.invoicing.DropshipmentOrderGenerateInvoicePdfDelegate;
 import de.kfzteile24.salesOrderHub.delegates.invoicing.listener.IsPartialInvoiceListener;
 import de.kfzteile24.salesOrderHub.delegates.returnorder.PublishCreditNoteReceivedDelegate;
 import de.kfzteile24.salesOrderHub.delegates.returnorder.PublishReturnOrderCreatedDelegate;
@@ -24,7 +24,7 @@ import de.kfzteile24.salesOrderHub.delegates.salesOrder.InvoiceAddressChangedDel
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.OrderCancelledDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.OrderCompletedDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.OrderCreatedDelegate;
-import de.kfzteile24.salesOrderHub.delegates.salesOrder.PublishInvoiceDataDelegate;
+import de.kfzteile24.salesOrderHub.delegates.invoicing.DropshipmentOrderPublishInvoiceDataDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.listener.CheckOrderTypeDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.listener.CheckPaymentTypeDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.listener.CheckPlatformTypeDelegate;
@@ -101,7 +101,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Paymen
         OrderCreatedDelegate.class,
         OrderCancelledDelegate.class,
         PublishDropshipmentOrderCreatedDelegate.class,
-        PublishInvoiceDataDelegate.class,
+        DropshipmentOrderPublishInvoiceDataDelegate.class,
         StoreDropshipmentInvoiceDelegate.class,
         OrderCompletedDelegate.class,
         SimpleMessageListenerContainer.class,
@@ -118,7 +118,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Paymen
         SaveDropshipmentOrderRowDelegate.class,
         AggregateInvoiceDataDelegate.class,
         IsPartialInvoiceListener.class,
-        GenerateInvoicePdfDelegate.class
+        DropshipmentOrderGenerateInvoicePdfDelegate.class
 
 })
 public abstract class AbstractWorkflowTest implements ApplicationContextAware {
