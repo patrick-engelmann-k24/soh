@@ -5,6 +5,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesOrderCancelledMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.services.sqs.EnrichMessageForDlq;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
+import de.kfzteile24.soh.order.dto.Payments;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.variable.Variables;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_SALES_ORDER_CANCELLED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.PAYMENT_IN_ADVANCE;
 
 @Service
 @Slf4j
@@ -27,7 +29,11 @@ public class SalesOrderCancelledService {
         log.info("Received core sales order cancelled message with order number: {}", orderNumber);
         var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException("Could not find order: " + orderNumber));
-        camundaHelper.correlateMessage(CORE_SALES_ORDER_CANCELLED, salesOrder,
-                Variables.putValue(ORDER_NUMBER.getName(), orderNumber)); // start event subprocess interrupting the main process at any point
+        var isPaymentInAdvance = salesOrder.getLatestJson().getOrderHeader().getPayments().stream()
+                .map(Payments::getType).anyMatch(type -> type.equals(PAYMENT_IN_ADVANCE.getName()));
+        if (isPaymentInAdvance) {
+            camundaHelper.correlateMessage(CORE_SALES_ORDER_CANCELLED, salesOrder,
+                    Variables.putValue(ORDER_NUMBER.getName(), orderNumber)); // start event subprocess interrupting the main process at any point
+        }
     }
 }
