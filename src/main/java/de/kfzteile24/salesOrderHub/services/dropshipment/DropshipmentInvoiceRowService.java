@@ -1,7 +1,7 @@
 package de.kfzteile24.salesOrderHub.services.dropshipment;
 
-import de.kfzteile24.salesOrderHub.domain.dropshipment.InvoiceData;
 import de.kfzteile24.salesOrderHub.domain.dropshipment.DropshipmentInvoiceRow;
+import de.kfzteile24.salesOrderHub.domain.dropshipment.InvoiceData;
 import de.kfzteile24.salesOrderHub.exception.InvoiceNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.DropshipmentHelper;
 import de.kfzteile24.salesOrderHub.repositories.DropshipmentInvoiceRowRepository;
@@ -13,10 +13,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -98,7 +98,7 @@ public class DropshipmentInvoiceRowService {
     }
 
     public Map<String, List<String>> generateInvoiceDataMap(Collection<DropshipmentInvoiceRow> dropshipmentInvoiceRows) {
-        Map<String, List<String>> dropshipmentInvoiceRowMap = new HashMap<>();
+        Map<String, List<String>> dropshipmentInvoiceRowMap = new TreeMap<>();
         dropshipmentInvoiceRows.forEach(item -> {
             var key = item.getOrderNumber();
             var value = item.getSku();

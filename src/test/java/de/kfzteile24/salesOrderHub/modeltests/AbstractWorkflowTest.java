@@ -12,6 +12,8 @@ import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.StoreDropshipment
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.listener.CheckIsDropshipmentOrderListener;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.listener.CheckProcessingDropshipmentOrderListener;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.listener.NewRelicAwareTimerListener;
+import de.kfzteile24.salesOrderHub.delegates.invoicing.AggregateInvoiceDataDelegate;
+import de.kfzteile24.salesOrderHub.delegates.invoicing.listener.IsPartialInvoiceListener;
 import de.kfzteile24.salesOrderHub.delegates.returnorder.PublishCreditNoteReceivedDelegate;
 import de.kfzteile24.salesOrderHub.delegates.returnorder.PublishReturnOrderCreatedDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.CancelOrderDelegate;
@@ -110,7 +112,9 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Paymen
         CheckPlatformTypeDelegate.class,
         CancelOrderDelegate.class,
         PublishDropshipmentOrderRowTrackingInformationDelegate.class,
-        SaveDropshipmentOrderRowDelegate.class
+        SaveDropshipmentOrderRowDelegate.class,
+        AggregateInvoiceDataDelegate.class,
+        IsPartialInvoiceListener.class
 
 })
 public abstract class AbstractWorkflowTest implements ApplicationContextAware {
