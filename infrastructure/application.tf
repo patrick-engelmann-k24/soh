@@ -5,7 +5,7 @@ locals {
 }
 
 module "application_module" {
-  source                       = "git@github.com:kfzteile24/bop-infrastructure-application-terraform-module.git"
+  source                       = "git@github.com:kfzteile24/bop-infrastructure-application-terraform-module.git?ref=v4.0.0"
   service                      = local.service
   codacy_token                 = ""
   source_repo_name             = local.source_repo_name
