@@ -15,6 +15,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnNotifi
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
+import de.kfzteile24.salesOrderHub.exception.CorrelateOrderException;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.ReturnOrderHelper;
@@ -137,6 +138,8 @@ public class DropshipmentOrderService {
 
             helper.correlateMessage(DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED, salesOrder,
                     Variables.putValue(TRACKING_LINKS.getName(), getTrackingLinks(shippedItems)));
+        } else {
+            throw new CorrelateOrderException("Order process is not waiting at shipment confirmed");
         }
     }
 
