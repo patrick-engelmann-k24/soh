@@ -45,6 +45,7 @@ import java.util.stream.Stream;
 
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.K24;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_RETURN_CONFIRMED;
@@ -77,6 +78,7 @@ import static org.mockito.Mockito.when;
 class DropshipmentOrderServiceTest {
 
     public static final String ANY_INVOICE_NUMBER = RandomStringUtils.randomNumeric(10);
+    public static final String ANY_PROCESS_ID = RandomStringUtils.randomNumeric(10);
 
     @InjectMocks
     @Spy
@@ -209,6 +211,7 @@ class DropshipmentOrderServiceTest {
     void testHandleDropShipmentOrderTrackingInformationReceived() {
 
         var salesOrder = SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
+        salesOrder.setProcessId(ANY_PROCESS_ID);
         var items = salesOrder.getLatestJson().getOrderRows().stream().map(
                 row -> ShipmentItem.builder()
                         .productNumber(row.getSku())
@@ -225,6 +228,9 @@ class DropshipmentOrderServiceTest {
 
         when(salesOrderService.getOrderByOrderNumber(message.getSalesOrderNumber())).thenReturn(Optional.of(salesOrder));
         when(salesOrderService.save(salesOrder, ORDER_ITEM_SHIPPED)).thenReturn(salesOrder);
+        when(camundaHelper.waitsOnActivityForMessage(ANY_PROCESS_ID,
+                EVENT_MSG_DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED,
+                DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED)).thenReturn(true);
         doNothing().when(camundaHelper).correlateMessage(
                 eq(DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED), eq(salesOrder), any());
 
