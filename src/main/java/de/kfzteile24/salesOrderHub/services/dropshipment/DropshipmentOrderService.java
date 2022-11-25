@@ -44,6 +44,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_RETURN_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED;
@@ -113,28 +114,40 @@ public class DropshipmentOrderService {
         SalesOrder salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
 
-        var orderRows = salesOrder.getLatestJson().getOrderRows();
-        var shippedItems = message.getItems();
+        if (isProcessWaitingAtShipmentConfirmed(salesOrder)) {
+            var orderRows = salesOrder.getLatestJson().getOrderRows();
+            var shippedItems = message.getItems();
 
-        shippedItems.forEach(item ->
-                orderRows.stream()
-                        .filter(row -> StringUtils.pathEquals(row.getSku(), item.getProductNumber()))
-                        .findFirst()
-                        .ifPresentOrElse(row -> {
-                            addParcelNumber(item, row);
-                            addServiceProviderName(item, row);
-                        }, () -> {
-                            throw new NotFoundException(
-                                    format("Could not find order row with SKU {0} for order {1}",
-                                            item.getProductNumber(), orderNumber));
-                        })
-        );
+            shippedItems.forEach(item ->
+                    orderRows.stream()
+                            .filter(row -> StringUtils.pathEquals(row.getSku(), item.getProductNumber()))
+                            .findFirst()
+                            .ifPresentOrElse(row -> {
+                                addParcelNumber(item, row);
+                                addServiceProviderName(item, row);
+                            }, () -> {
+                                throw new NotFoundException(
+                                        format("Could not find order row with SKU {0} for order {1}",
+                                                item.getProductNumber(), orderNumber));
+                            })
+            );
 
-        setDocumentRefNumber(salesOrder);
-        salesOrder = salesOrderService.save(salesOrder, ORDER_ITEM_SHIPPED);
+            setDocumentRefNumber(salesOrder);
+            salesOrder = salesOrderService.save(salesOrder, ORDER_ITEM_SHIPPED);
 
-        helper.correlateMessage(DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED, salesOrder,
-                Variables.putValue(TRACKING_LINKS.getName(), getTrackingLinks(shippedItems)));
+            helper.correlateMessage(DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED, salesOrder,
+                    Variables.putValue(TRACKING_LINKS.getName(), getTrackingLinks(shippedItems)));
+        }
+    }
+
+    private boolean isProcessWaitingAtShipmentConfirmed(SalesOrder salesOrder) {
+        var processId = salesOrder.getProcessId();
+        if (processId == null) {
+            return false;
+        } else {
+            return helper.waitsOnActivityForMessage(processId, EVENT_MSG_DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED,
+                    DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED);
+        }
     }
 
     private List<String> getTrackingLinks(Collection<ShipmentItem> shippedItems) throws JsonProcessingException {
