@@ -16,6 +16,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
+import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.helper.ReturnOrderHelper;
 import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderRowService;
@@ -27,9 +28,11 @@ import de.kfzteile24.salesOrderHub.services.sqs.EnrichMessageForDlq;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
+import de.kfzteile24.soh.order.dto.Platform;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
 import org.camunda.bpm.engine.variable.Variables;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,8 +45,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
+import static de.kfzteile24.salesOrderHub.constants.SOHConstants.ORDER_NUMBER_SEPARATOR;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_RETURN_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED;
@@ -53,6 +58,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_INVOICE_STORED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_BOOKED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED;
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ITEM_SHIPPED;
 import static java.text.MessageFormat.format;
 import static java.util.function.Predicate.not;
@@ -72,6 +78,7 @@ public class DropshipmentOrderService {
     private final ReturnOrderHelper returnOrderHelper;
     private final ObjectMapper objectMapper;
     private final CamundaHelper camundaHelper;
+    private final OrderUtil orderUtil;
 
     @EnrichMessageForDlq
     public void handleDropShipmentOrderConfirmed(
@@ -141,8 +148,6 @@ public class DropshipmentOrderService {
                                             item.getProductNumber(), salesOrder.getOrderNumber()));
                         })
         );
-
-        setDocumentRefNumber(salesOrder);
         return salesOrderService.save(salesOrder, ORDER_ITEM_SHIPPED);
     }
 
@@ -213,9 +218,9 @@ public class DropshipmentOrderService {
         var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException("Could not find dropshipment order: " + orderNumber));
 
-        if (salesOrderRowService.cancelOrderProcessIfFullyCancelled(salesOrder)) {
-            camundaHelper.setVariable(processInstanceId, IS_ORDER_CANCELLED.getName(), true);
-        }
+        camundaHelper.setVariable(processInstanceId,
+                IS_ORDER_CANCELLED.getName(),
+                salesOrderRowService.cancelOrderProcessIfFullyCancelled(salesOrder));
     }
 
     public boolean isDropShipmentOrder(String orderNumber) {
@@ -317,7 +322,51 @@ public class DropshipmentOrderService {
         salesOrder.getLatestJson().getOrderHeader().setDocumentRefNumber(invoiceService.createInvoiceNumber());
     }
 
-    public void publishDropshipmentSubsequentOrderCreated(SalesOrder subsequentOrder) {
+    public void startDropshipmentSubsequentOrderProcess(SalesOrder subsequentOrder) {
         camundaHelper.startDropshipmentSubsequentOrderCreatedProcess(subsequentOrder);
+    }
+
+    public SalesOrder createDropshipmentSubsequentSalesOrder(SalesOrder salesOrder,
+                                                             List<String> skuList,
+                                                             String invoiceNumber,
+                                                             String processId) {
+        String newOrderNumber = createDropshipmentNewOrderNumber(salesOrder);
+        Order orderJson = createDropshipmentSubsequentOrderJson(salesOrder, newOrderNumber, skuList, invoiceNumber);
+        var customerEmail = Strings.isNotEmpty(salesOrder.getCustomerEmail()) ?
+                salesOrder.getCustomerEmail() :
+                salesOrderService.getCustomerEmailByOrderJson(orderJson);
+        var subsequentOrder = SalesOrder.builder()
+                .orderNumber(newOrderNumber)
+                .orderGroupId(salesOrder.getOrderGroupId())
+                .salesChannel(salesOrder.getSalesChannel())
+                .customerEmail(customerEmail)
+                .originalOrder(orderJson)
+                .latestJson(orderJson)
+                .processId(processId)
+                .build();
+        return salesOrderService.save(subsequentOrder, ORDER_CREATED);
+    }
+
+    public Order createDropshipmentSubsequentOrderJson(SalesOrder salesOrder,
+                                                       String newOrderNumber,
+                                                       List<String> skuList,
+                                                       String invoiceNumber) {
+        var orderJson = orderUtil.copyOrderJson(salesOrder.getLatestJson());
+        orderJson.setOrderRows(orderJson.getOrderRows().stream()
+                .filter(row -> skuList.contains(row.getSku()))
+                .collect(Collectors.toList()));
+        orderJson.getOrderHeader().setPlatform(Platform.SOH);
+        orderJson.getOrderHeader().setOrderNumber(newOrderNumber);
+        orderJson.getOrderHeader().setDocumentRefNumber(invoiceNumber);
+        salesOrderService.recalculateTotals(orderJson, invoiceService.getShippingCostLine(salesOrder));
+        return orderJson;
+    }
+
+
+
+    public String createDropshipmentNewOrderNumber(SalesOrder salesOrder) {
+        int nextIndexCounter =
+                salesOrderService.getNextOrderNumberIndexCounter(salesOrder.getOrderGroupId());
+        return salesOrder.getOrderGroupId() + ORDER_NUMBER_SEPARATOR + nextIndexCounter;
     }
 }

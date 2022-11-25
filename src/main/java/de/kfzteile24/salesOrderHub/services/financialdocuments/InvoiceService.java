@@ -126,34 +126,13 @@ public class InvoiceService {
     }
 
     public CoreSalesInvoiceCreatedMessage generateInvoiceMessage(SalesOrder salesOrder) {
-        List<CoreSalesFinancialDocumentLine> invoiceLines = new ArrayList<>();
-        for (OrderRows row : salesOrder.getLatestJson().getOrderRows()) {
-            invoiceLines.add(CoreSalesFinancialDocumentLine.builder()
-                    .itemNumber(row.getSku())
-                    .description(row.getName())
-                    .quantity(row.getQuantity())
-                    .taxRate(row.getTaxRate())
-                    .unitNetAmount(Optional.ofNullable(row.getUnitValues().getDiscountedNet()).orElse(BigDecimal.ZERO))
-                    .lineNetAmount(Optional.ofNullable(row.getSumValues().getTotalDiscountedNet()).orElse(BigDecimal.ZERO))
-                    .unitGrossAmount(Optional.ofNullable(row.getUnitValues().getDiscountedGross()).orElse(BigDecimal.ZERO))
-                    .lineGrossAmount(Optional.ofNullable(row.getSumValues().getTotalDiscountedGross()).orElse(BigDecimal.ZERO))
-                    .lineTaxAmount(Optional.ofNullable(row.getSumValues().getTotalDiscountedGross()).orElse(BigDecimal.ZERO)
-                            .subtract(Optional.ofNullable(row.getSumValues().getTotalDiscountedNet()).orElse(BigDecimal.ZERO)))
-                    .isShippingCost(false)
-                    .build());
-        }
-
-        if (orderUtil.hasShippingCost(salesOrder)) {
-            invoiceLines.add(orderUtil.createShippingCostLineFromSalesOrder(salesOrder));
-        }
-
         var orderHeader = salesOrder.getLatestJson().getOrderHeader();
         return CoreSalesInvoiceCreatedMessage.builder()
                 .salesInvoice(new CoreSalesInvoice(
                         new CoreSalesInvoiceHeader(
                                 orderHeader.getDocumentRefNumber(),
                                 Date.from(LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant()),
-                                invoiceLines,
+                                getInvoiceLines(salesOrder),
                                 salesOrder.getOrderGroupId(),
                                 salesOrder.getOrderNumber(),
                                 orderHeader.getOrderCurrency(),
@@ -171,6 +150,38 @@ public class InvoiceService {
                         ),
                         new ArrayList<>()))
                 .build();
+    }
+
+    private List<CoreSalesFinancialDocumentLine> getInvoiceLines(SalesOrder salesOrder) {
+        List<CoreSalesFinancialDocumentLine> invoiceLines = new ArrayList<>();
+        for (OrderRows row : salesOrder.getLatestJson().getOrderRows()) {
+            invoiceLines.add(CoreSalesFinancialDocumentLine.builder()
+                    .itemNumber(row.getSku())
+                    .description(row.getName())
+                    .quantity(row.getQuantity())
+                    .taxRate(row.getTaxRate())
+                    .unitNetAmount(Optional.ofNullable(row.getUnitValues().getDiscountedNet()).orElse(BigDecimal.ZERO))
+                    .lineNetAmount(Optional.ofNullable(row.getSumValues().getTotalDiscountedNet()).orElse(BigDecimal.ZERO))
+                    .unitGrossAmount(Optional.ofNullable(row.getUnitValues().getDiscountedGross()).orElse(BigDecimal.ZERO))
+                    .lineGrossAmount(Optional.ofNullable(row.getSumValues().getTotalDiscountedGross()).orElse(BigDecimal.ZERO))
+                    .lineTaxAmount(Optional.ofNullable(row.getSumValues().getTotalDiscountedGross()).orElse(BigDecimal.ZERO)
+                            .subtract(Optional.ofNullable(row.getSumValues().getTotalDiscountedNet()).orElse(BigDecimal.ZERO)))
+                    .isShippingCost(false)
+                    .build());
+        }
+
+        CoreSalesFinancialDocumentLine shippingCostLine = getShippingCostLine(salesOrder);
+        if (shippingCostLine != null) {
+            invoiceLines.add(shippingCostLine);
+        }
+        return invoiceLines;
+    }
+
+    public CoreSalesFinancialDocumentLine getShippingCostLine(SalesOrder salesOrder) {
+        if (orderUtil.hasShippingCost(salesOrder)) {
+            return orderUtil.createShippingCostLineFromSalesOrder(salesOrder);
+        }
+        return null;
     }
 
     private String getStreet(BillingAddress address) {

@@ -46,6 +46,7 @@ import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.CustomerSegment.B2B;
 import static de.kfzteile24.salesOrderHub.constants.CustomerSegment.DIRECT_DELIVERY;
+import static de.kfzteile24.salesOrderHub.constants.SOHConstants.ORDER_NUMBER_SEPARATOR;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getSumValue;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.isNotNullAndEqual;
@@ -189,7 +190,7 @@ public class SalesOrderService {
         return save(salesOrder, Action.ORDER_CANCELLED);
     }
 
-    private String getCustomerEmailByOrderJson(Order order) {
+    public String getCustomerEmailByOrderJson(Order order) {
         if (order.getOrderHeader().getCustomer() != null) {
             return order.getOrderHeader().getCustomer().getCustomerEmail();
         }
@@ -309,7 +310,7 @@ public class SalesOrderService {
         return foundSalesOrders.stream().map(SalesOrder::getOrderNumber).distinct().collect(toList());
     }
 
-    private void recalculateTotals(Order order, CoreSalesFinancialDocumentLine shippingCostLine) {
+    public void recalculateTotals(Order order, CoreSalesFinancialDocumentLine shippingCostLine) {
         BigDecimal shippingCostNet = shippingCostLine != null ? shippingCostLine.getLineNetAmount() : BigDecimal.ZERO;
         BigDecimal shippingCostGross = shippingCostLine != null ? shippingCostLine.getLineGrossAmount() : BigDecimal.ZERO;
         recalculateTotals(order, shippingCostNet, shippingCostGross, shippingCostLine != null);
@@ -515,5 +516,20 @@ public class SalesOrderService {
         if (StringUtils.isBlank(order.getOrderHeader().getOrderGroupId())) {
             order.getOrderHeader().setOrderGroupId(orderNumber);
         }
+    }
+
+    public int getNextOrderNumberIndexCounter(String orderGroupId) {
+        List<String> orderNumberList = orderRepository.findOrderNumberByOrderGroupId(orderGroupId);
+        if (orderNumberList == null || orderNumberList.isEmpty()) {
+            throw new SalesOrderNotFoundCustomException(
+                    format("for the given order group id {0}", orderGroupId));
+        }
+        String separator = ORDER_NUMBER_SEPARATOR;
+
+        Integer max = orderNumberList.stream()
+                .filter(number -> number.contains(separator))
+                .map(number -> Integer.valueOf(number.substring(number.lastIndexOf(separator) + 1)))
+                .reduce(0, Integer::max);
+        return max + 1;
     }
 }
