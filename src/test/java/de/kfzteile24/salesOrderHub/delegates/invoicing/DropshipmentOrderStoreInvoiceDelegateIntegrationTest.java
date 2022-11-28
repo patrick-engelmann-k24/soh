@@ -1,4 +1,4 @@
-package de.kfzteile24.salesOrderHub.delegates.salesOrder;
+package de.kfzteile24.salesOrderHub.delegates.invoicing;
 
 import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
@@ -37,7 +37,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class StoreDropshipmentInvoiceDelegateIntegrationTest extends AbstractIntegrationTest {
+class DropshipmentOrderStoreInvoiceDelegateIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private BpmUtil util;

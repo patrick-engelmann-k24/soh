@@ -1,13 +1,17 @@
 package de.kfzteile24.salesOrderHub.services.dropshipment;
 
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.domain.dropshipment.DropshipmentInvoiceRow;
 import de.kfzteile24.salesOrderHub.domain.dropshipment.InvoiceData;
 import de.kfzteile24.salesOrderHub.exception.InvoiceNotFoundException;
+import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundCustomException;
 import de.kfzteile24.salesOrderHub.helper.DropshipmentHelper;
 import de.kfzteile24.salesOrderHub.repositories.DropshipmentInvoiceRowRepository;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
+import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -107,5 +111,14 @@ public class DropshipmentInvoiceRowService {
             dropshipmentInvoiceRowMap.put(key, valueList);
         });
         return dropshipmentInvoiceRowMap;
+    }
+
+    @Transactional(readOnly = true)
+    public String getOrderNumberByInvoiceNumber(String invoiceNumber) {
+        List<DropshipmentInvoiceRow> invoiceDataList = getByInvoiceNumber(invoiceNumber);
+        if (CollectionUtils.isEmpty(invoiceDataList)) {
+            throw new InvoiceNotFoundException(invoiceNumber);
+        }
+        return invoiceDataList.get(0).getOrderNumber();
     }
 }

@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.END_MSG_ORDER_COMPLETED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_SUBSEQUENT_ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
@@ -39,6 +40,6 @@ class DropshipmentSubsequentOrderCreatedModelTest extends AbstractWorkflowTest {
 
         verify(processScenario).hasCompleted("eventThrowMsgSubsequentDropshipmentOrderCreated");
         verify(processScenario).hasCompleted("Gateway_0uq8npi");
-        verify(processScenario).hasCompleted("eventEndMsgOrderCompleted");
+        verify(processScenario).hasCompleted(END_MSG_ORDER_COMPLETED.getName());
     }
 }
