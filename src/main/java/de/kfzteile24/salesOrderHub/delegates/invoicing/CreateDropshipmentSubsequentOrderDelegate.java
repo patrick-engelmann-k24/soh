@@ -1,4 +1,4 @@
-package de.kfzteile24.salesOrderHub.delegates.dropshipmentorder;
+package de.kfzteile24.salesOrderHub.delegates.invoicing;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.delegates.CommonDelegate;

@@ -117,8 +117,7 @@ public class DropshipmentInvoiceRowService {
     public String getOrderNumberByInvoiceNumber(String invoiceNumber) {
         List<DropshipmentInvoiceRow> invoiceDataList = getByInvoiceNumber(invoiceNumber);
         if (CollectionUtils.isEmpty(invoiceDataList)) {
-            throw new SalesOrderNotFoundCustomException("Could not find order number for invoiceNumber: " + invoiceNumber
-                    + " in temporary invoice data entry table");
+            throw new InvoiceNotFoundException(invoiceNumber);
         }
         return invoiceDataList.get(0).getOrderNumber();
     }

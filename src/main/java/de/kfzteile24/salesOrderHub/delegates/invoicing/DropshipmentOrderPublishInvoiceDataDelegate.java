@@ -6,7 +6,6 @@ import de.kfzteile24.salesOrderHub.helper.EventMapper;
 import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
-import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentInvoiceRowService;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +13,8 @@ import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.JavaDelegate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
 
 import static de.kfzteile24.salesOrderHub.constants.CustomEventName.CORE_INVOICE_PUBLISHED;
 import static de.kfzteile24.salesOrderHub.constants.CustomEventName.DROPSHIPMENT_INVOICE_PUBLISHED;
@@ -34,17 +35,12 @@ public class DropshipmentOrderPublishInvoiceDataDelegate implements JavaDelegate
     @NonNull
     private final MetricsHelper metricsHelper;
 
-    @NonNull
-    private final DropshipmentInvoiceRowService dropshipmentInvoiceRowService;
-
-
     @Override
     @Transactional
     public void execute(DelegateExecution delegateExecution) throws Exception {
-        final var invoiceNumber = (String) delegateExecution.getVariable(Variables.INVOICE_NUMBER.getName());
-        final var orderNumber = dropshipmentInvoiceRowService.getOrderNumberByInvoiceNumber(invoiceNumber);
-        final var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
-                .orElseThrow(() -> new SalesOrderNotFoundCustomException("Could not find order with orderNumber: " + orderNumber
+        final var salesOrderId = (UUID) delegateExecution.getVariable(Variables.SALES_ORDER_ID.getName());
+        final var salesOrder = salesOrderService.getOrderById(salesOrderId)
+                .orElseThrow(() -> new SalesOrderNotFoundCustomException("Could not find order with id: " + salesOrderId
                         + " for publishing core sales invoice event"));
         snsPublishService.publishCoreInvoiceReceivedEvent(EventMapper.INSTANCE.toCoreSalesInvoiceCreatedReceivedEvent(salesOrder.getInvoiceEvent()));
         log.info("{} delegate invoked", DropshipmentOrderPublishInvoiceDataDelegate.class.getSimpleName());

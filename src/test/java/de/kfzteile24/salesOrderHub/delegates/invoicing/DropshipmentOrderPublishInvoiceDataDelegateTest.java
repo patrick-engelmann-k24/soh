@@ -19,6 +19,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -37,9 +38,6 @@ public class DropshipmentOrderPublishInvoiceDataDelegateTest {
     private SalesOrderService salesOrderService;
 
     @Mock
-    private DropshipmentInvoiceRowService dropshipmentInvoiceRowService;
-
-    @Mock
     private MetricsHelper metricsHelper;
 
     @InjectMocks
@@ -48,15 +46,14 @@ public class DropshipmentOrderPublishInvoiceDataDelegateTest {
     @Test
     @SneakyThrows(Exception.class)
     void testPublishInvoiceDataDelegate() {
-        final var expectedInvoiceNumber = "123";
-        final var expectedOrderNumber = "456";
+        final var expectedOrderNumber = "123";
         final var expectedOrder = SalesOrder.builder().orderNumber(expectedOrderNumber).invoiceEvent(
                 CoreSalesInvoiceCreatedMessage.builder().build())
                 .latestJson(Order.builder().orderHeader(OrderHeader.builder().build()).build())
                 .build();
-        when(delegateExecution.getVariable(Variables.INVOICE_NUMBER.getName())).thenReturn(expectedInvoiceNumber);
-        when(dropshipmentInvoiceRowService.getOrderNumberByInvoiceNumber(eq(expectedInvoiceNumber))).thenReturn(expectedOrderNumber);
-        when(salesOrderService.getOrderByOrderNumber(expectedOrder.getOrderNumber())).thenReturn(Optional.of(expectedOrder));
+        expectedOrder.setId(UUID.randomUUID());
+        when(delegateExecution.getVariable(Variables.SALES_ORDER_ID.getName())).thenReturn(expectedOrder.getId());
+        when(salesOrderService.getOrderById(expectedOrder.getId())).thenReturn(Optional.of(expectedOrder));
         dropshipmentOrderPublishInvoiceDataDelegate.execute(delegateExecution);
         verify(snsPublishService).publishCoreInvoiceReceivedEvent(EventMapper.INSTANCE.toCoreSalesInvoiceCreatedReceivedEvent(expectedOrder.getInvoiceEvent()));
     }

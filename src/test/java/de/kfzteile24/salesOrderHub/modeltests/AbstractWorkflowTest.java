@@ -3,16 +3,17 @@ package de.kfzteile24.salesOrderHub.modeltests;
 import de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
-import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.CreateDropshipmentSubsequentInvoiceDelegate;
-import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.CreateDropshipmentSubsequentOrderDelegate;
+import de.kfzteile24.salesOrderHub.delegates.invoicing.CreateDropshipmentSubsequentInvoiceDelegate;
+import de.kfzteile24.salesOrderHub.delegates.invoicing.CreateDropshipmentSubsequentOrderDelegate;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.DropshipmentOrderCancellationDelegate;
-import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.DropshipmentOrderGenerateInvoicePdfDelegate;
+import de.kfzteile24.salesOrderHub.delegates.invoicing.DropshipmentOrderGenerateInvoicePdfDelegate;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.DropshipmentOrderRowsCancellationDelegate;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.PublishDropshipmentOrderCreatedDelegate;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.PublishDropshipmentOrderRowTrackingInformationDelegate;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.SaveDropshipmentOrderRowDelegate;
-import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.StartDropshipmentSubsequentOrderProcessDelegate;
-import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.StoreDropshipmentInvoiceDelegate;
+import de.kfzteile24.salesOrderHub.delegates.invoicing.DropshipmentOrderPublishInvoiceDataDelegate;
+import de.kfzteile24.salesOrderHub.delegates.invoicing.StartDropshipmentSubsequentOrderProcessDelegate;
+import de.kfzteile24.salesOrderHub.delegates.invoicing.DropshipmentOrderSaveInvoiceDelegate;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.listener.CheckIsDropshipmentOrderListener;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.listener.CheckProcessingDropshipmentOrderListener;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.listener.NewRelicAwareTimerListener;
@@ -28,7 +29,6 @@ import de.kfzteile24.salesOrderHub.delegates.salesOrder.InvoiceAddressChangedDel
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.OrderCancelledDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.OrderCompletedDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.OrderCreatedDelegate;
-import de.kfzteile24.salesOrderHub.delegates.salesOrder.PublishCoreSalesInvoiceCreatedReceivedDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.listener.CheckOrderTypeDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.listener.CheckPaymentTypeDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.listener.CheckPlatformTypeDelegate;
@@ -105,8 +105,8 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Paymen
         OrderCreatedDelegate.class,
         OrderCancelledDelegate.class,
         PublishDropshipmentOrderCreatedDelegate.class,
-        PublishCoreSalesInvoiceCreatedReceivedDelegate.class,
-        StoreDropshipmentInvoiceDelegate.class,
+        DropshipmentOrderPublishInvoiceDataDelegate.class,
+        DropshipmentOrderSaveInvoiceDelegate.class,
         OrderCompletedDelegate.class,
         SimpleMessageListenerContainer.class,
         KeyValuePropertyService.class,

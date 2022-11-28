@@ -22,8 +22,7 @@ public class DropshipmentOrderFullyInvoicedDelegate implements JavaDelegate {
 
     @Override
     public void execute(DelegateExecution delegateExecution) throws Exception {
-        final var invoiceNumber = (String) delegateExecution.getVariable(Variables.INVOICE_NUMBER.getName());
-        final var orderNumber = dropshipmentInvoiceRowService.getOrderNumberByInvoiceNumber(invoiceNumber);
+        final var orderNumber = (String) delegateExecution.getVariable(Variables.ORDER_NUMBER.getName());
         log.info("Dropshipment Order Fully Invoiced Delegate for order number {}", orderNumber);
         camundaHelper.correlateDropshipmentOrderFullyInvoicedMessage(orderNumber);
     }

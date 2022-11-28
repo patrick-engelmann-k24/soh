@@ -32,20 +32,15 @@ public class DropshipmentOrderGenerateInvoicePdfDelegateTest {
     @Mock
     private SalesOrderService salesOrderService;
 
-    @Mock
-    private DropshipmentInvoiceRowService dropshipmentInvoiceRowService;
-
     @InjectMocks
     private DropshipmentOrderGenerateInvoicePdfDelegate dropshipmentOrderGenerateInvoicePdfDelegate;
 
     @Test
     @SneakyThrows(Exception.class)
     void testGenerateInvoicePdfDelegate() {
-        final var expectedInvoiceNumber = "123";
         final var expectedOrderNumber = "456";
         final var expectedOrder = SalesOrder.builder().orderNumber(expectedOrderNumber).latestJson(Order.builder().build()).build();
-        when(delegateExecution.getVariable(Variables.INVOICE_NUMBER.getName())).thenReturn(expectedInvoiceNumber);
-        when(dropshipmentInvoiceRowService.getOrderNumberByInvoiceNumber(eq(expectedInvoiceNumber))).thenReturn(expectedOrderNumber);
+        when(delegateExecution.getVariable(Variables.ORDER_NUMBER.getName())).thenReturn(expectedOrderNumber);
         when(salesOrderService.getOrderByOrderNumber(expectedOrder.getOrderNumber())).thenReturn(Optional.of(expectedOrder));
         dropshipmentOrderGenerateInvoicePdfDelegate.execute(delegateExecution);
         verify(snsPublishService).publishInvoicePdfGenerationTriggeredEvent(expectedOrder.getLatestJson());

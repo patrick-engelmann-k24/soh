@@ -68,7 +68,7 @@
       <bpmn:intermediateThrowEvent id="eventThrowMsgPublishPartlyInvoicedData" name="Publish invoice data">
         <bpmn:incoming>Flow_1pgu2g7</bpmn:incoming>
         <bpmn:outgoing>Flow_0o3zg8m</bpmn:outgoing>
-        <bpmn:messageEventDefinition id="MessageEventDefinition_1s5g4yt" camunda:delegateExpression="${publishCoreSalesInvoiceCreatedReceivedDelegate}" />
+        <bpmn:messageEventDefinition id="MessageEventDefinition_1s5g4yt" camunda:delegateExpression="${dropshipmentOrderPublishInvoiceDataDelegate}" />
       </bpmn:intermediateThrowEvent>
       <bpmn:sequenceFlow id="Flow_1wie477" sourceRef="eventThrowMsgGeneratePartlyInvoicedPdf" targetRef="gwParallelJoinPartiallyInvoiced" />
       <bpmn:sequenceFlow id="Flow_0o3zg8m" sourceRef="eventThrowMsgPublishPartlyInvoicedData" targetRef="gwParallelJoinPartiallyInvoiced" />
@@ -143,7 +143,7 @@
         <bpmn:outgoing>Flow_1d7auhq</bpmn:outgoing>
       </bpmn:serviceTask>
       <bpmn:sequenceFlow id="Flow_1s78nkb" sourceRef="activityCreateDropshipmentSalesOrderInvoice" targetRef="gwParallelForkFullyInvoiced" />
-      <bpmn:serviceTask id="activityCreateDropshipmentSalesOrderInvoice" name="Create invoice for sales order and store it" camunda:expression="${true}">
+      <bpmn:serviceTask id="activityCreateDropshipmentSalesOrderInvoice" name="Create invoice for sales order and store it" camunda:delegateExpression="${dropshipmentOrderSaveInvoiceDelegate}">
         <bpmn:incoming>Flow_1fa784o</bpmn:incoming>
         <bpmn:outgoing>Flow_1s78nkb</bpmn:outgoing>
       </bpmn:serviceTask>

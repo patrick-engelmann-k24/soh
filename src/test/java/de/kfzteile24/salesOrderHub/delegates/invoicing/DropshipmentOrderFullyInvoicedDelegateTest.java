@@ -10,8 +10,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.INVOICE_NUMBER;
-import static org.mockito.ArgumentMatchers.eq;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -33,10 +32,8 @@ public class DropshipmentOrderFullyInvoicedDelegateTest {
     @Test
     @SneakyThrows(Exception.class)
     void testDropshipmentOrderFullyInvoicedDelegate() {
-        final var expectedInvoiceNumber = "123";
         final var expectedOrderNumber = "456";
-        when(delegateExecution.getVariable(INVOICE_NUMBER.getName())).thenReturn(expectedInvoiceNumber);
-        when(dropshipmentInvoiceRowService.getOrderNumberByInvoiceNumber(eq(expectedInvoiceNumber))).thenReturn(expectedOrderNumber);
+        when(delegateExecution.getVariable(ORDER_NUMBER.getName())).thenReturn(expectedOrderNumber);
         dropshipmentOrderFullyInvoicedDelegate.execute(delegateExecution);
         verify(camundaHelper).correlateDropshipmentOrderFullyInvoicedMessage(expectedOrderNumber);
     }
