@@ -2,7 +2,6 @@ package de.kfzteile24.salesOrderHub.delegates.invoicing;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
-import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentInvoiceRowService;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,8 +16,6 @@ public class DropshipmentOrderFullyInvoicedDelegate implements JavaDelegate {
 
     @NonNull
     private final CamundaHelper camundaHelper;
-    @NonNull
-    private final DropshipmentInvoiceRowService dropshipmentInvoiceRowService;
 
     @Override
     public void execute(DelegateExecution delegateExecution) throws Exception {
