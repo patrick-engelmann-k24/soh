@@ -15,7 +15,8 @@ public enum ProcessDefinition {
     SALES_ORDER_PROCESS("SalesOrderProcess_v2"),
     SAVE_INVOICE_PROCESS("SaveInvoiceProcess"),
     RETURN_ORDER_PROCESS("ReturnOrderProcess"),
-    INVOICE_CREATED_RECEIVED_PROCESS("InvoiceCreatedReceivedProcess")
+    INVOICE_CREATED_RECEIVED_PROCESS("InvoiceCreatedReceivedProcess"),
+    INVOICING_PROCESS("InvoicingProcess"),
     ;
 
     @NonNull

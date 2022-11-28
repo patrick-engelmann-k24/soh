@@ -3,11 +3,15 @@ package de.kfzteile24.salesOrderHub.modeltests;
 import de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
+import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.CreateDropshipmentSubsequentInvoiceDelegate;
+import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.CreateDropshipmentSubsequentOrderDelegate;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.DropshipmentOrderCancellationDelegate;
+import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.DropshipmentOrderGenerateInvoicePdfDelegate;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.DropshipmentOrderRowsCancellationDelegate;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.PublishDropshipmentOrderCreatedDelegate;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.PublishDropshipmentOrderRowTrackingInformationDelegate;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.SaveDropshipmentOrderRowDelegate;
+import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.StartDropshipmentSubsequentOrderProcessDelegate;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.StoreDropshipmentInvoiceDelegate;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.listener.CheckIsDropshipmentOrderListener;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.listener.CheckProcessingDropshipmentOrderListener;
@@ -16,6 +20,7 @@ import de.kfzteile24.salesOrderHub.delegates.invoicing.AggregateInvoiceDataDeleg
 import de.kfzteile24.salesOrderHub.delegates.invoicing.listener.IsPartialInvoiceListener;
 import de.kfzteile24.salesOrderHub.delegates.returnorder.PublishCreditNoteReceivedDelegate;
 import de.kfzteile24.salesOrderHub.delegates.returnorder.PublishReturnOrderCreatedDelegate;
+import de.kfzteile24.salesOrderHub.delegates.salesOrder.CancelDropshipmentOrderDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.CancelOrderDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.ChangeInvoiceAddressDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.ChangeInvoiceAddressPossibleDelegate;
@@ -114,8 +119,12 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Paymen
         PublishDropshipmentOrderRowTrackingInformationDelegate.class,
         SaveDropshipmentOrderRowDelegate.class,
         AggregateInvoiceDataDelegate.class,
-        IsPartialInvoiceListener.class
-
+        IsPartialInvoiceListener.class,
+        CreateDropshipmentSubsequentOrderDelegate.class,
+        StartDropshipmentSubsequentOrderProcessDelegate.class,
+        CreateDropshipmentSubsequentInvoiceDelegate.class,
+        CancelDropshipmentOrderDelegate.class,
+        DropshipmentOrderGenerateInvoicePdfDelegate.class
 })
 public abstract class AbstractWorkflowTest implements ApplicationContextAware {
 
