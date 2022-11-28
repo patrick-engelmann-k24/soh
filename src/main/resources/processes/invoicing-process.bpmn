@@ -143,7 +143,7 @@
         <bpmn:outgoing>Flow_1d7auhq</bpmn:outgoing>
       </bpmn:serviceTask>
       <bpmn:sequenceFlow id="Flow_1s78nkb" sourceRef="activityCreateDropshipmentSalesOrderInvoice" targetRef="gwParallelForkFullyInvoiced" />
-      <bpmn:serviceTask id="activityCreateDropshipmentSalesOrderInvoice" name="Create invoice for sales order and store it" camunda:delegateExpression="${dropshipmentOrderSaveInvoiceDelegate}">
+      <bpmn:serviceTask id="activityCreateDropshipmentSalesOrderInvoice" name="Create invoice for sales order and store it" camunda:delegateExpression="${dropshipmentOrderStoreInvoiceDelegate}">
         <bpmn:incoming>Flow_1fa784o</bpmn:incoming>
         <bpmn:outgoing>Flow_1s78nkb</bpmn:outgoing>
       </bpmn:serviceTask>

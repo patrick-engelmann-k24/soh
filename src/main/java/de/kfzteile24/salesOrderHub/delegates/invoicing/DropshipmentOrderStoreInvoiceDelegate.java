@@ -19,7 +19,7 @@ import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_INVOI
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class DropshipmentOrderSaveInvoiceDelegate extends CommonDelegate {
+public class DropshipmentOrderStoreInvoiceDelegate extends CommonDelegate {
 
     @NonNull
     private final SalesOrderService salesOrderService;

@@ -16,7 +16,7 @@ import de.kfzteile24.salesOrderHub.delegates.invoicing.CreateDropshipmentSubsequ
 import de.kfzteile24.salesOrderHub.delegates.invoicing.CreateDropshipmentSubsequentOrderDelegate;
 import de.kfzteile24.salesOrderHub.delegates.invoicing.DropshipmentOrderGenerateInvoicePdfDelegate;
 import de.kfzteile24.salesOrderHub.delegates.invoicing.DropshipmentOrderPublishInvoiceDataDelegate;
-import de.kfzteile24.salesOrderHub.delegates.invoicing.DropshipmentOrderSaveInvoiceDelegate;
+import de.kfzteile24.salesOrderHub.delegates.invoicing.DropshipmentOrderStoreInvoiceDelegate;
 import de.kfzteile24.salesOrderHub.delegates.invoicing.StartDropshipmentSubsequentOrderProcessDelegate;
 import de.kfzteile24.salesOrderHub.delegates.invoicing.listener.IsPartialInvoiceListener;
 import de.kfzteile24.salesOrderHub.delegates.returnorder.PublishCreditNoteReceivedDelegate;
@@ -106,7 +106,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Paymen
         OrderCancelledDelegate.class,
         PublishDropshipmentOrderCreatedDelegate.class,
         DropshipmentOrderPublishInvoiceDataDelegate.class,
-        DropshipmentOrderSaveInvoiceDelegate.class,
+        DropshipmentOrderStoreInvoiceDelegate.class,
         OrderCompletedDelegate.class,
         SimpleMessageListenerContainer.class,
         KeyValuePropertyService.class,
