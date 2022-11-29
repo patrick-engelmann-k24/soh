@@ -14,6 +14,7 @@ import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.listener.NewRelic
 import de.kfzteile24.salesOrderHub.delegates.invoicing.AggregateInvoiceDataDelegate;
 import de.kfzteile24.salesOrderHub.delegates.invoicing.CreateDropshipmentSubsequentInvoiceDelegate;
 import de.kfzteile24.salesOrderHub.delegates.invoicing.CreateDropshipmentSubsequentOrderDelegate;
+import de.kfzteile24.salesOrderHub.delegates.invoicing.DropshipmentOrderFullyInvoicedDelegate;
 import de.kfzteile24.salesOrderHub.delegates.invoicing.DropshipmentOrderGenerateInvoicePdfDelegate;
 import de.kfzteile24.salesOrderHub.delegates.invoicing.DropshipmentOrderPublishInvoiceDataDelegate;
 import de.kfzteile24.salesOrderHub.delegates.invoicing.DropshipmentOrderStoreInvoiceDelegate;
@@ -126,7 +127,8 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Paymen
         StartDropshipmentSubsequentOrderProcessDelegate.class,
         CreateDropshipmentSubsequentInvoiceDelegate.class,
         CancelDropshipmentOrderDelegate.class,
-        DropshipmentOrderGenerateInvoicePdfDelegate.class
+        DropshipmentOrderGenerateInvoicePdfDelegate.class,
+        DropshipmentOrderFullyInvoicedDelegate.class
 })
 public abstract class AbstractWorkflowTest implements ApplicationContextAware {
 

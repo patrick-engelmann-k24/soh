@@ -1,4 +1,4 @@
-package de.kfzteile24.salesOrderHub.modeltests.dropshipment.invoice;
+package de.kfzteile24.salesOrderHub.modeltests.invoicing;
 
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.modeltests.AbstractWorkflowTest;
