@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class SalesOrderRepositoryTest extends AbstractIntegrationTest {
+class SalesOrderRepositoryIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private SalesOrderRepository repository;
