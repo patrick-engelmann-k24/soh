@@ -13,7 +13,7 @@ import org.junit.jupiter.api.TestInfo;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.DROPSHIPMENT_ORDER_GENERATE_INVOICE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_ORDER_ROW_SHIPMENT_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_SIGNAL_PAUSE_PROCESSING_DROPSHIPMENT_ORDER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.END_MSG_ORDER_COMPLETED;
@@ -82,7 +82,7 @@ class IsDropshipmentOrderGatewayModelTest extends AbstractWorkflowTest {
 
         when(processScenario.waitsAtReceiveTask(EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED.getName()))
                 .thenReturn(RECEIVED_RECEIVER_TASK_ACTION);
-        when(processScenario.waitsAtReceiveTask(EVENT_MSG_DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED.getName()))
+        when(processScenario.waitsAtReceiveTask(EVENT_MSG_DROPSHIPMENT_ORDER_ROW_SHIPMENT_CONFIRMED.getName()))
                 .thenReturn(RECEIVED_RECEIVER_TASK_ACTION);
 
         scenario = startBeforeActivity(SALES_ORDER_PROCESS, XOR_CHECK_DROPSHIPMENT_ORDER.getName(),
@@ -93,7 +93,7 @@ class IsDropshipmentOrderGatewayModelTest extends AbstractWorkflowTest {
         verify(processScenario, never()).hasStarted(EVENT_SIGNAL_PAUSE_PROCESSING_DROPSHIPMENT_ORDER.getName());
         verify(processScenario).hasCompleted(EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED.getName());
         verify(processScenario).hasCompleted(THROW_MSG_DROPSHIPMENT_ORDER_CREATED.getName());
-        verify(processScenario).hasCompleted(EVENT_MSG_DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED.getName());
+        verify(processScenario).hasCompleted(EVENT_MSG_DROPSHIPMENT_ORDER_ROW_SHIPMENT_CONFIRMED.getName());
         verify(processScenario).hasCompleted(THROW_MSG_PUBLISH_TRACKING_INFORMATION.getName());
         verify(processScenario).hasCompleted(DROPSHIPMENT_ORDER_GENERATE_INVOICE.getName());
         verify(processScenario).hasCompleted(THROW_MSG_PUBLISH_INVOICE_DATA.getName());
