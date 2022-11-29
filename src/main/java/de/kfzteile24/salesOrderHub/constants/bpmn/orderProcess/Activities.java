@@ -34,6 +34,7 @@ public enum Activities implements BpmItem {
     INVOICING_CREATE_SUBSEQUENT_ORDER("activityCreateInvoiceSubsequentOrder"),
     EVENT_THROW_MSG_START_DROPSHIPMENT_SUBSEQUENT_PROCESS("eventThrowMsgStartDropshipmentSubsequentProcess"),
     CREATE_DROPSHIPMENT_SUBSEQUENT_INVOICE("activityCreateDropshipmentSubsequentInvoice"),
+    CALL_ACTIVITY_DROPSHIPMENT_ORDER_ROWS_CANCELLATION("callActivityDropshipmentOrderRowsCancellation"),
     EVENT_THROW_MSG_PUBLISH_PARTLY_INVOICED_DATA("eventThrowMsgPublishPartlyInvoicedData"),
     EVENT_THROW_MSG_GENERATE_PARTLY_INVOICED_PDF("eventThrowMsgGeneratePartlyInvoicedPdf"),
     EVENT_THROW_MSG_CANCEL_DROPSHIPMENT_ORDER("eventThrowMsgCancelDropshipmentOrder"),

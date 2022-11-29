@@ -19,6 +19,7 @@ import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.PaymentProviderData;
 import de.kfzteile24.soh.order.dto.Payments;
 import de.kfzteile24.soh.order.dto.Platform;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -700,6 +701,47 @@ class SalesOrderServiceTest {
 
         salesOrderService.cancelOrder(orderNumber);
         verify(salesOrderService).save(eq(expected), eq(ORDER_CANCELLED));
+    }
+
+    @Test
+    void testGetNextOrderNumberIndexCounterForOneOrderInGroup(){
+        var orderNumber = RandomStringUtils.randomNumeric(9);
+        Order order = getObjectByResource("testmessage.json", Order.class);
+        order.getOrderHeader().setOrderNumber(orderNumber);
+        order.getOrderHeader().setOrderGroupId(orderNumber);
+        var salesOrder = getSalesOrder(order);
+        var orderGroupId = salesOrder.getOrderGroupId();
+        doReturn(List.of(orderNumber))
+                .when(salesOrderRepository).findOrderNumberByOrderGroupId(orderGroupId);
+
+        int counter = salesOrderService.getNextOrderNumberIndexCounter(orderGroupId);
+        assertThat(counter).isEqualTo(1);
+    }
+
+    @Test
+    void testGetNextOrderNumberIndexCounterForMultipleOrdersInGroup(){
+        var orderNumber = RandomStringUtils.randomNumeric(9);
+        Order order = getObjectByResource("testmessage.json", Order.class);
+        order.getOrderHeader().setOrderNumber(orderNumber);
+        order.getOrderHeader().setOrderGroupId(orderNumber);
+        var salesOrder = getSalesOrder(order);
+        var orderGroupId = salesOrder.getOrderGroupId();
+        doReturn(List.of(orderNumber, orderNumber + "-1", orderNumber + "-2"))
+                .when(salesOrderRepository).findOrderNumberByOrderGroupId(orderGroupId);
+
+        int counter = salesOrderService.getNextOrderNumberIndexCounter(orderGroupId);
+        assertThat(counter).isEqualTo(3);
+    }
+
+    @Test
+    void testGetNextOrderNumberIndexCounterForNoOrderInGroup(){
+        var orderGroupId = RandomStringUtils.randomNumeric(9);
+        doReturn(new ArrayList<>())
+                .when(salesOrderRepository).findOrderNumberByOrderGroupId(orderGroupId);
+
+        assertThatThrownBy(() ->salesOrderService.getNextOrderNumberIndexCounter(orderGroupId))
+                .isInstanceOf(SalesOrderNotFoundCustomException.class)
+                .hasMessage("Sales order not found for the given order group id " + orderGroupId + " ");
     }
 
 }
