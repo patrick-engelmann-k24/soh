@@ -90,79 +90,79 @@ jobs:
           project-token: ${{ env.CODACY_TOKEN }}
           coverage-reports: jacoco.xml
 
-#  integration-test:
-#    runs-on: ubuntu-latest
-#    services:
-#      postgres:
-#        image: postgres:11
-#        ports:
-#          - 5432:5432
-#        options: >-
-#          --health-cmd pg_isready
-#          --health-interval 10s
-#          --health-timeout 5s
-#          --health-retries 5
-#        env:
-#          PGDATA: /postgres/db
-#          POSTGRES_DB: ${{ env.POSTGRES_DB }}
-#          POSTGRES_USER: ${{ env.POSTGRES_USER }}
-#          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
-#      localstack:
-#        image: localstack/localstack-full
-#        ports:
-#          - "4566:4566"
-#        env:
-#          SERVICES: sns,sqs
-#          DEFAULT_REGION: eu-central-1
-#          DOCKER_HOST: unix:///var/run/docker.sock
-#          HOST_TMP_FOLDER: "/tmp"
-#          HOSTNAME_EXTERNAL: ${{ env.AWS_HOST }}
-#        options: >-
-#          --name localstack
-#          --health-cmd "curl -sS 127.0.0.1:4566 || exit 1"
-#          --health-interval 10s
-#          --health-timeout 5s
-#          --health-retries 3
-#    steps:
-#      - uses: actions/checkout@v1
-#      - uses: actions/cache@v2
-#        with:
-#          path: ~/.m2/repository
-#          key: ${{ runner.os }}-maven-int-test-${{ hashFiles('**/pom.xml') }}
-#          restore-keys: |
-#            ${{ runner.os }}-maven-int-test-
-#      - uses: actions/setup-java@v1
-#        with:
-#          java-version: 11
-#      - name: Set up sns topics & sqs
-#        run:
-#          bash ./.github/scripts/prepare_sns_sqs.sh
-#      - name: Run integration test
-#        run: |
-#          mvn -s ${MAVEN_SETTINGS_FILE} flyway:migrate
-#          mvn -s ${MAVEN_SETTINGS_FILE} clean verify -Pintegration -e -Dspring.profiles.active=test
-#
-#  model-test:
-#    runs-on: ubuntu-latest
-#    steps:
-#      - uses: actions/checkout@v1
-#      - uses: actions/cache@v2
-#        with:
-#          path: ~/.m2/repository
-#          key: ${{ runner.os }}-maven-int-test-${{ hashFiles('**/pom.xml') }}
-#          restore-keys: |
-#            ${{ runner.os }}-maven-int-test-
-#      - uses: actions/setup-java@v1
-#        with:
-#          java-version: 11
-#      - name: Run model test
-#        run:
-#          mvn -s ${MAVEN_SETTINGS_FILE} clean verify -Pmodel-test -e -Dspring.profiles.active=model
-#      - name: Create coverage report files
-#        run:
-#          mvn jacoco:report
-#      - name: Upload code coverage results
-#        uses: actions/upload-artifact@v2
-#        with:
-#          name: code-coverage-file
-#          path: target/site/jacoco/jacoco.xml
+  integration-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:11
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        env:
+          PGDATA: /postgres/db
+          POSTGRES_DB: ${{ env.POSTGRES_DB }}
+          POSTGRES_USER: ${{ env.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+      localstack:
+        image: localstack/localstack-full
+        ports:
+          - "4566:4566"
+        env:
+          SERVICES: sns,sqs
+          DEFAULT_REGION: eu-central-1
+          DOCKER_HOST: unix:///var/run/docker.sock
+          HOST_TMP_FOLDER: "/tmp"
+          HOSTNAME_EXTERNAL: ${{ env.AWS_HOST }}
+        options: >-
+          --name localstack
+          --health-cmd "curl -sS 127.0.0.1:4566 || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 3
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-int-test-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-int-test-
+      - uses: actions/setup-java@v1
+        with:
+          java-version: 11
+      - name: Set up sns topics & sqs
+        run:
+          bash ./.github/scripts/prepare_sns_sqs.sh
+      - name: Run integration test
+        run: |
+          mvn -s ${MAVEN_SETTINGS_FILE} flyway:migrate
+          mvn -s ${MAVEN_SETTINGS_FILE} clean verify -Pintegration -e -Dspring.profiles.active=test
+
+  model-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-int-test-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-int-test-
+      - uses: actions/setup-java@v1
+        with:
+          java-version: 11
+      - name: Run model test
+        run:
+          mvn -s ${MAVEN_SETTINGS_FILE} clean verify -Pmodel-test -e -Dspring.profiles.active=model
+      - name: Create coverage report files
+        run:
+          mvn jacoco:report
+      - name: Upload code coverage results
+        uses: actions/upload-artifact@v2
+        with:
+          name: code-coverage-file
+          path: target/site/jacoco/jacoco.xml
