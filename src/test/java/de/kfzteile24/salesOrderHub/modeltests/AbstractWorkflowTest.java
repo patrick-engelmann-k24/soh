@@ -26,6 +26,7 @@ import de.kfzteile24.salesOrderHub.delegates.salesOrder.CancelDropshipmentOrderD
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.CancelOrderDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.ChangeInvoiceAddressDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.ChangeInvoiceAddressPossibleDelegate;
+import de.kfzteile24.salesOrderHub.delegates.salesOrder.CleanupDropshipmentInvoiceRowTableDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.InvoiceAddressChangedDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.OrderCancelledDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.OrderCompletedDelegate;
@@ -128,7 +129,8 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Paymen
         CreateDropshipmentSubsequentInvoiceDelegate.class,
         CancelDropshipmentOrderDelegate.class,
         DropshipmentOrderGenerateInvoicePdfDelegate.class,
-        DropshipmentOrderFullyInvoicedDelegate.class
+        DropshipmentOrderFullyInvoicedDelegate.class,
+        CleanupDropshipmentInvoiceRowTableDelegate.class
 })
 public abstract class AbstractWorkflowTest implements ApplicationContextAware {
 
