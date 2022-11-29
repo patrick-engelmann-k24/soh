@@ -365,12 +365,15 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
 
         salesOrder.getLatestJson().getOrderRows().forEach(orderRow -> {
 
-             assertTrue(timerService.pollWithDefaultTiming(() ->
+            assertTrue(timerService.pollWithDefaultTiming(() ->
                     camundaHelper.hasPassed(processInstance.getId(), EVENT_MSG_DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED.getName())));
 
             assertTrue(timerService.pollWithDefaultTiming(() ->
                     camundaHelper.hasPassed(processInstance.getId(), EVENT_END_MSG_DROPSHIPMENT_ORDER_ROW_CANCELLED.getName())));
         });
+
+        assertTrue(timerService.pollWithDefaultTiming(() ->
+                camundaHelper.hasPassed(processInstance.getId(), DROPSHIPMENT_ORDER_CANCELLATION.getName())));
 
         assertTrue(timerService.pollWithDefaultTiming(() ->
                 camundaHelper.hasPassed(processInstance.getId(), Events.END_MSG_ORDER_CANCELLED.getName())));
