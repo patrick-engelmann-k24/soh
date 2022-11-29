@@ -383,24 +383,23 @@ public class SalesOrderUtil {
         return message;
     }
 
-    public SalesOrder createPersistedSalesOrder(LocalDateTime createdAt, String... skuList) {
-        SalesOrder salesOrder = createSalesOrder(createdAt, skuList);
+    public SalesOrder createPersistedSalesOrder(String orderNumber, LocalDateTime createdAt, String... skuList) {
+        SalesOrder salesOrder = createSalesOrder(orderNumber, createdAt, skuList);
 
         return salesOrderService.save(salesOrder, ORDER_CREATED);
     }
 
-    public SalesOrder createPersistedSalesOrder(String orderGroupId, LocalDateTime createdAt, String... skuList) {
-        SalesOrder salesOrder = createSalesOrder(orderGroupId, createdAt, skuList);
+    public SalesOrder createPersistedSalesOrder(String orderNumber, String orderGroupId, LocalDateTime createdAt, String... skuList) {
+        SalesOrder salesOrder = createSalesOrder(orderNumber, orderGroupId, createdAt, skuList);
 
         return salesOrderService.save(salesOrder, ORDER_CREATED);
     }
 
-    public static SalesOrder createSalesOrder(LocalDateTime createdAt, String... skuList) {
-        return createSalesOrder(null, createdAt, skuList);
+    public static SalesOrder createSalesOrder(String orderNumber, LocalDateTime createdAt, String... skuList) {
+        return createSalesOrder(orderNumber, null, createdAt, skuList);
     }
 
-    public static SalesOrder createSalesOrder(String orderGroupId, LocalDateTime createdAt, String... skuList) {
-        final String orderNumber = UUID.randomUUID().toString();
+    public static SalesOrder createSalesOrder(String orderNumber, String orderGroupId, LocalDateTime createdAt, String... skuList) {
         List<OrderRows> orderRows = new ArrayList<>();
         for (String sku : skuList) {
             orderRows.add(createOrderRow(sku, REGULAR));
