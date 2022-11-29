@@ -39,6 +39,12 @@ class SalesOrderRepositoryIntegrationTest extends AbstractIntegrationTest {
                 orderNumber, orderGroupId, LocalDateTime.now(), "sku1");
     }
 
+    @Test
+    void testFindNoOrderNumberByOrderGroupId() {
+        var orderNumbers = repository.findOrderNumberByOrderGroupId(RandomStringUtils.randomNumeric(9));
+        assertThat(orderNumbers).isNotNull().isEmpty();
+    }
+
     @BeforeEach
     public void prepare() {
         repository.deleteAll();
