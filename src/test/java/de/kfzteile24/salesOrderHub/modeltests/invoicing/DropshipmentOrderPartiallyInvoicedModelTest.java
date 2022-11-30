@@ -1,4 +1,4 @@
-package de.kfzteile24.salesOrderHub.modeltests.dropshipment.invoice;
+package de.kfzteile24.salesOrderHub.modeltests.invoicing;
 
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.modeltests.AbstractWorkflowTest;
@@ -45,9 +45,9 @@ public class DropshipmentOrderPartiallyInvoicedModelTest extends AbstractWorkflo
 
 
     @Test
-    @Tags(@Tag("DropshipmentOrderFullyInvoicedTest"))
-    @DisplayName("Start process before activityAggregateInvoiceData. isPartialInvoice is false")
-    void testDropshipmentOrderFullyInvoiced(TestInfo testinfo){
+    @Tags(@Tag("DropshipmentOrderPartiallyInvoicedTest"))
+    @DisplayName("Start process before activityAggregateInvoiceData. isPartialInvoice is true")
+    void testDropshipmentOrderPartiallyInvoiced(TestInfo testinfo){
         log.info("{} - {}", testinfo.getDisplayName(), testinfo.getTags());
 
         processVariables.put(IS_PARTIAL_INVOICE.getName(), true);

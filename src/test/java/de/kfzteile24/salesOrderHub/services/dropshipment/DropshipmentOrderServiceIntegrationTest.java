@@ -23,6 +23,7 @@ import de.kfzteile24.salesOrderHub.exception.SalesOrderReturnNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
+import de.kfzteile24.salesOrderHub.repositories.DropshipmentInvoiceRowRepository;
 import de.kfzteile24.salesOrderHub.repositories.InvoiceNumberCounterRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
@@ -106,15 +107,22 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+    @Autowired
+    private TimedPollingService timedPollingService;
+    @Autowired
+    protected DropshipmentInvoiceRowService dropshipmentInvoiceRowService;
+    @Autowired
+    protected DropshipmentInvoiceRowRepository dropshipmentInvoiceRowRepository;
 
     private final MessageWrapper messageWrapper = MessageWrapper.builder().build();
 
     @BeforeEach
     public void setup() {
         super.setUp();
-        invoiceNumberCounterRepository.deleteAll();
-        invoiceNumberCounterService.init();
-        salesOrderRepository.deleteAllInBatch();
+        timedPollingService.retry(() -> invoiceNumberCounterRepository.deleteAll());
+        timedPollingService.retry(() -> invoiceNumberCounterService.init());
+        timedPollingService.retry(() -> salesOrderRepository.deleteAllInBatch());
+        timedPollingService.retry(() -> dropshipmentInvoiceRowRepository.deleteAllInBatch());
     }
 
     @Test
@@ -181,6 +189,7 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
         startDropshipmentConfirmedProcess(salesOrder, true);
 
         var message = createShipmentConfirmedMessage(salesOrder);
+        assertThat(dropshipmentInvoiceRowService.getByOrderNumber(salesOrder.getOrderNumber()).size()).isEqualTo(0);
         dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(message, messageWrapper);
 
         var optUpdatedSalesOrder = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber());
@@ -207,8 +216,24 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
             softly.assertThat(sku3Row.getTrackingNumbers()).as("Size of tracking numbers sku-3").hasSize(1);
             softly.assertThat(sku3Row.getTrackingNumbers().get(0)).as("sku-3 tracking number").isEqualTo("00F8F0LT2");
         }
-        assertThat(updatedSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber()).hasSize(18);
-        assertThat(updatedSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber()).isEqualTo(LocalDateTime.now().getYear() + "-1000000000001");
+
+        assertThat(dropshipmentInvoiceRowService.getByOrderNumber(salesOrder.getOrderNumber()).size()).isEqualTo(2);
+
+        var dropshipmentInvoiceRow1 = dropshipmentInvoiceRowService.getBySkuAndOrderNumber(sku1Row.getSku(), salesOrder.getOrderNumber()).get();
+        assertThat(dropshipmentInvoiceRow1.getOrderNumber()).isEqualTo(salesOrder.getOrderNumber());
+        assertThat(dropshipmentInvoiceRow1.getSku()).isEqualTo(sku1Row.getSku());
+
+        var dropshipmentInvoiceRow2 = dropshipmentInvoiceRowService.getBySkuAndOrderNumber(sku2Row.getSku(), salesOrder.getOrderNumber());
+        assertThat(dropshipmentInvoiceRow2.isEmpty()).isTrue();
+
+        var dropshipmentInvoiceRow3 = dropshipmentInvoiceRowService.getBySkuAndOrderNumber(sku3Row.getSku(), salesOrder.getOrderNumber()).get();
+        assertThat(dropshipmentInvoiceRow3.getOrderNumber()).isEqualTo(salesOrder.getOrderNumber());
+        assertThat(dropshipmentInvoiceRow3.getSku()).isEqualTo(sku3Row.getSku());
+
+        //TODO: implement test case, which would start invoicing process after shipment confirmed message is received and then later check updated sales order to make sure
+        //that the documentRefNumber is updated
+        //assertThat(updatedSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber()).hasSize(18);
+        //assertThat(updatedSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber()).isEqualTo(LocalDateTime.now().getYear() + "-1000000000001");
     }
 
     @Test
@@ -229,8 +254,10 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
         assertThat(optUpdatedSalesOrder).isNotEmpty();
         var updatedSalesOrder = optUpdatedSalesOrder.get();
 
-        assertThat(updatedSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber()).hasSize(18);
-        assertThat(updatedSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber()).isEqualTo(LocalDateTime.now().getYear() + "-1000000000002");
+        //TODO: implement test case, which would start invoicing process after shipment confirmed message is received and then later check updated sales order to make sure
+        //that the documentRefNumber is updated
+        //assertThat(updatedSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber()).hasSize(18);
+        //assertThat(updatedSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber()).isEqualTo(LocalDateTime.now().getYear() + "-1000000000002");
     }
 
     private void createSalesOrderInvoice(SalesOrder salesOrder) {
