@@ -57,17 +57,15 @@ import java.util.stream.Stream;
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.ORDER_NUMBER_SEPARATOR;
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.RETURN_ORDER_NUMBER_PREFIX;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.DROPSHIPMENT_ORDER_CANCELLATION;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_END_MSG_DROPSHIPMENT_ORDER_ROW_CANCELLED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.CALL_ACTIVITY_DROPSHIPMENT_ORDER_ROWS_CANCELLATION;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_SIGNAL_PAUSE_PROCESSING_DROPSHIPMENT_ORDER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_PURCHASE_ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_PURCHASE_ORDER_SUCCESSFUL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.THROW_MSG_DROPSHIPMENT_ORDER_CREATED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Gateways.XOR_CHECK_DROPSHIPMENT_ORDER_SUCCESSFUL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Gateways.XOR_CHECK_PAUSE_PROCESSING_DROPSHIPMENT_ORDER_FLAG;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_DROPSHIPMENT_ORDER_CONFIRMED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROW_ID;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
@@ -309,42 +307,9 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
         dropshipmentOrderService.handleDropShipmentOrderRowCancellation(salesOrder.getOrderNumber(), "sku-2");
         dropshipmentOrderService.handleDropShipmentOrderRowCancellation(salesOrder.getOrderNumber(), "sku-3");
 
-        verify(camundaHelper).correlateMessage(
-                argThat(message -> message == DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED),
-                argThat(order -> {
-                    assertThat(order.getOrderNumber()).isEqualTo(salesOrder.getOrderNumber());
-                    var orderRows = order.getLatestJson().getOrderRows();
-                    assertThat(orderRows).hasSize(3);
-                    return true;
-                }),
-                argThat(variableMap -> variableMap.getValue(ORDER_ROW_ID.getName(), String.class).equals("sku-1"))
-        );
-
         verify(salesOrderService, times(3)).save(
                 argThat(order -> StringUtils.equals(order.getOrderNumber(), salesOrder.getOrderNumber())),
                 argThat(action -> action == Action.ORDER_ROW_CANCELLED)
-        );
-
-        verify(camundaHelper).correlateMessage(
-                argThat(message -> message == DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED),
-                argThat(order -> {
-                    assertThat(order.getOrderNumber()).isEqualTo(salesOrder.getOrderNumber());
-                    var orderRows = order.getLatestJson().getOrderRows();
-                    assertThat(orderRows).hasSize(3);
-                    return true;
-                }),
-                argThat(variableMap -> variableMap.getValue(ORDER_ROW_ID.getName(), String.class).equals("sku-2"))
-        );
-
-        verify(camundaHelper).correlateMessage(
-                argThat(message -> message == DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED),
-                argThat(order -> {
-                    assertThat(order.getOrderNumber()).isEqualTo(salesOrder.getOrderNumber());
-                    var orderRows = order.getLatestJson().getOrderRows();
-                    assertThat(orderRows).hasSize(3);
-                    return true;
-                }),
-                argThat(variableMap -> variableMap.getValue(ORDER_ROW_ID.getName(), String.class).equals("sku-3"))
         );
 
         var updatedSalesOrder =
@@ -363,23 +328,14 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
 
         final var processInstance = startDropshipmentConfirmedProcess(salesOrder, false);
 
-        salesOrder.getLatestJson().getOrderRows().forEach(orderRow -> {
-
-            assertTrue(timerService.pollWithDefaultTiming(() ->
-                    camundaHelper.hasPassed(processInstance.getId(), EVENT_MSG_DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED.getName())));
-
-            assertTrue(timerService.pollWithDefaultTiming(() ->
-                    camundaHelper.hasPassed(processInstance.getId(), EVENT_END_MSG_DROPSHIPMENT_ORDER_ROW_CANCELLED.getName())));
-        });
-
-        assertTrue(timerService.pollWithDefaultTiming(() ->
-                camundaHelper.hasPassed(processInstance.getId(), DROPSHIPMENT_ORDER_CANCELLATION.getName())));
-
         assertTrue(timerService.pollWithDefaultTiming(() ->
                 camundaHelper.hasPassed(processInstance.getId(), Events.END_MSG_ORDER_CANCELLED.getName())));
 
         var updatedSalesOrder =
                 salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber()).orElseThrow();
+        updatedSalesOrder.getLatestJson().getOrderRows().forEach(orderRow -> {
+            assertThat(orderRow.getIsCancelled()).isTrue();
+        });
         assertThat(updatedSalesOrder.isCancelled()).isTrue();
     }
 
@@ -535,6 +491,13 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
         if (dropshipmentConfirmed) {
             assertTrue(timerService.pollWithDefaultTiming(() ->
                     camundaHelper.hasPassed(processInstance.getId(), EVENT_THROW_MSG_PURCHASE_ORDER_SUCCESSFUL.getName())));
+        } else {
+            assertTrue(timerService.pollWithDefaultTiming(() ->
+                    camundaHelper.hasPassed(processInstance.getId(), THROW_MSG_DROPSHIPMENT_ORDER_CREATED.getName())));
+            assertTrue(timerService.pollWithDefaultTiming(() ->
+                    camundaHelper.hasPassed(processInstance.getId(), XOR_CHECK_DROPSHIPMENT_ORDER_SUCCESSFUL.getName())));
+            assertTrue(timerService.pollWithDefaultTiming(() ->
+                    camundaHelper.hasPassed(processInstance.getId(), CALL_ACTIVITY_DROPSHIPMENT_ORDER_ROWS_CANCELLATION.getName())));
         }
 
         return processInstance;
@@ -554,9 +517,9 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
     @SneakyThrows
     public void cleanup() {
         setPauseDropshipmentProcessingFlag(false);
-        auditLogRepository.deleteAll();
-        salesOrderRepository.deleteAll();
-        invoiceNumberCounterRepository.deleteAll();
-        invoiceNumberCounterService.init();
+        timedPollingService.retry(() -> auditLogRepository.deleteAll());
+        timedPollingService.retry(() -> salesOrderRepository.deleteAll());
+        timedPollingService.retry(() -> invoiceNumberCounterRepository.deleteAll());
+        timedPollingService.retry(() -> invoiceNumberCounterService.init());
     }
 }
