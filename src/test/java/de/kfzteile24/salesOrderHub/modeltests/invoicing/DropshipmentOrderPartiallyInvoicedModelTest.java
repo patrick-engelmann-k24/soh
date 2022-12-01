@@ -33,7 +33,7 @@ import static org.mockito.Mockito.when;
 
 @DisplayName("DropshipmentOrderPartiallyInvoiced Invoicing SubProcess model test")
 @Slf4j(topic = "DropshipmentOrderPartiallyInvoiced Invoicing SubProcess model test")
-public class DropshipmentOrderPartiallyInvoicedModelTest extends AbstractWorkflowTest {
+class DropshipmentOrderPartiallyInvoicedModelTest extends AbstractWorkflowTest {
 
     @BeforeEach
     protected void setUp() {
