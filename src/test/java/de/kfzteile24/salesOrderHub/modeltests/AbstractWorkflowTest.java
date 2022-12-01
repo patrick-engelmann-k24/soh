@@ -36,6 +36,7 @@ import de.kfzteile24.salesOrderHub.delegates.salesOrder.listener.CheckPaymentTyp
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.listener.CheckPlatformTypeDelegate;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
+import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceNumberCounterService;
 import de.kfzteile24.salesOrderHub.services.property.KeyValuePropertyService;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
@@ -160,6 +161,8 @@ public abstract class AbstractWorkflowTest implements ApplicationContextAware {
 
     @MockBean
     protected MetricsHelper metricsHelper;
+    @MockBean
+    protected InvoiceNumberCounterService invoiceNumberCounterService;
 
     @Autowired
     protected RuntimeService runtimeService;
