@@ -97,6 +97,7 @@
         <bpmn:extensionElements>
           <camunda:in source="all" target="all" />
           <camunda:out source="all" target="all" />
+          <camunda:in source="orderRows" target="orderRows" />
         </bpmn:extensionElements>
         <bpmn:incoming>Flow_1d7auhq</bpmn:incoming>
         <bpmn:outgoing>Flow_0ttl7c0</bpmn:outgoing>
