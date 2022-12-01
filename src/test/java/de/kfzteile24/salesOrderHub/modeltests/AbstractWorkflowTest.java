@@ -34,9 +34,9 @@ import de.kfzteile24.salesOrderHub.delegates.salesOrder.OrderCreatedDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.listener.CheckOrderTypeDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.listener.CheckPaymentTypeDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.listener.CheckPlatformTypeDelegate;
+import de.kfzteile24.salesOrderHub.delegates.salesOrder.row.OrderRowCancelledDelegate;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
-import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceNumberCounterService;
 import de.kfzteile24.salesOrderHub.services.property.KeyValuePropertyService;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
@@ -131,7 +131,8 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Paymen
         CancelDropshipmentOrderDelegate.class,
         DropshipmentOrderGenerateInvoicePdfDelegate.class,
         DropshipmentOrderFullyInvoicedDelegate.class,
-        CleanupDropshipmentInvoiceRowTableDelegate.class
+        CleanupDropshipmentInvoiceRowTableDelegate.class,
+        OrderRowCancelledDelegate.class
 })
 public abstract class AbstractWorkflowTest implements ApplicationContextAware {
 
@@ -161,8 +162,6 @@ public abstract class AbstractWorkflowTest implements ApplicationContextAware {
 
     @MockBean
     protected MetricsHelper metricsHelper;
-    @MockBean
-    protected InvoiceNumberCounterService invoiceNumberCounterService;
 
     @Autowired
     protected RuntimeService runtimeService;
