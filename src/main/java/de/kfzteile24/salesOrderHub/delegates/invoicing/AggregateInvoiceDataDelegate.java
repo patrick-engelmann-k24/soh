@@ -24,7 +24,6 @@ public class AggregateInvoiceDataDelegate implements JavaDelegate {
     @NonNull
     private final DropshipmentInvoiceRowService dropshipmentInvoiceRowService;
 
-    // @Scheduled(cron = "0 1 * * *", zone = "Europe/Berlin") //scheduled at 1 am everyday
     @Override
     @Transactional
     public void execute(DelegateExecution delegateExecution) throws Exception {
