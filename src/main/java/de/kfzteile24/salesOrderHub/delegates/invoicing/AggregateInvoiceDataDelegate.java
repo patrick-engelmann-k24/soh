@@ -29,7 +29,7 @@ public class AggregateInvoiceDataDelegate implements JavaDelegate {
     public void execute(DelegateExecution delegateExecution) throws Exception {
         log.info("Daily aggregation of invoice data has started.");
 
-        var invoiceDataMap = dropshipmentInvoiceRowService.generateInvoiceDataMap(
+        var invoiceDataMap = dropshipmentInvoiceRowService.buildInvoiceDataMap(
                 dropshipmentInvoiceRowService.findAllOrderByOrderNumberAsc());
 
         List<String> invoiceNumberList = new ArrayList<>();

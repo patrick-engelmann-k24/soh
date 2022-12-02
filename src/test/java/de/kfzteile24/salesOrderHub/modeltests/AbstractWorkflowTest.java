@@ -19,7 +19,7 @@ import de.kfzteile24.salesOrderHub.delegates.invoicing.DropshipmentOrderGenerate
 import de.kfzteile24.salesOrderHub.delegates.invoicing.DropshipmentOrderPublishInvoiceDataDelegate;
 import de.kfzteile24.salesOrderHub.delegates.invoicing.DropshipmentOrderStoreInvoiceDelegate;
 import de.kfzteile24.salesOrderHub.delegates.invoicing.StartDropshipmentSubsequentOrderProcessDelegate;
-import de.kfzteile24.salesOrderHub.delegates.invoicing.listener.IsPartialInvoiceListener;
+import de.kfzteile24.salesOrderHub.services.splitter.decorator.listener.IsPartialInvoiceListener;
 import de.kfzteile24.salesOrderHub.delegates.returnorder.PublishCreditNoteReceivedDelegate;
 import de.kfzteile24.salesOrderHub.delegates.returnorder.PublishReturnOrderCreatedDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.CancelDropshipmentOrderDelegate;
