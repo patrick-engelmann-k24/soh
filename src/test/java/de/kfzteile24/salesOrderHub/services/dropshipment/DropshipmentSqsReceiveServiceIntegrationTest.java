@@ -236,7 +236,7 @@ class DropshipmentSqsReceiveServiceIntegrationTest extends AbstractIntegrationTe
 
         var message = getObjectByResource("dropshipmentOrderPurchasedBooked.json", DropshipmentPurchaseOrderBookedMessage.class);
         message.setSalesOrderNumber(salesOrder.getOrderNumber());
-        dropshipmentSqsReceiveService.queueListenerDropshipmentPurchaseOrderBooked(message, messageWrapper);
+        timedPollingService.retry(() -> dropshipmentSqsReceiveService.queueListenerDropshipmentPurchaseOrderBooked(message, messageWrapper));
 
         assertTrue(timedPollingService.pollWithDefaultTiming(() -> 
                 camundaHelper.hasPassed(salesOrder.getProcessId(), EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED.getName())));

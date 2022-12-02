@@ -98,6 +98,7 @@
           <camunda:in source="all" target="all" />
           <camunda:out source="all" target="all" />
           <camunda:in source="orderRows" target="orderRows" />
+          <camunda:in source="orderNumber" target="orderNumber" />
         </bpmn:extensionElements>
         <bpmn:incoming>Flow_1d7auhq</bpmn:incoming>
         <bpmn:outgoing>Flow_0ttl7c0</bpmn:outgoing>
@@ -191,7 +192,6 @@
     </bpmn:textAnnotation>
     <bpmn:association id="Association_18w6g2h" sourceRef="activityAggregateInvoiceData" targetRef="TextAnnotation_0rnu6fd" />
   </bpmn:process>
-  <bpmn:message id="Message_0g9ie3g" name="msgDropshipmentOrderRowCancellationReceived" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="InvoicingProcess">
       <bpmndi:BPMNEdge id="Flow_0mi7tr2_di" bpmnElement="Flow_0mi7tr2">

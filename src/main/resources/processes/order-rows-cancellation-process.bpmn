@@ -33,7 +33,6 @@
     </bpmn:serviceTask>
     <bpmn:sequenceFlow id="Flow_0xmc3ze" sourceRef="activityDropshipmentOrderCancellation" targetRef="Event_1h1elcy" />
   </bpmn:process>
-  <bpmn:message id="Message_0i3m6n4" name="msgDropshipmentOrderRowCancellationReceived" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="OrderRowsCancellationProcess">
       <bpmndi:BPMNEdge id="Flow_0bel4es_di" bpmnElement="Flow_0bel4es">
