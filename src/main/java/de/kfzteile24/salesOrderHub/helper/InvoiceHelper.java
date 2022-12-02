@@ -1,7 +1,6 @@
 package de.kfzteile24.salesOrderHub.helper;
 
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,14 +16,6 @@ public class InvoiceHelper {
     public void setSalesOrderInvoice(SalesOrder salesOrder, String invoiceNumber) {
         salesOrder.getLatestJson().getOrderHeader().setDocumentRefNumber(invoiceNumber);
         var invoiceMessage = invoiceService.generateInvoiceMessage(salesOrder);
-        invoiceMessage.getSalesInvoice().getSalesInvoiceHeader().setOrderGroupId(
-                salesOrder.getLatestJson().getOrderHeader().getOrderGroupId());
-        salesOrder.setInvoiceEvent(invoiceMessage);
-    }
-
-    public void setSalesOrderInvoiceFromMessage(CoreSalesInvoiceCreatedMessage invoiceMessage, SalesOrder salesOrder) {
-        var invoiceNumber = invoiceMessage.getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber();
-        salesOrder.getLatestJson().getOrderHeader().setDocumentRefNumber(invoiceNumber);
         invoiceMessage.getSalesInvoice().getSalesInvoiceHeader().setOrderGroupId(
                 salesOrder.getLatestJson().getOrderHeader().getOrderGroupId());
         salesOrder.setInvoiceEvent(invoiceMessage);

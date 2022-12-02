@@ -1,15 +1,12 @@
 package de.kfzteile24.salesOrderHub.services.invoicing;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
-import de.kfzteile24.salesOrderHub.constants.PersistentProperties;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
-import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
@@ -20,7 +17,6 @@ import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentInvoiceRowService;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentOrderService;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceNumberCounterService;
-import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
@@ -54,8 +50,6 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Paymen
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
 
 class DropshipmentOrderFullyInvoicedIntegrationTest extends AbstractIntegrationTest {
 
@@ -158,19 +152,7 @@ class DropshipmentOrderFullyInvoicedIntegrationTest extends AbstractIntegrationT
         ((Order) salesOrder.getOriginalOrder()).getOrderHeader().setOrderFulfillment(DELTICOM.getName());
 
         salesOrderService.save(salesOrder, Action.ORDER_CREATED);
-
-        doNothing().when(camundaHelper).correlateMessage(any(), any(), any());
         return salesOrder;
-    }
-
-    private void setPauseDropshipmentProcessingFlag(Boolean value) {
-        keyValuePropertyService.getPropertyByKey(PersistentProperties.PAUSE_DROPSHIPMENT_PROCESSING)
-                .ifPresentOrElse(property -> {
-                    property.setValue(value.toString());
-                    keyValuePropertyService.save(property);
-                }, () -> {
-                    throw new NotFoundException("Could not found persistent property. Key:  " + PersistentProperties.PAUSE_DROPSHIPMENT_PROCESSING);
-                });
     }
 
     private ProcessInstance startDropshipmentConfirmedProcess(SalesOrder salesOrder, DropshipmentShipmentConfirmedMessage message) {
@@ -222,7 +204,6 @@ class DropshipmentOrderFullyInvoicedIntegrationTest extends AbstractIntegrationT
     @AfterEach
     @SneakyThrows
     public void cleanup() {
-        setPauseDropshipmentProcessingFlag(false);
         timedPollingService.retry(() -> auditLogRepository.deleteAll());
         timedPollingService.retry(() -> salesOrderRepository.deleteAll());
         timedPollingService.retry(() -> invoiceNumberCounterRepository.deleteAll());

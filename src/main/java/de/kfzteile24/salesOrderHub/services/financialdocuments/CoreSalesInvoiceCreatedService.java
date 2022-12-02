@@ -129,6 +129,7 @@ public class CoreSalesInvoiceCreatedService {
 
     protected void updateOriginalSalesOrder(CoreSalesInvoiceCreatedMessage invoiceMsg,
                                             SalesOrder originalSalesOrder) {
+
         var invoiceNumber = invoiceMsg.getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber();
         originalSalesOrder.getLatestJson().getOrderHeader().setDocumentRefNumber(invoiceNumber);
         invoiceMsg.getSalesInvoice().getSalesInvoiceHeader().setOrderGroupId(
