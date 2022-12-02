@@ -6,6 +6,7 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
+import de.kfzteile24.salesOrderHub.helper.InvoiceHelper;
 import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.services.SalesOrderRowService;
@@ -44,6 +45,7 @@ public class CoreSalesInvoiceCreatedService {
     private final SalesOrderRowService salesOrderRowService;
     private final MetricsHelper metricsHelper;
     private final SnsPublishService snsPublishService;
+    private final InvoiceHelper invoiceHelper;
 
     @SneakyThrows
     @EnrichMessageForDlq
@@ -128,12 +130,7 @@ public class CoreSalesInvoiceCreatedService {
 
     protected void updateOriginalSalesOrder(CoreSalesInvoiceCreatedMessage invoiceMsg,
                                             SalesOrder originalSalesOrder) {
-
-        var invoiceNumber = invoiceMsg.getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber();
-        originalSalesOrder.getLatestJson().getOrderHeader().setDocumentRefNumber(invoiceNumber);
-        invoiceMsg.getSalesInvoice().getSalesInvoiceHeader().setOrderGroupId(
-                originalSalesOrder.getLatestJson().getOrderHeader().getOrderGroupId());
-        originalSalesOrder.setInvoiceEvent(invoiceMsg);
+        invoiceHelper.setSalesOrderInvoiceFromMessage(invoiceMsg, originalSalesOrder);
         salesOrderService.updateOrder(originalSalesOrder);
     }
 

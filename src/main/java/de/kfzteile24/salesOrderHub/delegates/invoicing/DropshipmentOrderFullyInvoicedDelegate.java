@@ -2,6 +2,8 @@ package de.kfzteile24.salesOrderHub.delegates.invoicing;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
+import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
+import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,10 +19,15 @@ public class DropshipmentOrderFullyInvoicedDelegate implements JavaDelegate {
     @NonNull
     private final CamundaHelper camundaHelper;
 
+    @NonNull
+    private final SalesOrderService salesOrderService;
+
     @Override
     public void execute(DelegateExecution delegateExecution) throws Exception {
         final var orderNumber = (String) delegateExecution.getVariable(Variables.ORDER_NUMBER.getName());
         log.info("Dropshipment Order Fully Invoiced Delegate for order number {}", orderNumber);
+        var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
+                .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
         camundaHelper.correlateDropshipmentOrderFullyInvoicedMessage(orderNumber);
     }
 }

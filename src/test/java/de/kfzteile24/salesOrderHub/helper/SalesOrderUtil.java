@@ -13,6 +13,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.shared.Address;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
+import de.kfzteile24.soh.order.dto.BillingAddress;
 import de.kfzteile24.soh.order.dto.Customer;
 import de.kfzteile24.soh.order.dto.GrandTotalTaxes;
 import de.kfzteile24.soh.order.dto.Order;
@@ -155,6 +156,7 @@ public class SalesOrderUtil {
                 .customer(customer)
                 .salesChannel("www-k24-at")
                 .platform(Platform.ECP)
+                .billingAddress(BillingAddress.builder().build())
                 .build();
 
         final Order order = Order.builder()
