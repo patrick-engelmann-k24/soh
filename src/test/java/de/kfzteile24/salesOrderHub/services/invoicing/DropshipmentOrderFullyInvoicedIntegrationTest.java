@@ -120,10 +120,13 @@ class DropshipmentOrderFullyInvoicedIntegrationTest extends AbstractIntegrationT
         int i = 1;
         for (String orderNumber: orderNumbers) {
             var updatedSalesOrder = salesOrderService.getOrderByOrderNumber(orderNumber).get();
-            assertThat(updatedSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber()).hasSize(18);
-            assertThat(updatedSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber()).isEqualTo(LocalDateTime.now().getYear()
+            var invoiceNumber = updatedSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber();
+            assertThat(invoiceNumber).hasSize(18);
+            assertThat(invoiceNumber).isEqualTo(LocalDateTime.now().getYear()
                     + "-100000000000" + Integer.toString(i));
             i++;
+            assertThat(updatedSalesOrder.getInvoiceEvent()).isNotNull();
+            assertThat(updatedSalesOrder.getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber()).isEqualTo(invoiceNumber);
         };
     }
 
