@@ -43,7 +43,7 @@ public class CreateDropshipmentSubsequentOrderDelegate extends CommonDelegate {
                 salesOrder,
                 skuList,
                 invoiceNumber,
-                delegateExecution.getProcessInstanceId());
+                delegateExecution.getActivityInstanceId());
 
         delegateExecution.setVariable(ORDER_NUMBER.getName(), subsequentOrder.getOrderNumber());
         delegateExecution.setVariable(SALES_ORDER_ID.getName(), subsequentOrder.getId());

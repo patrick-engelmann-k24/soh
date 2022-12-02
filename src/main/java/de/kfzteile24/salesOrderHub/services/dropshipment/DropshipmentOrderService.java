@@ -325,7 +325,7 @@ public class DropshipmentOrderService {
     public SalesOrder createDropshipmentSubsequentSalesOrder(SalesOrder salesOrder,
                                                              List<String> skuList,
                                                              String invoiceNumber,
-                                                             String processId) {
+                                                             String activityInstanceId) {
         String newOrderNumber = createDropshipmentNewOrderNumber(salesOrder);
         Order orderJson = createDropshipmentSubsequentOrderJson(salesOrder, newOrderNumber, skuList, invoiceNumber);
         var customerEmail = Strings.isNotEmpty(salesOrder.getCustomerEmail()) ?
@@ -338,7 +338,7 @@ public class DropshipmentOrderService {
                 .customerEmail(customerEmail)
                 .originalOrder(orderJson)
                 .latestJson(orderJson)
-                .processId(processId)
+                .processId(activityInstanceId)
                 .build();
         return salesOrderService.save(subsequentOrder, ORDER_CREATED);
     }
