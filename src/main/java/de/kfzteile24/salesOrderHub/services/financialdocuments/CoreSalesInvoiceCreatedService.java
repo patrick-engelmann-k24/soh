@@ -45,7 +45,6 @@ public class CoreSalesInvoiceCreatedService {
     private final SalesOrderRowService salesOrderRowService;
     private final MetricsHelper metricsHelper;
     private final SnsPublishService snsPublishService;
-    private final InvoiceHelper invoiceHelper;
 
     @SneakyThrows
     @EnrichMessageForDlq
@@ -130,7 +129,11 @@ public class CoreSalesInvoiceCreatedService {
 
     protected void updateOriginalSalesOrder(CoreSalesInvoiceCreatedMessage invoiceMsg,
                                             SalesOrder originalSalesOrder) {
-        invoiceHelper.setSalesOrderInvoiceFromMessage(invoiceMsg, originalSalesOrder);
+        var invoiceNumber = invoiceMsg.getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber();
+        originalSalesOrder.getLatestJson().getOrderHeader().setDocumentRefNumber(invoiceNumber);
+        invoiceMsg.getSalesInvoice().getSalesInvoiceHeader().setOrderGroupId(
+                originalSalesOrder.getLatestJson().getOrderHeader().getOrderGroupId());
+        originalSalesOrder.setInvoiceEvent(invoiceMsg);
         salesOrderService.updateOrder(originalSalesOrder);
     }
 

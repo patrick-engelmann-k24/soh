@@ -57,8 +57,6 @@ class CoreSalesInvoiceCreatedServiceTest {
     @Mock
     private SnsPublishService snsPublishService;
     @Mock
-    private InvoiceHelper invoiceHelper;
-    @Mock
     private OrderUtil orderUtil;
     @Mock
     private MetricsHelper metricsHelper;
