@@ -16,7 +16,7 @@
     <bpmn:sequenceFlow id="Flow_0u3z483" sourceRef="Event_1pwtpk9" targetRef="eventEndCoreSalesInvoiceCreatedReceived" />
     <bpmn:endEvent id="eventEndCoreSalesInvoiceCreatedReceived" name="Publish invoice received">
       <bpmn:incoming>Flow_0u3z483</bpmn:incoming>
-      <bpmn:messageEventDefinition id="MessageEventDefinition_1qrwv3y" camunda:delegateExpression="${publishCoreSalesInvoiceCreatedReceivedDelegate}" />
+      <bpmn:messageEventDefinition id="MessageEventDefinition_1qrwv3y" camunda:delegateExpression="${dropshipmentOrderPublishInvoiceDataDelegate}" />
     </bpmn:endEvent>
     <bpmn:textAnnotation id="TextAnnotation_0a1loie">
       <bpmn:text>Publish core sales invoice created event</bpmn:text>

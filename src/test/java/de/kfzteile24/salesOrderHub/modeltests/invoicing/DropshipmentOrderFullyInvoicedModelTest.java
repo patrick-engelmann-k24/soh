@@ -1,4 +1,4 @@
-package de.kfzteile24.salesOrderHub.modeltests.dropshipment.subprocess;
+package de.kfzteile24.salesOrderHub.modeltests.dropshipment.invoicing;
 
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.modeltests.AbstractWorkflowTest;
@@ -10,25 +10,37 @@ import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
+import java.util.Collections;
+
+import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.INVOICING_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.DROPSHIPMENT_ORDER_ROW_CREATE_ENTRY;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.CALL_ACTIVITY_DROPSHIPMENT_ORDER_ROWS_CANCELLATION;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.CREATE_DROPSHIPMENT_SUBSEQUENT_INVOICE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.DROPSHIPMENT_ORDER_ROW_SHIPMENT_CONFIRMED_SUB_PROCESS;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_END_MSG_DROPSHIPMENT_ORDER_ROW_PUBLISH_TRACKING_INFORMATION;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_ORDER_ROW_SHIPMENT_CONFIRMED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_GENERATE_PARTLY_INVOICED_PDF;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_INVOICING_DROPSHIPMENT_ORDER_FULLY_INVOICED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_INVOICING_GENERATE_FULLY_INVOICED_PDF;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_INVOICING_PUBLISH_FULLY_INVOICED_DATA;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_PUBLISH_PARTLY_INVOICED_DATA;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.INVOICING_CREATE_DROPSHIPMENT_SALES_ORDER_INVOICE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Gateways.EVENT_DROPSHIPMENT_ORDER_CANCEL_OR_COMPLETE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Gateways.XOR_CHECK_DROPSHIPMENT_ORDER_SUCCESSFUL;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Gateways.XOR_CHECK_PARTIAL_INVOICE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_DROPSHIPMENT_ORDER_CONFIRMED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_PARTIAL_INVOICE;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROWS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
-import static org.mockito.Mockito.times;
+import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@DisplayName("DropshipmentOrderRowShipmentConfirmed SubProcess model test")
-@Slf4j(topic = "DropshipmentOrderRowShipmentConfirmed SubProcess model test")
-class DropshipmentOrderRowShipmentConfirmedModelTest extends AbstractWorkflowTest {
+@DisplayName("DropshipmentOrderFullyInvoiced Invoicing SubProcess model test")
+@Slf4j(topic = "DropshipmentOrderFullyInvoiced Invoicing SubProcess model test")
+class DropshipmentOrderFullyInvoicedModelTest extends AbstractWorkflowTest {
 
     @BeforeEach
     protected void setUp() {
@@ -38,13 +50,13 @@ class DropshipmentOrderRowShipmentConfirmedModelTest extends AbstractWorkflowTes
         businessKey = salesOrder.getOrderNumber();
     }
 
-
     @Test
-    @Tags(@Tag("DropshipmentOrderRowShipmentConfirmedSubProcessTest"))
-    @DisplayName("Start process before eventMsgDropShipmentOrderConfirmed. isDropshipmentOrderConfirmed is true")
-    void testDropshipmentOrderRowShipmentConfirmedSubprocess(TestInfo testinfo){
+    @Tags(@Tag("DropshipmentOrderFullyInvoicedTest"))
+    @DisplayName("Start process before activityAggregateInvoiceData. isPartialInvoice is false")
+    void testDropshipmentOrderFullyInvoiced(TestInfo testinfo){
         log.info("{} - {}", testinfo.getDisplayName(), testinfo.getTags());
 
+        processVariables.put(IS_PARTIAL_INVOICE.getName(), false);
         processVariables.put(IS_DROPSHIPMENT_ORDER_CONFIRMED.getName(), true);
 
         when(processScenario.waitsAtReceiveTask(EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED.getName()))
@@ -59,8 +71,16 @@ class DropshipmentOrderRowShipmentConfirmedModelTest extends AbstractWorkflowTes
         scenario = startBeforeActivity(SALES_ORDER_PROCESS, XOR_CHECK_DROPSHIPMENT_ORDER_SUCCESSFUL.getName(),
                 businessKey, processVariables);
 
-        verify(processScenario, times(3)).hasCompleted(DROPSHIPMENT_ORDER_ROW_CREATE_ENTRY.getName());
-        verify(processScenario, times(3)).hasCompleted(EVENT_END_MSG_DROPSHIPMENT_ORDER_ROW_PUBLISH_TRACKING_INFORMATION.getName());
+        scenario = startBeforeActivity(INVOICING_PROCESS, XOR_CHECK_PARTIAL_INVOICE.getName(),
+                businessKey, processVariables);
+
+        verify(processScenario).hasCompleted(INVOICING_CREATE_DROPSHIPMENT_SALES_ORDER_INVOICE.getName());
+        verify(processScenario).hasCompleted(EVENT_THROW_MSG_INVOICING_PUBLISH_FULLY_INVOICED_DATA.getName());
+        verify(processScenario).hasCompleted(EVENT_THROW_MSG_INVOICING_DROPSHIPMENT_ORDER_FULLY_INVOICED.getName());
+        verify(processScenario).hasCompleted(EVENT_THROW_MSG_INVOICING_GENERATE_FULLY_INVOICED_PDF.getName());
+
+        assertThat(scenario.instance(processScenario)).isEnded();
+
     }
 
 }

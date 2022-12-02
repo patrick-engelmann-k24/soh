@@ -17,4 +17,7 @@ public interface SalesOrderRepository extends JpaRepository<SalesOrder, UUID> {
     List<SalesOrder> findAllByOrderGroupIdOrderByUpdatedAtDesc(String orderGroupId);
 
     long countByCustomerEmail(String customerEmail);
+
+    @Query("SELECT a.orderNumber FROM SalesOrder a WHERE a.orderGroupId = :orderGroupId")
+    List<String> findOrderNumberByOrderGroupId(@Param("orderGroupId") String orderGroupId);
 }

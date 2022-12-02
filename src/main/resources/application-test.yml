@@ -107,6 +107,10 @@ kfzteile:
   product-data-hub:
     pdhUrl: http://localhost:18080
     authUrl: http://localhost:18080/oauth2/token
+  process-config:
+    sales-order-process:
+      dropshipment-order-booked-timer: R/PT10S
+      dropshipment-shipment-confirmed-timer: R/PT10S
   dropshipment:
     splitgenarts:
       ecp:

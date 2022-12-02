@@ -1,4 +1,4 @@
-package de.kfzteile24.salesOrderHub.delegates.salesOrder;
+package de.kfzteile24.salesOrderHub.delegates.invoicing;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundCustomException;
@@ -24,7 +24,7 @@ import static org.apache.commons.lang3.StringUtils.equalsIgnoreCase;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class PublishCoreSalesInvoiceCreatedReceivedDelegate implements JavaDelegate {
+public class DropshipmentOrderPublishInvoiceDataDelegate implements JavaDelegate {
 
     @NonNull
     private final SnsPublishService snsPublishService;
@@ -43,7 +43,7 @@ public class PublishCoreSalesInvoiceCreatedReceivedDelegate implements JavaDeleg
                 .orElseThrow(() -> new SalesOrderNotFoundCustomException("Could not find order with id: " + salesOrderId
                         + " for publishing core sales invoice event"));
         snsPublishService.publishCoreInvoiceReceivedEvent(EventMapper.INSTANCE.toCoreSalesInvoiceCreatedReceivedEvent(salesOrder.getInvoiceEvent()));
-        log.info("{} delegate invoked", PublishCoreSalesInvoiceCreatedReceivedDelegate.class.getSimpleName());
+        log.info("{} delegate invoked", DropshipmentOrderPublishInvoiceDataDelegate.class.getSimpleName());
 
         var orderFulfillment = salesOrder.getLatestJson().getOrderHeader().getOrderFulfillment();
         if (!equalsIgnoreCase(orderFulfillment, DELTICOM.getName())) {

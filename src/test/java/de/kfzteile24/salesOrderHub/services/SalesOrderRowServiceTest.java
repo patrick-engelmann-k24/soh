@@ -25,6 +25,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
@@ -69,14 +70,17 @@ class SalesOrderRowServiceTest {
     @Test
     void testHandleParcelShippedEvent() {
         final SalesOrder salesOrder1 = createSalesOrder(
+                UUID.randomUUID().toString(),
                 null,
                 "sku1"
         );
         final SalesOrder salesOrder2 = createSalesOrder(
+                UUID.randomUUID().toString(),
                 LocalDateTime.of(2022, 2, 1, 1, 0, 0),
                 "sku1", "sku2", "sku3"
         );
         final SalesOrder salesOrder3 = createSalesOrder(
+                UUID.randomUUID().toString(),
                 LocalDateTime.of(2022, 3, 1, 1, 0, 0),
                 "sku4", "sku5"
         );
@@ -107,6 +111,7 @@ class SalesOrderRowServiceTest {
     @DisplayName("When parcel shipped event has combined items, then it should be ignored")
     void whenParcelShippedEventHasCombinedItemsThenItShouldBeIgnored() {
         final SalesOrder salesOrder1 = createSalesOrder(
+                UUID.randomUUID().toString(),
                 null,
                 "sku1"
         );

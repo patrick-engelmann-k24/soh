@@ -8,25 +8,33 @@ import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.DropshipmentOrder
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.PublishDropshipmentOrderCreatedDelegate;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.PublishDropshipmentOrderRowTrackingInformationDelegate;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.SaveDropshipmentOrderRowDelegate;
-import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.StoreDropshipmentInvoiceDelegate;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.listener.CheckIsDropshipmentOrderListener;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.listener.CheckProcessingDropshipmentOrderListener;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.listener.NewRelicAwareTimerListener;
 import de.kfzteile24.salesOrderHub.delegates.invoicing.AggregateInvoiceDataDelegate;
+import de.kfzteile24.salesOrderHub.delegates.invoicing.CreateDropshipmentSubsequentInvoiceDelegate;
+import de.kfzteile24.salesOrderHub.delegates.invoicing.CreateDropshipmentSubsequentOrderDelegate;
+import de.kfzteile24.salesOrderHub.delegates.invoicing.DropshipmentOrderFullyInvoicedDelegate;
+import de.kfzteile24.salesOrderHub.delegates.invoicing.DropshipmentOrderGenerateInvoicePdfDelegate;
+import de.kfzteile24.salesOrderHub.delegates.invoicing.DropshipmentOrderPublishInvoiceDataDelegate;
+import de.kfzteile24.salesOrderHub.delegates.invoicing.DropshipmentOrderStoreInvoiceDelegate;
+import de.kfzteile24.salesOrderHub.delegates.invoicing.StartDropshipmentSubsequentOrderProcessDelegate;
 import de.kfzteile24.salesOrderHub.delegates.invoicing.listener.IsPartialInvoiceListener;
 import de.kfzteile24.salesOrderHub.delegates.returnorder.PublishCreditNoteReceivedDelegate;
 import de.kfzteile24.salesOrderHub.delegates.returnorder.PublishReturnOrderCreatedDelegate;
+import de.kfzteile24.salesOrderHub.delegates.salesOrder.CancelDropshipmentOrderDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.CancelOrderDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.ChangeInvoiceAddressDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.ChangeInvoiceAddressPossibleDelegate;
+import de.kfzteile24.salesOrderHub.delegates.salesOrder.CleanupDropshipmentInvoiceRowTableDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.InvoiceAddressChangedDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.OrderCancelledDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.OrderCompletedDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.OrderCreatedDelegate;
-import de.kfzteile24.salesOrderHub.delegates.salesOrder.PublishCoreSalesInvoiceCreatedReceivedDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.listener.CheckOrderTypeDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.listener.CheckPaymentTypeDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.listener.CheckPlatformTypeDelegate;
+import de.kfzteile24.salesOrderHub.delegates.salesOrder.row.OrderRowCancelledDelegate;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
 import de.kfzteile24.salesOrderHub.services.property.KeyValuePropertyService;
@@ -40,9 +48,11 @@ import org.camunda.bpm.extension.process_test_coverage.spring_test.ProcessEngine
 import org.camunda.bpm.extension.process_test_coverage.spring_test.ProcessEngineCoverageTestExecutionListener;
 import org.camunda.bpm.scenario.ProcessScenario;
 import org.camunda.bpm.scenario.Scenario;
+import org.camunda.bpm.scenario.act.EventBasedGatewayAction;
 import org.camunda.bpm.scenario.act.MessageIntermediateCatchEventAction;
 import org.camunda.bpm.scenario.act.ReceiveTaskAction;
 import org.camunda.bpm.scenario.act.SignalIntermediateCatchEventAction;
+import org.camunda.bpm.scenario.delegate.EventBasedGatewayDelegate;
 import org.camunda.bpm.scenario.delegate.EventSubscriptionDelegate;
 import org.camunda.bpm.scenario.impl.ProcessRunnerImpl;
 import org.camunda.bpm.scenario.run.Runner;
@@ -98,8 +108,8 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Paymen
         OrderCreatedDelegate.class,
         OrderCancelledDelegate.class,
         PublishDropshipmentOrderCreatedDelegate.class,
-        PublishCoreSalesInvoiceCreatedReceivedDelegate.class,
-        StoreDropshipmentInvoiceDelegate.class,
+        DropshipmentOrderPublishInvoiceDataDelegate.class,
+        DropshipmentOrderStoreInvoiceDelegate.class,
         OrderCompletedDelegate.class,
         SimpleMessageListenerContainer.class,
         KeyValuePropertyService.class,
@@ -114,8 +124,15 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Paymen
         PublishDropshipmentOrderRowTrackingInformationDelegate.class,
         SaveDropshipmentOrderRowDelegate.class,
         AggregateInvoiceDataDelegate.class,
-        IsPartialInvoiceListener.class
-
+        IsPartialInvoiceListener.class,
+        CreateDropshipmentSubsequentOrderDelegate.class,
+        StartDropshipmentSubsequentOrderProcessDelegate.class,
+        CreateDropshipmentSubsequentInvoiceDelegate.class,
+        CancelDropshipmentOrderDelegate.class,
+        DropshipmentOrderGenerateInvoicePdfDelegate.class,
+        DropshipmentOrderFullyInvoicedDelegate.class,
+        CleanupDropshipmentInvoiceRowTableDelegate.class,
+        OrderRowCancelledDelegate.class
 })
 public abstract class AbstractWorkflowTest implements ApplicationContextAware {
 
@@ -130,6 +147,8 @@ public abstract class AbstractWorkflowTest implements ApplicationContextAware {
             EventSubscriptionDelegate::receive;
     public static final SignalIntermediateCatchEventAction RECEIVED_SIGNAL_CATCH_EVENT_ACTION =
             EventSubscriptionDelegate::receive;
+    public static final EventBasedGatewayAction RECEIVED_SIGNAL_EVENT_GATEWAY_ACTION =
+            EventBasedGatewayDelegate::getEventSubscriptions;
 
     protected static ProcessEngine processEngine;
 

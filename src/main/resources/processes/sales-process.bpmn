@@ -343,6 +343,8 @@
       <bpmn:extensionElements>
         <camunda:in source="all" target="all" />
         <camunda:out source="all" target="all" />
+        <camunda:in source="orderRows" target="orderRows" />
+        <camunda:in source="orderNumber" target="orderNumber" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_06j0uo5</bpmn:incoming>
       <bpmn:outgoing>Flow_1uebiov</bpmn:outgoing>
@@ -420,7 +422,6 @@
   <bpmn:message id="Message_0cew8en" name="msgOrderCreatedInSoh" />
   <bpmn:message id="Message_116ff3q" name="msgDropShipmentOrderTrackingInformationReceived" />
   <bpmn:message id="Message_00ce2ea" name="msgDropShipmentOrderConfirmed" />
-  <bpmn:message id="Message_0yjip36" name="msgDropshipmentOrderRowCancellationReceived" />
   <bpmn:signal id="Signal_10il7ck" name="signalContinueProcessingDropShipmentOrders" />
   <bpmn:message id="Message_049kh94" name="msgOrderReceivedCoreSalesInvoiceCreated" />
   <bpmn:signal id="Signal_18qjlqd" name="signalDropshipmentOrderFullyInvoiced" />
