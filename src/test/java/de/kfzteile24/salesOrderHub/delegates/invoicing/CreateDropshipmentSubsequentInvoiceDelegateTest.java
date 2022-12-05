@@ -55,7 +55,7 @@ class CreateDropshipmentSubsequentInvoiceDelegateTest {
                                         .build())
                                 .build())
                         .build();
-        when(delegateExecution.getVariable(Variables.ORDER_NUMBER.getName())).thenReturn(orderNumber);
+        when(delegateExecution.getVariable(Variables.SUBSEQUENT_ORDER_NUMBER.getName())).thenReturn(orderNumber);
         when(salesOrderService.getOrderByOrderNumber(orderNumber)).thenReturn(Optional.of(salesOrder));
         when(invoiceService.generateInvoiceMessage(eq(salesOrder))).thenReturn(invoice);
         when(salesOrderService.save(any(), any())).thenReturn(salesOrder);
