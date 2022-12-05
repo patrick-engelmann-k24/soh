@@ -21,7 +21,7 @@ public class StartDropshipmentSubsequentOrderProcessDelegate implements JavaDele
     public void execute(DelegateExecution delegateExecution) throws Exception {
         log.info("{} delegate invoked", StartDropshipmentSubsequentOrderProcessDelegate.class.getSimpleName());
 
-        final var orderNumber = (String) delegateExecution.getVariable(Variables.ORDER_NUMBER.getName());
+        final var orderNumber = (String) delegateExecution.getVariable(Variables.SUBSEQUENT_ORDER_NUMBER.getName());
         final var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
         dropshipmentOrderService.startDropshipmentSubsequentOrderProcess(salesOrder);
