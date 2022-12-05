@@ -1,5 +1,5 @@
 module "aurora" {
-  source                          = "git@github.com:kfzteile24/bop-terraform-module-aurora.git"
+  source                          = "git@github.com:kfzteile24/bop-terraform-module-aurora.git?ref=v1.0.0"
   name                            = "${local.service}-aurora-serverless"
   engine                          = "aurora-postgresql"
   engine_version                  = "11.13"
