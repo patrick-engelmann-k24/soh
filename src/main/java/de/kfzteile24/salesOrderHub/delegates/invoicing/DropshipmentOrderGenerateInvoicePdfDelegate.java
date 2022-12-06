@@ -11,6 +11,8 @@ import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.JavaDelegate;
 import org.springframework.stereotype.Component;
 
+import java.util.UUID;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -22,9 +24,9 @@ public class DropshipmentOrderGenerateInvoicePdfDelegate implements JavaDelegate
 
     @Override
     public void execute(DelegateExecution delegateExecution) throws Exception {
-        final var orderNumber = (String) delegateExecution.getVariable(Variables.ORDER_NUMBER.getName());
-        final var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
-                .orElseThrow(() -> new SalesOrderNotFoundCustomException("Could not find order with orderNumber: " + orderNumber
+        final var salesOrderId = (UUID) delegateExecution.getVariable(Variables.SALES_ORDER_ID.getName());
+        final var salesOrder = salesOrderService.getOrderById(salesOrderId)
+                .orElseThrow(() -> new SalesOrderNotFoundCustomException("Could not find order with id: " + salesOrderId
                         + " for generating invoice pdf"));
         snsPublishService.publishInvoicePdfGenerationTriggeredEvent(salesOrder.getLatestJson());
         log.info("{} delegate invoked", DropshipmentOrderGenerateInvoicePdfDelegate.class.getSimpleName());

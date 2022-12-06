@@ -1,4 +1,4 @@
-package de.kfzteile24.salesOrderHub.services.splitter.decorator.listener;
+package de.kfzteile24.salesOrderHub.delegates.invoicing.listener;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;

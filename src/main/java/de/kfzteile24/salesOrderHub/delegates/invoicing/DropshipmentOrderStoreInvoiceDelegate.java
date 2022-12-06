@@ -3,6 +3,7 @@ package de.kfzteile24.salesOrderHub.delegates.invoicing;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.delegates.CommonDelegate;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
+import de.kfzteile24.salesOrderHub.helper.InvoiceHelper;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentInvoiceRowService;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
@@ -30,13 +31,16 @@ public class DropshipmentOrderStoreInvoiceDelegate extends CommonDelegate {
     @NonNull
     private final DropshipmentInvoiceRowService dropshipmentInvoiceRowService;
 
+    @NonNull
+    private final InvoiceHelper invoiceHelper;
+
     @Override
     public void execute(DelegateExecution delegateExecution) throws Exception {
         final var invoiceNumber = (String) delegateExecution.getVariable(Variables.INVOICE_NUMBER.getName());
         var orderNumber = dropshipmentInvoiceRowService.getOrderNumberByInvoiceNumber(invoiceNumber);
         var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
-        salesOrder.setInvoiceEvent(invoiceService.generateInvoiceMessage(salesOrder));
+        invoiceHelper.setSalesOrderInvoice(salesOrder, invoiceNumber);
         var updatedSalesOrder = salesOrderService.save(salesOrder, DROPSHIPMENT_INVOICE_STORED);
 
         // Sales Order ID is added as a variable for DropshipmentOrderPublishInvoiceDataDelegate

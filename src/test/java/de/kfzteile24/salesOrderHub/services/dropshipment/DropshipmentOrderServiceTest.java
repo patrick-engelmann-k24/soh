@@ -1,10 +1,8 @@
 package de.kfzteile24.salesOrderHub.services.dropshipment;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.dto.events.shipmentconfirmed.TrackingLink;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnConfirmedMessage;
@@ -39,7 +37,6 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -63,7 +60,6 @@ import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -78,6 +74,7 @@ import static org.mockito.Mockito.when;
 class DropshipmentOrderServiceTest {
 
     public static final String ANY_INVOICE_NUMBER = RandomStringUtils.randomNumeric(10);
+    public static final String ANY_PROCESS_ID = RandomStringUtils.randomNumeric(10);
 
     @InjectMocks
     @Spy
@@ -213,6 +210,7 @@ class DropshipmentOrderServiceTest {
     void testHandleDropShipmentOrderTrackingInformationReceived() {
 
         var salesOrder = SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
+        salesOrder.setProcessId(ANY_PROCESS_ID);
         var items = salesOrder.getLatestJson().getOrderRows().stream().map(
                 row -> ShipmentItem.builder()
                         .productNumber(row.getSku())
@@ -225,7 +223,6 @@ class DropshipmentOrderServiceTest {
                 .salesOrderNumber(salesOrder.getOrderNumber())
                 .items(items)
                 .build();
-        Collection<String> expectedTrackingLinks = getExpectedTrackingLinks(items);
 
         when(salesOrderService.getOrderByOrderNumber(message.getSalesOrderNumber())).thenReturn(Optional.of(salesOrder));
         when(salesOrderService.save(salesOrder, ORDER_ITEM_SHIPPED)).thenReturn(salesOrder);
@@ -249,23 +246,6 @@ class DropshipmentOrderServiceTest {
                     any()
             );
 
-    }
-
-    private Collection<String> getExpectedTrackingLinks(List<ShipmentItem> items) {
-
-        return items.stream()
-                .map(item -> {
-                            try {
-                                return objectMapper.writeValueAsString(TrackingLink.builder()
-                                        .url(item.getTrackingLink())
-                                        .orderItems(List.of(item.getProductNumber()))
-                                        .build());
-                            } catch (JsonProcessingException e) {
-                                fail();
-                                return null;
-                            }
-                        }
-                ).collect(Collectors.toList());
     }
 
     private static Stream<Arguments> provideArgumentsForIsDropShipmentOrder() {

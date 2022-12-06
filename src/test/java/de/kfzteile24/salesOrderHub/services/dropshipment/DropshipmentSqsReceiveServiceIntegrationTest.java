@@ -10,10 +10,8 @@ import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
-import de.kfzteile24.salesOrderHub.repositories.InvoiceNumberCounterRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
-import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceNumberCounterService;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
@@ -34,7 +32,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeSet;
 
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.DROPSHIPMENT_ORDER_ROWS_CANCELLATION;
@@ -50,7 +47,6 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Shipme
 import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrderFromOrder;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -68,10 +64,6 @@ class DropshipmentSqsReceiveServiceIntegrationTest extends AbstractIntegrationTe
     @Autowired
     private AuditLogRepository auditLogRepository;
     @Autowired
-    private InvoiceNumberCounterRepository invoiceNumberCounterRepository;
-    @Autowired
-    private InvoiceNumberCounterService invoiceNumberCounterService;
-    @Autowired
     private BpmUtil bpmUtil;
 
     private final MessageWrapper messageWrapper = MessageWrapper.builder().build();
@@ -82,8 +74,6 @@ class DropshipmentSqsReceiveServiceIntegrationTest extends AbstractIntegrationTe
         bpmUtil.cleanUp();
         salesOrderRepository.deleteAll();
         auditLogRepository.deleteAll();
-        invoiceNumberCounterRepository.deleteAll();
-        invoiceNumberCounterService.init();
     }
 
     @Test
@@ -98,11 +88,6 @@ class DropshipmentSqsReceiveServiceIntegrationTest extends AbstractIntegrationTe
         var savedSalesOrder = salesOrderRepository.getOrderByOrderNumber(salesOrder.getOrderNumber());
         LocalDateTime now = LocalDateTime.now();
         assertTrue(savedSalesOrder.isPresent());
-
-        //TODO: implement test case, which would start invoicing process after shipment confirmed message is received and then later check updated sales order to make sure
-        //that the documentRefNumber is updated
-        //assertEquals(now.getYear() + "-1000000000001", savedSalesOrder.get().getLatestJson().getOrderHeader().getDocumentRefNumber());
-        //assertEquals(now.getYear() + "-1000000000001", savedSalesOrder.get().getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber());
     }
 
     @Test
@@ -116,29 +101,17 @@ class DropshipmentSqsReceiveServiceIntegrationTest extends AbstractIntegrationTe
         var savedSalesOrder1 = salesOrderRepository.getOrderByOrderNumber(salesOrder1.getOrderNumber());
         LocalDateTime now = LocalDateTime.now();
         assertTrue(savedSalesOrder1.isPresent());
-        //TODO: implement test case, which would start invoicing process after shipment confirmed message is received and then later check updated sales order to make sure
-        //that the documentRefNumber is updated
-        //assertEquals(now.getYear() + "-1000000000001", savedSalesOrder1.get().getLatestJson().getOrderHeader().getDocumentRefNumber());
-        //assertEquals(now.getYear() + "-1000000000001", savedSalesOrder1.get().getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber());
 
         SalesOrder salesOrder2 = createSalesOrderWithRandomOrderNumber();
         callQueueListenerDropshipmentShipmentConfirmed(salesOrder2);
         var savedSalesOrder2 = salesOrderRepository.getOrderByOrderNumber(salesOrder2.getOrderNumber());
         assertTrue(savedSalesOrder2.isPresent());
-        //TODO: implement test case, which would start invoicing process after shipment confirmed message is received and then later check updated sales order to make sure
-        //that the documentRefNumber is updated
-        //assertEquals(now.getYear() + "-1000000000002", savedSalesOrder2.get().getLatestJson().getOrderHeader().getDocumentRefNumber());
-        //assertEquals(now.getYear() + "-1000000000002", savedSalesOrder2.get().getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber());
 
         SalesOrder salesOrder3 = createSalesOrderWithRandomOrderNumber();
         callQueueListenerDropshipmentShipmentConfirmed(salesOrder3);
 
         var savedSalesOrder3 = salesOrderRepository.getOrderByOrderNumber(salesOrder3.getOrderNumber());
         assertTrue(savedSalesOrder3.isPresent());
-        //TODO: implement test case, which would start invoicing process after shipment confirmed message is received and then later check updated sales order to make sure
-        //that the documentRefNumber is updated
-        //assertEquals(now.getYear() + "-1000000000003", savedSalesOrder3.get().getLatestJson().getOrderHeader().getDocumentRefNumber());
-        //assertEquals(now.getYear() + "-1000000000003", savedSalesOrder3.get().getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber());
     }
 
     @Test
@@ -167,18 +140,9 @@ class DropshipmentSqsReceiveServiceIntegrationTest extends AbstractIntegrationTe
         System.out.println("Test Info: One dropshipment method time is : " + (Instant.now().toEpochMilli() - start2) + " milliseconds");
 
         orders.add(salesOrder11);
-        var invoiceNumbers = new TreeSet<Long>();
         for (SalesOrder order : orders) {
             var savedSalesOrder = salesOrderRepository.getOrderByOrderNumber(order.getOrderNumber());
             assertTrue(savedSalesOrder.isPresent());
-            //TODO: implement test case, which would start invoicing process after shipment confirmed message is received and then later check updated sales order to make sure
-            //that the documentRefNumber is updated
-            //invoiceNumbers.add(Long.valueOf(savedSalesOrder.get().getLatestJson().getOrderHeader().getDocumentRefNumber().substring(6)));
-        }
-        int counter = 1;
-        for (Long number : invoiceNumbers) {
-            assertEquals(counter, number);
-            counter++;
         }
     }
 
@@ -297,7 +261,5 @@ class DropshipmentSqsReceiveServiceIntegrationTest extends AbstractIntegrationTe
         timedPollingService.retry(() -> salesOrderRepository.deleteAll());
         timedPollingService.retry(() -> auditLogRepository.deleteAll());
         timedPollingService.retry(() -> bpmUtil.cleanUp());
-        timedPollingService.retry(() -> invoiceNumberCounterRepository.deleteAll());
-        invoiceNumberCounterService.init();
     }
 }

@@ -156,15 +156,7 @@ public class SalesOrderUtil {
                 .customer(customer)
                 .salesChannel("www-k24-at")
                 .platform(Platform.ECP)
-                .billingAddress(BillingAddress.builder()
-                        .salutation("Ms")
-                        .firstName("Anne")
-                        .lastName("Kim")
-                        .street1("Hauptstrasse")
-                        .city("Berlin")
-                        .zipCode("12345")
-                        .countryCode("DE")
-                        .build())
+                .billingAddress(BillingAddress.builder().build())
                 .build();
 
         final Order order = Order.builder()

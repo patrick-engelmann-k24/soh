@@ -59,7 +59,8 @@ class CreateDropshipmentSubsequentOrderDelegateTest {
                 eq(invoiceNumber),
                 any())).thenReturn(subsequentOrder);
         createDropshipmentSubsequentOrderDelegate.execute(delegateExecution);
-        verify(delegateExecution).setVariable(Variables.ORDER_NUMBER.getName(), subsequentOrder.getOrderNumber());
+        verify(delegateExecution).setVariable(Variables.SUBSEQUENT_ORDER_NUMBER.getName(), subsequentOrder.getOrderNumber());
+        verify(delegateExecution).setVariable(Variables.ORDER_NUMBER.getName(), orderNumber);
         verify(delegateExecution).setVariable(Variables.ORDER_ROWS.getName(), skuList);
     }
 }

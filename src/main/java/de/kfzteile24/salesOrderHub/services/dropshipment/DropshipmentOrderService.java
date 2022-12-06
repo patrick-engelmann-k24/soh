@@ -127,7 +127,6 @@ public class DropshipmentOrderService {
                 salesOrder, shippedItems, orderRows);
 
         sendShipmentConfirmedMessageForEachOrderRow(savedSalesOrder, shippedItems, orderRows);
-
     }
 
     private SalesOrder updateSalesOrderWithTrackingInformation(SalesOrder salesOrder,

@@ -1,6 +1,5 @@
 package de.kfzteile24.salesOrderHub.services.dropshipment;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import de.kfzteile24.salesOrderHub.constants.PersistentProperties;
@@ -24,10 +23,8 @@ import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.DropshipmentInvoiceRowRepository;
-import de.kfzteile24.salesOrderHub.repositories.InvoiceNumberCounterRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
-import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceNumberCounterService;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
@@ -91,10 +88,6 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private AuditLogRepository auditLogRepository;
     @Autowired
-    private InvoiceNumberCounterService invoiceNumberCounterService;
-    @Autowired
-    private InvoiceNumberCounterRepository invoiceNumberCounterRepository;
-    @Autowired
     private InvoiceService invoiceService;
     @Autowired
     private SalesOrderUtil salesOrderUtil;
@@ -117,8 +110,6 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
     @BeforeEach
     public void setup() {
         super.setUp();
-        timedPollingService.retry(() -> invoiceNumberCounterRepository.deleteAll());
-        timedPollingService.retry(() -> invoiceNumberCounterService.init());
         timedPollingService.retry(() -> salesOrderRepository.deleteAllInBatch());
         timedPollingService.retry(() -> dropshipmentInvoiceRowRepository.deleteAllInBatch());
     }
@@ -180,7 +171,7 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void testHandleDropShipmentOrderTrackingInformationReceived() throws JsonProcessingException {
+    void testHandleDropShipmentOrderTrackingInformationReceived() {
 
         var salesOrder = createDropshipmentSalesOrder();
 
@@ -227,15 +218,10 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
         var dropshipmentInvoiceRow3 = dropshipmentInvoiceRowService.getBySkuAndOrderNumber(sku3Row.getSku(), salesOrder.getOrderNumber()).get();
         assertThat(dropshipmentInvoiceRow3.getOrderNumber()).isEqualTo(salesOrder.getOrderNumber());
         assertThat(dropshipmentInvoiceRow3.getSku()).isEqualTo(sku3Row.getSku());
-
-        //TODO: implement test case, which would start invoicing process after shipment confirmed message is received and then later check updated sales order to make sure
-        //that the documentRefNumber is updated
-        //assertThat(updatedSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber()).hasSize(18);
-        //assertThat(updatedSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber()).isEqualTo(LocalDateTime.now().getYear() + "-1000000000001");
     }
 
     @Test
-    void testHandleDropShipmentOrderTrackingInformationReceivedWhenThereIsAnotherInvoiceForSameYear() throws JsonProcessingException {
+    void testHandleDropShipmentOrderTrackingInformationReceivedWhenThereIsAnotherInvoiceForSameYear() {
 
         var salesOrder1 = createDropshipmentSalesOrder();
         createSalesOrderInvoice(salesOrder1);
@@ -250,12 +236,6 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
 
         var optUpdatedSalesOrder = salesOrderService.getOrderByOrderNumber(salesOrder2.getOrderNumber());
         assertThat(optUpdatedSalesOrder).isNotEmpty();
-        var updatedSalesOrder = optUpdatedSalesOrder.get();
-
-        //TODO: implement test case, which would start invoicing process after shipment confirmed message is received and then later check updated sales order to make sure
-        //that the documentRefNumber is updated
-        //assertThat(updatedSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber()).hasSize(18);
-        //assertThat(updatedSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber()).isEqualTo(LocalDateTime.now().getYear() + "-1000000000002");
     }
 
     private void createSalesOrderInvoice(SalesOrder salesOrder) {
@@ -290,6 +270,7 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
     private SalesOrder createDropshipmentSalesOrder() {
         var salesOrder = SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
         ((Order) salesOrder.getOriginalOrder()).getOrderHeader().setOrderFulfillment(DELTICOM.getName());
+        salesOrder.setProcessId(salesOrder.getOrderNumber());
 
         salesOrderService.save(salesOrder, Action.ORDER_CREATED);
 
@@ -519,7 +500,5 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
         setPauseDropshipmentProcessingFlag(false);
         timedPollingService.retry(() -> auditLogRepository.deleteAll());
         timedPollingService.retry(() -> salesOrderRepository.deleteAll());
-        timedPollingService.retry(() -> invoiceNumberCounterRepository.deleteAll());
-        timedPollingService.retry(() -> invoiceNumberCounterService.init());
     }
 }

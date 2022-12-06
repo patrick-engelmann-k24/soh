@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROWS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SALES_ORDER_ID;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SUBSEQUENT_ORDER_NUMBER;
 
 @Slf4j
 @Component
@@ -45,7 +46,8 @@ public class CreateDropshipmentSubsequentOrderDelegate extends CommonDelegate {
                 invoiceNumber,
                 delegateExecution.getActivityInstanceId());
 
-        delegateExecution.setVariable(ORDER_NUMBER.getName(), subsequentOrder.getOrderNumber());
+        delegateExecution.setVariable(SUBSEQUENT_ORDER_NUMBER.getName(), subsequentOrder.getOrderNumber());
+        delegateExecution.setVariable(ORDER_NUMBER.getName(), orderNumber);
         delegateExecution.setVariable(SALES_ORDER_ID.getName(), subsequentOrder.getId());
         delegateExecution.setVariable(ORDER_ROWS.getName(), skuList);
         log.info("Dropshipment subsequent order is created. Order Number: {}, Invoice Number: {}",

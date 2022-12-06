@@ -1,7 +1,6 @@
-package de.kfzteile24.salesOrderHub.delegates.invoice.listener;
+package de.kfzteile24.salesOrderHub.delegates.invoicing.listener;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
-import de.kfzteile24.salesOrderHub.services.splitter.decorator.listener.IsPartialInvoiceListener;
 import de.kfzteile24.salesOrderHub.domain.dropshipment.InvoiceData;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
