@@ -40,7 +40,7 @@ class StartDropshipmentSubsequentOrderProcessDelegateTest {
                         .orderNumber(orderNumber)
                         .latestJson(Order.builder().build())
                         .build();
-        when(delegateExecution.getVariable(Variables.ORDER_NUMBER.getName())).thenReturn(orderNumber);
+        when(delegateExecution.getVariable(Variables.SUBSEQUENT_ORDER_NUMBER.getName())).thenReturn(orderNumber);
         when(salesOrderService.getOrderByOrderNumber(orderNumber)).thenReturn(Optional.of(salesOrder));
         startDropshipmentSubsequentOrderProcessDelegate.execute(delegateExecution);
         verify(dropshipmentOrderService).startDropshipmentSubsequentOrderProcess(eq(salesOrder));
