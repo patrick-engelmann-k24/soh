@@ -1,6 +1,5 @@
 package de.kfzteile24.salesOrderHub.services.dropshipment;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import de.kfzteile24.salesOrderHub.constants.PersistentProperties;
@@ -172,7 +171,7 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void testHandleDropShipmentOrderTrackingInformationReceived() throws JsonProcessingException {
+    void testHandleDropShipmentOrderTrackingInformationReceived() {
 
         var salesOrder = createDropshipmentSalesOrder();
 
@@ -222,7 +221,7 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void testHandleDropShipmentOrderTrackingInformationReceivedWhenThereIsAnotherInvoiceForSameYear() throws JsonProcessingException {
+    void testHandleDropShipmentOrderTrackingInformationReceivedWhenThereIsAnotherInvoiceForSameYear() {
 
         var salesOrder1 = createDropshipmentSalesOrder();
         createSalesOrderInvoice(salesOrder1);
@@ -271,6 +270,7 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
     private SalesOrder createDropshipmentSalesOrder() {
         var salesOrder = SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
         ((Order) salesOrder.getOriginalOrder()).getOrderHeader().setOrderFulfillment(DELTICOM.getName());
+        salesOrder.setProcessId(salesOrder.getOrderNumber());
 
         salesOrderService.save(salesOrder, Action.ORDER_CREATED);
 
