@@ -210,7 +210,9 @@ class AggregateInvoiceDataDelegateIntegrationTest extends AbstractIntegrationTes
     }
 
     private String nextInvoiceNumber() {
-        invoiceNumber = this.invoiceNumber.substring(0, 16) + (Integer.parseInt(this.invoiceNumber.substring(16)) + 1);
+        int lastFiveDigitIndex = invoiceNumber.length() - 5;
+        int lastFiveDigitNumber = Integer.parseInt(this.invoiceNumber.substring(lastFiveDigitIndex));
+        invoiceNumber = this.invoiceNumber.substring(0, lastFiveDigitIndex) + String.format("%05d", (lastFiveDigitNumber + 1));
         return invoiceNumber;
     }
 
