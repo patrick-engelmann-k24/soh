@@ -6,7 +6,6 @@ import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.InvoiceHelper;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentInvoiceRowService;
-import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,9 +23,6 @@ public class DropshipmentOrderStoreInvoiceDelegate extends CommonDelegate {
 
     @NonNull
     private final SalesOrderService salesOrderService;
-
-    @NonNull
-    private final InvoiceService invoiceService;
 
     @NonNull
     private final DropshipmentInvoiceRowService dropshipmentInvoiceRowService;

@@ -16,12 +16,14 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.INVOICING_PROCESS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.AGGREGATE_INVOICE_DATA;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.INVOICING_CREATE_DROPSHIPMENT_SALES_ORDER_INVOICE;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.INVOICING_CREATE_SUBSEQUENT_ORDER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Gateways.XOR_CHECK_PARTIAL_INVOICE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createNewSalesOrderV3;
@@ -31,6 +33,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 
 class AggregateInvoiceDataDelegateIntegrationTest extends AbstractIntegrationTest {
+
+    private String invoiceNumber;
 
     @Autowired
     private SalesOrderRepository salesOrderRepository;
@@ -50,10 +54,31 @@ class AggregateInvoiceDataDelegateIntegrationTest extends AbstractIntegrationTes
     @Test
     void testSubprocessCreationAndSubsequentOrderCreation() {
 
-
+        prepareTestData();
         doReturn(null).when(camundaHelper).correlateDropshipmentOrderCancelledMessage(any());
         doReturn(null).when(camundaHelper).correlateDropshipmentOrderFullyInvoicedMessage(any());
 
+        ProcessInstance processInstance = runtimeService.startProcessInstanceByKey(INVOICING_PROCESS.getName());
+
+        assertTrue(pollingService.pollWithDefaultTiming(() -> {
+            assertThat(processInstance).hasPassedInOrder(
+                    "eventStartTimerInvoicingProcess",
+                    AGGREGATE_INVOICE_DATA.getName(),
+                    "eventStartSubInvoicing",
+                    XOR_CHECK_PARTIAL_INVOICE.getName(),
+                    INVOICING_CREATE_DROPSHIPMENT_SALES_ORDER_INVOICE.getName(),
+                    INVOICING_CREATE_SUBSEQUENT_ORDER.getName()
+                    );
+            return true;
+        }));
+
+        verifyIfOrderFullyInvoiced();
+        verifyIfOrderPartiallyInvoicedAndFirstSubsequentOrderNumberCreation();
+        verifyIfOrderPartiallyInvoicedAndSecondSubsequentOrderNumberCreation();
+        verifyIfOrderPartiallyInvoicedAndOrderFullyCancelled();
+    }
+
+    private void prepareTestData() {
         // Fully Invoiced
         final SalesOrder salesOrderFullyInvoiced =
                 getSalesOrder("123456789", "123456789", false);
@@ -108,21 +133,7 @@ class AggregateInvoiceDataDelegateIntegrationTest extends AbstractIntegrationTes
                 .sku("sku-3")
                 .build()
         );
-
         dropshipmentInvoiceRowRepository.saveAll(dropshipmentInvoiceRowList);
-
-        Map<String, Object> processVariables = new HashMap<>();
-//        processVariables.put(IS_ORDER_CANCELLED.getName(), false);
-        ProcessInstance processInstance = runtimeService.startProcessInstanceByKey(INVOICING_PROCESS.getName(), processVariables);
-
-        assertTrue(pollingService.pollWithDefaultTiming(() -> {
-            assertThat(processInstance).hasPassed("eventStartTimerInvoicingProcess");
-            return true;
-        }));
-        List<SalesOrder> fullyOrderList = salesOrderRepository.findAllByOrderGroupIdOrderByUpdatedAtDesc(salesOrderFullyInvoiced.getOrderGroupId());
-        Assertions.assertThat(fullyOrderList).hasSize(1);
-        Assertions.assertThat(fullyOrderList.get(0).getOrderNumber()).isEqualTo("123456789");
-        Assertions.assertThat(fullyOrderList.get(0).getInvoiceEvent()).isNotNull();
     }
 
     @NotNull
@@ -140,6 +151,72 @@ class AggregateInvoiceDataDelegateIntegrationTest extends AbstractIntegrationTes
         salesOrderFullyInvoiced.setOriginalOrder(order);
         salesOrderRepository.save(salesOrderFullyInvoiced);
         return salesOrderFullyInvoiced;
+    }
+
+    private void verifyIfOrderFullyInvoiced() {
+        var salesOrders = salesOrderRepository.findAllByOrderGroupIdOrderByUpdatedAtDesc("123456789");
+        Assertions.assertThat(salesOrders).hasSize(1);
+        Assertions.assertThat(salesOrders.get(0).getOrderNumber()).isEqualTo("123456789");
+        Assertions.assertThat(salesOrders.get(0).getLatestJson().getOrderHeader().getDocumentRefNumber()).isNotNull();
+        Assertions.assertThat(salesOrders.get(0).getInvoiceEvent()).isNotNull();
+        Assertions.assertThat(salesOrders.get(0).getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getOrderNumber()).isEqualTo("123456789");
+        Assertions.assertThat(salesOrders.get(0).isCancelled()).isFalse();
+        invoiceNumber = getInvoiceNumber(salesOrders.get(0));
+    }
+
+    private void verifyIfOrderPartiallyInvoicedAndFirstSubsequentOrderNumberCreation() {
+        var salesOrders = salesOrderRepository.findAllByOrderGroupIdOrderByUpdatedAtDesc("423456789");
+        Assertions.assertThat(salesOrders).hasSize(2);
+        Assertions.assertThat(salesOrders.get(0).getOrderNumber()).isEqualTo("423456789");
+        Assertions.assertThat(salesOrders.get(0).getLatestJson().getOrderHeader().getDocumentRefNumber()).isNull();
+        Assertions.assertThat(salesOrders.get(0).getInvoiceEvent()).isNull();
+        Assertions.assertThat(salesOrders.get(0).isCancelled()).isFalse();
+        Assertions.assertThat(salesOrders.get(1).getOrderNumber()).isEqualTo("423456789-1");
+        Assertions.assertThat(salesOrders.get(1).getLatestJson().getOrderHeader().getDocumentRefNumber()).isNotNull();
+        Assertions.assertThat(salesOrders.get(1).getLatestJson().getOrderHeader().getDocumentRefNumber()).isEqualTo(nextInvoiceNumber());
+        Assertions.assertThat(salesOrders.get(1).getInvoiceEvent()).isNotNull();
+        Assertions.assertThat(salesOrders.get(1).getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getOrderNumber()).isEqualTo("423456789-1");
+    }
+
+    private void verifyIfOrderPartiallyInvoicedAndSecondSubsequentOrderNumberCreation() {
+        var salesOrders = salesOrderRepository.findAllByOrderGroupIdOrderByUpdatedAtDesc("523456789");
+        Assertions.assertThat(salesOrders).hasSize(3);
+        Assertions.assertThat(salesOrders.get(0).getOrderNumber()).isEqualTo("523456789");
+        Assertions.assertThat(salesOrders.get(0).getLatestJson().getOrderHeader().getDocumentRefNumber()).isNull();
+        Assertions.assertThat(salesOrders.get(0).getInvoiceEvent()).isNull();
+        Assertions.assertThat(salesOrders.get(0).isCancelled()).isFalse();
+        Assertions.assertThat(salesOrders.get(1).getOrderNumber()).isEqualTo("523456789-2");
+        Assertions.assertThat(salesOrders.get(1).getLatestJson().getOrderHeader().getDocumentRefNumber()).isNotNull();
+        Assertions.assertThat(salesOrders.get(1).getLatestJson().getOrderHeader().getDocumentRefNumber()).isEqualTo(nextInvoiceNumber());
+        Assertions.assertThat(salesOrders.get(1).getInvoiceEvent()).isNotNull();
+        Assertions.assertThat(salesOrders.get(1).getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getOrderNumber()).isEqualTo("523456789-2");
+        Assertions.assertThat(salesOrders.get(2).getOrderNumber()).isEqualTo("523456789-1");
+        Assertions.assertThat(salesOrders.get(2).getLatestJson().getOrderHeader().getDocumentRefNumber()).isNull();
+        Assertions.assertThat(salesOrders.get(2).getInvoiceEvent()).isNull();
+    }
+
+    private void verifyIfOrderPartiallyInvoicedAndOrderFullyCancelled() {
+        var salesOrders = salesOrderRepository.findAllByOrderGroupIdOrderByUpdatedAtDesc("623456789");
+        Assertions.assertThat(salesOrders).hasSize(2);
+        Assertions.assertThat(salesOrders.get(0).getOrderNumber()).isEqualTo("623456789");
+        Assertions.assertThat(salesOrders.get(0).getLatestJson().getOrderHeader().getDocumentRefNumber()).isNull();
+        Assertions.assertThat(salesOrders.get(0).getInvoiceEvent()).isNull();
+        Assertions.assertThat(salesOrders.get(0).isCancelled()).isTrue();
+        Assertions.assertThat(salesOrders.get(1).getOrderNumber()).isEqualTo("623456789-1");
+        Assertions.assertThat(salesOrders.get(1).getLatestJson().getOrderHeader().getDocumentRefNumber()).isNotNull();
+        Assertions.assertThat(salesOrders.get(1).getLatestJson().getOrderHeader().getDocumentRefNumber()).isEqualTo(nextInvoiceNumber());
+        Assertions.assertThat(salesOrders.get(1).getInvoiceEvent()).isNotNull();
+        Assertions.assertThat(salesOrders.get(1).getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getOrderNumber()).isEqualTo("623456789-1");
+    }
+
+    private String nextInvoiceNumber() {
+        invoiceNumber = this.invoiceNumber.substring(0, 16) + (Integer.parseInt(this.invoiceNumber.substring(16)) + 1);
+        return invoiceNumber;
+    }
+
+    private String getInvoiceNumber(SalesOrder salesOrder) {
+        Assertions.assertThat(salesOrder.getInvoiceEvent()).isNotNull();
+        return salesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber();
     }
 
     @AfterEach
