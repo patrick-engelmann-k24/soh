@@ -37,6 +37,7 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -292,5 +293,8 @@ class DropshipmentOrderServiceTest {
         assertThat(result.getOrderHeader().getDocumentRefNumber()).isEqualTo(invoiceNumber);
         expectedOrderJson.getOrderRows().remove(0);
         assertThat(result.getOrderRows()).isEqualTo(expectedOrderJson.getOrderRows());
+
+        assertEquals(salesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostGross(), BigDecimal.ZERO);
+        assertEquals(salesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostNet(), BigDecimal.ZERO);
     }
 }

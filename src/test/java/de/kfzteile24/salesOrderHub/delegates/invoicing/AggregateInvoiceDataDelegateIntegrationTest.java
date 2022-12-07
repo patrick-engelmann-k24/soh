@@ -16,6 +16,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.INVOICING_PROCESS;
@@ -171,11 +172,15 @@ class AggregateInvoiceDataDelegateIntegrationTest extends AbstractIntegrationTes
         Assertions.assertThat(salesOrders.get(0).getLatestJson().getOrderHeader().getDocumentRefNumber()).isNull();
         Assertions.assertThat(salesOrders.get(0).getInvoiceEvent()).isNull();
         Assertions.assertThat(salesOrders.get(0).isCancelled()).isFalse();
+        Assertions.assertThat(salesOrders.get(0).getLatestJson().getOrderHeader().getTotals().getShippingCostGross()).isEqualTo(BigDecimal.ZERO);
+        Assertions.assertThat(salesOrders.get(0).getLatestJson().getOrderHeader().getTotals().getShippingCostNet()).isEqualTo(BigDecimal.ZERO);
         Assertions.assertThat(salesOrders.get(1).getOrderNumber()).isEqualTo("423456789-1");
         Assertions.assertThat(salesOrders.get(1).getLatestJson().getOrderHeader().getDocumentRefNumber()).isNotNull();
         Assertions.assertThat(salesOrders.get(1).getLatestJson().getOrderHeader().getDocumentRefNumber()).isEqualTo(nextInvoiceNumber());
         Assertions.assertThat(salesOrders.get(1).getInvoiceEvent()).isNotNull();
         Assertions.assertThat(salesOrders.get(1).getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getOrderNumber()).isEqualTo("423456789-1");
+        Assertions.assertThat(salesOrders.get(1).getLatestJson().getOrderHeader().getTotals().getShippingCostGross()).isEqualTo(new BigDecimal(100));
+        Assertions.assertThat(salesOrders.get(1).getLatestJson().getOrderHeader().getTotals().getShippingCostNet()).isEqualTo(new BigDecimal(80));
     }
 
     private void verifyIfOrderPartiallyInvoicedAndSecondSubsequentOrderNumberCreation() {
@@ -185,14 +190,20 @@ class AggregateInvoiceDataDelegateIntegrationTest extends AbstractIntegrationTes
         Assertions.assertThat(salesOrders.get(0).getLatestJson().getOrderHeader().getDocumentRefNumber()).isNull();
         Assertions.assertThat(salesOrders.get(0).getInvoiceEvent()).isNull();
         Assertions.assertThat(salesOrders.get(0).isCancelled()).isFalse();
+        Assertions.assertThat(salesOrders.get(0).getLatestJson().getOrderHeader().getTotals().getShippingCostGross()).isEqualTo(BigDecimal.ZERO);
+        Assertions.assertThat(salesOrders.get(0).getLatestJson().getOrderHeader().getTotals().getShippingCostNet()).isEqualTo(BigDecimal.ZERO);
         Assertions.assertThat(salesOrders.get(1).getOrderNumber()).isEqualTo("523456789-2");
         Assertions.assertThat(salesOrders.get(1).getLatestJson().getOrderHeader().getDocumentRefNumber()).isNotNull();
         Assertions.assertThat(salesOrders.get(1).getLatestJson().getOrderHeader().getDocumentRefNumber()).isEqualTo(nextInvoiceNumber());
         Assertions.assertThat(salesOrders.get(1).getInvoiceEvent()).isNotNull();
         Assertions.assertThat(salesOrders.get(1).getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getOrderNumber()).isEqualTo("523456789-2");
+        Assertions.assertThat(salesOrders.get(1).getLatestJson().getOrderHeader().getTotals().getShippingCostGross()).isEqualTo(new BigDecimal(100));
+        Assertions.assertThat(salesOrders.get(1).getLatestJson().getOrderHeader().getTotals().getShippingCostNet()).isEqualTo(new BigDecimal(80));
         Assertions.assertThat(salesOrders.get(2).getOrderNumber()).isEqualTo("523456789-1");
         Assertions.assertThat(salesOrders.get(2).getLatestJson().getOrderHeader().getDocumentRefNumber()).isNull();
         Assertions.assertThat(salesOrders.get(2).getInvoiceEvent()).isNull();
+        Assertions.assertThat(salesOrders.get(1).getLatestJson().getOrderHeader().getTotals().getShippingCostGross()).isEqualTo(new BigDecimal(100));
+        Assertions.assertThat(salesOrders.get(1).getLatestJson().getOrderHeader().getTotals().getShippingCostNet()).isEqualTo(new BigDecimal(80));
     }
 
     private void verifyIfOrderPartiallyInvoicedAndOrderFullyCancelled() {
@@ -202,11 +213,15 @@ class AggregateInvoiceDataDelegateIntegrationTest extends AbstractIntegrationTes
         Assertions.assertThat(salesOrders.get(0).getLatestJson().getOrderHeader().getDocumentRefNumber()).isNull();
         Assertions.assertThat(salesOrders.get(0).getInvoiceEvent()).isNull();
         Assertions.assertThat(salesOrders.get(0).isCancelled()).isTrue();
+        Assertions.assertThat(salesOrders.get(0).getLatestJson().getOrderHeader().getTotals().getShippingCostGross()).isEqualTo(BigDecimal.ZERO);
+        Assertions.assertThat(salesOrders.get(0).getLatestJson().getOrderHeader().getTotals().getShippingCostNet()).isEqualTo(BigDecimal.ZERO);
         Assertions.assertThat(salesOrders.get(1).getOrderNumber()).isEqualTo("623456789-1");
         Assertions.assertThat(salesOrders.get(1).getLatestJson().getOrderHeader().getDocumentRefNumber()).isNotNull();
         Assertions.assertThat(salesOrders.get(1).getLatestJson().getOrderHeader().getDocumentRefNumber()).isEqualTo(nextInvoiceNumber());
         Assertions.assertThat(salesOrders.get(1).getInvoiceEvent()).isNotNull();
         Assertions.assertThat(salesOrders.get(1).getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getOrderNumber()).isEqualTo("623456789-1");
+        Assertions.assertThat(salesOrders.get(1).getLatestJson().getOrderHeader().getTotals().getShippingCostGross()).isEqualTo(new BigDecimal(100));
+        Assertions.assertThat(salesOrders.get(1).getLatestJson().getOrderHeader().getTotals().getShippingCostNet()).isEqualTo(new BigDecimal(80));
     }
 
     private String nextInvoiceNumber() {
