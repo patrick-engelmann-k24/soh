@@ -38,6 +38,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -56,6 +57,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_INVOICE_STORED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_BOOKED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED;
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_SUBSEQUENT_ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ITEM_SHIPPED;
 import static java.text.MessageFormat.format;
@@ -354,10 +356,16 @@ public class DropshipmentOrderService {
         orderJson.getOrderHeader().setOrderNumber(newOrderNumber);
         orderJson.getOrderHeader().setDocumentRefNumber(invoiceNumber);
         salesOrderService.recalculateTotals(orderJson, invoiceService.getShippingCostLine(salesOrder));
+        removeShippingCostFromOriginalOrder(salesOrder);
         return orderJson;
     }
 
-
+    private void removeShippingCostFromOriginalOrder(SalesOrder salesOrder) {
+        var totals = salesOrder.getLatestJson().getOrderHeader().getTotals();
+        totals.setShippingCostGross(BigDecimal.ZERO);
+        totals.setShippingCostNet(BigDecimal.ZERO);
+        salesOrderService.save(salesOrder, DROPSHIPMENT_SUBSEQUENT_ORDER_CREATED);
+    }
 
     public String createDropshipmentNewOrderNumber(SalesOrder salesOrder) {
         int nextIndexCounter =
