@@ -11,6 +11,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundCustomException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
+import de.kfzteile24.salesOrderHub.helper.OrderCreationHelper;
 import de.kfzteile24.salesOrderHub.helper.OrderMapper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
@@ -20,7 +21,6 @@ import de.kfzteile24.soh.order.dto.GrandTotalTaxes;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Payments;
-import de.kfzteile24.soh.order.dto.Platform;
 import de.kfzteile24.soh.order.dto.SumValues;
 import de.kfzteile24.soh.order.dto.Surcharges;
 import de.kfzteile24.soh.order.dto.Totals;
@@ -29,7 +29,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -72,6 +71,9 @@ public class SalesOrderService {
 
     @NonNull
     private final OrderUtil orderUtil;
+
+    @NonNull
+    private final OrderCreationHelper orderCreationHelper;
 
     @Transactional
     public SalesOrder updateProcessInstanceId(String orderNumber, String processInstanceId) {
@@ -156,28 +158,41 @@ public class SalesOrderService {
 
         CoreSalesInvoiceHeader salesInvoiceHeader = salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
         Order order = createOrderForSubsequentSalesOrder(salesInvoiceCreatedMessage, originalSalesOrder);
-        order.getOrderHeader().setPlatform(Platform.SOH);
-        order.getOrderHeader().setOrderNumber(newOrderNumber);
+
+        String invoiceNumber = salesInvoiceHeader.getInvoiceNumber();
+        orderCreationHelper.createOrderHeader(originalSalesOrder, newOrderNumber, invoiceNumber);
+
+//        instead of :
+//        order.getOrderHeader().setPlatform(Platform.SOH);
+//        order.getOrderHeader().setOrderNumber(newOrderNumber);
+//        order.getOrderHeader().setDocumentRefNumber(salesInvoiceHeader.getInvoiceNumber());
+
         order.getOrderHeader().setOrderGroupId(originalSalesOrder.getOrderGroupId());
-        order.getOrderHeader().setDocumentRefNumber(salesInvoiceHeader.getInvoiceNumber());
+
         salesInvoiceHeader.setOrderNumber(newOrderNumber);
         salesInvoiceHeader.setOrderGroupId(order.getOrderHeader().getOrderGroupId());
         var shippingCostDocumentLine = salesInvoiceHeader.getInvoiceLines().stream()
                 .filter(CoreSalesFinancialDocumentLine::getIsShippingCost).findFirst().orElse(null);
         recalculateTotals(order, shippingCostDocumentLine);
 
-        var customerEmail = Strings.isNotEmpty(originalSalesOrder.getCustomerEmail()) ?
-                originalSalesOrder.getCustomerEmail() :
-                getCustomerEmailByOrderJson(order);
+
+        var subsequentOrder = orderCreationHelper.
+                buildSubsequentOrder(originalSalesOrder, newOrderNumber, invoiceNumber);
         var salesOrder = SalesOrder.builder()
-                .orderNumber(newOrderNumber)
-                .orderGroupId(originalSalesOrder.getOrderGroupId())
-                .salesChannel(order.getOrderHeader().getSalesChannel())
-                .customerEmail(customerEmail)
-                .originalOrder(originalSalesOrder.getLatestJson())
-                .latestJson(order)
                 .invoiceEvent(salesInvoiceCreatedMessage)
                 .build();
+//        var customerEmail = Strings.isNotEmpty(originalSalesOrder.getCustomerEmail()) ?
+//                originalSalesOrder.getCustomerEmail() :
+//                getCustomerEmailByOrderJson(order);
+//        var salesOrder = SalesOrder.builder()
+//                .orderNumber(newOrderNumber)
+//                .orderGroupId(originalSalesOrder.getOrderGroupId())
+//                .salesChannel(order.getOrderHeader().getSalesChannel())
+//                .customerEmail(customerEmail)
+//                .originalOrder(originalSalesOrder.getLatestJson())
+//                .latestJson(order)
+//                .invoiceEvent(salesInvoiceCreatedMessage)
+//                .build();
         return createSalesOrder(salesOrder);
     }
 
