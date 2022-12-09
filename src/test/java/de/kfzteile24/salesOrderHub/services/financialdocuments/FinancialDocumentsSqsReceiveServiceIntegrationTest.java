@@ -5,6 +5,7 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
+import de.kfzteile24.salesOrderHub.dto.shared.creditnote.CreditNoteLine;
 import de.kfzteile24.salesOrderHub.dto.shared.creditnote.SalesCreditNoteHeader;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
@@ -45,6 +46,7 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.ORDER_NUMBER_SEPARATOR;
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.RETURN_ORDER_NUMBER_PREFIX;
@@ -147,7 +149,7 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
 
         checkOrderRowValues(returnOrder.getOrderRows());
         checkTotalsValues(returnOrder.getOrderHeader().getTotals());
-        checkEventIsPublished(message);
+        checkEventIsPublished(salesOrder, message);
     }
 
     @SneakyThrows
@@ -164,16 +166,58 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
                 .rate(BigDecimal.valueOf(19))
                 .value(BigDecimal.valueOf(0.38))
                 .build()));
+        salesOrder.setCancelled(true);
 
         salesOrderService.save(salesOrder, Action.ORDER_CREATED);
 
+        var salesOrder1 = SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
+        salesOrder1.setOrderGroupId("580309129");
+        salesOrder1.setOrderNumber("580309129-2");
+        salesOrder1.getLatestJson().getOrderHeader().getTotals().setGrandTotalTaxes(List.of(GrandTotalTaxes.builder()
+                .rate(BigDecimal.valueOf(19))
+                .value(BigDecimal.valueOf(0.38))
+                .build()));
+        salesOrder1.getLatestJson().setOrderRows(
+                salesOrder1.getLatestJson().getOrderRows().stream()
+                        .filter(row -> row.getSku().equals("sku-2"))
+                        .collect(Collectors.toList()));
+
+        salesOrderService.save(salesOrder1, Action.ORDER_CREATED);
+
+        var salesOrder2 = SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
+        salesOrder2.setOrderGroupId("580309129");
+        salesOrder2.setOrderNumber("580309129-3");
+        salesOrder2.getLatestJson().getOrderHeader().getTotals().setGrandTotalTaxes(List.of(GrandTotalTaxes.builder()
+                .rate(BigDecimal.valueOf(19))
+                .value(BigDecimal.valueOf(0.38))
+                .build()));
+        salesOrder2.getLatestJson().setOrderRows(
+                salesOrder2.getLatestJson().getOrderRows().stream()
+                        .filter(row -> row.getSku().equals("sku-1") || row.getSku().equals("sku-3"))
+                        .collect(Collectors.toList()));
+
+        salesOrderService.save(salesOrder2, Action.ORDER_CREATED);
+
         var message = getObjectByResource("coreSalesCreditNoteCreated.json", SalesCreditNoteCreatedMessage.class);
         message.getSalesCreditNote().getSalesCreditNoteHeader().setOrderNumber("580309129-1");
+        var lines = message.getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteLines();
+        lines.add(CreditNoteLine.builder()
+                        .isShippingCost(false)
+                        .itemNumber("new-sku-2")
+                        .quantity(BigDecimal.ONE)
+                        .description("asdasd")
+                        .unitNetAmount(BigDecimal.TEN)
+                        .lineNetAmount(BigDecimal.TEN)
+                        .unitGrossAmount(BigDecimal.valueOf(11.9))
+                        .lineGrossAmount(BigDecimal.valueOf(11.9))
+                        .lineTaxAmount(BigDecimal.valueOf(19))
+                        .taxRate(BigDecimal.valueOf(19))
+                        .build());
         var messageWrapper = MessageWrapper.builder().build();
         financialDocumentsSqsReceiveService.queueListenerCoreSalesCreditNoteCreated(message, messageWrapper);
 
         verify(salesOrderService).getOrderByOrderNumber("580309129-1");
-        verify(salesOrderReturnService).handleSalesOrderReturn(message, RETURN_ORDER_CREATED, CORE_CREDIT_NOTE_CREATED);
+        verify(salesOrderReturnService).handleRegularSalesOrderReturn(message);
         verify(snsPublishService).publishReturnOrderCreatedEvent(argThat(
                 salesOrderReturn -> {
                     assertThat(salesOrderReturn.getOrderNumber()).isEqualTo("RO-876130");
@@ -248,10 +292,10 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
         assertEquals(new BigDecimal("-6.96"), grandTotalTax.getValue());
     }
 
-    private void checkEventIsPublished(SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage) {
+    private void checkEventIsPublished(SalesOrder salesOrder, SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage) {
 
         verify(salesOrderService).getOrderByOrderNumber("580309129");
-        verify(salesOrderReturnService).handleSalesOrderReturn(salesCreditNoteCreatedMessage, RETURN_ORDER_CREATED, CORE_CREDIT_NOTE_CREATED);
+        verify(salesOrderReturnService).handleSalesOrderReturn(salesCreditNoteCreatedMessage, List.of(salesOrder), RETURN_ORDER_CREATED, CORE_CREDIT_NOTE_CREATED);
         verify(snsPublishService).publishReturnOrderCreatedEvent(argThat(
                 salesOrderReturn -> {
                     assertThat(salesOrderReturn.getOrderNumber()).isEqualTo("RO-876130");

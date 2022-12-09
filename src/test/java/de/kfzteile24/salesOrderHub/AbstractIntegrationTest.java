@@ -16,6 +16,7 @@ import de.kfzteile24.salesOrderHub.services.general.GeneralSqsReceiveService;
 import de.kfzteile24.salesOrderHub.services.property.KeyValuePropertyService;
 import de.kfzteile24.salesOrderHub.services.salesorder.SalesOrderSqsReceiveService;
 import de.kfzteile24.salesOrderHub.services.splitter.decorator.ItemSplitService;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapperResolver;
 import de.kfzteile24.salesOrderHub.services.sqs.PayloadResolverDecorator;
 import lombok.NonNull;
@@ -50,6 +51,8 @@ public abstract class AbstractIntegrationTest implements ApplicationContextAware
 
     protected static ProcessEngine processEngine;
     protected static ApplicationContext applicationContext;
+
+    protected final MessageWrapper messageWrapper = MessageWrapper.builder().receiveCount(1).build();
 
     @Autowired
     protected ObjectMapper objectMapper;

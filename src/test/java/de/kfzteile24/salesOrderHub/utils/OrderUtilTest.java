@@ -16,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.K24;
@@ -51,28 +52,6 @@ class OrderUtilTest {
         final var lastRowKey = orderUtil.getLastRowKey(salesOrder);
 
         assertThat(lastRowKey).isEqualTo(2);
-    }
-
-    @Test
-    void testUpdateLastRowKey() {
-        final var salesOrder = getSalesOrder(getObjectByResource("ecpOrderMessageWithTwoRows.json", Order.class));
-        var lastRowKey = 2;
-
-        lastRowKey = orderUtil.updateLastRowKey(salesOrder, "2270-13012", lastRowKey);
-
-        assertThat(lastRowKey).isEqualTo(2);
-
-        lastRowKey = orderUtil.updateLastRowKey(salesOrder, "ABC-1", lastRowKey);
-
-        assertThat(lastRowKey).isEqualTo(3);
-
-        lastRowKey = orderUtil.updateLastRowKey(salesOrder, "2270-13013", lastRowKey);
-
-        assertThat(lastRowKey).isEqualTo(3);
-
-        lastRowKey = orderUtil.updateLastRowKey(salesOrder, "ABC-2", lastRowKey);
-
-        assertThat(lastRowKey).isEqualTo(4);
     }
 
     @Test
@@ -167,10 +146,10 @@ class OrderUtilTest {
     }
 
     @Test
-    void testCreateNewOrderRow() {
+    void testCreateNewOrderRowToCreateNewOrderRow() {
 
         final var salesOrder = getSalesOrder(getObjectByResource("ecpOrderMessageWithTwoRows.json", Order.class));
-        var lastRowKey = 2;
+        var lastRowKey = new AtomicInteger(2);
 
         CoreSalesFinancialDocumentLine orderItem = CoreSalesFinancialDocumentLine.builder()
                 .itemNumber(RandomStringUtils.randomAlphabetic(9))
@@ -183,7 +162,7 @@ class OrderUtilTest {
                 .isShippingCost(false)
                 .build();
 
-        OrderRows newOrderRow = orderUtil.createNewOrderRow(orderItem, salesOrder, lastRowKey);
+        OrderRows newOrderRow = orderUtil.createNewOrderRow(orderItem, List.of(salesOrder), lastRowKey);
 
         assertThat(newOrderRow.getSku()).isEqualTo(orderItem.getItemNumber());
         assertThat(newOrderRow.getRowKey()).isEqualTo(3);
@@ -198,5 +177,42 @@ class OrderUtilTest {
         assertThat(newOrderRow.getSumValues().getTotalDiscountedGross()).isEqualTo(BigDecimal.ONE);
         assertThat(newOrderRow.getSumValues().getGoodsValueNet()).isEqualTo(BigDecimal.ONE);
         assertThat(newOrderRow.getSumValues().getTotalDiscountedNet()).isEqualTo(BigDecimal.ONE);
+    }
+
+    @Test
+    void testCreateNewOrderRowToMatchOrderRow() {
+
+        final var salesOrder = getSalesOrder(getObjectByResource("ecpOrderMessageWithTwoRows.json", Order.class));
+        final var salesOrder1 = getSalesOrder(getObjectByResource("ecpOrderMessage.json", Order.class));
+        salesOrder1.getLatestJson().getOrderRows().get(0).setRowKey(3);
+        var lastRowKey = new AtomicInteger(3);
+
+        CoreSalesFinancialDocumentLine orderItem = CoreSalesFinancialDocumentLine.builder()
+                .itemNumber("1130-0713")
+                .description("abc")
+                .quantity(BigDecimal.ONE)
+                .unitGrossAmount(BigDecimal.ONE)
+                .unitNetAmount(BigDecimal.ONE)
+                .lineGrossAmount(BigDecimal.ONE)
+                .lineNetAmount(BigDecimal.ONE)
+                .taxRate(BigDecimal.TEN)
+                .isShippingCost(false)
+                .build();
+
+        OrderRows matchedOrderRow = orderUtil.createNewOrderRow(orderItem, List.of(salesOrder, salesOrder1), lastRowKey);
+
+        assertThat(matchedOrderRow.getSku()).isEqualTo(orderItem.getItemNumber());
+        assertThat(matchedOrderRow.getRowKey()).isEqualTo(3);
+        assertThat(matchedOrderRow.getName()).isEqualTo("Sidespejl");
+        assertThat(matchedOrderRow.getQuantity()).isEqualTo(BigDecimal.ONE);
+        assertThat(matchedOrderRow.getTaxRate()).isEqualTo(BigDecimal.TEN);
+        assertThat(matchedOrderRow.getUnitValues().getGoodsValueGross()).isEqualTo(BigDecimal.ONE);
+        assertThat(matchedOrderRow.getUnitValues().getDiscountedGross()).isEqualTo(BigDecimal.ONE);
+        assertThat(matchedOrderRow.getUnitValues().getGoodsValueNet()).isEqualTo(BigDecimal.ONE);
+        assertThat(matchedOrderRow.getUnitValues().getDiscountedNet()).isEqualTo(BigDecimal.ONE);
+        assertThat(matchedOrderRow.getSumValues().getGoodsValueGross()).isEqualTo(BigDecimal.ONE);
+        assertThat(matchedOrderRow.getSumValues().getTotalDiscountedGross()).isEqualTo(BigDecimal.ONE);
+        assertThat(matchedOrderRow.getSumValues().getGoodsValueNet()).isEqualTo(BigDecimal.ONE);
+        assertThat(matchedOrderRow.getSumValues().getTotalDiscountedNet()).isEqualTo(BigDecimal.ONE);
     }
 }

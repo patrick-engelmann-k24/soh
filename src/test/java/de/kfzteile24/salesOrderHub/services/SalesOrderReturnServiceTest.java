@@ -76,7 +76,7 @@ class SalesOrderReturnServiceTest {
         var message = getObjectByResource("coreSalesCreditNoteCreated.json", SalesCreditNoteCreatedMessage.class);
         message.getSalesCreditNote().getSalesCreditNoteHeader().setOrderNumber(orderNumber);
         message.getSalesCreditNote().getSalesCreditNoteHeader().setOrderGroupId(null);
-        var salesCreditNoteCreatedMessage = salesOrderReturnService.createCreditNoteEventMessage(salesOrder, message, orderNumber);
+        var salesCreditNoteCreatedMessage = salesOrderReturnService.createCreditNoteEventMessage(salesOrder.getOrderGroupId(), message, orderNumber);
         assertEquals(orderGroupId, salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getOrderGroupId());
     }
 }

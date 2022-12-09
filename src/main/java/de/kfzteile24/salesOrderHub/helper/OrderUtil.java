@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.ORDER_NUMBER_SEPARATOR;
@@ -58,14 +59,6 @@ public class OrderUtil {
         return order.getOrderRows().stream().map(OrderRows::getRowKey).filter(Objects::nonNull).reduce(0, Integer::max);
     }
 
-    public Integer updateLastRowKey(SalesOrder salesOrder, String itemSku, Integer lastRowKey) {
-        if (salesOrder.getLatestJson().getOrderRows().stream()
-                .noneMatch(r -> StringUtils.pathEquals(r.getSku(), itemSku))) {
-            return lastRowKey + 1;
-        }
-        return lastRowKey;
-    }
-
     public String createOldFormatReturnOrderNumberInSOH(String orderNumber, String creditNoteNumber) {
         return createOrderNumberInSOH(orderNumber, creditNoteNumber);
     }
@@ -78,20 +71,23 @@ public class OrderUtil {
         return RETURN_ORDER_NUMBER_PREFIX + ORDER_NUMBER_SEPARATOR + creditNoteNumber;
     }
 
-    public OrderRows createNewOrderRow(OrderItem item, SalesOrder salesOrder, Integer lastRowKey) {
+    public OrderRows createNewOrderRow(OrderItem item, List<SalesOrder> salesOrders, AtomicInteger lastRowKey) {
 
-        OrderRows originalOrderRow = salesOrder.getLatestJson().getOrderRows().stream()
+        OrderRows originalOrderRow = salesOrders.stream()
+                .flatMap(order -> order.getLatestJson().getOrderRows().stream())
+                .filter(row -> !Boolean.TRUE.equals(row.getIsCancelled()))
                 .filter(r -> StringUtils.pathEquals(r.getSku(), item.getItemNumber()))
-                .findFirst().orElse(OrderRows.builder().build());
-        var shippingType = salesOrder.getLatestJson().getOrderRows().get(0).getShippingType();
+                .findFirst()
+                .orElse(OrderRows.builder().build());
 
+        var shippingType = salesOrders.get(0).getLatestJson().getOrderRows().get(0).getShippingType();
         var unitPriceGross = item.getUnitGrossAmount();
         var unitPriceNet = item.getUnitNetAmount();
         var sumOfGoodsPriceGross = item.getLineGrossAmount();
         var sumOfGoodsPriceNet = item.getLineNetAmount();
 
         return OrderRows.builder()
-                .rowKey(originalOrderRow.getRowKey() != null ? originalOrderRow.getRowKey() : lastRowKey + 1)
+                .rowKey(originalOrderRow.getRowKey() != null ? originalOrderRow.getRowKey() : lastRowKey.incrementAndGet())
                 .isCancelled(false)
                 .isPriceHammer(originalOrderRow.getIsPriceHammer() != null && originalOrderRow.getIsPriceHammer())
                 .sku(item.getItemNumber())

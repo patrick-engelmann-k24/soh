@@ -10,7 +10,6 @@ import de.kfzteile24.salesOrderHub.repositories.InvoiceNumberCounterRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.FinancialDocumentsSqsReceiveService;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceNumberCounterService;
-import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
@@ -58,8 +57,6 @@ class MigrationCreditNoteServiceIntegrationTest extends AbstractIntegrationTest 
 
     @Autowired
     private BpmUtil bpmUtil;
-
-    private final MessageWrapper messageWrapper = MessageWrapper.builder().build();
 
     @BeforeEach
     public void setup() {

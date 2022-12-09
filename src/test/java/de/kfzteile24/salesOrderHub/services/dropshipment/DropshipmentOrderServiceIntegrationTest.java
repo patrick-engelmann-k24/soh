@@ -105,8 +105,6 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     protected DropshipmentInvoiceRowRepository dropshipmentInvoiceRowRepository;
 
-    private final MessageWrapper messageWrapper = MessageWrapper.builder().build();
-
     @BeforeEach
     public void setup() {
         super.setUp();

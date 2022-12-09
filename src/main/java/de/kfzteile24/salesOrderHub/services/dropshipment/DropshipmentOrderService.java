@@ -51,12 +51,10 @@ import java.util.stream.Collectors;
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.ORDER_NUMBER_SEPARATOR;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_CONFIRMED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_RETURN_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_DROPSHIPMENT_ORDER_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_ORDER_CANCELLED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_INVOICE_STORED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_BOOKED;
-import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_SUBSEQUENT_ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ITEM_SHIPPED;
@@ -103,7 +101,7 @@ public class DropshipmentOrderService {
         var orderNumber = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber();
         log.info("Received dropshipment purchase order return confirmed message with order number: {}", orderNumber);
 
-        salesOrderReturnService.handleSalesOrderReturn(salesCreditNoteCreatedMessage, DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED, DROPSHIPMENT_ORDER_RETURN_CONFIRMED);
+        salesOrderReturnService.handleDropshipmentSalesOrderReturn(salesCreditNoteCreatedMessage);
     }
 
     public SalesCreditNoteCreatedMessage buildSalesCreditNoteCreatedMessage(DropshipmentPurchaseOrderReturnConfirmedMessage message) {

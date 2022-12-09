@@ -21,6 +21,7 @@ import de.kfzteile24.soh.order.dto.OrderRows;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,12 +30,19 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.CREDIT_NOTE_NUMBER_SEPARATOR;
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.DATE_TIME_FORMATTER;
+import static de.kfzteile24.salesOrderHub.constants.SOHConstants.ORDER_NUMBER_SEPARATOR;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_CREDIT_NOTE_CREATED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_RETURN_CONFIRMED;
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED;
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.RETURN_ORDER_CREATED;
 
 @Service
 @Slf4j
@@ -64,9 +72,9 @@ public class SalesOrderReturnService {
     }
 
     @Transactional(readOnly = true)
-    public Optional<SalesOrderReturn> getReturnOrder(String orderNumber, String creditNoteNumber) {
+    public Optional<SalesOrderReturn> getReturnOrder(String orderGroupId, String creditNoteNumber) {
 
-        var oldReturnOrderNumber = orderUtil.createOldFormatReturnOrderNumberInSOH(orderNumber, creditNoteNumber);
+        var oldReturnOrderNumber = orderUtil.createOldFormatReturnOrderNumberInSOH(orderGroupId, creditNoteNumber);
         var newReturnOrderNumber = orderUtil.createReturnOrderNumberInSOH(creditNoteNumber);
 
         Optional<SalesOrderReturn> returnOrderWithNewPattern = getByOrderNumber(newReturnOrderNumber);
@@ -78,10 +86,10 @@ public class SalesOrderReturnService {
     }
 
     @Transactional(readOnly = true)
-    public boolean checkReturnOrderNotExists(String orderNumber, final String creditNoteNumber) {
-        if (getReturnOrder(orderNumber, creditNoteNumber).isPresent()) {
+    public boolean checkReturnOrderNotExists(String orderGroupId, final String creditNoteNumber) {
+        if (getReturnOrder(orderGroupId, creditNoteNumber).isPresent()) {
             log.warn("The following order return won't be processed because it exists in SOH system already from another source. " +
-                    "Order Number: {} and Credit Note Number: {}", orderNumber, creditNoteNumber);
+                    "Order Number: {} and Credit Note Number: {}", orderGroupId, creditNoteNumber);
             return false;
         }
         return true;
@@ -120,20 +128,37 @@ public class SalesOrderReturnService {
     }
 
     @Transactional
-    public void handleSalesOrderReturn(SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage, Action action, Messages message) {
-        var salesCreditNoteHeader = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader();
-        var orderNumber = salesCreditNoteHeader.getOrderNumber();
-        var creditNoteNumber = salesCreditNoteHeader.getCreditNoteNumber();
+    public void handleRegularSalesOrderReturn(SalesCreditNoteCreatedMessage eventMessage) {
+        var salesOrders = salesOrderService.getOrderByOrderGroupId(getOrderGroupId(eventMessage))
+                .stream()
+                .sorted(Comparator.comparing(SalesOrder::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .collect(Collectors.toList());
+        handleSalesOrderReturn(eventMessage, salesOrders, RETURN_ORDER_CREATED, CORE_CREDIT_NOTE_CREATED);
+    }
 
-        if (checkReturnOrderNotExists(salesCreditNoteHeader.getOrderGroupId(), creditNoteNumber)) {
-            var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
-                    .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
+    @Transactional
+    public void handleDropshipmentSalesOrderReturn(SalesCreditNoteCreatedMessage eventMessage) {
+        var salesOrders = salesOrderService.getOrderByOrderGroupId(getOrderGroupId(eventMessage))
+                .stream()
+                .filter(order -> !order.isCancelled())
+                .filter(order -> orderUtil.isDropshipmentOrder(order.getLatestJson()))
+                .sorted(Comparator.comparing(SalesOrder::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .collect(Collectors.toList());
+        handleSalesOrderReturn(eventMessage, salesOrders, DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED, DROPSHIPMENT_ORDER_RETURN_CONFIRMED);
+    }
 
-            SalesOrderReturn salesOrderReturn = createSalesOrderReturn(
-                    salesCreditNoteCreatedMessage,
-                    salesOrder);
+    @Transactional
+    public void handleSalesOrderReturn(SalesCreditNoteCreatedMessage eventMessage, List<SalesOrder> salesOrders,
+                                       Action action, Messages processMessage) {
+        var messageHeader = eventMessage.getSalesCreditNote().getSalesCreditNoteHeader();
+        var orderNumber = messageHeader.getOrderNumber();
+        var orderGroupId = messageHeader.getOrderGroupId();
+        var creditNoteNumber = messageHeader.getCreditNoteNumber();
 
-            ProcessInstance result = helper.createReturnOrderProcess(save(salesOrderReturn, action), message);
+        if (checkReturnOrderNotExists(orderGroupId, creditNoteNumber)) {
+            SalesOrderReturn salesOrderReturn = createSalesOrderReturn(salesOrders, eventMessage);
+
+            ProcessInstance result = helper.createReturnOrderProcess(save(salesOrderReturn, action), processMessage);
             if (result != null) {
                 log.info("New return order process started for order number: {}. Process-Instance-ID: {} ",
                         orderNumber, result.getProcessInstanceId());
@@ -141,48 +166,50 @@ public class SalesOrderReturnService {
         }
     }
 
-    private SalesOrderReturn createSalesOrderReturn(SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage,
-                                                    SalesOrder salesOrder) {
-        var creditNoteNumber =
-                salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteNumber();
+    private SalesOrderReturn createSalesOrderReturn(List<SalesOrder> salesOrders, SalesCreditNoteCreatedMessage message) {
+        var messageHeader = message.getSalesCreditNote().getSalesCreditNoteHeader();
+        var creditNoteNumber = messageHeader.getCreditNoteNumber();
+        var orderGroupId = messageHeader.getOrderGroupId();
         var newReturnOrderNumber = orderUtil.createReturnOrderNumberInSOH(creditNoteNumber);
 
+        var latestSalesOrder = salesOrders.get(0);
         return SalesOrderReturn.builder()
-                .orderGroupId(salesOrder.getOrderGroupId())
+                .orderGroupId(orderGroupId)
                 .orderNumber(newReturnOrderNumber)
-                .returnOrderJson(
-                        createReturnOrderJson(salesCreditNoteCreatedMessage, salesOrder, newReturnOrderNumber))
-                .salesOrder(salesOrder)
-                .salesCreditNoteCreatedMessage(
-                        createCreditNoteEventMessage(salesOrder, salesCreditNoteCreatedMessage, newReturnOrderNumber))
+                .returnOrderJson(createReturnOrderJson(salesOrders, messageHeader, newReturnOrderNumber))
+                .salesOrder(latestSalesOrder)
+                .salesCreditNoteCreatedMessage(createCreditNoteEventMessage(orderGroupId, message, newReturnOrderNumber))
                 .build();
     }
 
-    private Order createReturnOrderJson(SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage,
-                                        SalesOrder salesOrder, String newReturnOrderNumber) {
-        var creditNoteLines =
-                salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteLines();
-        var returnOrderJson = recalculateOrderByReturns(salesOrder, getOrderRowUpdateItems(creditNoteLines));
+    private Order createReturnOrderJson(List<SalesOrder> salesOrders,
+                                        SalesCreditNoteHeader messageHeader,
+                                        String newReturnOrderNumber) {
+        var creditNoteLines = messageHeader.getCreditNoteLines();
+        var orderGroupId = messageHeader.getOrderGroupId();
+        var returnOrderJson = recalculateOrderByReturns(
+                salesOrders,
+                getOrderRowUpdateItems(creditNoteLines),
+                getLastRowKey(messageHeader.getOrderNumber()));
 
         updateShippingCosts(returnOrderJson, creditNoteLines);
         returnOrderJson = orderUtil.removeInvalidGrandTotalTaxes(returnOrderJson);
         returnOrderJson.getOrderHeader().setOrderNumber(newReturnOrderNumber);
-        returnOrderJson.getOrderHeader().setOrderGroupId(salesOrder.getOrderGroupId());
+        returnOrderJson.getOrderHeader().setOrderGroupId(orderGroupId);
         returnOrderJson.getOrderHeader().setOrderDateTime(DATE_TIME_FORMATTER.format(LocalDateTime.now()));
         return returnOrderJson;
     }
 
-    public Order recalculateOrderByReturns(SalesOrder salesOrder, Collection<CreditNoteLine> items) {
-
-        var returnLatestJson = orderUtil.copyOrderJson(salesOrder.getLatestJson());
+    private Order recalculateOrderByReturns(List<SalesOrder> salesOrders,
+                                            Collection<CreditNoteLine> items,
+                                            AtomicInteger lastRowKey) {
+        var latestSalesOrder = salesOrders.get(0);
+        var returnLatestJson = orderUtil.copyOrderJson(latestSalesOrder.getLatestJson());
         returnLatestJson.setOrderRows(new ArrayList<>());
         var totals = returnLatestJson.getOrderHeader().getTotals();
-        var lastRowKey = orderUtil.getLastRowKey(salesOrder);
-
         for (CreditNoteLine item : items) {
-            var orderRow = orderUtil.createNewOrderRow(item, salesOrder, lastRowKey);
+            var orderRow = orderUtil.createNewOrderRow(item, salesOrders, lastRowKey);
             returnLatestJson.getOrderRows().add(orderRow);
-            lastRowKey = orderUtil.updateLastRowKey(salesOrder, item.getItemNumber(), lastRowKey);
         }
 
         totals.setShippingCostGross(BigDecimal.ZERO);
@@ -244,14 +271,14 @@ public class SalesOrderReturnService {
                             ifPresent(tax -> tax.setValue(tax.getValue().add(taxValueToAdd)));
                 });
     }
-    SalesCreditNoteCreatedMessage createCreditNoteEventMessage(SalesOrder salesOrder,
-                                                                       SalesCreditNoteCreatedMessage message,
-                                                                       String newOrderNumber) {
+    public SalesCreditNoteCreatedMessage createCreditNoteEventMessage(String orderGroupId,
+                                                                      SalesCreditNoteCreatedMessage message,
+                                                                      String newOrderNumber) {
         return SalesCreditNoteCreatedMessage.builder()
                 .salesCreditNote(SalesCreditNote.builder()
                         .salesCreditNoteHeader(SalesCreditNoteHeader.builder()
                                 .orderNumber(newOrderNumber)
-                                .orderGroupId(salesOrder.getOrderGroupId())
+                                .orderGroupId(orderGroupId)
                                 .creditNoteNumber(message.getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteNumber())
                                 .creditNoteDate(message.getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteDate())
                                 .currencyCode(message.getSalesCreditNote().getSalesCreditNoteHeader().getCurrencyCode())
@@ -263,5 +290,23 @@ public class SalesOrderReturnService {
                         .deliveryNotes(message.getSalesCreditNote().getDeliveryNotes())
                         .build())
                 .build();
+    }
+
+    private static String getOrderGroupId(SalesCreditNoteCreatedMessage eventMessage) {
+        if (Strings.isBlank(eventMessage.getSalesCreditNote().getSalesCreditNoteHeader().getOrderGroupId())) {
+            var orderNumber = eventMessage.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber();
+            if (orderNumber.contains(ORDER_NUMBER_SEPARATOR)) {
+                orderNumber = orderNumber.substring(0, orderNumber.lastIndexOf(ORDER_NUMBER_SEPARATOR));
+            }
+            eventMessage.getSalesCreditNote().getSalesCreditNoteHeader().setOrderGroupId(orderNumber);
+            return orderNumber;
+        }
+        return eventMessage.getSalesCreditNote().getSalesCreditNoteHeader().getOrderGroupId();
+    }
+
+    private AtomicInteger getLastRowKey(String orderNumber) {
+        var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
+                .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
+        return new AtomicInteger(orderUtil.getLastRowKey(salesOrder));
     }
 }
