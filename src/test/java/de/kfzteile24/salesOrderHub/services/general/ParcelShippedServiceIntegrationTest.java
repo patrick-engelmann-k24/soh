@@ -1,4 +1,4 @@
-package de.kfzteile24.salesOrderHub.services;
+package de.kfzteile24.salesOrderHub.services.general;
 
 import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
@@ -8,6 +8,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ParcelShipped;
 import de.kfzteile24.salesOrderHub.helper.AuditLogUtil;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
+import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import org.camunda.bpm.engine.HistoryService;
 import org.camunda.bpm.engine.RuntimeService;
 import org.junit.jupiter.api.Test;
@@ -17,6 +18,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.UUID;
+import java.util.List;
 
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -24,10 +26,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
 
-class SalesOrderRowServiceIntegrationTest extends AbstractIntegrationTest {
+public class ParcelShippedServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
-    private SalesOrderRowService salesOrderRowService;
+    private ParcelShippedService parcelShippedService;
 
     @Autowired
     private AuditLogUtil auditLogUtil;
@@ -56,7 +58,7 @@ class SalesOrderRowServiceIntegrationTest extends AbstractIntegrationTest {
                 UUID.randomUUID().toString(), LocalDateTime.now(), "sku1");
         final SalesOrder salesOrder2 = salesOrderUtil.createPersistedSalesOrder(UUID.randomUUID().toString(),
                 salesOrder1.getOrderNumber(), LocalDateTime.now(), "sku1", "sku2", "sku3");
-        salesOrderUtil.createPersistedSalesOrder(
+        final SalesOrder salesOrder3 = salesOrderUtil.createPersistedSalesOrder(
                 UUID.randomUUID().toString(), salesOrder1.getOrderNumber(), LocalDateTime.now(), "sku4", "sku5");
         var orderNumber = salesOrder1.getOrderNumber();
         var event = ParcelShipped.builder()
@@ -75,7 +77,8 @@ class SalesOrderRowServiceIntegrationTest extends AbstractIntegrationTest {
                 ))
                 .build();
 
-        salesOrderRowService.handleParcelShippedEvent(event);
+        List<SalesOrder> salesOrders = List.of(salesOrder3, salesOrder2, salesOrder1);
+        parcelShippedService.handleParcelShippedEvent(event, salesOrders);
 
         final var expectedSalesOrder = salesOrderService.getOrderByOrderNumber(salesOrder2.getOrderNumber());
         assertTrue(expectedSalesOrder.isPresent());
@@ -98,5 +101,4 @@ class SalesOrderRowServiceIntegrationTest extends AbstractIntegrationTest {
         );
 
     }
-
 }
