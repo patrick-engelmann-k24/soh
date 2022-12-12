@@ -1,5 +1,6 @@
 package de.kfzteile24.salesOrderHub.services;
 
+import de.kfzteile24.salesOrderHub.constants.SalesOrderType;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
@@ -15,6 +16,7 @@ import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderReturnRepository;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.CreditNoteNumberCounterService;
+import de.kfzteile24.salesOrderHub.services.returnorder.ReturnOrderServiceAdaptor;
 import de.kfzteile24.soh.order.dto.GrandTotalTaxes;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
@@ -30,7 +32,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -38,11 +39,10 @@ import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.CREDIT_NOTE_NUMBER_SEPARATOR;
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.DATE_TIME_FORMATTER;
-import static de.kfzteile24.salesOrderHub.constants.SOHConstants.ORDER_NUMBER_SEPARATOR;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_CREDIT_NOTE_CREATED;
+import static de.kfzteile24.salesOrderHub.constants.SalesOrderType.DROPSHIPMENT;
+import static de.kfzteile24.salesOrderHub.constants.SalesOrderType.REGULAR;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_RETURN_CONFIRMED;
-import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED;
-import static de.kfzteile24.salesOrderHub.domain.audit.Action.RETURN_ORDER_CREATED;
+import static de.kfzteile24.salesOrderHub.helper.OrderUtil.getOrderGroupIdFromOrderNumber;
 
 @Service
 @Slf4j
@@ -66,6 +66,9 @@ public class SalesOrderReturnService {
 
     @NonNull
     private final OrderUtil orderUtil;
+
+    @NonNull
+    private final ReturnOrderServiceAdaptor adaptor;
 
     public Optional<SalesOrderReturn> getByOrderNumber(String orderNumber) {
         return salesOrderReturnRepository.findByOrderNumber(orderNumber);
@@ -128,33 +131,15 @@ public class SalesOrderReturnService {
     }
 
     @Transactional
-    public void handleRegularSalesOrderReturn(SalesCreditNoteCreatedMessage eventMessage) {
-        var salesOrders = salesOrderService.getOrderByOrderGroupId(getOrderGroupId(eventMessage))
-                .stream()
-                .sorted(Comparator.comparing(SalesOrder::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
-                .collect(Collectors.toList());
-        handleSalesOrderReturn(eventMessage, salesOrders, RETURN_ORDER_CREATED, CORE_CREDIT_NOTE_CREATED);
-    }
-
-    @Transactional
-    public void handleDropshipmentSalesOrderReturn(SalesCreditNoteCreatedMessage eventMessage) {
-        var salesOrders = salesOrderService.getOrderByOrderGroupId(getOrderGroupId(eventMessage))
-                .stream()
-                .filter(order -> !order.isCancelled())
-                .filter(order -> orderUtil.isDropshipmentOrder(order.getLatestJson()))
-                .sorted(Comparator.comparing(SalesOrder::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
-                .collect(Collectors.toList());
-        handleSalesOrderReturn(eventMessage, salesOrders, DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED, DROPSHIPMENT_ORDER_RETURN_CONFIRMED);
-    }
-
-    @Transactional
-    public void handleSalesOrderReturn(SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage, List<SalesOrder> salesOrders,
-                                       Action action, Messages message) {
+    public void handleSalesOrderReturn(SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage, Action action, Messages message) {
         var salesCreditNoteHeader = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader();
         var orderNumber = salesCreditNoteHeader.getOrderNumber();
         var creditNoteNumber = salesCreditNoteHeader.getCreditNoteNumber();
 
         if (checkReturnOrderNotExists(salesCreditNoteHeader.getOrderGroupId(), creditNoteNumber)) {
+            var salesOrders = adaptor.getSalesOrderList(getOrderGroupId(salesCreditNoteCreatedMessage),
+                            getSalesOrderType(message));
+
             SalesOrderReturn salesOrderReturn = createSalesOrderReturn(
                     salesCreditNoteCreatedMessage,
                     salesOrders);
@@ -295,21 +280,25 @@ public class SalesOrderReturnService {
                 .build();
     }
 
-    private static String getOrderGroupId(SalesCreditNoteCreatedMessage eventMessage) {
-        if (Strings.isBlank(eventMessage.getSalesCreditNote().getSalesCreditNoteHeader().getOrderGroupId())) {
-            var orderNumber = eventMessage.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber();
-            if (orderNumber.contains(ORDER_NUMBER_SEPARATOR)) {
-                orderNumber = orderNumber.substring(0, orderNumber.lastIndexOf(ORDER_NUMBER_SEPARATOR));
-            }
-            eventMessage.getSalesCreditNote().getSalesCreditNoteHeader().setOrderGroupId(orderNumber);
-            return orderNumber;
-        }
-        return eventMessage.getSalesCreditNote().getSalesCreditNoteHeader().getOrderGroupId();
-    }
-
     private AtomicInteger getLastRowKey(String orderNumber) {
         var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
         return new AtomicInteger(orderUtil.getLastRowKey(salesOrder));
+    }
+
+    private String getOrderGroupId(SalesCreditNoteCreatedMessage eventMessage) {
+        var header = eventMessage.getSalesCreditNote().getSalesCreditNoteHeader();
+        if (Strings.isBlank(header.getOrderGroupId())) {
+            return getOrderGroupIdFromOrderNumber(header.getOrderNumber());
+        }
+        return header.getOrderGroupId();
+    }
+
+    private SalesOrderType getSalesOrderType(Messages message) {
+        if (message.equals(DROPSHIPMENT_ORDER_RETURN_CONFIRMED)) {
+            return DROPSHIPMENT;
+        } else {
+            return REGULAR;
+        }
     }
 }

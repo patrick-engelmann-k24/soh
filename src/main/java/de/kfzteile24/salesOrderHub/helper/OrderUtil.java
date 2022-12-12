@@ -79,6 +79,7 @@ public class OrderUtil {
                 .filter(r -> StringUtils.pathEquals(r.getSku(), item.getItemNumber()))
                 .findFirst().orElse(OrderRows.builder().build());
         var shippingType = salesOrders.get(0).getLatestJson().getOrderRows().get(0).getShippingType();
+
         var unitPriceGross = item.getUnitGrossAmount();
         var unitPriceNet = item.getUnitNetAmount();
         var sumOfGoodsPriceGross = item.getLineGrossAmount();
@@ -247,5 +248,12 @@ public class OrderUtil {
 
         String orderFulfillment = order.getOrderHeader().getOrderFulfillment();
         return orderFulfillment != null && orderFulfillment.equalsIgnoreCase(DELTICOM.getName());
+    }
+
+    public static String getOrderGroupIdFromOrderNumber(String orderNumber) {
+        if (orderNumber.contains(ORDER_NUMBER_SEPARATOR)) {
+            orderNumber = orderNumber.substring(0, orderNumber.lastIndexOf(ORDER_NUMBER_SEPARATOR));
+        }
+        return orderNumber;
     }
 }
