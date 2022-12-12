@@ -289,7 +289,9 @@ public class SalesOrderReturnService {
     private String getOrderGroupId(SalesCreditNoteCreatedMessage eventMessage) {
         var header = eventMessage.getSalesCreditNote().getSalesCreditNoteHeader();
         if (Strings.isBlank(header.getOrderGroupId())) {
-            return getOrderGroupIdFromOrderNumber(header.getOrderNumber());
+            var orderGroupId = getOrderGroupIdFromOrderNumber(header.getOrderNumber());
+            eventMessage.getSalesCreditNote().getSalesCreditNoteHeader().setOrderGroupId(orderGroupId);
+            return orderGroupId;
         }
         return header.getOrderGroupId();
     }

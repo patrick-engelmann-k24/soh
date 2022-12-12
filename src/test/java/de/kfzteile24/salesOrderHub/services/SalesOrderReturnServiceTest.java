@@ -6,6 +6,7 @@ import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderReturnRepository;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.CreditNoteNumberCounterService;
+import de.kfzteile24.salesOrderHub.services.returnorder.ReturnOrderServiceAdaptor;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.DisplayName;
@@ -41,6 +42,9 @@ class SalesOrderReturnServiceTest {
 
     @Mock
     private OrderUtil orderUtil;
+
+    @Mock
+    private ReturnOrderServiceAdaptor adaptor;
 
 
     @InjectMocks
