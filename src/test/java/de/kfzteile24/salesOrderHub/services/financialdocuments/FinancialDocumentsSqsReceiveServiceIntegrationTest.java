@@ -5,7 +5,6 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
-import de.kfzteile24.salesOrderHub.dto.shared.creditnote.CreditNoteLine;
 import de.kfzteile24.salesOrderHub.dto.shared.creditnote.SalesCreditNoteHeader;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
@@ -19,7 +18,6 @@ import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import de.kfzteile24.salesOrderHub.services.salesorder.SalesOrderSqsReceiveService;
 import de.kfzteile24.salesOrderHub.services.splitter.decorator.ItemSplitService;
-import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.GrandTotalTaxes;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
@@ -46,7 +44,6 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.ORDER_NUMBER_SEPARATOR;
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.RETURN_ORDER_NUMBER_PREFIX;
@@ -138,7 +135,6 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
         salesOrderService.save(salesOrder, Action.ORDER_CREATED);
 
         var message = getObjectByResource("coreSalesCreditNoteCreated.json", SalesCreditNoteCreatedMessage.class);
-        var messageWrapper = MessageWrapper.builder().build();
         financialDocumentsSqsReceiveService.queueListenerCoreSalesCreditNoteCreated(message, messageWrapper);
 
         SalesCreditNoteHeader salesCreditNoteHeader = message.getSalesCreditNote().getSalesCreditNoteHeader();
@@ -166,54 +162,11 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
                 .rate(BigDecimal.valueOf(19))
                 .value(BigDecimal.valueOf(0.38))
                 .build()));
-        salesOrder.setCancelled(true);
 
         salesOrderService.save(salesOrder, Action.ORDER_CREATED);
 
-        var salesOrder1 = SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
-        salesOrder1.setOrderGroupId("580309129");
-        salesOrder1.setOrderNumber("580309129-2");
-        salesOrder1.getLatestJson().getOrderHeader().getTotals().setGrandTotalTaxes(List.of(GrandTotalTaxes.builder()
-                .rate(BigDecimal.valueOf(19))
-                .value(BigDecimal.valueOf(0.38))
-                .build()));
-        salesOrder1.getLatestJson().setOrderRows(
-                salesOrder1.getLatestJson().getOrderRows().stream()
-                        .filter(row -> row.getSku().equals("sku-2"))
-                        .collect(Collectors.toList()));
-
-        salesOrderService.save(salesOrder1, Action.ORDER_CREATED);
-
-        var salesOrder2 = SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
-        salesOrder2.setOrderGroupId("580309129");
-        salesOrder2.setOrderNumber("580309129-3");
-        salesOrder2.getLatestJson().getOrderHeader().getTotals().setGrandTotalTaxes(List.of(GrandTotalTaxes.builder()
-                .rate(BigDecimal.valueOf(19))
-                .value(BigDecimal.valueOf(0.38))
-                .build()));
-        salesOrder2.getLatestJson().setOrderRows(
-                salesOrder2.getLatestJson().getOrderRows().stream()
-                        .filter(row -> row.getSku().equals("sku-1") || row.getSku().equals("sku-3"))
-                        .collect(Collectors.toList()));
-
-        salesOrderService.save(salesOrder2, Action.ORDER_CREATED);
-
         var message = getObjectByResource("coreSalesCreditNoteCreated.json", SalesCreditNoteCreatedMessage.class);
         message.getSalesCreditNote().getSalesCreditNoteHeader().setOrderNumber("580309129-1");
-        var lines = message.getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteLines();
-        lines.add(CreditNoteLine.builder()
-                        .isShippingCost(false)
-                        .itemNumber("new-sku-2")
-                        .quantity(BigDecimal.ONE)
-                        .description("asdasd")
-                        .unitNetAmount(BigDecimal.TEN)
-                        .lineNetAmount(BigDecimal.TEN)
-                        .unitGrossAmount(BigDecimal.valueOf(11.9))
-                        .lineGrossAmount(BigDecimal.valueOf(11.9))
-                        .lineTaxAmount(BigDecimal.valueOf(19))
-                        .taxRate(BigDecimal.valueOf(19))
-                        .build());
-        var messageWrapper = MessageWrapper.builder().build();
         financialDocumentsSqsReceiveService.queueListenerCoreSalesCreditNoteCreated(message, messageWrapper);
 
         verify(salesOrderService).getOrderByOrderNumber("580309129-1");
@@ -317,7 +270,6 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
         String invoiceNumber = "10";
 
         var message = getObjectByResource("coreSalesInvoiceCreatedOneItem.json", CoreSalesInvoiceCreatedMessage.class);
-        var messageWrapper = MessageWrapper.builder().build();
 
         //Replace order number with randomly created order number as expected
         message.getSalesInvoice().getSalesInvoiceHeader().setOrderNumber(originalOrderNumber);
@@ -354,7 +306,6 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
         String originalOrderNumber = salesOrder.getOrderNumber();
 
         var message = getObjectByResource("coreSalesInvoiceCreatedOneItem.json", CoreSalesInvoiceCreatedMessage.class);
-        var messageWrapper = MessageWrapper.builder().build();
 
         //Replace order number with randomly created order number as expected
         message.getSalesInvoice().getSalesInvoiceHeader().setOrderNumber(originalOrderNumber);
@@ -384,7 +335,6 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
 
         String originalOrderNumber = salesOrder.getOrderNumber();
         var message = getObjectByResource("coreSalesInvoiceCreatedMultipleItemsSameSkus.json", CoreSalesInvoiceCreatedMessage.class);
-        var messageWrapper = MessageWrapper.builder().build();
 
         //Replace order number with randomly created order number as expected
         message.getSalesInvoice().getSalesInvoiceHeader().setOrderNumber(originalOrderNumber);
@@ -419,7 +369,6 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
         String rowSku3 = "2022-KBA";
 
         var message = getObjectByResource("coreSalesInvoiceCreatedMultipleItems.json", CoreSalesInvoiceCreatedMessage.class);
-        var messageWrapper = MessageWrapper.builder().build();
 
         //Replace order number with randomly created order number as expected
         message.getSalesInvoice().getSalesInvoiceHeader().setOrderNumber(originalOrderNumber);
@@ -460,7 +409,6 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
         String rowSku3 = "2022-KBA";
 
         var message = getObjectByResource("coreSalesInvoiceCreatedMultipleItems.json", CoreSalesInvoiceCreatedMessage.class);
-        var messageWrapper = MessageWrapper.builder().build();
 
         //Replace order number with randomly created order number as expected
         message.getSalesInvoice().getSalesInvoiceHeader().setOrderNumber(originalOrderNumber);
@@ -502,7 +450,6 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
         String rowSku2 = "2010-10183";
         String rowSku3 = "2022-KBA";
         var message = getObjectByResource("coreSalesInvoiceCreatedMultipleItems.json", CoreSalesInvoiceCreatedMessage.class);
-        var messageWrapper = MessageWrapper.builder().build();
 
         //Replace order number with randomly created order number as expected
         message.getSalesInvoice().getSalesInvoiceHeader().setOrderNumber(originalOrderNumber);
@@ -538,7 +485,6 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
 
         var message = getObjectByResource("coreOrderMessage.json", Order.class);
         message.getOrderHeader().setPlatform(ECP);
-        var messageWrapper = MessageWrapper.builder().build();
         SalesOrder salesOrder = getSalesOrder(message);
 
         doAnswer((Answer<Void>) invocation -> {

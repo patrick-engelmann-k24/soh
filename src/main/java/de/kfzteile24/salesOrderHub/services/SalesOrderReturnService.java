@@ -148,17 +148,18 @@ public class SalesOrderReturnService {
     }
 
     @Transactional
-    public void handleSalesOrderReturn(SalesCreditNoteCreatedMessage eventMessage, List<SalesOrder> salesOrders,
-                                       Action action, Messages processMessage) {
-        var messageHeader = eventMessage.getSalesCreditNote().getSalesCreditNoteHeader();
-        var orderNumber = messageHeader.getOrderNumber();
-        var orderGroupId = messageHeader.getOrderGroupId();
-        var creditNoteNumber = messageHeader.getCreditNoteNumber();
+    public void handleSalesOrderReturn(SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage, List<SalesOrder> salesOrders,
+                                       Action action, Messages message) {
+        var salesCreditNoteHeader = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader();
+        var orderNumber = salesCreditNoteHeader.getOrderNumber();
+        var creditNoteNumber = salesCreditNoteHeader.getCreditNoteNumber();
 
-        if (checkReturnOrderNotExists(orderGroupId, creditNoteNumber)) {
-            SalesOrderReturn salesOrderReturn = createSalesOrderReturn(salesOrders, eventMessage);
+        if (checkReturnOrderNotExists(salesCreditNoteHeader.getOrderGroupId(), creditNoteNumber)) {
+            SalesOrderReturn salesOrderReturn = createSalesOrderReturn(
+                    salesCreditNoteCreatedMessage,
+                    salesOrders);
 
-            ProcessInstance result = helper.createReturnOrderProcess(save(salesOrderReturn, action), processMessage);
+            ProcessInstance result = helper.createReturnOrderProcess(save(salesOrderReturn, action), message);
             if (result != null) {
                 log.info("New return order process started for order number: {}. Process-Instance-ID: {} ",
                         orderNumber, result.getProcessInstanceId());
@@ -166,8 +167,9 @@ public class SalesOrderReturnService {
         }
     }
 
-    private SalesOrderReturn createSalesOrderReturn(List<SalesOrder> salesOrders, SalesCreditNoteCreatedMessage message) {
-        var messageHeader = message.getSalesCreditNote().getSalesCreditNoteHeader();
+    private SalesOrderReturn createSalesOrderReturn(SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage,
+                                                    List<SalesOrder> salesOrders) {
+        var messageHeader = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader();
         var creditNoteNumber = messageHeader.getCreditNoteNumber();
         var orderGroupId = messageHeader.getOrderGroupId();
         var newReturnOrderNumber = orderUtil.createReturnOrderNumberInSOH(creditNoteNumber);
@@ -176,9 +178,11 @@ public class SalesOrderReturnService {
         return SalesOrderReturn.builder()
                 .orderGroupId(orderGroupId)
                 .orderNumber(newReturnOrderNumber)
-                .returnOrderJson(createReturnOrderJson(salesOrders, messageHeader, newReturnOrderNumber))
+                .returnOrderJson(
+                        createReturnOrderJson(salesOrders, messageHeader, newReturnOrderNumber))
                 .salesOrder(latestSalesOrder)
-                .salesCreditNoteCreatedMessage(createCreditNoteEventMessage(orderGroupId, message, newReturnOrderNumber))
+                .salesCreditNoteCreatedMessage(
+                        createCreditNoteEventMessage(orderGroupId, salesCreditNoteCreatedMessage, newReturnOrderNumber))
                 .build();
     }
 
@@ -200,8 +204,7 @@ public class SalesOrderReturnService {
         return returnOrderJson;
     }
 
-    private Order recalculateOrderByReturns(List<SalesOrder> salesOrders,
-                                            Collection<CreditNoteLine> items,
+    private Order recalculateOrderByReturns(List<SalesOrder> salesOrders, Collection<CreditNoteLine> items,
                                             AtomicInteger lastRowKey) {
         var latestSalesOrder = salesOrders.get(0);
         var returnLatestJson = orderUtil.copyOrderJson(latestSalesOrder.getLatestJson());

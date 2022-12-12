@@ -5,7 +5,6 @@ import com.github.tomakehurst.wiremock.client.WireMock;
 import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
-import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -61,7 +60,6 @@ class MigrationSalesOrderServiceIntegrationTest extends AbstractIntegrationTest 
 
         var message = getObjectByResource("ecpOrderMessage.json", Order.class);
         Order originalOrder = copyOrderJson(message);
-        var messageWrapper = MessageWrapper.builder().build();
 
         migrationSalesOrderService.handleMigrationCoreSalesOrderCreated(message, messageWrapper);
 
@@ -82,7 +80,6 @@ class MigrationSalesOrderServiceIntegrationTest extends AbstractIntegrationTest 
     void testHandleMigrationCoreSalesOrderCreatedDuplicateOrder() {
 
         var message = getObjectByResource("ecpOrderMessageWithTwoRows.json", Order.class);
-        var messageWrapper = MessageWrapper.builder().build();
         Order originalOrder = copyOrderJson(message);
         SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(message));
         camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);

@@ -11,7 +11,6 @@ import de.kfzteile24.salesOrderHub.repositories.InvoiceNumberCounterRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceNumberCounterService;
-import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -116,7 +115,6 @@ class SalesOrderSqsReceiveServiceIntegrationTest extends AbstractIntegrationTest
         var orderMessage = getObjectByResource("ecpOrderMessage.json", Order.class);
         orderMessage.getOrderHeader().setOrderNumber("500000996");
         SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(orderMessage));
-        var messageWrapper = MessageWrapper.builder().build();
 
         ProcessInstance orderProcessInstance = camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
 
