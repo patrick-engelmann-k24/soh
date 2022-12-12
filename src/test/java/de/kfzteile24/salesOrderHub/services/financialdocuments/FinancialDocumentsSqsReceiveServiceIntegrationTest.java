@@ -170,7 +170,7 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
         financialDocumentsSqsReceiveService.queueListenerCoreSalesCreditNoteCreated(message, messageWrapper);
 
         verify(salesOrderService).getOrderByOrderNumber("580309129-1");
-        verify(salesOrderReturnService).handleRegularSalesOrderReturn(message);
+        verify(salesOrderReturnService).handleSalesOrderReturn(message, RETURN_ORDER_CREATED, CORE_CREDIT_NOTE_CREATED);
         verify(snsPublishService).publishReturnOrderCreatedEvent(argThat(
                 salesOrderReturn -> {
                     assertThat(salesOrderReturn.getOrderNumber()).isEqualTo("RO-876130");
@@ -248,7 +248,7 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
     private void checkEventIsPublished(SalesOrder salesOrder, SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage) {
 
         verify(salesOrderService).getOrderByOrderNumber("580309129");
-        verify(salesOrderReturnService).handleSalesOrderReturn(salesCreditNoteCreatedMessage, List.of(salesOrder), RETURN_ORDER_CREATED, CORE_CREDIT_NOTE_CREATED);
+        verify(salesOrderReturnService).handleSalesOrderReturn(salesCreditNoteCreatedMessage, RETURN_ORDER_CREATED, CORE_CREDIT_NOTE_CREATED);
         verify(snsPublishService).publishReturnOrderCreatedEvent(argThat(
                 salesOrderReturn -> {
                     assertThat(salesOrderReturn.getOrderNumber()).isEqualTo("RO-876130");
