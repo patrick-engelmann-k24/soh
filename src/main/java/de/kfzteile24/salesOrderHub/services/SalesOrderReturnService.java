@@ -286,7 +286,7 @@ public class SalesOrderReturnService {
         return new AtomicInteger(orderUtil.getLastRowKey(salesOrder));
     }
 
-    private String getOrderGroupId(SalesCreditNoteCreatedMessage eventMessage) {
+    public String getOrderGroupId(SalesCreditNoteCreatedMessage eventMessage) {
         var header = eventMessage.getSalesCreditNote().getSalesCreditNoteHeader();
         if (Strings.isBlank(header.getOrderGroupId())) {
             var orderGroupId = getOrderGroupIdFromOrderNumber(header.getOrderNumber());

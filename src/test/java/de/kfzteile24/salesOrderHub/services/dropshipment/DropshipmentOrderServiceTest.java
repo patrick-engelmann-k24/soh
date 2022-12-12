@@ -125,10 +125,9 @@ class DropshipmentOrderServiceTest {
         SalesOrder salesOrder = getSalesOrder(getObjectByResource("ecpOrderMessageWithTwoRows.json", Order.class));
 
         when(salesOrderReturnService.createCreditNoteNumber()).thenReturn("2022200002");
-        SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage = returnOrderHelper.buildSalesCreditNoteCreatedMessage(
-                message, salesOrder, salesOrderReturnService.createCreditNoteNumber());
+        SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage = returnOrderHelper.buildSalesCreditNoteCreatedMessage(message);
 
-        doReturn(salesCreditNoteCreatedMessage).when(dropshipmentOrderService).buildSalesCreditNoteCreatedMessage(message);
+        doReturn(salesCreditNoteCreatedMessage).when(returnOrderHelper).buildSalesCreditNoteCreatedMessage(message);
 
         dropshipmentOrderService.handleDropshipmentPurchaseOrderReturnConfirmed(message, messageWrapper);
 

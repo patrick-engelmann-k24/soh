@@ -145,7 +145,7 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
 
         checkOrderRowValues(returnOrder.getOrderRows());
         checkTotalsValues(returnOrder.getOrderHeader().getTotals());
-        checkEventIsPublished(salesOrder, message);
+        checkEventIsPublished(message);
     }
 
     @SneakyThrows
@@ -245,7 +245,7 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
         assertEquals(new BigDecimal("-6.96"), grandTotalTax.getValue());
     }
 
-    private void checkEventIsPublished(SalesOrder salesOrder, SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage) {
+    private void checkEventIsPublished(SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage) {
 
         verify(salesOrderService).getOrderByOrderNumber("580309129");
         verify(salesOrderReturnService).handleSalesOrderReturn(salesCreditNoteCreatedMessage, RETURN_ORDER_CREATED, CORE_CREDIT_NOTE_CREATED);

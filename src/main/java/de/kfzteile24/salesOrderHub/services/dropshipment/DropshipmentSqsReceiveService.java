@@ -1,6 +1,5 @@
 package de.kfzteile24.salesOrderHub.services.dropshipment;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.newrelic.api.agent.Trace;
 import de.kfzteile24.salesOrderHub.constants.PersistentProperties;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
@@ -34,7 +33,7 @@ public class DropshipmentSqsReceiveService extends AbstractSqsReceiveService {
     @SqsListener(value = "${soh.sqs.queue.dropshipmentShipmentConfirmed}", deletionPolicy = ON_SUCCESS)
     @Trace(metricName = "Handling dropshipment shipment confirmed message", dispatcher = true)
     public void queueListenerDropshipmentShipmentConfirmed(
-            DropshipmentShipmentConfirmedMessage message, MessageWrapper messageWrapper) throws JsonProcessingException {
+            DropshipmentShipmentConfirmedMessage message, MessageWrapper messageWrapper) {
 
         dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(message, messageWrapper);
     }

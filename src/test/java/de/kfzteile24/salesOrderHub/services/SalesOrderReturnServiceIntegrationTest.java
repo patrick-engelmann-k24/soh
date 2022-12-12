@@ -64,8 +64,7 @@ class SalesOrderReturnServiceIntegrationTest extends AbstractIntegrationTest {
 
         var message = getObjectByResource("dropshipmentPurchaseOrderReturnConfirmed.json", DropshipmentPurchaseOrderReturnConfirmedMessage.class);
         message.setSalesOrderNumber(salesOrder.getOrderNumber());
-        SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage = returnOrderHelper.buildSalesCreditNoteCreatedMessage(
-                message, salesOrder, nextCreditNoteNumber);
+        SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage = returnOrderHelper.buildSalesCreditNoteCreatedMessage(message);
         salesOrderReturn.setSalesCreditNoteCreatedMessage(salesCreditNoteCreatedMessage);
 
         salesOrderReturnService.save(salesOrderReturn, RETURN_ORDER_CREATED);

@@ -252,7 +252,7 @@ public class OrderUtil {
 
     public static String getOrderGroupIdFromOrderNumber(String orderNumber) {
         if (orderNumber.contains(ORDER_NUMBER_SEPARATOR)) {
-            orderNumber = orderNumber.substring(0, orderNumber.lastIndexOf(ORDER_NUMBER_SEPARATOR));
+            return orderNumber.substring(0, orderNumber.lastIndexOf(ORDER_NUMBER_SEPARATOR));
         }
         return orderNumber;
     }
