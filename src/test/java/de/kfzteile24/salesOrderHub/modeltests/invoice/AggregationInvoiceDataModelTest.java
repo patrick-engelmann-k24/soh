@@ -46,9 +46,6 @@ class AggregationInvoiceDataModelTest extends AbstractWorkflowTest {
     @Autowired
     protected DetermineDropshipmentOrderInvoiceTypeDelegate determineDropshipmentOrderInvoiceTypeDelegate;
 
-    @Autowired
-    protected DropshipmentOrderCancellationDelegate dropshipmentOrderCancellationDelegate;
-
     @BeforeEach
     protected void setUp() {
         super.setUp();
