@@ -14,12 +14,12 @@ import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.listener.NewRelic
 import de.kfzteile24.salesOrderHub.delegates.invoicing.AggregateInvoiceDataDelegate;
 import de.kfzteile24.salesOrderHub.delegates.invoicing.CreateDropshipmentSubsequentInvoiceDelegate;
 import de.kfzteile24.salesOrderHub.delegates.invoicing.CreateDropshipmentSubsequentOrderDelegate;
+import de.kfzteile24.salesOrderHub.delegates.invoicing.DetermineDropshipmentOrderInvoiceTypeDelegate;
 import de.kfzteile24.salesOrderHub.delegates.invoicing.DropshipmentOrderFullyInvoicedDelegate;
 import de.kfzteile24.salesOrderHub.delegates.invoicing.DropshipmentOrderGenerateInvoicePdfDelegate;
 import de.kfzteile24.salesOrderHub.delegates.invoicing.DropshipmentOrderPublishInvoiceDataDelegate;
 import de.kfzteile24.salesOrderHub.delegates.invoicing.DropshipmentOrderStoreInvoiceDelegate;
 import de.kfzteile24.salesOrderHub.delegates.invoicing.StartDropshipmentSubsequentOrderProcessDelegate;
-import de.kfzteile24.salesOrderHub.delegates.invoicing.listener.IsPartialInvoiceListener;
 import de.kfzteile24.salesOrderHub.delegates.returnorder.PublishCreditNoteReceivedDelegate;
 import de.kfzteile24.salesOrderHub.delegates.returnorder.PublishReturnOrderCreatedDelegate;
 import de.kfzteile24.salesOrderHub.delegates.salesOrder.CancelDropshipmentOrderDelegate;
@@ -124,7 +124,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Paymen
         PublishDropshipmentOrderRowTrackingInformationDelegate.class,
         SaveDropshipmentOrderRowDelegate.class,
         AggregateInvoiceDataDelegate.class,
-        IsPartialInvoiceListener.class,
+        DetermineDropshipmentOrderInvoiceTypeDelegate.class,
         CreateDropshipmentSubsequentOrderDelegate.class,
         StartDropshipmentSubsequentOrderProcessDelegate.class,
         CreateDropshipmentSubsequentInvoiceDelegate.class,

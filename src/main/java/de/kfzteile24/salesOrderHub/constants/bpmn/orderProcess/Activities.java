@@ -42,7 +42,9 @@ public enum Activities implements BpmItem {
     EVENT_THROW_MSG_INVOICING_DROPSHIPMENT_ORDER_FULLY_INVOICED("eventThrowMsgDropshipmentOrderFullyInvoiced"),
     EVENT_THROW_MSG_INVOICING_GENERATE_FULLY_INVOICED_PDF("eventThrowMsgGenerateFullyInvoicedPdf"),
     EVENT_MSG_DROPSHIPMENT_ORDER_FULLY_INVOICED("eventMsgDropshipmentOrderFullyInvoiced"),
-    AGGREGATE_INVOICE_DATA("activityAggregateInvoiceData");
+    AGGREGATE_INVOICE_DATA("activityAggregateInvoiceData"),
+    SCRIPT_SET_TRACKING_ID_RECEIVED("scriptSetTrackingIdReceived"),
+    DETERMINE_DROPSHIPMENT_ORDER_INVOICE_TYPE("activityDetermineDropshipmentOrderInvoiceType");
 
 
     @Getter

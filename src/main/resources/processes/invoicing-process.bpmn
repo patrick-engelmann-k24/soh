@@ -9,14 +9,11 @@
         <bpmn:outgoing>Flow_1lfs5oh</bpmn:outgoing>
       </bpmn:startEvent>
       <bpmn:exclusiveGateway id="gwXORIsPartialInvoice" name="Is partial invoice?">
-        <bpmn:extensionElements>
-          <camunda:executionListener delegateExpression="${isPartialInvoiceListener}" event="start" />
-        </bpmn:extensionElements>
-        <bpmn:incoming>Flow_1lfs5oh</bpmn:incoming>
+        <bpmn:incoming>Flow_0j1rhzt</bpmn:incoming>
         <bpmn:outgoing>Flow_1ejtcut</bpmn:outgoing>
         <bpmn:outgoing>Flow_1fa784o</bpmn:outgoing>
       </bpmn:exclusiveGateway>
-      <bpmn:sequenceFlow id="Flow_1lfs5oh" sourceRef="eventStartSubInvoicing" targetRef="gwXORIsPartialInvoice" />
+      <bpmn:sequenceFlow id="Flow_1lfs5oh" sourceRef="eventStartSubInvoicing" targetRef="activityDetermineDropshipmentOrderInvoiceType" />
       <bpmn:sequenceFlow id="Flow_1c4hln3" sourceRef="activityCreateInvoiceSubsequentOrder" targetRef="eventThrowMsgStartDropshipmentSubsequentProcess" />
       <bpmn:sequenceFlow id="Flow_1ejtcut" name="yes" sourceRef="gwXORIsPartialInvoice" targetRef="activityCreateInvoiceSubsequentOrder">
         <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${isPartialInvoice}</bpmn:conditionExpression>
@@ -95,11 +92,8 @@
       </bpmn:parallelGateway>
       <bpmn:callActivity id="callActivityDropshipmentOrderRowsCancellation" name="Dropshipment order row cancellation" calledElement="OrderRowsCancellationProcess">
         <bpmn:extensionElements>
-          <camunda:in source="all" target="all" />
-          <camunda:out source="all" target="all" />
-          <camunda:in source="orderRows" target="orderRows" />
-          <camunda:in source="orderNumber" target="orderNumber" />
-          <camunda:out source="isOrderCancelled" target="isOrderCancelled" />
+          <camunda:in variables="all" />
+          <camunda:out variables="all" />
         </bpmn:extensionElements>
         <bpmn:incoming>Flow_1d7auhq</bpmn:incoming>
         <bpmn:outgoing>Flow_0ttl7c0</bpmn:outgoing>
@@ -150,6 +144,11 @@
         <bpmn:incoming>Flow_1fa784o</bpmn:incoming>
         <bpmn:outgoing>Flow_1s78nkb</bpmn:outgoing>
       </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="Flow_0j1rhzt" sourceRef="activityDetermineDropshipmentOrderInvoiceType" targetRef="gwXORIsPartialInvoice" />
+      <bpmn:serviceTask id="activityDetermineDropshipmentOrderInvoiceType" name="Determine dropshipment order invoice type" camunda:delegateExpression="${determineDropshipmentOrderInvoiceTypeDelegate}">
+        <bpmn:incoming>Flow_1lfs5oh</bpmn:incoming>
+        <bpmn:outgoing>Flow_0j1rhzt</bpmn:outgoing>
+      </bpmn:serviceTask>
       <bpmn:textAnnotation id="TextAnnotation_11i2faf">
         <bpmn:text>Start new instance of main process</bpmn:text>
       </bpmn:textAnnotation>
@@ -196,12 +195,12 @@
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="InvoicingProcess">
       <bpmndi:BPMNEdge id="Flow_0mi7tr2_di" bpmnElement="Flow_0mi7tr2">
-        <di:waypoint x="2260" y="390" />
-        <di:waypoint x="2312" y="390" />
+        <di:waypoint x="2450" y="390" />
+        <di:waypoint x="2502" y="390" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1qsgjdq_di" bpmnElement="Flow_1qsgjdq">
-        <di:waypoint x="2090" y="390" />
-        <di:waypoint x="2160" y="390" />
+        <di:waypoint x="2280" y="390" />
+        <di:waypoint x="2350" y="390" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1nbtjia_di" bpmnElement="Flow_1nbtjia">
         <di:waypoint x="198" y="390" />
@@ -211,249 +210,262 @@
         <di:waypoint x="370" y="390" />
         <di:waypoint x="430" y="390" />
       </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_1wgvi5n_di" bpmnElement="eventEndInvoicingProcess">
+        <dc:Bounds x="2502" y="372" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_15kv97n_di" bpmnElement="activityDeleteTmpInvoiceEntries">
+        <dc:Bounds x="2350" y="350" width="100" height="80" />
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_1mapp38_di" bpmnElement="subProcessInvoicing" isExpanded="true">
-        <dc:Bounds x="430" y="80" width="1660" height="730" />
+        <dc:Bounds x="430" y="80" width="1850" height="730" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_11i2faf_di" bpmnElement="TextAnnotation_11i2faf">
+        <dc:Bounds x="980" y="480" width="150" height="44" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_0dk3h2q_di" bpmnElement="TextAnnotation_0dk3h2q">
+        <dc:Bounds x="1735" y="260" width="110" height="40" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_12hbwxi_di" bpmnElement="TextAnnotation_12hbwxi">
+        <dc:Bounds x="1740" y="650" width="100" height="40" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_1s78nkb_di" bpmnElement="Flow_1s78nkb">
-        <di:waypoint x="1010" y="240" />
-        <di:waypoint x="1245" y="240" />
+        <di:waypoint x="1200" y="240" />
+        <di:waypoint x="1435" y="240" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1d7auhq_di" bpmnElement="Flow_1d7auhq">
-        <di:waypoint x="1010" y="580" />
-        <di:waypoint x="1080" y="580" />
+        <di:waypoint x="1200" y="580" />
+        <di:waypoint x="1270" y="580" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0pnijzm_di" bpmnElement="Flow_0pnijzm">
-        <di:waypoint x="1755" y="580" />
-        <di:waypoint x="1880" y="580" />
-        <di:waypoint x="1880" y="415" />
+        <di:waypoint x="1945" y="580" />
+        <di:waypoint x="2070" y="580" />
+        <di:waypoint x="2070" y="415" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_033l8kg_di" bpmnElement="Flow_033l8kg">
-        <di:waypoint x="1755" y="240" />
-        <di:waypoint x="1880" y="240" />
-        <di:waypoint x="1880" y="365" />
+        <di:waypoint x="1945" y="240" />
+        <di:waypoint x="2070" y="240" />
+        <di:waypoint x="2070" y="365" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1s5d28k_di" bpmnElement="Flow_1s5d28k">
-        <di:waypoint x="1905" y="390" />
-        <di:waypoint x="1992" y="390" />
+        <di:waypoint x="2095" y="390" />
+        <di:waypoint x="2182" y="390" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0zvor0f_di" bpmnElement="Flow_0zvor0f">
-        <di:waypoint x="1518" y="330" />
-        <di:waypoint x="1730" y="330" />
-        <di:waypoint x="1730" y="265" />
+        <di:waypoint x="1708" y="330" />
+        <di:waypoint x="1920" y="330" />
+        <di:waypoint x="1920" y="265" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0asd4k3_di" bpmnElement="Flow_0asd4k3">
-        <di:waypoint x="1518" y="240" />
-        <di:waypoint x="1705" y="240" />
+        <di:waypoint x="1708" y="240" />
+        <di:waypoint x="1895" y="240" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1a17xuf_di" bpmnElement="Flow_1a17xuf">
-        <di:waypoint x="1518" y="160" />
-        <di:waypoint x="1730" y="160" />
-        <di:waypoint x="1730" y="215" />
+        <di:waypoint x="1708" y="160" />
+        <di:waypoint x="1920" y="160" />
+        <di:waypoint x="1920" y="215" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1qziygm_di" bpmnElement="Flow_1qziygm">
-        <di:waypoint x="1270" y="265" />
-        <di:waypoint x="1270" y="330" />
-        <di:waypoint x="1482" y="330" />
+        <di:waypoint x="1460" y="265" />
+        <di:waypoint x="1460" y="330" />
+        <di:waypoint x="1672" y="330" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0s5vdpw_di" bpmnElement="Flow_0s5vdpw">
-        <di:waypoint x="1295" y="240" />
-        <di:waypoint x="1482" y="240" />
+        <di:waypoint x="1485" y="240" />
+        <di:waypoint x="1672" y="240" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1cr9zf7_di" bpmnElement="Flow_1cr9zf7">
-        <di:waypoint x="1270" y="215" />
-        <di:waypoint x="1270" y="160" />
-        <di:waypoint x="1482" y="160" />
+        <di:waypoint x="1460" y="215" />
+        <di:waypoint x="1460" y="160" />
+        <di:waypoint x="1672" y="160" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_013e4ng_di" bpmnElement="Flow_013e4ng">
-        <di:waypoint x="1645" y="580" />
-        <di:waypoint x="1705" y="580" />
+        <di:waypoint x="1835" y="580" />
+        <di:waypoint x="1895" y="580" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0gvmfno_di" bpmnElement="Flow_0gvmfno">
-        <di:waypoint x="1518" y="640" />
-        <di:waypoint x="1620" y="640" />
-        <di:waypoint x="1620" y="605" />
+        <di:waypoint x="1708" y="640" />
+        <di:waypoint x="1810" y="640" />
+        <di:waypoint x="1810" y="605" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_119p30k_di" bpmnElement="Flow_119p30k">
-        <di:waypoint x="1380" y="605" />
-        <di:waypoint x="1380" y="640" />
-        <di:waypoint x="1482" y="640" />
+        <di:waypoint x="1570" y="605" />
+        <di:waypoint x="1570" y="640" />
+        <di:waypoint x="1672" y="640" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1386" y="620" width="18" height="14" />
+          <dc:Bounds x="1576" y="620" width="18" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0o3zg8m_di" bpmnElement="Flow_0o3zg8m">
-        <di:waypoint x="1518" y="480" />
-        <di:waypoint x="1730" y="480" />
-        <di:waypoint x="1730" y="555" />
+        <di:waypoint x="1708" y="480" />
+        <di:waypoint x="1920" y="480" />
+        <di:waypoint x="1920" y="555" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1wie477_di" bpmnElement="Flow_1wie477">
-        <di:waypoint x="1518" y="730" />
-        <di:waypoint x="1730" y="730" />
-        <di:waypoint x="1730" y="605" />
+        <di:waypoint x="1708" y="730" />
+        <di:waypoint x="1920" y="730" />
+        <di:waypoint x="1920" y="605" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1hqec6p_di" bpmnElement="Flow_1hqec6p">
-        <di:waypoint x="1405" y="580" />
         <di:waypoint x="1595" y="580" />
+        <di:waypoint x="1785" y="580" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1494" y="562" width="13" height="14" />
+          <dc:Bounds x="1684" y="562" width="13" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1ecr6p4_di" bpmnElement="Flow_1ecr6p4">
-        <di:waypoint x="1295" y="580" />
-        <di:waypoint x="1355" y="580" />
+        <di:waypoint x="1485" y="580" />
+        <di:waypoint x="1545" y="580" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0ttl7c0_di" bpmnElement="Flow_0ttl7c0">
-        <di:waypoint x="1180" y="580" />
-        <di:waypoint x="1245" y="580" />
+        <di:waypoint x="1370" y="580" />
+        <di:waypoint x="1435" y="580" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0kdfaq5_di" bpmnElement="Flow_0kdfaq5">
-        <di:waypoint x="1270" y="605" />
-        <di:waypoint x="1270" y="730" />
-        <di:waypoint x="1482" y="730" />
+        <di:waypoint x="1460" y="605" />
+        <di:waypoint x="1460" y="730" />
+        <di:waypoint x="1672" y="730" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1pgu2g7_di" bpmnElement="Flow_1pgu2g7">
-        <di:waypoint x="1270" y="555" />
-        <di:waypoint x="1270" y="480" />
-        <di:waypoint x="1482" y="480" />
+        <di:waypoint x="1460" y="555" />
+        <di:waypoint x="1460" y="480" />
+        <di:waypoint x="1672" y="480" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_00dqh1l_di" bpmnElement="Flow_00dqh1l">
-        <di:waypoint x="848" y="580" />
-        <di:waypoint x="910" y="580" />
+        <di:waypoint x="1038" y="580" />
+        <di:waypoint x="1100" y="580" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1fa784o_di" bpmnElement="Flow_1fa784o">
-        <di:waypoint x="560" y="365" />
-        <di:waypoint x="560" y="240" />
-        <di:waypoint x="910" y="240" />
+        <di:waypoint x="750" y="365" />
+        <di:waypoint x="750" y="240" />
+        <di:waypoint x="1100" y="240" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="533" y="303" width="13" height="14" />
+          <dc:Bounds x="723" y="303" width="13" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1ejtcut_di" bpmnElement="Flow_1ejtcut">
-        <di:waypoint x="560" y="415" />
-        <di:waypoint x="560" y="580" />
-        <di:waypoint x="630" y="580" />
+        <di:waypoint x="750" y="415" />
+        <di:waypoint x="750" y="580" />
+        <di:waypoint x="820" y="580" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="531" y="483" width="18" height="14" />
+          <dc:Bounds x="721" y="483" width="18" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1c4hln3_di" bpmnElement="Flow_1c4hln3">
-        <di:waypoint x="730" y="580" />
-        <di:waypoint x="812" y="580" />
+        <di:waypoint x="920" y="580" />
+        <di:waypoint x="1002" y="580" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1lfs5oh_di" bpmnElement="Flow_1lfs5oh">
         <di:waypoint x="486" y="390" />
-        <di:waypoint x="535" y="390" />
+        <di:waypoint x="560" y="390" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0j1rhzt_di" bpmnElement="Flow_0j1rhzt">
+        <di:waypoint x="660" y="390" />
+        <di:waypoint x="725" y="390" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="Event_1drxt92_di" bpmnElement="eventStartSubInvoicing">
         <dc:Bounds x="450" y="372" width="36" height="36" />
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0k92eok_di" bpmnElement="activityDetermineDropshipmentOrderInvoiceType">
+        <dc:Bounds x="560" y="350" width="100" height="80" />
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_172cv1y_di" bpmnElement="gwXORIsPartialInvoice" isMarkerVisible="true">
-        <dc:Bounds x="535" y="365" width="50" height="50" />
+        <dc:Bounds x="725" y="365" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="597" y="383" width="85" height="14" />
+          <dc:Bounds x="787" y="383" width="85" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_1vqvxc1_di" bpmnElement="eventThrowMsgPublishFullyInvoicedData">
-        <dc:Bounds x="1482" y="142" width="36" height="36" />
+        <dc:Bounds x="1672" y="142" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1465" y="185" width="74" height="27" />
+          <dc:Bounds x="1655" y="185" width="74" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_1t91a1n_di" bpmnElement="activityCreateInvoiceSubsequentOrder">
-        <dc:Bounds x="630" y="540" width="100" height="80" />
+        <dc:Bounds x="820" y="540" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0cl35ko_di" bpmnElement="eventThrowMsgStartDropshipmentSubsequentProcess">
-        <dc:Bounds x="812" y="562" width="36" height="36" />
+        <dc:Bounds x="1002" y="562" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="788" y="606" width="86" height="53" />
+          <dc:Bounds x="978" y="606" width="86" height="53" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_148pgyx_di" bpmnElement="gwParallelForkPartiallyInvoiced">
-        <dc:Bounds x="1245" y="555" width="50" height="50" />
+        <dc:Bounds x="1435" y="555" width="50" height="50" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_025o64a_di" bpmnElement="gwXOROrderFullyCancelled" isMarkerVisible="true">
-        <dc:Bounds x="1355" y="555" width="50" height="50" />
+        <dc:Bounds x="1545" y="555" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1350" y="518" width="60" height="27" />
+          <dc:Bounds x="1540" y="518" width="60" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0hpaaa2_di" bpmnElement="eventEndSubInvoicing">
-        <dc:Bounds x="1992" y="372" width="36" height="36" />
+        <dc:Bounds x="2182" y="372" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0x97996_di" bpmnElement="eventThrowMsgGeneratePartlyInvoicedPdf">
-        <dc:Bounds x="1482" y="712" width="36" height="36" />
+        <dc:Bounds x="1672" y="712" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1459" y="756" width="84" height="27" />
+          <dc:Bounds x="1649" y="756" width="84" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0ycc3ym_di" bpmnElement="eventThrowMsgPublishPartlyInvoicedData">
-        <dc:Bounds x="1482" y="462" width="36" height="36" />
+        <dc:Bounds x="1672" y="462" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1465" y="505" width="74" height="27" />
+          <dc:Bounds x="1655" y="505" width="74" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0x2nop6_di" bpmnElement="eventThrowMsgCancelDropshipmentOrder">
-        <dc:Bounds x="1482" y="622" width="36" height="36" />
+        <dc:Bounds x="1672" y="622" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1469" y="665" width="67" height="40" />
+          <dc:Bounds x="1659" y="665" width="67" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_0ffxjjr_di" bpmnElement="Gateway_0ffxjjr" isMarkerVisible="true">
-        <dc:Bounds x="1595" y="555" width="50" height="50" />
+        <dc:Bounds x="1785" y="555" width="50" height="50" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_1jzd69s_di" bpmnElement="gwParallelJoinPartiallyInvoiced">
-        <dc:Bounds x="1705" y="555" width="50" height="50" />
+        <dc:Bounds x="1895" y="555" width="50" height="50" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_0pcp54o_di" bpmnElement="callActivityDropshipmentOrderRowsCancellation">
-        <dc:Bounds x="1080" y="540" width="100" height="80" />
+        <dc:Bounds x="1270" y="540" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_10l7kx6_di" bpmnElement="eventThrowMsgDropshipmentOrderFullyInvoiced">
-        <dc:Bounds x="1482" y="222" width="36" height="36" />
+        <dc:Bounds x="1672" y="222" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1466" y="263" width="69" height="40" />
+          <dc:Bounds x="1656" y="263" width="69" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0u71pt6_di" bpmnElement="eventThrowMsgGenerateFullyInvoicedPdf">
-        <dc:Bounds x="1482" y="312" width="36" height="36" />
+        <dc:Bounds x="1672" y="312" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1458" y="355" width="84" height="27" />
+          <dc:Bounds x="1648" y="355" width="84" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_0a97qx6_di" bpmnElement="gwParallelForkFullyInvoiced">
-        <dc:Bounds x="1245" y="215" width="50" height="50" />
+        <dc:Bounds x="1435" y="215" width="50" height="50" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_1fbqeu0_di" bpmnElement="gwParallelJoinFullyInvoiced">
-        <dc:Bounds x="1705" y="215" width="50" height="50" />
+        <dc:Bounds x="1895" y="215" width="50" height="50" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_1i5iyxk_di" bpmnElement="Gateway_1i5iyxk" isMarkerVisible="true">
-        <dc:Bounds x="1855" y="365" width="50" height="50" />
+        <dc:Bounds x="2045" y="365" width="50" height="50" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_0bf50pa_di" bpmnElement="activityCreateDropshipmentSubsequentInvoice">
-        <dc:Bounds x="910" y="540" width="100" height="80" />
+        <dc:Bounds x="1100" y="540" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_128b9dv_di" bpmnElement="activityCreateDropshipmentSalesOrderInvoice">
-        <dc:Bounds x="910" y="200" width="100" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="TextAnnotation_11i2faf_di" bpmnElement="TextAnnotation_11i2faf">
-        <dc:Bounds x="790" y="480" width="150" height="44" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="TextAnnotation_0dk3h2q_di" bpmnElement="TextAnnotation_0dk3h2q">
-        <dc:Bounds x="1545" y="260" width="110" height="40" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="TextAnnotation_12hbwxi_di" bpmnElement="TextAnnotation_12hbwxi">
-        <dc:Bounds x="1550" y="650" width="100" height="40" />
+        <dc:Bounds x="1100" y="200" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Association_004fov5_di" bpmnElement="Association_004fov5">
-        <di:waypoint x="832" y="562" />
-        <di:waypoint x="837" y="524" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Association_1802kga_di" bpmnElement="Association_1802kga">
-        <di:waypoint x="1517" y="246" />
-        <di:waypoint x="1561" y="260" />
+        <di:waypoint x="1022" y="562" />
+        <di:waypoint x="1027" y="524" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Association_0os9k5l_di" bpmnElement="Association_0os9k5l">
-        <di:waypoint x="1517" y="644" />
-        <di:waypoint x="1550" y="653" />
+        <di:waypoint x="1707" y="644" />
+        <di:waypoint x="1740" y="653" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_1802kga_di" bpmnElement="Association_1802kga">
+        <di:waypoint x="1707" y="246" />
+        <di:waypoint x="1751" y="260" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="DataStoreReference_0d39n4p_di" bpmnElement="DataStoreReference_0d39n4p">
         <dc:Bounds x="290" y="455" width="50" height="50" />
@@ -464,14 +476,8 @@
           <dc:Bounds x="157" y="415" width="49" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_1wgvi5n_di" bpmnElement="eventEndInvoicingProcess">
-        <dc:Bounds x="2312" y="372" width="36" height="36" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_0nn056l_di" bpmnElement="activityAggregateInvoiceData">
         <dc:Bounds x="270" y="350" width="100" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_15kv97n_di" bpmnElement="activityDeleteTmpInvoiceEntries">
-        <dc:Bounds x="2160" y="350" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="TextAnnotation_0rnu6fd_di" bpmnElement="TextAnnotation_0rnu6fd">
         <dc:Bounds x="300" y="210" width="99.99305040770942" height="96.36767976278725" />
