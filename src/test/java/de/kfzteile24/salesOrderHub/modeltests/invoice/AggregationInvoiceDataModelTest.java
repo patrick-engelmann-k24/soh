@@ -44,6 +44,12 @@ class AggregationInvoiceDataModelTest extends AbstractWorkflowTest {
     @Autowired
     IsPartialInvoiceListener isPartialInvoiceListener;
 
+    @Autowired
+    AggregateInvoiceDataDelegate aggregateInvoiceDataDelegate;
+
+    @Autowired
+    IsPartialInvoiceListener isPartialInvoiceListener;
+
     @BeforeEach
     protected void setUp() {
         super.setUp();
