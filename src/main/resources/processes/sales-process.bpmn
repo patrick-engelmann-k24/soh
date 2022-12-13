@@ -341,12 +341,8 @@
     </bpmn:intermediateCatchEvent>
     <bpmn:callActivity id="callActivityDropshipmentOrderRowsCancellation" name="Dropshipment order row cancellation" calledElement="OrderRowsCancellationProcess">
       <bpmn:extensionElements>
-        <camunda:in source="all" target="all" />
-        <camunda:out source="all" target="all" />
-        <camunda:in source="orderRows" target="orderRows" />
-        <camunda:in source="orderNumber" target="orderNumber" />
-        <camunda:in source="isOrderCancelled" target="isOrderCancelled" />
-        <camunda:out source="isOrderCancelled" target="isOrderCancelled" />
+        <camunda:in variables="all" />
+        <camunda:out variables="all" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_06j0uo5</bpmn:incoming>
       <bpmn:outgoing>Flow_1uebiov</bpmn:outgoing>
@@ -374,7 +370,8 @@
     <bpmn:callActivity id="activityDropshipmentOrderRowShipmentConfirmedProcess" name="Dropshipment Order Row Shipment Confirmed" calledElement="DropshipmentOrderRowShipmentConfirmedProcess">
       <bpmn:extensionElements>
         <camunda:in businessKey="${orderNumber}#${orderRow}" />
-        <camunda:in source="all" target="all" />
+        <camunda:in variables="all" />
+        <camunda:out variables="all" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_03j5qb6</bpmn:incoming>
       <bpmn:outgoing>Flow_114s9h3</bpmn:outgoing>
@@ -434,9 +431,14 @@
   <bpmn:message id="Message_1sv99nz" name="msgCoreSalesOrderCancelled" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="SalesOrderProcess_v2">
-      <bpmndi:BPMNShape id="TextAnnotation_08nju3g_di" bpmnElement="TextAnnotation_08nju3g">
-        <dc:Bounds x="1510" y="630" width="210" height="68" />
-      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_114s9h3_di" bpmnElement="Flow_114s9h3">
+        <di:waypoint x="1655" y="740" />
+        <di:waypoint x="1965" y="740" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_03j5qb6_di" bpmnElement="Flow_03j5qb6">
+        <di:waypoint x="1238" y="740" />
+        <di:waypoint x="1555" y="740" />
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0ctfq3l_di" bpmnElement="Flow_0ctfq3l">
         <di:waypoint x="1990" y="715" />
         <di:waypoint x="1990" y="558" />
@@ -675,14 +677,6 @@
         <di:waypoint x="218" y="390" />
         <di:waypoint x="355" y="390" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_03j5qb6_di" bpmnElement="Flow_03j5qb6">
-        <di:waypoint x="1238" y="740" />
-        <di:waypoint x="1555" y="740" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_114s9h3_di" bpmnElement="Flow_114s9h3">
-        <di:waypoint x="1655" y="740" />
-        <di:waypoint x="1965" y="740" />
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="Gateway_0rtugqn_di" bpmnElement="gwXOROrderReceivedECPOrMarketplace" isMarkerVisible="true">
         <dc:Bounds x="355" y="255" width="50" height="50" />
       </bpmndi:BPMNShape>
@@ -700,9 +694,6 @@
         <bpmndi:BPMNLabel>
           <dc:Bounds x="1184" y="305" width="74" height="27" />
         </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="activityDropshipmentOrderRowShipmentConfirmedProcess_di" bpmnElement="activityDropshipmentOrderRowShipmentConfirmedProcess">
-        <dc:Bounds x="1555" y="700" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_0ttoph5_di" bpmnElement="activitySubProcessInvoiceAddressChange" isExpanded="true">
         <dc:Bounds x="1040" y="1020" width="720" height="200" />
@@ -977,6 +968,9 @@
         <di:waypoint x="2063" y="1040" />
         <di:waypoint x="2081" y="1020" />
       </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="activityDropshipmentOrderRowShipmentConfirmedProcess_di" bpmnElement="activityDropshipmentOrderRowShipmentConfirmedProcess">
+        <dc:Bounds x="1555" y="700" width="100" height="80" />
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="TextAnnotation_0m998uh_di" bpmnElement="TextAnnotation_0m998uh">
         <dc:Bounds x="630" y="440" width="110" height="62" />
       </bpmndi:BPMNShape>
@@ -988,6 +982,9 @@
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="TextAnnotation_0vs7qok_di" bpmnElement="TextAnnotation_0vs7qok">
         <dc:Bounds x="1980" y="845" width="130" height="55" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_08nju3g_di" bpmnElement="TextAnnotation_08nju3g">
+        <dc:Bounds x="1510" y="630" width="210" height="68" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_05dl94k_di" bpmnElement="eventTimerDropShipmentOrderConfirmed">
         <dc:Bounds x="862" y="562" width="36" height="36" />
