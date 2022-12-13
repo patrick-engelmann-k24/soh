@@ -99,6 +99,7 @@
           <camunda:out source="all" target="all" />
           <camunda:in source="orderRows" target="orderRows" />
           <camunda:in source="orderNumber" target="orderNumber" />
+          <camunda:in source="isOrderCancelled" target="isOrderCancelled" />
           <camunda:out source="isOrderCancelled" target="isOrderCancelled" />
         </bpmn:extensionElements>
         <bpmn:incoming>Flow_1d7auhq</bpmn:incoming>

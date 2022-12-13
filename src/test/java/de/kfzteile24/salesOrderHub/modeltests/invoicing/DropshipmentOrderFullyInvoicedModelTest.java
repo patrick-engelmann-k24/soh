@@ -68,9 +68,6 @@ class DropshipmentOrderFullyInvoicedModelTest extends AbstractWorkflowTest {
         when(processScenario.waitsAtEventBasedGateway(EVENT_DROPSHIPMENT_ORDER_CANCEL_OR_COMPLETE.getName()))
                 .thenReturn(RECEIVED_SIGNAL_EVENT_GATEWAY_ACTION);
 
-        scenario = startBeforeActivity(SALES_ORDER_PROCESS, XOR_CHECK_DROPSHIPMENT_ORDER_SUCCESSFUL.getName(),
-                businessKey, processVariables);
-
         scenario = startBeforeActivity(INVOICING_PROCESS, XOR_CHECK_PARTIAL_INVOICE.getName(),
                 businessKey, processVariables);
 
