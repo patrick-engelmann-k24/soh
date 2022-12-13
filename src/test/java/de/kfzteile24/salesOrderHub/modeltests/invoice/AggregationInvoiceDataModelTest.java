@@ -1,10 +1,13 @@
 package de.kfzteile24.salesOrderHub.modeltests.invoice;
 
+import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.DropshipmentOrderCancellationDelegate;
 import de.kfzteile24.salesOrderHub.delegates.invoicing.AggregateInvoiceDataDelegate;
+import de.kfzteile24.salesOrderHub.delegates.invoicing.DetermineDropshipmentOrderInvoiceTypeDelegate;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.modeltests.AbstractWorkflowTest;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -38,7 +41,13 @@ import static org.mockito.Mockito.verify;
 class AggregationInvoiceDataModelTest extends AbstractWorkflowTest {
 
     @Autowired
-    AggregateInvoiceDataDelegate aggregateInvoiceDataDelegate;
+    protected AggregateInvoiceDataDelegate aggregateInvoiceDataDelegate;
+
+    @Autowired
+    protected DetermineDropshipmentOrderInvoiceTypeDelegate determineDropshipmentOrderInvoiceTypeDelegate;
+
+    @Autowired
+    protected DropshipmentOrderCancellationDelegate dropshipmentOrderCancellationDelegate;
 
     @BeforeEach
     protected void setUp() {
@@ -82,7 +91,7 @@ class AggregationInvoiceDataModelTest extends AbstractWorkflowTest {
         scenario = startBeforeActivity(INVOICING_PROCESS, DETERMINE_DROPSHIPMENT_ORDER_INVOICE_TYPE.getName(),
                 businessKey, processVariables);
 
-        verify(aggregateInvoiceDataDelegate).execute(any());
+        verify(determineDropshipmentOrderInvoiceTypeDelegate).execute(any());
         verify(processScenario, times(1)).hasCompleted(DETERMINE_DROPSHIPMENT_ORDER_INVOICE_TYPE.getName());
         verify(processScenario, times(1)).hasCompleted(XOR_CHECK_PARTIAL_INVOICE.getName());
         verify(processScenario, times(1)).hasCompleted(INVOICING_CREATE_DROPSHIPMENT_SALES_ORDER_INVOICE.getName());
@@ -105,7 +114,7 @@ class AggregationInvoiceDataModelTest extends AbstractWorkflowTest {
         scenario = startBeforeActivity(INVOICING_PROCESS, DETERMINE_DROPSHIPMENT_ORDER_INVOICE_TYPE.getName(),
                 businessKey, processVariables);
 
-        verify(aggregateInvoiceDataDelegate).execute(any());
+        verify(determineDropshipmentOrderInvoiceTypeDelegate).execute(any());
         verify(processScenario, times(1)).hasCompleted(DETERMINE_DROPSHIPMENT_ORDER_INVOICE_TYPE.getName());
         verify(processScenario, times(1)).hasCompleted(XOR_CHECK_PARTIAL_INVOICE.getName());
         verify(processScenario, never()).hasCompleted(INVOICING_CREATE_DROPSHIPMENT_SALES_ORDER_INVOICE.getName());
