@@ -14,6 +14,7 @@ import java.util.List;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.INVOICING_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.AGGREGATE_INVOICE_DATA;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.DETERMINE_DROPSHIPMENT_ORDER_INVOICE_TYPE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.INVOICING_CREATE_DROPSHIPMENT_SALES_ORDER_INVOICE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.INVOICING_CREATE_SUBSEQUENT_ORDER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
@@ -30,7 +31,7 @@ import static org.mockito.Mockito.verify;
 
 @DisplayName("AggregationInvoiceData model test")
 @Slf4j(topic = "AggregationInvoiceData model test")
-public class AggregationInvoiceDataModelTest extends AbstractWorkflowTest {
+class AggregationInvoiceDataModelTest extends AbstractWorkflowTest {
 
     @BeforeEach
     protected void setUp() {
@@ -68,9 +69,10 @@ public class AggregationInvoiceDataModelTest extends AbstractWorkflowTest {
         processVariables.put(INVOICE_NUMBER.getName(), "I-101");
         processVariables.put(IS_PARTIAL_INVOICE.getName(), false);
 
-        scenario = startBeforeActivity(INVOICING_PROCESS, XOR_CHECK_PARTIAL_INVOICE.getName(),
+        scenario = startBeforeActivity(INVOICING_PROCESS, DETERMINE_DROPSHIPMENT_ORDER_INVOICE_TYPE.getName(),
                 businessKey, processVariables);
 
+        verify(processScenario, times(1)).hasCompleted(DETERMINE_DROPSHIPMENT_ORDER_INVOICE_TYPE.getName());
         verify(processScenario, times(1)).hasCompleted(XOR_CHECK_PARTIAL_INVOICE.getName());
         verify(processScenario, times(1)).hasCompleted(INVOICING_CREATE_DROPSHIPMENT_SALES_ORDER_INVOICE.getName());
         verify(processScenario, never()).hasCompleted(INVOICING_CREATE_SUBSEQUENT_ORDER.getName());
@@ -88,9 +90,10 @@ public class AggregationInvoiceDataModelTest extends AbstractWorkflowTest {
         processVariables.put(INVOICE_NUMBER.getName(), "I-102");
         processVariables.put(IS_PARTIAL_INVOICE.getName(), true);
 
-        scenario = startBeforeActivity(INVOICING_PROCESS, XOR_CHECK_PARTIAL_INVOICE.getName(),
+        scenario = startBeforeActivity(INVOICING_PROCESS, DETERMINE_DROPSHIPMENT_ORDER_INVOICE_TYPE.getName(),
                 businessKey, processVariables);
 
+        verify(processScenario, times(1)).hasCompleted(DETERMINE_DROPSHIPMENT_ORDER_INVOICE_TYPE.getName());
         verify(processScenario, times(1)).hasCompleted(XOR_CHECK_PARTIAL_INVOICE.getName());
         verify(processScenario, never()).hasCompleted(INVOICING_CREATE_DROPSHIPMENT_SALES_ORDER_INVOICE.getName());
         verify(processScenario, times(1)).hasCompleted(INVOICING_CREATE_SUBSEQUENT_ORDER.getName());
