@@ -61,7 +61,8 @@ public class ReturnOrderHelper {
         List<CreditNoteLine> creditNoteLines = new ArrayList<>();
         for (var orderRow : salesOrdersOrderRowsList) {
             for (var item : eventItemList) {
-                if (StringUtils.pathEquals(item.getProductNumber(), orderRow.getSku())) {
+                if (StringUtils.pathEquals(item.getProductNumber(), orderRow.getSku())
+                        && creditNoteLines.stream().noneMatch(line -> item.getProductNumber().equals(line.getItemNumber()))) {
                     var quantity = Optional.of(BigDecimal.valueOf(item.getQuantity()).negate()).orElse(BigDecimal.ZERO);
                     var unitNetAmount = Optional.ofNullable(orderRow.getUnitValues().getDiscountedNet()).orElse(BigDecimal.ZERO);
                     var lineNetAmount = round(getMultipliedValue(unitNetAmount, quantity));
