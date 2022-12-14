@@ -343,10 +343,6 @@
       <bpmn:extensionElements>
         <camunda:in variables="all" />
         <camunda:out variables="all" />
-        <camunda:in source="orderRows" target="orderRows" />
-        <camunda:in source="orderNumber" target="orderNumber" />
-        <camunda:in source="isOrderCancelled" target="isOrderCancelled" />
-        <camunda:out source="isOrderCancelled" target="isOrderCancelled" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_06j0uo5</bpmn:incoming>
       <bpmn:outgoing>Flow_1uebiov</bpmn:outgoing>
