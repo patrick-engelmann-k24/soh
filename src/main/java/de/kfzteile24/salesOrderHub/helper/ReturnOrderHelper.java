@@ -20,6 +20,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.SalesOrderType.DROPSHIPMENT;
@@ -88,17 +89,17 @@ public class ReturnOrderHelper {
     }
 
     private static SalesCreditNote buildSalesCreditNote(
-            SalesOrder salesOrder,
+            SalesOrder originalSalesOrder,
             List<CreditNoteLine> creditNoteLines,
             String creditNoteNumber) {
         var salesCreditNoteHeader = SalesCreditNoteHeader.builder()
                 .creditNoteNumber(creditNoteNumber)
                 .creditNoteDate(now())
-                .currencyCode(salesOrder.getLatestJson().getOrderHeader().getOrderCurrency())
-                .billingAddress(Address.fromBillingAddress(salesOrder.getLatestJson().getOrderHeader().getBillingAddress()))
+                .currencyCode(originalSalesOrder.getLatestJson().getOrderHeader().getOrderCurrency())
+                .billingAddress(Address.fromBillingAddress(originalSalesOrder.getLatestJson().getOrderHeader().getBillingAddress()))
                 .creditNoteLines(creditNoteLines)
-                .orderGroupId(salesOrder.getLatestJson().getOrderHeader().getOrderGroupId())
-                .orderNumber(salesOrder.getLatestJson().getOrderHeader().getOrderNumber())
+                .orderGroupId(originalSalesOrder.getLatestJson().getOrderHeader().getOrderGroupId())
+                .orderNumber(originalSalesOrder.getLatestJson().getOrderHeader().getOrderNumber())
                 .grossAmount(getSumValue(CreditNoteLine::getLineGrossAmount, creditNoteLines))
                 .netAmount(getSumValue(CreditNoteLine::getLineNetAmount, creditNoteLines))
                 .build();
@@ -114,13 +115,15 @@ public class ReturnOrderHelper {
         List<String> lineSkuList = creditNoteLines.stream()
                 .map(CreditNoteLine::getItemNumber)
                 .collect(Collectors.toList());
+        AtomicBoolean missingExists = new AtomicBoolean(false);
         StringBuilder stringBuilder = new StringBuilder();
         eventItemList.forEach(item -> {
             if (!lineSkuList.contains(item.getProductNumber())) {
                 stringBuilder.append(", ").append(item.getProductNumber());
+                missingExists.set(true);
             }
         });
-        if (stringBuilder.length() > 0) {
+        if (missingExists.get()) {
             throw new NotFoundException("The skus" + stringBuilder +
                     " are missing in received dropshipment purchase order return confirmed message with" +
                     " Sales Order Group Id: " + orderGroupId +

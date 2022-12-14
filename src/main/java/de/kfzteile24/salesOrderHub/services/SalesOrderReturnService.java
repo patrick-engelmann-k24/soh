@@ -133,12 +133,12 @@ public class SalesOrderReturnService {
     @Transactional
     public void handleSalesOrderReturn(SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage, Action action, Messages message) {
         var salesCreditNoteHeader = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader();
-        var orderNumber = salesCreditNoteHeader.getOrderNumber();
         var creditNoteNumber = salesCreditNoteHeader.getCreditNoteNumber();
+        var orderNumber = salesCreditNoteHeader.getOrderNumber();
+        var orderGroupId = getOrderGroupId(salesCreditNoteCreatedMessage);
 
-        if (checkReturnOrderNotExists(salesCreditNoteHeader.getOrderGroupId(), creditNoteNumber)) {
-            var salesOrders = adaptor.getSalesOrderList(getOrderGroupId(salesCreditNoteCreatedMessage),
-                            getSalesOrderType(message));
+        if (checkReturnOrderNotExists(orderGroupId, creditNoteNumber)) {
+            var salesOrders = adaptor.getSalesOrderList(orderGroupId, getSalesOrderType(message));
 
             SalesOrderReturn salesOrderReturn = createSalesOrderReturn(
                     salesCreditNoteCreatedMessage,
