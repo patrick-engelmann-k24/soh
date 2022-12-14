@@ -9,9 +9,6 @@ import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.dropshipment.DropshipmentPurchaseOrderPackageItemLine;
 import de.kfzteile24.salesOrderHub.dto.sns.shared.Address;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
-import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
-import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
-import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.returnorder.ReturnOrderServiceAdaptor;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -40,17 +37,8 @@ public class ReturnOrderHelper {
     @NonNull
     private final ReturnOrderServiceAdaptor adaptor;
 
-    @NonNull
-    private final SalesOrderReturnService salesOrderReturnService;
-
-    @NonNull
-    private final SalesOrderService salesOrderService;
-
-    public SalesCreditNoteCreatedMessage buildSalesCreditNoteCreatedMessage(DropshipmentPurchaseOrderReturnConfirmedMessage message) {
-        var creditNoteNumber = salesOrderReturnService.createCreditNoteNumber();
-        var orderNumber = message.getSalesOrderNumber();
-        var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
-                .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
+    public SalesCreditNoteCreatedMessage buildSalesCreditNoteCreatedMessage(
+            DropshipmentPurchaseOrderReturnConfirmedMessage message, SalesOrder salesOrder, String creditNoteNumber) {
         return SalesCreditNoteCreatedMessage.builder()
                 .salesCreditNote(buildSalesCreditNote(salesOrder, buildCreditNoteLines(message), creditNoteNumber))
                 .build();

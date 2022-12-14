@@ -24,6 +24,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerTy
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
+import static de.kfzteile24.salesOrderHub.helper.OrderUtil.getOrderGroupIdFromOrderNumber;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createNewSalesOrderV3;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
 import static de.kfzteile24.soh.order.dto.Platform.BRAINCRAFT;
@@ -31,6 +32,7 @@ import static de.kfzteile24.soh.order.dto.Platform.CORE;
 import static de.kfzteile24.soh.order.dto.Platform.ECP;
 import static de.kfzteile24.soh.order.dto.Platform.EMIDA;
 import static de.kfzteile24.soh.order.dto.Platform.SOH;
+import static java.time.LocalDateTime.now;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -183,8 +185,11 @@ class OrderUtilTest {
     void testCreateNewOrderRowToMatchOrderRow() {
 
         final var salesOrder = getSalesOrder(getObjectByResource("ecpOrderMessageWithTwoRows.json", Order.class));
+        salesOrder.setCreatedAt(now());
         final var salesOrder1 = getSalesOrder(getObjectByResource("ecpOrderMessage.json", Order.class));
         salesOrder1.getLatestJson().getOrderRows().get(0).setRowKey(3);
+        salesOrder1.setCreatedAt(now().plusMinutes(1));
+        salesOrder1.getLatestJson().getOrderRows().get(0).setShippingType("shipping_custom");
         var lastRowKey = new AtomicInteger(3);
 
         CoreSalesFinancialDocumentLine orderItem = CoreSalesFinancialDocumentLine.builder()
@@ -214,5 +219,20 @@ class OrderUtilTest {
         assertThat(matchedOrderRow.getSumValues().getTotalDiscountedGross()).isEqualTo(BigDecimal.ONE);
         assertThat(matchedOrderRow.getSumValues().getGoodsValueNet()).isEqualTo(BigDecimal.ONE);
         assertThat(matchedOrderRow.getSumValues().getTotalDiscountedNet()).isEqualTo(BigDecimal.ONE);
+        assertThat(matchedOrderRow.getShippingType()).isEqualTo("shipping_custom");
+    }
+
+    @Test
+    void testGetOrderGroupIdFromOrderNumberWithSeperator() {
+        final var orderNumber = "123456789-1";
+        var orderGroupId = getOrderGroupIdFromOrderNumber(orderNumber);
+        assertThat(orderGroupId).isEqualTo("123456789");
+    }
+
+    @Test
+    void testGetOrderGroupIdFromOrderNumberWithoutSeperator() {
+        final var orderNumber = "123456789";
+        var orderGroupId = getOrderGroupIdFromOrderNumber(orderNumber);
+        assertThat(orderGroupId).isEqualTo("123456789");
     }
 }

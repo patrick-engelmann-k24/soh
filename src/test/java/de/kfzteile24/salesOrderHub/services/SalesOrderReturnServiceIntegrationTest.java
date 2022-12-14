@@ -59,12 +59,14 @@ class SalesOrderReturnServiceIntegrationTest extends AbstractIntegrationTest {
 
         var orderMessage = getObjectByResource("ecpOrderMessageWithTwoRows.json", Order.class);
         orderMessage.getOrderHeader().setOrderNumber(RandomStringUtils.randomNumeric(9));
+        orderMessage.getOrderHeader().setOrderFulfillment("delticom");
         SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(orderMessage));
         SalesOrderReturn salesOrderReturn = getSalesOrderReturn(salesOrder, "123");
 
         var message = getObjectByResource("dropshipmentPurchaseOrderReturnConfirmed.json", DropshipmentPurchaseOrderReturnConfirmedMessage.class);
         message.setSalesOrderNumber(salesOrder.getOrderNumber());
-        SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage = returnOrderHelper.buildSalesCreditNoteCreatedMessage(message);
+        SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage = returnOrderHelper.buildSalesCreditNoteCreatedMessage(
+                message, salesOrder, nextCreditNoteNumber);
         salesOrderReturn.setSalesCreditNoteCreatedMessage(salesCreditNoteCreatedMessage);
 
         salesOrderReturnService.save(salesOrderReturn, RETURN_ORDER_CREATED);

@@ -12,6 +12,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessag
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnNotifiedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
+import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
@@ -97,12 +98,20 @@ public class DropshipmentOrderService {
     @EnrichMessageForDlq
     public void handleDropshipmentPurchaseOrderReturnConfirmed(
             DropshipmentPurchaseOrderReturnConfirmedMessage message, MessageWrapper messageWrapper) {
-        var salesCreditNoteCreatedMessage = returnOrderHelper.buildSalesCreditNoteCreatedMessage(message);
+        var salesCreditNoteCreatedMessage = buildSalesCreditNoteCreatedMessage(message);
 
         var orderNumber = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber();
         log.info("Received dropshipment purchase order return confirmed message with order number: {}", orderNumber);
 
         salesOrderReturnService.handleSalesOrderReturn(salesCreditNoteCreatedMessage, DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED, DROPSHIPMENT_ORDER_RETURN_CONFIRMED);
+    }
+
+    public SalesCreditNoteCreatedMessage buildSalesCreditNoteCreatedMessage(DropshipmentPurchaseOrderReturnConfirmedMessage message) {
+        var orderNumber = message.getSalesOrderNumber();
+        SalesOrder salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
+                .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
+        String creditNoteNumber = salesOrderReturnService.createCreditNoteNumber();
+        return returnOrderHelper.buildSalesCreditNoteCreatedMessage(message, salesOrder, creditNoteNumber);
     }
 
     @EnrichMessageForDlq

@@ -75,7 +75,6 @@ public class OrderUtil {
 
         OrderRows originalOrderRow = salesOrders.stream()
                 .flatMap(order -> order.getLatestJson().getOrderRows().stream())
-                .filter(row -> !Boolean.TRUE.equals(row.getIsCancelled()))
                 .filter(r -> StringUtils.pathEquals(r.getSku(), item.getItemNumber()))
                 .findFirst().orElse(OrderRows.builder().build());
         var shippingType = salesOrders.get(0).getLatestJson().getOrderRows().get(0).getShippingType();
