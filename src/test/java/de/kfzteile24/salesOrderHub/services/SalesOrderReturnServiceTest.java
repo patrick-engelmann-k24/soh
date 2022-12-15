@@ -137,6 +137,7 @@ class SalesOrderReturnServiceTest {
                 expected -> {
                     assertThat(expected.getSalesCreditNoteCreatedMessage().getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber()).isEqualTo("RO-876130");
                     assertThat(expected.getReturnOrderJson().getOrderHeader().getOrderNumber()).isEqualTo("RO-876130");
+                    assertThat(expected.getReturnOrderJson().getOrderHeader().getDocumentRefNumber()).isEqualTo(message.getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteNumber());
                     assertThat(expected.getReturnOrderJson().getOrderHeader().getTotals().getGoodsTotalGross()).isEqualTo(BigDecimal.valueOf(-31.03));
                     assertThat(expected.getReturnOrderJson().getOrderHeader().getTotals().getGoodsTotalNet()).isEqualTo(BigDecimal.valueOf(-25.78));
                     assertThat(expected.getReturnOrderJson().getOrderHeader().getTotals().getShippingCostGross()).isEqualTo(BigDecimal.valueOf(-11.90).setScale(2, HALF_UP));
