@@ -24,7 +24,6 @@ import org.springframework.messaging.converter.MessageConverter;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.support.PayloadMethodArgumentResolver;
 import org.springframework.validation.Validator;
-import org.springframework.validation.annotation.Validated;
 
 import java.util.Arrays;
 
@@ -36,16 +35,19 @@ public class PayloadResolverDecorator extends PayloadMethodArgumentResolver {
     private final SleuthHelper sleuthHelper;
     private final ObjectMapper objectMapper;
     private final Environment environment;
+    private final MessageAttributeHelper messageAttributeHelper;
 
     public PayloadResolverDecorator(SleuthHelper sleuthHelper,
                                     MessageConverter messageConverter,
                                     Validator validator,
                                     ObjectMapper objectMapper,
-                                    Environment environment) {
+                                    Environment environment,
+                                    MessageAttributeHelper messageAttributeHelper) {
         super(messageConverter, validator);
         this.sleuthHelper = sleuthHelper;
         this.objectMapper = objectMapper;
         this.environment = environment;
+        this.messageAttributeHelper = messageAttributeHelper;
     }
 
     /**
@@ -57,32 +59,28 @@ public class PayloadResolverDecorator extends PayloadMethodArgumentResolver {
     }
 
     @Override
-    public Object resolveArgument(@NonNull MethodParameter parameter, @NonNull Message<?> message) throws Exception {
-        String rawMessage;
-        if (isDefaultProfile()) {
-            var sqsMessage = objectMapper.readValue(message.getPayload().toString(), SqsMessage.class);
-            rawMessage = sqsMessage.getBody();
-        } else {
-            rawMessage = message.getPayload().toString();
-        }
-        logIncomingMessage(message, rawMessage);
-        var parameterClass = parameter.getParameterType();
+    public Object resolveArgument(@NonNull MethodParameter parameter, @NonNull Message<?> message) {
+        try {
+            String rawMessage;
+            if (isDefaultProfile()) {
+                var sqsMessage = objectMapper.readValue(message.getPayload().toString(), SqsMessage.class);
+                rawMessage = sqsMessage.getBody();
+            } else {
+                rawMessage = message.getPayload().toString();
+            }
+            logIncomingMessage(message, rawMessage);
+            var parameterClass = parameter.getParameterType();
 
-        if (!parameterClass.isAssignableFrom(String.class)) {
-            Object payload = objectMapper.readValue(rawMessage, parameterClass);
-            validate(message, parameter, payload);
-            return payload;
+            if (!parameterClass.isAssignableFrom(String.class)) {
+                Object payload = objectMapper.readValue(rawMessage, parameterClass);
+                updateTraceId(payload);
+                return payload;
+            }
+            return rawMessage;
+        } catch (Exception e) {
+            messageAttributeHelper.moveToDlq(MessageWrapper.fromMessage(message), e);
+            return null;
         }
-        return rawMessage;
-    }
-
-    /**
-     * Payload to be validated, should be annotated by {@link Validated}
-     */
-    @Override
-    protected void validate(@NonNull Message<?> message, @NonNull MethodParameter parameter, @NonNull Object target) {
-        updateTraceId(target);
-        super.validate(message, parameter, target);
     }
 
     public boolean isDefaultProfile() {
