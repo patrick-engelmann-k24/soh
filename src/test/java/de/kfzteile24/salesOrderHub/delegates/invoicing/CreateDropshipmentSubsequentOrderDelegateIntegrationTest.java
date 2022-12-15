@@ -333,11 +333,6 @@ class CreateDropshipmentSubsequentOrderDelegateIntegrationTest extends AbstractI
         return invoiceNumber;
     }
 
-    private String getInvoiceNumber(SalesOrder salesOrder) {
-        Assertions.assertThat(salesOrder.getInvoiceEvent()).isNotNull();
-        return salesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber();
-    }
-
     @AfterEach
     public void cleanup() {
         pollingService.retry(() -> bpmUtil.cleanUp());

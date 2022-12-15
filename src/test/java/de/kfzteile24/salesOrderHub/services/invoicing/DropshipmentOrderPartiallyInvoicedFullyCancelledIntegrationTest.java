@@ -1,6 +1,5 @@
 package de.kfzteile24.salesOrderHub.services.invoicing;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
@@ -88,7 +87,7 @@ class DropshipmentOrderPartiallyInvoicedFullyCancelledIntegrationTest extends Ab
     }
 
     @Test
-    void testHandleDropShipmentOrderShipmentConfirmed() throws JsonProcessingException {
+    void testHandleDropShipmentOrderShipmentConfirmed(){
         var salesOrder = createDropshipmentSalesOrder();
         assertThat(dropshipmentInvoiceRowService.getByOrderNumber(salesOrder.getOrderNumber()).size()).isEqualTo(0);
         var message = createPartialShipmentConfirmedMessage(salesOrder);
@@ -101,7 +100,6 @@ class DropshipmentOrderPartiallyInvoicedFullyCancelledIntegrationTest extends Ab
                 camundaHelper.hasPassed(processInstance1.getId(), END_MSG_ORDER_CANCELLED.getName())));
 
         var updatedSalesOrder = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber()).get();
-        var invoiceNumber = updatedSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber();
         assertThat(updatedSalesOrder.getInvoiceEvent()).isNull();
         assertThat(updatedSalesOrder.isCancelled()).isTrue();
     }
@@ -162,7 +160,7 @@ class DropshipmentOrderPartiallyInvoicedFullyCancelledIntegrationTest extends Ab
                 camundaHelper.hasPassed(processInstance.getId(), DROPSHIPMENT_ORDER_ROW_SHIPMENT_CONFIRMED_SUB_PROCESS.getName())));
 
         //small hack to simulate partial invoice in invoicing process
-        //other solution would be to create 2 additional processes (which is more time consuming)
+        //other solution would be to create 2 additional processes (which is more time-consuming)
         val dropshipmentOrderRow = dropshipmentInvoiceRowService.getBySkuAndOrderNumber("sku-1", salesOrder.getOrderNumber()).get();
         dropshipmentInvoiceRowRepository.delete(dropshipmentOrderRow);
 
