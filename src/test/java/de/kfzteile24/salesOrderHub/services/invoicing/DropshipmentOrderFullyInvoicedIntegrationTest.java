@@ -17,7 +17,6 @@ import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentInvoiceRowService;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentOrderService;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceNumberCounterService;
-import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
 import org.camunda.bpm.engine.RuntimeService;
@@ -75,8 +74,6 @@ class DropshipmentOrderFullyInvoicedIntegrationTest extends AbstractIntegrationT
     protected DropshipmentInvoiceRowRepository dropshipmentInvoiceRowRepository;
     @Autowired
     private RuntimeService runtimeService;
-
-    private final MessageWrapper messageWrapper = MessageWrapper.builder().build();
 
     @BeforeEach
     public void setup() {
