@@ -8,6 +8,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesFinancialDocumentLin
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoice;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundCustomException;
+import de.kfzteile24.salesOrderHub.helper.SubsequentSalesOrderCreationHelper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
@@ -73,6 +74,9 @@ class SalesOrderServiceTest {
 
     @Mock
     private OrderUtil orderUtil;
+
+    @Mock
+    private SubsequentSalesOrderCreationHelper subsequentSalesOrderCreationHelper;
 
     @Spy
     @InjectMocks

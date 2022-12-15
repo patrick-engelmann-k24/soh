@@ -16,7 +16,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
-import de.kfzteile24.salesOrderHub.helper.OrderCreationHelper;
+import de.kfzteile24.salesOrderHub.helper.SubsequentSalesOrderCreationHelper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.helper.ReturnOrderHelper;
 import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
@@ -29,7 +29,6 @@ import de.kfzteile24.salesOrderHub.services.sqs.EnrichMessageForDlq;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +37,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -80,8 +80,8 @@ public class DropshipmentOrderService {
     private final CamundaHelper camundaHelper;
     private final OrderUtil orderUtil;
 
-    @NonNull
-    private final OrderCreationHelper orderCreationHelper;
+    @NotNull
+    private final SubsequentSalesOrderCreationHelper subsequentSalesOrderCreationHelper;
 
     @EnrichMessageForDlq
     public void handleDropShipmentOrderConfirmed(
@@ -332,24 +332,9 @@ public class DropshipmentOrderService {
                                                              String activityInstanceId) {
         String newOrderNumber = createDropshipmentNewOrderNumber(salesOrder);
         Order orderJson = createDropshipmentSubsequentOrderJson(salesOrder, newOrderNumber, skuList, invoiceNumber);
-        var subsequentOrder = orderCreationHelper.
-                buildSubsequentOrder(salesOrder, newOrderNumber, invoiceNumber);
-        subsequentOrder = SalesOrder.builder()
-                .processId(activityInstanceId)
-                .build();
+        var subsequentOrder = subsequentSalesOrderCreationHelper.buildSubsequentSalesOrder(orderJson, newOrderNumber);
+        subsequentOrder.setProcessId(activityInstanceId);
 
-        //        var customerEmail = Strings.isNotEmpty(salesOrder.getCustomerEmail()) ?
-//                salesOrder.getCustomerEmail() :
-//                salesOrderService.getCustomerEmailByOrderJson(orderJson);
-//        var subsequentOrder = SalesOrder.builder()
-//                .orderNumber(newOrderNumber)
-//                .orderGroupId(salesOrder.getOrderGroupId())
-//                .salesChannel(salesOrder.getSalesChannel())
-//                .customerEmail(customerEmail)
-//                .originalOrder(orderJson)
-//                .latestJson(orderJson)
-//                .processId(activityInstanceId)
-//                .build();
         return salesOrderService.save(subsequentOrder, ORDER_CREATED);
     }
 
@@ -357,14 +342,15 @@ public class DropshipmentOrderService {
                                                        String newOrderNumber,
                                                        List<String> skuList,
                                                        String invoiceNumber) {
-        var orderJson = orderUtil.copyOrderJson(salesOrder.getLatestJson());
-        orderJson.setOrderRows(orderJson.getOrderRows().stream()
+        Order orderJson = Order.builder()
+                .version(salesOrder.getLatestJson().getVersion())
+                .orderHeader(subsequentSalesOrderCreationHelper.createOrderHeader(salesOrder, newOrderNumber, invoiceNumber))
+                .build();
+
+        orderJson.setOrderRows(salesOrder.getLatestJson().getOrderRows().stream()
                 .filter(row -> skuList.contains(row.getSku()))
                 .collect(Collectors.toList()));
-        orderCreationHelper.createOrderHeader(salesOrder, newOrderNumber, invoiceNumber);
-//        orderJson.getOrderHeader().setPlatform(Platform.SOH);
-//        orderJson.getOrderHeader().setOrderNumber(newOrderNumber);
-//        orderJson.getOrderHeader().setDocumentRefNumber(invoiceNumber);
+
         salesOrderService.recalculateTotals(orderJson, invoiceService.getShippingCostLine(salesOrder));
         removeShippingCostFromOriginalOrder(salesOrder);
         return orderJson;

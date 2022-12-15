@@ -12,6 +12,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoice;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
 import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
+import de.kfzteile24.salesOrderHub.helper.SubsequentSalesOrderCreationHelper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.helper.ReturnOrderHelper;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
@@ -105,6 +106,8 @@ class DropshipmentOrderServiceTest {
     @Mock
     private OrderUtil orderUtil;
 
+    @Mock
+    private SubsequentSalesOrderCreationHelper subsequentSalesOrderCreationHelper;
     private final MessageWrapper messageWrapper = MessageWrapper.builder().build();
 
     @ParameterizedTest
