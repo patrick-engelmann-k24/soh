@@ -11,18 +11,18 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.DROPSHIPMENT_ORDER_GENERATE_INVOICE;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.DROPSHIPMENT_ORDER_ROW_SHIPMENT_CONFIRMED_SUB_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_ORDER_ROW_SHIPMENT_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_SIGNAL_PAUSE_PROCESSING_DROPSHIPMENT_ORDER;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_PURCHASE_ORDER_SUCCESSFUL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.END_MSG_ORDER_COMPLETED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.MSG_ORDER_PAYMENT_SECURED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.THROW_MSG_DROPSHIPMENT_ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.THROW_MSG_ORDER_CREATED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.THROW_MSG_PUBLISH_INVOICE_DATA;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.THROW_MSG_PUBLISH_TRACKING_INFORMATION;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Gateways.EVENT_DROPSHIPMENT_ORDER_CANCEL_OR_COMPLETE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Gateways.XOR_CHECK_DROPSHIPMENT_ORDER;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Gateways.XOR_CHECK_DROPSHIPMENT_ORDER_SUCCESSFUL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Gateways.XOR_CHECK_PAUSE_PROCESSING_DROPSHIPMENT_ORDER_FLAG;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_BRANCH_ORDER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_DROPSHIPMENT_ORDER;
@@ -82,8 +82,12 @@ class IsDropshipmentOrderGatewayModelTest extends AbstractWorkflowTest {
 
         when(processScenario.waitsAtReceiveTask(EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED.getName()))
                 .thenReturn(RECEIVED_RECEIVER_TASK_ACTION);
-        when(processScenario.waitsAtReceiveTask(EVENT_MSG_DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED.getName()))
+        when(processScenario.runsCallActivity(DROPSHIPMENT_ORDER_ROW_SHIPMENT_CONFIRMED_SUB_PROCESS.getName()))
+                .thenReturn(executeCallActivity());
+        when(processScenario.waitsAtReceiveTask(EVENT_MSG_DROPSHIPMENT_ORDER_ROW_SHIPMENT_CONFIRMED.getName()))
                 .thenReturn(RECEIVED_RECEIVER_TASK_ACTION);
+        when(processScenario.waitsAtEventBasedGateway(EVENT_DROPSHIPMENT_ORDER_CANCEL_OR_COMPLETE.getName()))
+                .thenReturn(RECEIVED_SIGNAL_EVENT_GATEWAY_ACTION);
 
         scenario = startBeforeActivity(SALES_ORDER_PROCESS, XOR_CHECK_DROPSHIPMENT_ORDER.getName(),
                 businessKey, processVariables);
@@ -93,11 +97,11 @@ class IsDropshipmentOrderGatewayModelTest extends AbstractWorkflowTest {
         verify(processScenario, never()).hasStarted(EVENT_SIGNAL_PAUSE_PROCESSING_DROPSHIPMENT_ORDER.getName());
         verify(processScenario).hasCompleted(EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED.getName());
         verify(processScenario).hasCompleted(THROW_MSG_DROPSHIPMENT_ORDER_CREATED.getName());
-        verify(processScenario).hasCompleted(EVENT_MSG_DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED.getName());
-        verify(processScenario).hasCompleted(THROW_MSG_PUBLISH_TRACKING_INFORMATION.getName());
-        verify(processScenario).hasCompleted(DROPSHIPMENT_ORDER_GENERATE_INVOICE.getName());
-        verify(processScenario).hasCompleted(THROW_MSG_PUBLISH_INVOICE_DATA.getName());
-        verify(processScenario).hasCompleted(END_MSG_ORDER_COMPLETED.getName());
+        verify(processScenario).hasCompleted(XOR_CHECK_DROPSHIPMENT_ORDER_SUCCESSFUL.getName());
+        verify(processScenario).hasCompleted(EVENT_THROW_MSG_PURCHASE_ORDER_SUCCESSFUL.getName());
+        verify(processScenario).hasCompleted(DROPSHIPMENT_ORDER_ROW_SHIPMENT_CONFIRMED_SUB_PROCESS.getName() + "#multiInstanceBody");
+
+        verify(processScenario).hasStarted(EVENT_DROPSHIPMENT_ORDER_CANCEL_OR_COMPLETE.getName());
     }
 
     @Test

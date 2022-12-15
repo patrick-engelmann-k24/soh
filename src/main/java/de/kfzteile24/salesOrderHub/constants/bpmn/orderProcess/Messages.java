@@ -18,12 +18,14 @@ public enum Messages implements BpmItem {
     CORE_SALES_INVOICE_CREATED_RECEIVED("msgCoreSalesInvoiceCreatedReceived"),
     CORE_CREDIT_NOTE_CREATED("msgCoreCreditNoteCreated"),
     DROPSHIPMENT_ORDER_CONFIRMED("msgDropShipmentOrderConfirmed"),
-    DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED("msgDropShipmentOrderTrackingInformationReceived"),
-    DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED("msgDropshipmentOrderRowCancellationReceived"),
+    DROPSHIPMENT_ORDER_ROW_SHIPMENT_CONFIRMED("msgDropshipmentOrderRowShipmentConfirmed"),
     DROPSHIPMENT_CREDIT_NOTE_DOCUMENT_GENERATED("msgCreditNoteDocumentGenerated"),
     DROPSHIPMENT_ORDER_RETURN_CONFIRMED("msgDropshipmentOrderReturnConfirmed"),
     ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED("msgOrderReceivedCoreSalesInvoiceCreated"),
     CORE_SALES_ORDER_CANCELLED("msgCoreSalesOrderCancelled"),
+    DROPSHIPMENT_SUBSEQUENT_ORDER_CREATED("msgDropshipmentSubsequentOrderCreated"),
+    DROPSHIPMENT_ORDER_CANCELLED("msgDropshipmentOrderCancelled"),
+    DROPSHIPMENT_ORDER_FULLY_INVOICED("msgDropshipmentOrderFullyInvoiced"),
     ;
 
     @Getter

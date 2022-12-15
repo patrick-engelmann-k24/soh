@@ -41,11 +41,13 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.CustomerSegment.B2B;
 import static de.kfzteile24.salesOrderHub.constants.CustomerSegment.DIRECT_DELIVERY;
+import static de.kfzteile24.salesOrderHub.constants.SOHConstants.ORDER_NUMBER_SEPARATOR;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getSumValue;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.isNotNullAndEqual;
@@ -189,7 +191,7 @@ public class SalesOrderService {
         return save(salesOrder, Action.ORDER_CANCELLED);
     }
 
-    private String getCustomerEmailByOrderJson(Order order) {
+    public String getCustomerEmailByOrderJson(Order order) {
         if (order.getOrderHeader().getCustomer() != null) {
             return order.getOrderHeader().getCustomer().getCustomerEmail();
         }
@@ -202,11 +204,10 @@ public class SalesOrderService {
         CoreSalesInvoiceHeader salesInvoiceHeader = coreSalesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
         var items = salesInvoiceHeader.getInvoiceLines();
         List<OrderRows> orderRows = new ArrayList<>();
-        var lastRowKey = orderUtil.getLastRowKey(originalSalesOrder);
+        var lastRowKey = new AtomicInteger(orderUtil.getLastRowKey(originalSalesOrder));
         for (CoreSalesFinancialDocumentLine item : items) {
-            if (!item.getIsShippingCost()) {
-                orderRows.add(orderUtil.createNewOrderRow(item, originalSalesOrder, lastRowKey));
-                lastRowKey = orderUtil.updateLastRowKey(originalSalesOrder, item.getItemNumber(), lastRowKey);
+            if (Boolean.FALSE.equals(item.getIsShippingCost())) {
+                orderRows.add(orderUtil.createNewOrderRow(item, List.of(originalSalesOrder), lastRowKey));
             }
         }
         orderRows = orderRows.stream()
@@ -260,6 +261,13 @@ public class SalesOrderService {
                 && isShippingCostGrossMatch(originalSalesOrder, shippingCostDocumentLine);
     }
 
+    @Transactional
+    public boolean isFullyMatched(List<String> skuList, String orderNumber) {
+        var salesOrder = getOrderByOrderNumber(orderNumber)
+                .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
+        return salesOrder.getLatestJson().getOrderRows().stream().allMatch(row -> skuList.contains(row.getSku()));
+    }
+
     private boolean isShippingCostNetMatch(SalesOrder originalSalesOrder, CoreSalesFinancialDocumentLine shippingCostDocumentLine) {
         var shippingCostNet = shippingCostDocumentLine != null
                 ? shippingCostDocumentLine.getUnitNetAmount() : BigDecimal.ZERO;
@@ -303,7 +311,7 @@ public class SalesOrderService {
         return foundSalesOrders.stream().map(SalesOrder::getOrderNumber).distinct().collect(toList());
     }
 
-    private void recalculateTotals(Order order, CoreSalesFinancialDocumentLine shippingCostLine) {
+    public void recalculateTotals(Order order, CoreSalesFinancialDocumentLine shippingCostLine) {
         BigDecimal shippingCostNet = shippingCostLine != null ? shippingCostLine.getLineNetAmount() : BigDecimal.ZERO;
         BigDecimal shippingCostGross = shippingCostLine != null ? shippingCostLine.getLineGrossAmount() : BigDecimal.ZERO;
         recalculateTotals(order, shippingCostNet, shippingCostGross, shippingCostLine != null);
@@ -509,5 +517,20 @@ public class SalesOrderService {
         if (StringUtils.isBlank(order.getOrderHeader().getOrderGroupId())) {
             order.getOrderHeader().setOrderGroupId(orderNumber);
         }
+    }
+
+    public int getNextOrderNumberIndexCounter(String orderGroupId) {
+        List<String> orderNumberList = orderRepository.findOrderNumberByOrderGroupId(orderGroupId);
+        if (orderNumberList == null || orderNumberList.isEmpty()) {
+            throw new SalesOrderNotFoundCustomException(
+                    format("for the given order group id {0}", orderGroupId));
+        }
+        String separator = ORDER_NUMBER_SEPARATOR;
+
+        Integer max = orderNumberList.stream()
+                .filter(number -> number.contains(separator))
+                .map(number -> Integer.valueOf(number.substring(number.lastIndexOf(separator) + 1)))
+                .reduce(0, Integer::max);
+        return max + 1;
     }
 }

@@ -11,56 +11,52 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.JavaDelegate;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.TRACKING_LINKS;
 
 @Component
 @Slf4j
 @RequiredArgsConstructor
-public class PublishDropshipmentTrackingInformationDelegate implements JavaDelegate {
-
-    @NonNull
-    private final SalesOrderService salesOrderService;
+public class PublishDropshipmentOrderRowTrackingInformationDelegate implements JavaDelegate {
 
     @NonNull
     private final SnsPublishService snsPublishService;
 
     @NonNull
+    private final SalesOrderService salesOrderService;
+
+    @NonNull
     private final ObjectMapper objectMapper;
 
     @Override
-    @Transactional
-    @SuppressWarnings("unchecked")
     public void execute(DelegateExecution delegateExecution) throws Exception {
+        final var sku = (String) delegateExecution.getVariable(ORDER_ROW.getName());
         final var orderNumber = (String) delegateExecution.getVariable(ORDER_NUMBER.getName());
-        final var trackingList = (List<String>) delegateExecution.getVariable(TRACKING_LINKS.getName());
-        final Collection<TrackingLink> trackingLinks = getTrackingLinks(trackingList);
+        final var trackingLinks = (List<String>) delegateExecution.getVariable(TRACKING_LINKS.getName());
+
         final var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
 
-        log.info("Publish Dropshipment Tracking Information process with order number {} is started", orderNumber);
-        snsPublishService.publishSalesOrderShipmentConfirmedEvent(salesOrder, trackingLinks);
+        log.info("Publish Dropshipment Invoice Row Tracking Information for sku {} and order number {} is started", sku, orderNumber);
+        snsPublishService.publishSalesOrderShipmentConfirmedEvent(salesOrder, getTrackingLinks(trackingLinks));
     }
 
-    private Collection<TrackingLink> getTrackingLinks(List<String> trackingList) {
+    private List<TrackingLink> getTrackingLinks(List<String> trackingLinks) {
+        return trackingLinks.stream().map(link -> getTrackingLink(link)).collect(Collectors.toList());
+    }
+
+    private TrackingLink getTrackingLink(String trackingLink) {
         try {
-            Collection<TrackingLink> trackingLinks = new ArrayList<>();
-            for (String item : trackingList) {
-                trackingLinks.add(objectMapper.readValue(item, TrackingLink.class));
-            }
-            return trackingLinks;
+            return objectMapper.readValue(trackingLink, TrackingLink.class);
         } catch (Exception e) {
-            return trackingList.stream().map(url -> TrackingLink.builder()
-                    .url(url)
-                    .build()
-            ).collect(Collectors.toList());
+            return TrackingLink.builder()
+                    .url(trackingLink)
+                    .build();
         }
     }
 

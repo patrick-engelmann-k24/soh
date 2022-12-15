@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.UUID;
 import java.util.List;
 
 import static java.util.stream.Collectors.toList;
@@ -53,11 +54,12 @@ public class ParcelShippedServiceIntegrationTest extends AbstractIntegrationTest
 
     @Test
     void testHandleParcelShippedEvent() {
-        final SalesOrder salesOrder1 = salesOrderUtil.createPersistedSalesOrder(LocalDateTime.now(), "sku1");
-        final SalesOrder salesOrder2 = salesOrderUtil.createPersistedSalesOrder(
+        final SalesOrder salesOrder1 = salesOrderUtil.createPersistedSalesOrder(
+                UUID.randomUUID().toString(), LocalDateTime.now(), "sku1");
+        final SalesOrder salesOrder2 = salesOrderUtil.createPersistedSalesOrder(UUID.randomUUID().toString(),
                 salesOrder1.getOrderNumber(), LocalDateTime.now(), "sku1", "sku2", "sku3");
-        SalesOrder salesOrder3 = salesOrderUtil.createPersistedSalesOrder(
-                salesOrder1.getOrderNumber(), LocalDateTime.now(), "sku4", "sku5");
+        final SalesOrder salesOrder3 = salesOrderUtil.createPersistedSalesOrder(
+                UUID.randomUUID().toString(), salesOrder1.getOrderNumber(), LocalDateTime.now(), "sku4", "sku5");
         var orderNumber = salesOrder1.getOrderNumber();
         var event = ParcelShipped.builder()
                 .orderNumber(orderNumber)

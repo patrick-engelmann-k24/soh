@@ -75,7 +75,7 @@ jobs:
           path: target/site/jacoco/jacoco.xml
 
   codacy-coverage-reporter:
-    needs: [ unit-test, integration-test, model-test ]
+    needs: [ unit-test ]
     runs-on: ubuntu-latest
     name: Codacy code coverage upload
     steps:

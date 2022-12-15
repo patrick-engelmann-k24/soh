@@ -23,6 +23,7 @@ import java.text.MessageFormat;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ITEM_SHIPPED;
 import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
@@ -88,14 +89,17 @@ public class ParcelShippedServiceTest {
     @Test
     void testHandleParcelShippedEvent() {
         final SalesOrder salesOrder1 = createSalesOrder(
+                UUID.randomUUID().toString(),
                 null,
                 "sku1"
         );
         final SalesOrder salesOrder2 = createSalesOrder(
+                UUID.randomUUID().toString(),
                 LocalDateTime.of(2022, 2, 1, 1, 0, 0),
                 "sku1", "sku2", "sku3"
         );
         final SalesOrder salesOrder3 = createSalesOrder(
+                UUID.randomUUID().toString(),
                 LocalDateTime.of(2022, 3, 1, 1, 0, 0),
                 "sku4", "sku5"
         );
@@ -126,6 +130,7 @@ public class ParcelShippedServiceTest {
     @DisplayName("When parcel shipped event has combined items, then it should be ignored")
     void whenParcelShippedEventHasCombinedItemsThenItShouldBeIgnored() {
         final SalesOrder salesOrder1 = createSalesOrder(
+                UUID.randomUUID().toString(),
                 null,
                 "sku1"
         );

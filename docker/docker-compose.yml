@@ -4,10 +4,10 @@ services:
 # AWS localstack
   localstack:
     container_name: "localstack_main"
-    image: localstack/localstack-full
+    image: localstack/localstack
     network_mode: bridge
     healthcheck:
-      test: curl -i http://localhost:4566/health
+      test: curl -i http://localhost:4566/_localstack/health
     ports:
       - "4566:4566"
       - "${PORT_WEB_UI-8081}:8081"
@@ -17,8 +17,8 @@ services:
       - DOCKER_HOST=unix:///var/run/docker.sock
       - HOSTNAME_EXTERNAL=${HOSTNAME_EXTERNAL- }
     volumes:
-      - "vol_tmp:/tmp/localstack"
-      - "vol_data:/tmp/localstack/data"
+      - "vol_tmp:/var/lib/localstack"
+      - "vol_data:/var/lib/localstack/data"
       - "/var/run/docker.sock:/var/run/docker.sock"
 
 # Postgres

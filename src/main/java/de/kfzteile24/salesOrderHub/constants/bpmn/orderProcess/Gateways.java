@@ -15,8 +15,10 @@ public enum Gateways implements BpmItem {
     XOR_CHECK_DROPSHIPMENT_ORDER("gwXORCheckDropShipmentOrder"),
     XOR_CHECK_PLATFORM_TYPE("gwXORCheckPlatformType"),
     XOR_CHECK_DROPSHIPMENT_ORDER_SUCCESSFUL("gwXORCheckDropShipmentOrderSuccessful"),
-
-    RETURN_ORDER_MAIN_GATEWAY("returnOrderMainGateway")
+    RETURN_ORDER_MAIN_GATEWAY("returnOrderMainGateway"),
+    XOR_CHECK_PARTIAL_INVOICE("gwXORIsPartialInvoice"),
+    EVENT_DROPSHIPMENT_ORDER_CANCEL_OR_COMPLETE("gwEventCancelOrComplete"),
+    XOR_ORDER_FULLY_CANCELLED("gwXOROrderFullyCancelled"),
     ;
 
     private final String name;

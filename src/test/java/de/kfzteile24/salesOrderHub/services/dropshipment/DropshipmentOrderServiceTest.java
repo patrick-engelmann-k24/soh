@@ -1,10 +1,10 @@
 package de.kfzteile24.salesOrderHub.services.dropshipment;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.dto.events.shipmentconfirmed.TrackingLink;
+import de.kfzteile24.salesOrderHub.dto.shared.creditnote.SalesCreditNote;
+import de.kfzteile24.salesOrderHub.dto.shared.creditnote.SalesCreditNoteHeader;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnConfirmedMessage;
@@ -14,6 +14,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoice;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
 import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
+import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.helper.ReturnOrderHelper;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
@@ -22,6 +23,7 @@ import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
+import de.kfzteile24.soh.order.dto.Platform;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -37,7 +39,7 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Collection;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -45,13 +47,10 @@ import java.util.stream.Stream;
 
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.K24;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_RETURN_CONFIRMED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_DROPSHIPMENT_ORDER_CONFIRMED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.TRACKING_LINKS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_INVOICE_STORED;
@@ -59,18 +58,17 @@ import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCH
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ITEM_SHIPPED;
 import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.assertSalesCreditNoteCreatedMessage;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -83,27 +81,22 @@ class DropshipmentOrderServiceTest {
     @InjectMocks
     @Spy
     private DropshipmentOrderService dropshipmentOrderService;
-
     @Mock
     private SalesOrderService salesOrderService;
-
     @Mock
     private SalesOrderReturnService salesOrderReturnService;
-
     @Mock
     private SnsPublishService snsPublishService;
-
     @Mock
     private InvoiceService invoiceService;
-
     @Mock
     private CamundaHelper camundaHelper;
-
-    @Spy
+    @Mock
     private ReturnOrderHelper returnOrderHelper;
-
     @Spy
     private ObjectMapper objectMapper;
+    @Mock
+    private OrderUtil orderUtil;
 
     private final MessageWrapper messageWrapper = MessageWrapper.builder().build();
 
@@ -120,22 +113,17 @@ class DropshipmentOrderServiceTest {
     @SneakyThrows
     void testHandleDropshipmentPurchaseOrderReturnConfirmed() {
         var message = getObjectByResource("dropshipmentPurchaseOrderReturnConfirmed.json", DropshipmentPurchaseOrderReturnConfirmedMessage.class);
-        String orderNumber = message.getSalesOrderNumber();
-
-        SalesOrder salesOrder = getSalesOrder(getObjectByResource("ecpOrderMessageWithTwoRows.json", Order.class));
-
-        when(salesOrderReturnService.createCreditNoteNumber()).thenReturn("2022200002");
-        SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage = returnOrderHelper.buildSalesCreditNoteCreatedMessage(
-                message, salesOrder, salesOrderReturnService.createCreditNoteNumber());
-
+        var salesCreditNoteCreatedMessage = SalesCreditNoteCreatedMessage.builder()
+                .salesCreditNote(SalesCreditNote.builder()
+                        .salesCreditNoteHeader(SalesCreditNoteHeader.builder()
+                                .creditNoteNumber("2022200002")
+                                .orderNumber(message.getSalesOrderNumber())
+                                .build())
+                        .build())
+                .build();
         doReturn(salesCreditNoteCreatedMessage).when(dropshipmentOrderService).buildSalesCreditNoteCreatedMessage(message);
 
         dropshipmentOrderService.handleDropshipmentPurchaseOrderReturnConfirmed(message, messageWrapper);
-
-        assertThat(salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteNumber()).isEqualTo("2022200002");
-        assertThat(salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber()).isEqualTo(orderNumber);
-        assertSalesCreditNoteCreatedMessage(salesCreditNoteCreatedMessage, salesOrder);
-
         verify(salesOrderReturnService).handleSalesOrderReturn(salesCreditNoteCreatedMessage, DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED, DROPSHIPMENT_ORDER_RETURN_CONFIRMED);
     }
 
@@ -224,15 +212,9 @@ class DropshipmentOrderServiceTest {
                 .salesOrderNumber(salesOrder.getOrderNumber())
                 .items(items)
                 .build();
-        Collection<String> expectedTrackingLinks = getExpectedTrackingLinks(items);
 
         when(salesOrderService.getOrderByOrderNumber(message.getSalesOrderNumber())).thenReturn(Optional.of(salesOrder));
         when(salesOrderService.save(salesOrder, ORDER_ITEM_SHIPPED)).thenReturn(salesOrder);
-        when(camundaHelper.waitsOnActivityForMessage(ANY_PROCESS_ID,
-                EVENT_MSG_DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED,
-                DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED)).thenReturn(true);
-        doNothing().when(camundaHelper).correlateMessage(
-                eq(DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED), eq(salesOrder), any());
 
         dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(message, messageWrapper);
 
@@ -247,27 +229,12 @@ class DropshipmentOrderServiceTest {
                 }),
                 eq(ORDER_ITEM_SHIPPED));
 
-        verify(camundaHelper).correlateMessage(
-                eq(DROPSHIPMENT_ORDER_TRACKING_INFORMATION_RECEIVED),
-                eq(salesOrder),
-                eq(Variables.putValue(TRACKING_LINKS.getName(), expectedTrackingLinks)));
-    }
+            verify(camundaHelper, times(3)).correlateDropshipmentOrderRowShipmentConfirmedMessage(
+                    eq(salesOrder),
+                    any(),
+                    any()
+            );
 
-    private Collection<String> getExpectedTrackingLinks(List<ShipmentItem> items) {
-
-        return items.stream()
-                .map(item -> {
-                            try {
-                                return objectMapper.writeValueAsString(TrackingLink.builder()
-                                        .url(item.getTrackingLink())
-                                        .orderItems(List.of(item.getProductNumber()))
-                                        .build());
-                            } catch (JsonProcessingException e) {
-                                fail();
-                                return null;
-                            }
-                        }
-                ).collect(Collectors.toList());
     }
 
     private static Stream<Arguments> provideArgumentsForIsDropShipmentOrder() {
@@ -277,5 +244,45 @@ class DropshipmentOrderServiceTest {
                 Arguments.of(K24.getName(), false),
                 Arguments.of(DELTICOM.getName(), true)
         );
+    }
+
+    @Test
+    @SneakyThrows
+    void testCreateDropshipmentNewOrderNumber() {
+        var salesOrder = SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
+        when(salesOrderService.getNextOrderNumberIndexCounter(salesOrder.getOrderGroupId())).thenReturn(1);
+        String newOrderNumber = dropshipmentOrderService.createDropshipmentNewOrderNumber(salesOrder);
+        assertThat(newOrderNumber).isEqualTo(salesOrder.getOrderGroupId() + "-1");
+    }
+
+    @Test
+    @SneakyThrows
+    void testCreateDropshipmentSubsequentOrderJson() {
+
+        var salesOrder = SalesOrderUtil.createNewSalesOrderV3(
+                false, REGULAR, CREDIT_CARD, NEW);
+        var salesOrderJsonString = objectMapper.writeValueAsString(salesOrder.getLatestJson());
+        var expectedOrderJson = objectMapper.readValue(salesOrderJsonString, Order.class);
+        var newOrderNumber = salesOrder.getOrderNumber() + "-1";
+        var skuList = List.of("sku-3", "sku-2");
+        var invoiceNumber = "123";
+
+        when(orderUtil.copyOrderJson(eq(salesOrder.getLatestJson()))).thenReturn(salesOrder.getLatestJson());
+        when(invoiceService.getShippingCostLine(eq(salesOrder))).thenReturn(null);
+        doNothing().when(salesOrderService).recalculateTotals(any(), any());
+
+        Order result = dropshipmentOrderService.createDropshipmentSubsequentOrderJson(salesOrder, newOrderNumber,
+                skuList, invoiceNumber);
+
+        assertThat(result.getOrderHeader().getOrderNumber()).isEqualTo(newOrderNumber);
+        assertThat(result.getOrderHeader().getOrderGroupId()).isEqualTo(
+                salesOrder.getLatestJson().getOrderHeader().getOrderGroupId());
+        assertThat(result.getOrderHeader().getPlatform()).isEqualTo(Platform.SOH);
+        assertThat(result.getOrderHeader().getDocumentRefNumber()).isEqualTo(invoiceNumber);
+        expectedOrderJson.getOrderRows().remove(0);
+        assertThat(result.getOrderRows()).isEqualTo(expectedOrderJson.getOrderRows());
+
+        assertEquals(salesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostGross(), BigDecimal.ZERO);
+        assertEquals(salesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostNet(), BigDecimal.ZERO);
     }
 }
