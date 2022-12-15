@@ -3,7 +3,6 @@ package de.kfzteile24.salesOrderHub.services;
 import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
-import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.AfterEach;
@@ -44,9 +43,6 @@ class SalesOrderProcessServiceIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("Test Handle Shop Orders Received Splitted Orders")
     void testHandleShopOrdersReceivedSplittedOrders() {
         var message = getObjectByResource("ecpOrderMessageWithTwoRows.json", Order.class);
-        var messageWrapper = MessageWrapper.builder()
-                .receiveCount(4)
-                .build();
         message.getOrderHeader().setOrderFulfillment(DELTICOM.getName());
         message.getOrderHeader().setPlatform(BRAINCRAFT);
         message.getOrderRows().get(0).setGenart("10040");

@@ -5,7 +5,6 @@ import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.helper.ObjectUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.FinancialDocumentsSqsReceiveService;
-import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
@@ -32,10 +31,6 @@ class MigrationInvoiceServiceIntegrationTest extends AbstractIntegrationTest {
     private MigrationInvoiceService migrationInvoiceService;
     @Autowired
     private ObjectUtil objectUtil;
-
-    private final MessageWrapper messageWrapper = MessageWrapper.builder()
-            .receiveCount(1)
-            .build();
 
     @SneakyThrows
     @Test

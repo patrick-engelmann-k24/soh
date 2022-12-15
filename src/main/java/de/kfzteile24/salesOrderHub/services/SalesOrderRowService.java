@@ -4,14 +4,10 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
-import de.kfzteile24.salesOrderHub.dto.events.shipmentconfirmed.TrackingLink;
-import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ArticleItemsDto;
-import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ParcelShipped;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
-import de.kfzteile24.soh.order.dto.Platform;
 import de.kfzteile24.soh.order.dto.SumValues;
 import de.kfzteile24.soh.order.dto.Totals;
 import lombok.NonNull;
@@ -20,15 +16,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.RuntimeService;
 import org.springframework.stereotype.Service;
 
-import javax.transaction.Transactional;
 import java.math.BigDecimal;
 import java.text.MessageFormat;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
-import static de.kfzteile24.salesOrderHub.constants.SOHConstants.COMBINED_ITEM_SEPARATOR;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
 
 @Service
@@ -147,84 +139,4 @@ public class SalesOrderRowService {
         latestJson.getOrderHeader().setTotals(totals);
     }
 
-    private boolean isCorePlatformOrder(List<SalesOrder> salesOrders) {
-        return Platform.CORE == ((Order)salesOrders.get(0).getOriginalOrder()).getOrderHeader().getPlatform();
-    }
-
-    public void handleParcelShippedEvent(ParcelShipped event) {
-        var orderNumber = event.getOrderNumber();
-        if (hasAnyCombinedItem(event)) {
-            log.info("Order: {} has combined items, so it would be ignored for ParcelShippedEvent Handling", orderNumber);
-        } else {
-            List<SalesOrder> salesOrders = getSalesOrdersByGroupId(event, orderNumber);
-            if (isCorePlatformOrder(salesOrders)) {
-                log.info("Order: {} is a CORE Platform Order, so it would be ignored for ParcelShippedEvent Handling", orderNumber);
-            } else {
-                var itemList = event.getArticleItemsDtos();
-                if (itemList == null || itemList.isEmpty()) {
-                    throw new IllegalArgumentException("The provided event does not contain order item");
-                }
-
-                try {
-                    SalesOrder salesOrder = getSalesOrderIncludesOrderItems(event, salesOrders).orElseThrow(() ->
-                            buildNotFoundException(event)
-                    );
-
-                    TrackingLink trackingLink = TrackingLink.builder()
-                            .url(event.getTrackingLink())
-                            .orderItems(itemList.stream().map(ArticleItemsDto::getNumber).collect(Collectors.toList()))
-                            .build();
-
-                    snsPublishService.publishSalesOrderShipmentConfirmedEvent(salesOrder, List.of(trackingLink));
-                } catch (Exception e) {
-                    log.error("Parcel shipped received message error - order_number: {}\r\nErrorMessage: {}", orderNumber, e);
-                    throw e;
-                }
-            }
-        }
-    }
-
-    private Optional<SalesOrder> getSalesOrderIncludesOrderItems(ParcelShipped event, List<SalesOrder> salesOrders) {
-        for (SalesOrder salesOrder : salesOrders) {
-            List<String> orderSkuList =
-                    salesOrder.getLatestJson().getOrderRows().stream().map(OrderRows::getSku).collect(Collectors.toList());
-            if (isAllIncludedInSkuList(event, orderSkuList)) {
-                return Optional.of(salesOrder);
-            }
-        }
-        return Optional.empty();
-    }
-
-    private NotFoundException buildNotFoundException(ParcelShipped event) {
-        return new NotFoundException(
-                MessageFormat.format(
-                        "There is no sales order including all article number " +
-                                "in the parcel shipped event. " +
-                                "OrderNumber: {0}, DeliveryNoteNumber: {1}, articleItemsList: {2}",
-                        event.getOrderNumber(),
-                        event.getDeliveryNoteNumber(),
-                        event.getArticleItemsDtos().stream()
-                                .map(ArticleItemsDto::getNumber)
-                                .collect(Collectors.toList())
-                ));
-    }
-
-    private List<SalesOrder> getSalesOrdersByGroupId(ParcelShipped event, String orderNumber) {
-        List<SalesOrder> salesOrders = salesOrderService.getOrderByOrderGroupId(orderNumber).stream()
-                .sorted(Comparator.comparing(SalesOrder::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
-                .collect(Collectors.toList());
-        if (salesOrders.isEmpty()) {
-            throw buildNotFoundException(event);
-        }
-        return salesOrders;
-    }
-
-    private boolean isAllIncludedInSkuList(ParcelShipped event, List<String> skuListFromOrderJson) {
-        return event.getArticleItemsDtos().stream().allMatch(item -> skuListFromOrderJson.contains(item.getNumber()));
-    }
-
-    private boolean hasAnyCombinedItem(ParcelShipped event) {
-        return event.getArticleItemsDtos().stream().anyMatch(item
-                -> item.getNumber() != null && item.getNumber().contains(COMBINED_ITEM_SEPARATOR));
-    }
 }

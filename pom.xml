@@ -16,19 +16,20 @@
     <json-schema-java-bundle.version>1.0.178</json-schema-java-bundle.version>
     <soh-order-json.version>1.0.41</soh-order-json.version>
     <surefire-version>3.0.0-M7</surefire-version>
-    <newrelic.version>7.9.0</newrelic.version>
-    <mapstruct.version>1.5.2.Final</mapstruct.version>
+    <newrelic.version>7.11.1</newrelic.version>
+    <mapstruct.version>1.5.3.Final</mapstruct.version>
     <lombok.version>1.18.24</lombok.version>
     <spring-wiremock-version>2.2.8.RELEASE</spring-wiremock-version>
     <camunda-bpm-assert-scenario.version>1.1.1</camunda-bpm-assert-scenario.version>
     <camunda-process-test-coverage-starter-platform8.version>1.0.3
     </camunda-process-test-coverage-starter-platform8.version>
-    <springdoc-openapi-ui.version>1.6.9</springdoc-openapi-ui.version>
+    <springdoc-openapi-ui.version>1.6.13</springdoc-openapi-ui.version>
     <camunda-bpm-migration.version>1.0</camunda-bpm-migration.version>
-    <spring-cloud-starter-sleuth.version>3.1.4</spring-cloud-starter-sleuth.version>
+    <spring-cloud-starter-sleuth.version>3.1.5</spring-cloud-starter-sleuth.version>
     <camunda-bpm-reactor-spring-starter.version>2.1.2</camunda-bpm-reactor-spring-starter.version>
     <awaitility.version>4.2.0</awaitility.version>
     <logbook.version>2.14.0</logbook.version>
+    <groovy.version>2.3.0</groovy.version>
   </properties>
 
   <dependencyManagement>
@@ -110,7 +111,7 @@
     <dependency>
       <groupId>com.sun.xml.bind</groupId>
       <artifactId>jaxb-impl</artifactId>
-      <version>4.0.0</version>
+      <version>4.0.1</version>
     </dependency>
     <dependency>
       <groupId>org.projectlombok</groupId>
@@ -126,7 +127,7 @@
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
-      <version>42.5.0</version>
+      <version>42.5.1</version>
     </dependency>
     <dependency>
       <groupId>org.springdoc</groupId>
@@ -158,6 +159,11 @@
       <artifactId>logbook-spring-boot-starter</artifactId>
       <version>${logbook.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.codehaus.groovy</groupId>
+      <artifactId>groovy-all</artifactId>
+      <version>${groovy.version}</version>
+    </dependency>
 
     <!-- Logging   -->
     <dependency>
@@ -180,12 +186,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.camunda.bpm.springboot</groupId>
-      <artifactId>camunda-bpm-spring-boot-starter-test</artifactId>
-      <version>${camunda.spring-boot.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.camunda.bpm.assert</groupId>
       <artifactId>camunda-bpm-assert</artifactId>
       <version>15.0.0</version>
@@ -199,7 +199,7 @@
     <dependency>
       <groupId>com.github.tomakehurst</groupId>
       <artifactId>wiremock-jre8</artifactId>
-      <version>2.33.2</version>
+      <version>2.35.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -256,7 +256,7 @@
       <plugin>
         <groupId>org.flywaydb</groupId>
         <artifactId>flyway-maven-plugin</artifactId>
-        <version>9.3.0</version>
+        <version>9.8.3</version>
         <configuration>
           <baselineOnMigrate>true</baselineOnMigrate>
         </configuration>
@@ -264,7 +264,7 @@
           <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>42.5.0</version>
+            <version>42.5.1</version>
           </dependency>
         </dependencies>
       </plugin>

@@ -4,12 +4,14 @@ import com.zaxxer.hikari.HikariDataSource;
 import org.camunda.bpm.spring.boot.starter.annotation.EnableProcessApplication;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.groovy.template.GroovyTemplateAutoConfiguration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 
-@SpringBootApplication
+@SpringBootApplication(exclude = {
+        GroovyTemplateAutoConfiguration.class})
 @EnableProcessApplication
 public class SalesOrderHubProcessApplication {
 

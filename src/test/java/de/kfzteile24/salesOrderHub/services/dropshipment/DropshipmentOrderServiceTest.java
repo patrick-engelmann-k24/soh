@@ -3,6 +3,8 @@ package de.kfzteile24.salesOrderHub.services.dropshipment;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.dto.shared.creditnote.SalesCreditNote;
+import de.kfzteile24.salesOrderHub.dto.shared.creditnote.SalesCreditNoteHeader;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnConfirmedMessage;
@@ -56,7 +58,6 @@ import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCH
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ITEM_SHIPPED;
 import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.assertSalesCreditNoteCreatedMessage;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -80,28 +81,20 @@ class DropshipmentOrderServiceTest {
     @InjectMocks
     @Spy
     private DropshipmentOrderService dropshipmentOrderService;
-
     @Mock
     private SalesOrderService salesOrderService;
-
     @Mock
     private SalesOrderReturnService salesOrderReturnService;
-
     @Mock
     private SnsPublishService snsPublishService;
-
     @Mock
     private InvoiceService invoiceService;
-
     @Mock
     private CamundaHelper camundaHelper;
-
-    @Spy
+    @Mock
     private ReturnOrderHelper returnOrderHelper;
-
     @Spy
     private ObjectMapper objectMapper;
-
     @Mock
     private OrderUtil orderUtil;
 
@@ -120,22 +113,17 @@ class DropshipmentOrderServiceTest {
     @SneakyThrows
     void testHandleDropshipmentPurchaseOrderReturnConfirmed() {
         var message = getObjectByResource("dropshipmentPurchaseOrderReturnConfirmed.json", DropshipmentPurchaseOrderReturnConfirmedMessage.class);
-        String orderNumber = message.getSalesOrderNumber();
-
-        SalesOrder salesOrder = getSalesOrder(getObjectByResource("ecpOrderMessageWithTwoRows.json", Order.class));
-
-        when(salesOrderReturnService.createCreditNoteNumber()).thenReturn("2022200002");
-        SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage = returnOrderHelper.buildSalesCreditNoteCreatedMessage(
-                message, salesOrder, salesOrderReturnService.createCreditNoteNumber());
-
+        var salesCreditNoteCreatedMessage = SalesCreditNoteCreatedMessage.builder()
+                .salesCreditNote(SalesCreditNote.builder()
+                        .salesCreditNoteHeader(SalesCreditNoteHeader.builder()
+                                .creditNoteNumber("2022200002")
+                                .orderNumber(message.getSalesOrderNumber())
+                                .build())
+                        .build())
+                .build();
         doReturn(salesCreditNoteCreatedMessage).when(dropshipmentOrderService).buildSalesCreditNoteCreatedMessage(message);
 
         dropshipmentOrderService.handleDropshipmentPurchaseOrderReturnConfirmed(message, messageWrapper);
-
-        assertThat(salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteNumber()).isEqualTo("2022200002");
-        assertThat(salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber()).isEqualTo(orderNumber);
-        assertSalesCreditNoteCreatedMessage(salesCreditNoteCreatedMessage, salesOrder);
-
         verify(salesOrderReturnService).handleSalesOrderReturn(salesCreditNoteCreatedMessage, DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED, DROPSHIPMENT_ORDER_RETURN_CONFIRMED);
     }
 

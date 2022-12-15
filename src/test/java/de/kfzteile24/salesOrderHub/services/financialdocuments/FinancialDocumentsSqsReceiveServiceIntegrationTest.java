@@ -18,7 +18,6 @@ import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import de.kfzteile24.salesOrderHub.services.salesorder.SalesOrderSqsReceiveService;
 import de.kfzteile24.salesOrderHub.services.splitter.decorator.ItemSplitService;
-import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.GrandTotalTaxes;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
@@ -136,7 +135,6 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
         salesOrderService.save(salesOrder, Action.ORDER_CREATED);
 
         var message = getObjectByResource("coreSalesCreditNoteCreated.json", SalesCreditNoteCreatedMessage.class);
-        var messageWrapper = MessageWrapper.builder().build();
         financialDocumentsSqsReceiveService.queueListenerCoreSalesCreditNoteCreated(message, messageWrapper);
 
         SalesCreditNoteHeader salesCreditNoteHeader = message.getSalesCreditNote().getSalesCreditNoteHeader();
@@ -169,7 +167,6 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
 
         var message = getObjectByResource("coreSalesCreditNoteCreated.json", SalesCreditNoteCreatedMessage.class);
         message.getSalesCreditNote().getSalesCreditNoteHeader().setOrderNumber("580309129-1");
-        var messageWrapper = MessageWrapper.builder().build();
         financialDocumentsSqsReceiveService.queueListenerCoreSalesCreditNoteCreated(message, messageWrapper);
 
         verify(salesOrderService).getOrderByOrderNumber("580309129-1");
@@ -273,7 +270,6 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
         String invoiceNumber = "10";
 
         var message = getObjectByResource("coreSalesInvoiceCreatedOneItem.json", CoreSalesInvoiceCreatedMessage.class);
-        var messageWrapper = MessageWrapper.builder().build();
 
         //Replace order number with randomly created order number as expected
         message.getSalesInvoice().getSalesInvoiceHeader().setOrderNumber(originalOrderNumber);
@@ -310,7 +306,6 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
         String originalOrderNumber = salesOrder.getOrderNumber();
 
         var message = getObjectByResource("coreSalesInvoiceCreatedOneItem.json", CoreSalesInvoiceCreatedMessage.class);
-        var messageWrapper = MessageWrapper.builder().build();
 
         //Replace order number with randomly created order number as expected
         message.getSalesInvoice().getSalesInvoiceHeader().setOrderNumber(originalOrderNumber);
@@ -340,7 +335,6 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
 
         String originalOrderNumber = salesOrder.getOrderNumber();
         var message = getObjectByResource("coreSalesInvoiceCreatedMultipleItemsSameSkus.json", CoreSalesInvoiceCreatedMessage.class);
-        var messageWrapper = MessageWrapper.builder().build();
 
         //Replace order number with randomly created order number as expected
         message.getSalesInvoice().getSalesInvoiceHeader().setOrderNumber(originalOrderNumber);
@@ -375,7 +369,6 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
         String rowSku3 = "2022-KBA";
 
         var message = getObjectByResource("coreSalesInvoiceCreatedMultipleItems.json", CoreSalesInvoiceCreatedMessage.class);
-        var messageWrapper = MessageWrapper.builder().build();
 
         //Replace order number with randomly created order number as expected
         message.getSalesInvoice().getSalesInvoiceHeader().setOrderNumber(originalOrderNumber);
@@ -416,7 +409,6 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
         String rowSku3 = "2022-KBA";
 
         var message = getObjectByResource("coreSalesInvoiceCreatedMultipleItems.json", CoreSalesInvoiceCreatedMessage.class);
-        var messageWrapper = MessageWrapper.builder().build();
 
         //Replace order number with randomly created order number as expected
         message.getSalesInvoice().getSalesInvoiceHeader().setOrderNumber(originalOrderNumber);
@@ -458,7 +450,6 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
         String rowSku2 = "2010-10183";
         String rowSku3 = "2022-KBA";
         var message = getObjectByResource("coreSalesInvoiceCreatedMultipleItems.json", CoreSalesInvoiceCreatedMessage.class);
-        var messageWrapper = MessageWrapper.builder().build();
 
         //Replace order number with randomly created order number as expected
         message.getSalesInvoice().getSalesInvoiceHeader().setOrderNumber(originalOrderNumber);
@@ -494,7 +485,6 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
 
         var message = getObjectByResource("coreOrderMessage.json", Order.class);
         message.getOrderHeader().setPlatform(ECP);
-        var messageWrapper = MessageWrapper.builder().build();
         SalesOrder salesOrder = getSalesOrder(message);
 
         doAnswer((Answer<Void>) invocation -> {
