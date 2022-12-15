@@ -1,4 +1,4 @@
-package de.kfzteile24.salesOrderHub.delegates.invoicing.listener;
+package de.kfzteile24.salesOrderHub.delegates.invoicing;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.domain.dropshipment.InvoiceData;
@@ -24,7 +24,7 @@ import static org.mockito.Mockito.when;
 
 
 @ExtendWith(MockitoExtension.class)
-public class IsPartialInvoiceListenerTest {
+class DetermineDropshipmentOrderInvoiceTypeDelegateTest {
 
     private final String invoiceNumber = "2022-1000000000001";
     private final InvoiceData invoiceData = new InvoiceData(invoiceNumber, "orderNumber", List.of("sku1.1", "sku1.2"));
@@ -34,44 +34,44 @@ public class IsPartialInvoiceListenerTest {
     @Mock
     private DropshipmentInvoiceRowService dropshipmentInvoiceRowService;
     @InjectMocks
-    private IsPartialInvoiceListener isPartialInvoiceListener;
+    private DetermineDropshipmentOrderInvoiceTypeDelegate determineInvoiceTypeDelegate;
     @Mock
     private SalesOrderService salesOrderService;
 
     @Test
     @SneakyThrows
-    void testIsPartialInvoiceListenerFalseResult() {
+    void testDropshipmentOrderFullInvoiceType() {
 
         when(delegateExecution.getVariable(Variables.INVOICE_NUMBER.getName())).thenReturn(invoiceNumber);
         when(dropshipmentInvoiceRowService.getInvoiceData(eq(invoiceNumber))).thenReturn(invoiceData);
         when(salesOrderService.isFullyMatched(eq(invoiceData.getOrderRows()), eq(invoiceData.getOrderNumber()))).thenReturn(true);
 
-        isPartialInvoiceListener.notify(delegateExecution);
+        determineInvoiceTypeDelegate.execute(delegateExecution);
 
         verify(delegateExecution).setVariable(eq(Variables.IS_PARTIAL_INVOICE.getName()), eq(false));
     }
 
     @Test
     @SneakyThrows
-    void testIsPartialInvoiceListenerTrueResult() {
+    void testDropshipmentOrderPartialInvoiceType() {
 
         when(delegateExecution.getVariable(Variables.INVOICE_NUMBER.getName())).thenReturn(invoiceNumber);
         when(dropshipmentInvoiceRowService.getInvoiceData(eq(invoiceNumber))).thenReturn(invoiceData);
         when(salesOrderService.isFullyMatched(eq(invoiceData.getOrderRows()), eq(invoiceData.getOrderNumber()))).thenReturn(false);
 
-        isPartialInvoiceListener.notify(delegateExecution);
+        determineInvoiceTypeDelegate.execute(delegateExecution);
 
         verify(delegateExecution).setVariable(eq(Variables.IS_PARTIAL_INVOICE.getName()), eq(true));
     }
 
     @Test
     @SneakyThrows
-    void testIsPartialInvoiceListenerIfDropshipmentInvoiceRowServiceThrowsException() {
+    void testIfDropshipmentInvoiceRowServiceThrowsException() {
 
         when(delegateExecution.getVariable(Variables.INVOICE_NUMBER.getName())).thenReturn(invoiceNumber);
         when(dropshipmentInvoiceRowService.getInvoiceData(eq(invoiceNumber))).thenThrow(new NotFoundException(invoiceNumber));
 
-        assertThatThrownBy(() -> isPartialInvoiceListener.notify(delegateExecution))
+        assertThatThrownBy(() -> determineInvoiceTypeDelegate.execute(delegateExecution))
                 .isInstanceOf(NotFoundException.class);
 
         verify(salesOrderService, never()).isFullyMatched(any(), any());

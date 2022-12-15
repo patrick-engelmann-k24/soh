@@ -12,7 +12,6 @@ import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
-import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -65,8 +64,6 @@ class DropshipmentSqsReceiveServiceIntegrationTest extends AbstractIntegrationTe
     private AuditLogRepository auditLogRepository;
     @Autowired
     private BpmUtil bpmUtil;
-
-    private final MessageWrapper messageWrapper = MessageWrapper.builder().build();
 
     @BeforeEach
     public void setup() {

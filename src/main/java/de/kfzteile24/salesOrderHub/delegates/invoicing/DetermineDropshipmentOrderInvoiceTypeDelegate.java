@@ -1,26 +1,25 @@
-package de.kfzteile24.salesOrderHub.delegates.invoicing.listener;
+package de.kfzteile24.salesOrderHub.delegates.invoicing;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentInvoiceRowService;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
-import org.camunda.bpm.engine.delegate.ExecutionListener;
+import org.camunda.bpm.engine.delegate.JavaDelegate;
 import org.springframework.stereotype.Component;
 
-@Component
 @Slf4j
+@Component
 @RequiredArgsConstructor
-public class IsPartialInvoiceListener implements ExecutionListener {
-    @NonNull
+public class DetermineDropshipmentOrderInvoiceTypeDelegate implements JavaDelegate {
+
     private final SalesOrderService salesOrderService;
-    @NonNull
     private final DropshipmentInvoiceRowService dropshipmentInvoiceRowService;
 
     @Override
-    public void notify(DelegateExecution delegateExecution) throws Exception {
+    public void execute(DelegateExecution delegateExecution) throws Exception {
+        log.info("{} delegate invoked", DetermineDropshipmentOrderInvoiceTypeDelegate.class.getSimpleName());
 
         final var invoiceNumber = (String) delegateExecution.getVariable(Variables.INVOICE_NUMBER.getName());
         var invoiceData = dropshipmentInvoiceRowService.getInvoiceData(invoiceNumber);

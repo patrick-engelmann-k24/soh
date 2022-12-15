@@ -38,6 +38,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -190,11 +191,10 @@ public class SalesOrderService {
         CoreSalesInvoiceHeader salesInvoiceHeader = coreSalesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
         var items = salesInvoiceHeader.getInvoiceLines();
         List<OrderRows> orderRows = new ArrayList<>();
-        var lastRowKey = orderUtil.getLastRowKey(originalSalesOrder);
+        var lastRowKey = new AtomicInteger(orderUtil.getLastRowKey(originalSalesOrder));
         for (CoreSalesFinancialDocumentLine item : items) {
-            if (!item.getIsShippingCost()) {
-                orderRows.add(orderUtil.createNewOrderRow(item, originalSalesOrder, lastRowKey));
-                lastRowKey = orderUtil.updateLastRowKey(originalSalesOrder, item.getItemNumber(), lastRowKey);
+            if (Boolean.FALSE.equals(item.getIsShippingCost())) {
+                orderRows.add(orderUtil.createNewOrderRow(item, List.of(originalSalesOrder), lastRowKey));
             }
         }
         orderRows = orderRows.stream()
@@ -248,6 +248,7 @@ public class SalesOrderService {
                 && isShippingCostGrossMatch(originalSalesOrder, shippingCostDocumentLine);
     }
 
+    @Transactional
     public boolean isFullyMatched(List<String> skuList, String orderNumber) {
         var salesOrder = getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
