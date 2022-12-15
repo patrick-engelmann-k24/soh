@@ -75,8 +75,10 @@ public class PayloadResolverDecorator extends PayloadMethodArgumentResolver {
                 Object payload = objectMapper.readValue(rawMessage, parameterClass);
                 updateTraceId(payload);
                 return payload;
+            } else {
+                updateTraceId(rawMessage);
+                return rawMessage;
             }
-            return rawMessage;
         } catch (Exception e) {
             messageAttributeHelper.moveToDlq(MessageWrapper.fromMessage(message), e);
             return null;
