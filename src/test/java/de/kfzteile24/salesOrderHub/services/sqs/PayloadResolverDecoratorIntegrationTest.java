@@ -3,7 +3,6 @@ package de.kfzteile24.salesOrderHub.services.sqs;
 import com.amazonaws.services.sqs.model.PurgeQueueRequest;
 import com.amazonaws.services.sqs.model.SendMessageRequest;
 import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
-import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -71,11 +70,6 @@ class PayloadResolverDecoratorIntegrationTest extends AbstractIntegrationTest {
                     return true;
                 }));
 
-                verify(payloadResolverDecorator).validate(any(), any(), argThat(target -> {
-                    assertThat(target).isInstanceOf(Order.class);
-                    return true;
-                }));
-
                 verify(messageWrapperResolver).resolveArgument(any(), argThat(message -> {
                     var headers = message.getHeaders();
                     assertThat(headers)
@@ -117,11 +111,6 @@ class PayloadResolverDecoratorIntegrationTest extends AbstractIntegrationTest {
                                     SQS_MESSAGE_HEADER_LOGICAL_RESOURCE_ID,
                                     SQS_MESSAGE_HEADER_APPROXIMATE_RECEIVE_COUNT);
                     assertThat(message.getPayload().toString()).isNotBlank();
-                    return true;
-                }));
-
-                verify(payloadResolverDecorator).validate(any(), any(), argThat(target -> {
-                    assertThat(target).isInstanceOf(Order.class);
                     return true;
                 }));
 

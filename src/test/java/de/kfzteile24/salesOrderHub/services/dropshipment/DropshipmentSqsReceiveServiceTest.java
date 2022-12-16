@@ -1,7 +1,5 @@
 package de.kfzteile24.salesOrderHub.services.dropshipment;
 
-import de.kfzteile24.salesOrderHub.constants.PersistentProperties;
-import de.kfzteile24.salesOrderHub.domain.property.KeyValueProperty;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnNotifiedMessage;
@@ -16,13 +14,8 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.text.MessageFormat;
-import java.util.Optional;
-
 import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class DropshipmentSqsReceiveServiceTest {
@@ -79,30 +72,8 @@ class DropshipmentSqsReceiveServiceTest {
         var message = getObjectByResource(
                 "dropshipmentPurchaseOrderReturnConfirmed.json", DropshipmentPurchaseOrderReturnConfirmedMessage.class);
 
-        when(keyValuePropertyService.getPropertyByKey(PersistentProperties.PREVENT_DROPSHIPMENT_ORDER_RETURN_CONFIRMED))
-                .thenReturn(Optional.of(KeyValueProperty.builder().typedValue(false).build()));
-
         dropshipmentSqsReceiveService.queueListenerDropshipmentPurchaseOrderReturnConfirmed(message, messageWrapper);
 
         verify(dropshipmentOrderService).handleDropshipmentPurchaseOrderReturnConfirmed(message, messageWrapper);
-    }
-
-    @Test
-    void testQueueListenerDropshipmentPurchaseOrderReturnConfirmedPrevented() {
-
-        var message = getObjectByResource(
-                "dropshipmentPurchaseOrderReturnConfirmed.json", DropshipmentPurchaseOrderReturnConfirmedMessage.class);
-
-        when(keyValuePropertyService.getPropertyByKey(PersistentProperties.PREVENT_DROPSHIPMENT_ORDER_RETURN_CONFIRMED))
-                .thenReturn(Optional.of(KeyValueProperty.builder().typedValue(true).build()));
-
-        var expectedErrorMessage = MessageFormat.format(
-                "Dropshipment Order Return Confirmed process is inactive. " +
-                        "Message with Order number {0} is moved to DLQ", message.getSalesOrderNumber());
-
-        assertThatThrownBy(() -> dropshipmentSqsReceiveService.queueListenerDropshipmentPurchaseOrderReturnConfirmed(
-                message, messageWrapper))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining(expectedErrorMessage);
     }
 }

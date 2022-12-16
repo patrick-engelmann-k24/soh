@@ -26,7 +26,6 @@ import de.kfzteile24.salesOrderHub.repositories.DropshipmentInvoiceRowRepository
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
-import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.StringUtils;
@@ -146,6 +145,7 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
                 getObjectByResource("dropshipmentPurchaseOrderReturnConfirmed.json",  DropshipmentPurchaseOrderReturnConfirmedMessage.class);
         message.setSalesOrderNumber(salesOrder.getOrderNumber());
 
+        dropshipmentOrderService.setPreventDropshipmentOrderReturnConfirmed(false);
         dropshipmentOrderService.handleDropshipmentPurchaseOrderReturnConfirmed(message, messageWrapper);
 
         String returnOrderNumber = RETURN_ORDER_NUMBER_PREFIX + ORDER_NUMBER_SEPARATOR + nextCreditNoteNumber;
