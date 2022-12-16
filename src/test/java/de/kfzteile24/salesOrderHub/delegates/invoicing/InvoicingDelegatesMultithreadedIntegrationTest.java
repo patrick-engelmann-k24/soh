@@ -119,15 +119,10 @@ class InvoicingDelegatesMultithreadedIntegrationTest extends AbstractIntegration
                     var firstOrderNumber = firstOrder.getOrderNumber();
                     var secondOrderNumber = secondOrder.getOrderNumber();
 
-
-
                     test(firstOrderNumber, secondOrderNumber, firstInvoiceNumber, secondInvoiceNumber);
 
                     verifyIfOrderPartiallyInvoicedAndFirstSubsequentOrderNumberCreation(firstOrderNumber, firstInvoiceNumber);
                     verifyIfOrderPartiallyInvoicedAndSecondSubsequentOrderNumberCreation(secondOrderNumber, secondInvoiceNumber);
-
-
-
 
                 } catch (Exception e) {
                     log.error(e.getMessage());
