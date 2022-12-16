@@ -48,6 +48,7 @@ import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getSumValue;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.isNotNullAndEqual;
 import static de.kfzteile24.salesOrderHub.helper.PaymentUtil.updatePaymentProvider;
+import static de.kfzteile24.salesOrderHub.helper.SubsequentSalesOrderCreationHelper.buildSubsequentSalesOrder;
 import static de.kfzteile24.soh.order.dto.CustomerType.BUSINESS;
 import static java.text.MessageFormat.format;
 import static java.util.stream.Collectors.toList;
@@ -160,7 +161,10 @@ public class SalesOrderService {
                 .filter(CoreSalesFinancialDocumentLine::getIsShippingCost).findFirst().orElse(null);
 
         recalculateTotals(order, shippingCostDocumentLine);
-        return createSalesOrder(subsequentOrderHelper.buildSubsequentSalesOrder(order, newOrderNumber));
+
+        var subsequentOrder = buildSubsequentSalesOrder(order, newOrderNumber);
+
+        return createSalesOrder(subsequentOrder);
     }
 
     protected Order createOrderForSubsequentSalesOrder(CoreSalesInvoiceCreatedMessage coreSalesInvoiceCreatedMessage,

@@ -60,6 +60,7 @@ import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCH
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_SUBSEQUENT_ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ITEM_SHIPPED;
+import static de.kfzteile24.salesOrderHub.helper.SubsequentSalesOrderCreationHelper.buildSubsequentSalesOrder;
 import static java.text.MessageFormat.format;
 import static java.util.function.Predicate.not;
 
@@ -332,7 +333,7 @@ public class DropshipmentOrderService {
                                                              String activityInstanceId) {
         String newOrderNumber = createDropshipmentNewOrderNumber(salesOrder);
         Order orderJson = createDropshipmentSubsequentOrderJson(salesOrder, newOrderNumber, skuList, invoiceNumber);
-        var subsequentOrder = subsequentOrderHelper.buildSubsequentSalesOrder(orderJson, newOrderNumber);
+        var subsequentOrder = buildSubsequentSalesOrder(orderJson, newOrderNumber);
         subsequentOrder.setProcessId(activityInstanceId);
 
         return salesOrderService.save(subsequentOrder, ORDER_CREATED);
