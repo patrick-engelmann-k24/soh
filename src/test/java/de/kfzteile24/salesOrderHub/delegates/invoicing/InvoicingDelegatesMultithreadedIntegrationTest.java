@@ -29,6 +29,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
@@ -41,6 +42,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Paymen
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createNewSalesOrderV3;
 import static org.assertj.core.api.Assertions.fail;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @Slf4j
@@ -169,42 +171,33 @@ class InvoicingDelegatesMultithreadedIntegrationTest extends AbstractIntegration
     @SneakyThrows
     private void test(String firstOrderNumber, String secondOrderNumber, String firstInvoiceNumber, String secondInvoiceNumber)  {
 
-        var delegateExecution = Mockito.mock(DelegateExecution.class);
+        var delegateExecution = mock(DelegateExecution.class);
 
         when(delegateExecution.getVariable(INVOICE_NUMBER.getName())).thenReturn(firstInvoiceNumber);
-        createDropshipmentSubsequentOrderDelegate.execute(delegateExecution);
         when(delegateExecution.getVariable(SUBSEQUENT_ORDER_NUMBER.getName())).thenReturn(firstOrderNumber + "-1");
+        createDropshipmentSubsequentOrderDelegate.execute(delegateExecution);
         createDropshipmentSubsequentInvoiceDelegate.execute(delegateExecution);
         verifyIfOrderPartiallyInvoicedAndFirstSubsequentOrderNumberCreation(firstOrderNumber, firstInvoiceNumber);
 
         when(delegateExecution.getVariable(INVOICE_NUMBER.getName())).thenReturn(secondInvoiceNumber);
-        createDropshipmentSubsequentOrderDelegate.execute(delegateExecution);
         when(delegateExecution.getVariable(SUBSEQUENT_ORDER_NUMBER.getName())).thenReturn(secondOrderNumber + "-2");
+        createDropshipmentSubsequentOrderDelegate.execute(delegateExecution);
         createDropshipmentSubsequentInvoiceDelegate.execute(delegateExecution);
         verifyIfOrderPartiallyInvoicedAndSecondSubsequentOrderNumberCreation(secondOrderNumber, secondInvoiceNumber);
 
-        when(delegateExecution.getVariable(INVOICE_NUMBER.getName())).thenReturn(firstInvoiceNumber);
-        createDropshipmentSubsequentOrderDelegate.execute(delegateExecution);
-        when(delegateExecution.getVariable(SUBSEQUENT_ORDER_NUMBER.getName())).thenReturn(firstOrderNumber + "-1");
-        createDropshipmentSubsequentInvoiceDelegate.execute(delegateExecution);
-
-        when(delegateExecution.getVariable(INVOICE_NUMBER.getName())).thenReturn(secondInvoiceNumber);
-        createDropshipmentSubsequentOrderDelegate.execute(delegateExecution);
-        when(delegateExecution.getVariable(SUBSEQUENT_ORDER_NUMBER.getName())).thenReturn(secondOrderNumber + "-2");
-        createDropshipmentSubsequentInvoiceDelegate.execute(delegateExecution);
-
-        testSubsequentOrder(delegateExecution, firstOrderNumber + "-1", firstInvoiceNumber);
-        testSubsequentOrder(delegateExecution, secondOrderNumber + "-2", secondInvoiceNumber);
+        testSubsequentOrder(firstOrderNumber + "-1", firstInvoiceNumber);
+        testSubsequentOrder(secondOrderNumber + "-2", secondInvoiceNumber);
 
     }
 
     @SneakyThrows
-    private void testSubsequentOrder(DelegateExecution delegateExecution, String orderNumber, String invoiceNumber) {
+    private void testSubsequentOrder(String orderNumber, String invoiceNumber) {
+        var delegateExecution = mock(DelegateExecution.class);
         when(delegateExecution.getVariable(ORDER_NUMBER.getName())).thenReturn(orderNumber);
         when(delegateExecution.getVariable(INVOICE_NUMBER.getName())).thenReturn(invoiceNumber);
         when(delegateExecution.getVariable(INVOICE_URL.getName())).thenReturn("s3://staging-k24-invoices/www-k24-de/2022/06/27/" +
                 orderNumber + "-" + invoiceNumber + ".pdf");
-        when(delegateExecution.getVariable(IS_DUPLICATE_DROPSHIPMENT_INVOICE.getName())).thenReturn(Boolean.FALSE);
+        when(delegateExecution.getVariable(IS_DUPLICATE_DROPSHIPMENT_INVOICE.getName())).thenReturn(false);
 
         var thread2 = new Thread(() -> {
             try {
@@ -320,7 +313,7 @@ class InvoicingDelegatesMultithreadedIntegrationTest extends AbstractIntegration
     private SalesOrder createSalesOrderWithRandomOrderNumber() {
         var salesOrder = SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
         ((Order) salesOrder.getOriginalOrder()).getOrderHeader().setOrderFulfillment(DELTICOM.getName());
-        String randomOrderNumber = bpmUtil.getRandomOrderNumber();
+        String randomOrderNumber = UUID.randomUUID().toString().replace("-", "");
         salesOrder.setOrderNumber(randomOrderNumber);
         salesOrder.setOrderGroupId(randomOrderNumber);
         salesOrder.getLatestJson().getOrderHeader().setOrderNumber(randomOrderNumber);
