@@ -42,7 +42,7 @@ class LoggingAdvice {
         var message = joinPoint.getArgs()[0];
         var messageWrapper = (MessageWrapper) joinPoint.getArgs()[1];
 
-        if (messageWrapper != null) {
+        if (message != null) {
             try {
                 customValidator.validate(message);
                 return joinPoint.proceed();
