@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-class InvoiceSavedDelegate implements JavaDelegate {
+public class InvoiceSavedDelegate implements JavaDelegate {
 
     private final SnsPublishService snsPublishService;
     private final SalesOrderService salesOrderService;
