@@ -10,7 +10,7 @@ import org.camunda.bpm.engine.delegate.JavaDelegate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROW_ID;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROW;
 
 @Slf4j
 @Component
@@ -24,7 +24,7 @@ public class OrderRowCancelledDelegate implements JavaDelegate {
     @Transactional
     public void execute(DelegateExecution delegateExecution) throws Exception {
         final var orderNumber = (String) delegateExecution.getVariable(Variables.ORDER_NUMBER.getName());
-        final var orderRowId = (String) delegateExecution.getVariable(ORDER_ROW_ID.getName());
+        final var orderRowId = (String) delegateExecution.getVariable(ORDER_ROW.getName());
         log.info("Order row process with order number {} and order row: {} is cancelled", orderNumber, orderRowId);
         snsPublishService.publishOrderRowCancelled(orderNumber, orderRowId);
     }
