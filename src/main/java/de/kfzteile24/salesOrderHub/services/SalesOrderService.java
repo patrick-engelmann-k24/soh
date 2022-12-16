@@ -72,7 +72,7 @@ public class SalesOrderService {
     private final OrderUtil orderUtil;
 
     @NonNull
-    private final SubsequentSalesOrderCreationHelper subsequentSalesOrderCreationHelper;
+    private final SubsequentSalesOrderCreationHelper subsequentOrderHelper;
 
     @Transactional
     public SalesOrder updateProcessInstanceId(String orderNumber, String processInstanceId) {
@@ -156,11 +156,9 @@ public class SalesOrderService {
                                                  String newOrderNumber) {
 
         CoreSalesInvoiceHeader salesInvoiceHeader = salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
-
         String invoiceNumber = salesInvoiceHeader.getInvoiceNumber();
-
-        Order order = createOrderForSubsequentSalesOrder(salesInvoiceCreatedMessage,
-                originalSalesOrder, newOrderNumber, invoiceNumber);
+        Order order = createOrderForSubsequentSalesOrder(
+                salesInvoiceCreatedMessage, originalSalesOrder, newOrderNumber, invoiceNumber);
 
         salesInvoiceHeader.setOrderNumber(newOrderNumber);
         salesInvoiceHeader.setOrderGroupId(order.getOrderHeader().getOrderGroupId());
@@ -168,8 +166,7 @@ public class SalesOrderService {
                 .filter(CoreSalesFinancialDocumentLine::getIsShippingCost).findFirst().orElse(null);
         recalculateTotals(order, shippingCostDocumentLine);
 
-        var subsequentOrder = subsequentSalesOrderCreationHelper.buildSubsequentSalesOrder(order, newOrderNumber);
-
+        var subsequentOrder = subsequentOrderHelper.buildSubsequentSalesOrder(order, newOrderNumber);
         return createSalesOrder(subsequentOrder);
     }
 
@@ -202,7 +199,7 @@ public class SalesOrderService {
                 .collect(toList());
 
         var version = originalSalesOrder.getLatestJson().getVersion();
-        var orderHeader = subsequentSalesOrderCreationHelper.createOrderHeader(originalSalesOrder, newOrderNumber, invoiceNumber);
+        var orderHeader = subsequentOrderHelper.createOrderHeader(originalSalesOrder, newOrderNumber, invoiceNumber);
         return Order.builder()
                 .version(version)
                 .orderHeader(orderHeader)

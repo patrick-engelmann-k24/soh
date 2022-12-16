@@ -81,7 +81,7 @@ public class DropshipmentOrderService {
     private final OrderUtil orderUtil;
 
     @NotNull
-    private final SubsequentSalesOrderCreationHelper subsequentSalesOrderCreationHelper;
+    private final SubsequentSalesOrderCreationHelper subsequentOrderHelper;
 
     @EnrichMessageForDlq
     public void handleDropShipmentOrderConfirmed(
@@ -226,7 +226,7 @@ public class DropshipmentOrderService {
     public boolean isDropShipmentOrder(String orderNumber) {
         var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
-        var latestOrder = (Order) salesOrder.getLatestJson();
+        var latestOrder = salesOrder.getLatestJson();
         var orderFulfillment = latestOrder.getOrderHeader().getOrderFulfillment();
         return org.apache.commons.lang3.StringUtils.equalsIgnoreCase(orderFulfillment, DELTICOM.getName());
     }
@@ -332,7 +332,7 @@ public class DropshipmentOrderService {
                                                              String activityInstanceId) {
         String newOrderNumber = createDropshipmentNewOrderNumber(salesOrder);
         Order orderJson = createDropshipmentSubsequentOrderJson(salesOrder, newOrderNumber, skuList, invoiceNumber);
-        var subsequentOrder = subsequentSalesOrderCreationHelper.buildSubsequentSalesOrder(orderJson, newOrderNumber);
+        var subsequentOrder = subsequentOrderHelper.buildSubsequentSalesOrder(orderJson, newOrderNumber);
         subsequentOrder.setProcessId(activityInstanceId);
 
         return salesOrderService.save(subsequentOrder, ORDER_CREATED);
@@ -344,7 +344,7 @@ public class DropshipmentOrderService {
                                                        String invoiceNumber) {
         Order orderJson = Order.builder()
                 .version(salesOrder.getLatestJson().getVersion())
-                .orderHeader(subsequentSalesOrderCreationHelper.createOrderHeader(salesOrder, newOrderNumber, invoiceNumber))
+                .orderHeader(subsequentOrderHelper.createOrderHeader(salesOrder, newOrderNumber, invoiceNumber))
                 .build();
 
         orderJson.setOrderRows(salesOrder.getLatestJson().getOrderRows().stream()
