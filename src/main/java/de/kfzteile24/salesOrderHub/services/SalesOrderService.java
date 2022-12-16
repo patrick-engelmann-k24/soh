@@ -7,11 +7,10 @@ import de.kfzteile24.salesOrderHub.domain.audit.Action;
 import de.kfzteile24.salesOrderHub.domain.audit.AuditLog;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesFinancialDocumentLine;
-import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundCustomException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
-import de.kfzteile24.salesOrderHub.helper.SubsequentSalesOrderCreationHelper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
+import de.kfzteile24.salesOrderHub.helper.SubsequentSalesOrderCreationHelper;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
@@ -155,37 +154,19 @@ public class SalesOrderService {
                                                  SalesOrder originalSalesOrder,
                                                  String newOrderNumber) {
 
-        CoreSalesInvoiceHeader salesInvoiceHeader = salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
-        String invoiceNumber = salesInvoiceHeader.getInvoiceNumber();
-        Order order = createOrderForSubsequentSalesOrder(
-                salesInvoiceCreatedMessage, originalSalesOrder, newOrderNumber, invoiceNumber);
-
-        salesInvoiceHeader.setOrderNumber(newOrderNumber);
-        salesInvoiceHeader.setOrderGroupId(order.getOrderHeader().getOrderGroupId());
+        var order = createOrderForSubsequentSalesOrder(salesInvoiceCreatedMessage, originalSalesOrder, newOrderNumber);
+        var salesInvoiceHeader = salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
         var shippingCostDocumentLine = salesInvoiceHeader.getInvoiceLines().stream()
                 .filter(CoreSalesFinancialDocumentLine::getIsShippingCost).findFirst().orElse(null);
+
         recalculateTotals(order, shippingCostDocumentLine);
-
-        var subsequentOrder = subsequentOrderHelper.buildSubsequentSalesOrder(order, newOrderNumber);
-        return createSalesOrder(subsequentOrder);
+        return createSalesOrder(subsequentOrderHelper.buildSubsequentSalesOrder(order, newOrderNumber));
     }
-
-    @Transactional
-    public SalesOrder cancelOrder(String orderNumber) {
-        var salesOrder = getOrderByOrderNumber(orderNumber)
-                .orElseThrow(() -> new SalesOrderNotFoundException("Could not find order: " + orderNumber));
-        log.info("Order with order number: {} is being fully cancelled", salesOrder.getOrderNumber());
-        salesOrder.setCancelled(true);
-        return save(salesOrder, Action.ORDER_CANCELLED);
-    }
-
-
 
     protected Order createOrderForSubsequentSalesOrder(CoreSalesInvoiceCreatedMessage coreSalesInvoiceCreatedMessage,
                                                        SalesOrder originalSalesOrder,
-                                                       String newOrderNumber,
-                                                       String invoiceNumber) {
-        CoreSalesInvoiceHeader salesInvoiceHeader = coreSalesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
+                                                       String newOrderNumber) {
+        var salesInvoiceHeader = coreSalesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
         var items = salesInvoiceHeader.getInvoiceLines();
         List<OrderRows> orderRows = new ArrayList<>();
         var lastRowKey = new AtomicInteger(orderUtil.getLastRowKey(originalSalesOrder));
@@ -198,13 +179,21 @@ public class SalesOrderService {
                 .filter(Objects::nonNull)
                 .collect(toList());
 
-        var version = originalSalesOrder.getLatestJson().getVersion();
-        var orderHeader = subsequentOrderHelper.createOrderHeader(originalSalesOrder, newOrderNumber, invoiceNumber);
+        var invoiceNumber = salesInvoiceHeader.getInvoiceNumber();
         return Order.builder()
-                .version(version)
-                .orderHeader(orderHeader)
+                .version(originalSalesOrder.getLatestJson().getVersion())
+                .orderHeader(subsequentOrderHelper.createOrderHeader(originalSalesOrder, newOrderNumber, invoiceNumber))
                 .orderRows(orderRows)
                 .build();
+    }
+
+    @Transactional
+    public SalesOrder cancelOrder(String orderNumber) {
+        var salesOrder = getOrderByOrderNumber(orderNumber)
+                .orElseThrow(() -> new SalesOrderNotFoundException("Could not find order: " + orderNumber));
+        log.info("Order with order number: {} is being fully cancelled", salesOrder.getOrderNumber());
+        salesOrder.setCancelled(true);
+        return save(salesOrder, Action.ORDER_CANCELLED);
     }
 
     public boolean isFullyMatchedWithOriginalOrder(SalesOrder originalSalesOrder,

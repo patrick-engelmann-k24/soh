@@ -8,8 +8,8 @@ import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesFinancialDocumentLin
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoice;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundCustomException;
-import de.kfzteile24.salesOrderHub.helper.SubsequentSalesOrderCreationHelper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
+import de.kfzteile24.salesOrderHub.helper.SubsequentSalesOrderCreationHelper;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
@@ -19,7 +19,6 @@ import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.PaymentProviderData;
 import de.kfzteile24.soh.order.dto.Payments;
-import de.kfzteile24.soh.order.dto.Platform;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.DisplayName;
@@ -54,6 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
@@ -173,12 +173,10 @@ class SalesOrderServiceTest {
         // Prepare sales order
         var message = getObjectByResource("testmessage.json", Order.class);
         var salesOrder = getSalesOrder(message);
-        var originalOrderGroupId = salesOrder.getOrderGroupId();
+        var expectedSalesOrder = getSalesOrder(message);
         updateRowIsCancelledFieldAsTrue(salesOrder); //In order to observe change
         String newOrderNumber = "22222";
-        String oldOrderNumber = salesOrder.getOrderNumber();
         OrderRows orderRow = salesOrder.getLatestJson().getOrderRows().get(0);
-        OrderRows orderRow2 = salesOrder.getLatestJson().getOrderRows().get(1);
 
         // Prepare sub-sequent delivery note obj
         var invoiceCreatedMessage = createCoreSalesInvoiceCreatedMessage(
@@ -187,8 +185,11 @@ class SalesOrderServiceTest {
 
         // Mock services
         when(invoiceService.getInvoicesByOrderNumber(any())).thenReturn(Set.of());
+        when(orderUtil.getLastRowKey(eq(salesOrder))).thenReturn(3);
         when(orderUtil.createNewOrderRow(any(), any(), any())).thenReturn(orderRow);
         when(salesOrderRepository.save(any())).thenAnswer((Answer<SalesOrder>) invocation -> invocation.getArgument(0));
+        when(subsequentSalesOrderCreationHelper.createOrderHeader(any(), anyString(), anyString())).thenReturn(salesOrder.getLatestJson().getOrderHeader());
+        when(subsequentSalesOrderCreationHelper.buildSubsequentSalesOrder(any(), anyString())).thenReturn(salesOrder);
 
         // Establish some updates before the test in order to see the change
         GrandTotalTaxes actualGrandTotalTax = GrandTotalTaxes.builder()
@@ -202,47 +203,7 @@ class SalesOrderServiceTest {
                 salesOrder,
                 newOrderNumber);
 
-        invoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader().setOrderNumber(newOrderNumber);
-
-        assertThat(createdSalesOrder.getOrderNumber()).isEqualTo(newOrderNumber);
-        assertThat(createdSalesOrder.getOrderGroupId()).isEqualTo(originalOrderGroupId);
-        assertThat(createdSalesOrder.getLatestJson()).isNotNull();
-        assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getPlatform()).isNotNull();
-        assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getPlatform()).isEqualTo(Platform.SOH);
-        assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getOrderNumber()).isEqualTo(newOrderNumber);
-        assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber()).isEqualTo(invoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber());
-
-        assertThat(createdSalesOrder.getOriginalOrder()).isNotNull();
-        var originalOrder = (Order)createdSalesOrder.getOriginalOrder();
-        assertThat(originalOrder.getOrderHeader().getPlatform()).isEqualTo(Platform.ECP);
-        assertThat(originalOrder.getOrderHeader().getOrderNumber()).isEqualTo(oldOrderNumber);
-        assertThat(originalOrder.getOrderHeader().getDocumentRefNumber()).isNull();
-
-        assertThat(createdSalesOrder.getId()).isNull();
-        assertThat(createdSalesOrder.getLatestJson().getOrderRows()).hasSize(1);
-        assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getTotals().getGoodsTotalGross()).isEqualTo(orderRow.getSumValues().getGoodsValueGross());
-        assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getTotals().getGoodsTotalNet()).isEqualTo(orderRow.getSumValues().getGoodsValueNet());
-        assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getTotals().getTotalDiscountGross()).isEqualTo(orderRow.getSumValues().getDiscountGross());
-        assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getTotals().getGrandTotalGross()).isEqualTo(orderRow.getSumValues().getGoodsValueGross().subtract(orderRow.getSumValues().getDiscountGross()));
-        assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getTotals().getGrandTotalTaxes()).isEqualTo(
-                List.of(GrandTotalTaxes.builder()
-                        .rate(orderRow.getTaxRate())
-                        .value(new BigDecimal("28.48"))
-                        .build())
-        );
-
-        assertThat(originalOrder.getOrderRows()).hasSize(2);
-        assertThat(originalOrder.getOrderHeader().getTotals().getGoodsTotalGross()).isEqualTo(orderRow.getSumValues().getGoodsValueGross().add(orderRow2.getSumValues().getGoodsValueGross()));
-        assertThat(originalOrder.getOrderHeader().getTotals().getGoodsTotalNet()).isEqualTo(orderRow.getSumValues().getGoodsValueNet().add(orderRow2.getSumValues().getGoodsValueNet()));
-        assertThat(originalOrder.getOrderHeader().getTotals().getTotalDiscountGross()).isEqualTo(orderRow.getSumValues().getDiscountGross().add(orderRow2.getSumValues().getDiscountGross()));
-        assertThat(originalOrder.getOrderHeader().getTotals().getGrandTotalGross()).isEqualTo(orderRow.getSumValues().getGoodsValueGross().subtract(orderRow.getSumValues().getDiscountGross())
-                .add(orderRow2.getSumValues().getGoodsValueGross().subtract(orderRow2.getSumValues().getDiscountGross())));
-        assertThat(originalOrder.getOrderHeader().getTotals().getGrandTotalTaxes()).isEqualTo(
-                List.of(GrandTotalTaxes.builder()
-                        .rate(salesOrder.getLatestJson().getOrderHeader().getTotals().getGrandTotalTaxes().get(0).getRate())
-                        .value(salesOrder.getLatestJson().getOrderHeader().getTotals().getGrandTotalTaxes().get(0).getValue())
-                        .build())
-        );
+        verify(subsequentSalesOrderCreationHelper).buildSubsequentSalesOrder(eq(expectedSalesOrder.getLatestJson()), eq(newOrderNumber));
 
         assertThat(createdSalesOrder.getInvoiceEvent()).isEqualTo(invoiceCreatedMessage);
     }
