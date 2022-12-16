@@ -14,17 +14,17 @@ import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoice;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
 import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
-import de.kfzteile24.salesOrderHub.helper.SubsequentSalesOrderCreationHelper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.helper.ReturnOrderHelper;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
+import de.kfzteile24.salesOrderHub.helper.SubsequentSalesOrderCreationHelper;
 import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
-import de.kfzteile24.soh.order.dto.Platform;
+import de.kfzteile24.soh.order.dto.OrderRows;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -98,7 +98,6 @@ class DropshipmentOrderServiceTest {
     private ObjectMapper objectMapper;
     @Mock
     private OrderUtil orderUtil;
-
     @Mock
     private SubsequentSalesOrderCreationHelper subsequentSalesOrderCreationHelper;
     private final MessageWrapper messageWrapper = MessageWrapper.builder().build();
@@ -264,28 +263,19 @@ class DropshipmentOrderServiceTest {
 
         var salesOrder = SalesOrderUtil.createNewSalesOrderV3(
                 false, REGULAR, CREDIT_CARD, NEW);
-        var salesOrderJsonString = objectMapper.writeValueAsString(salesOrder.getLatestJson());
-        var expectedOrderJson = objectMapper.readValue(salesOrderJsonString, Order.class);
         var newOrderNumber = salesOrder.getOrderNumber() + "-1";
         var skuList = List.of("sku-3", "sku-2");
         var invoiceNumber = "123";
 
-        when(orderUtil.copyOrderJson(eq(salesOrder.getLatestJson()))).thenReturn(salesOrder.getLatestJson());
         when(invoiceService.getShippingCostLine(eq(salesOrder))).thenReturn(null);
         doNothing().when(salesOrderService).recalculateTotals(any(), any());
+        doReturn(salesOrder.getLatestJson().getOrderHeader()).when(subsequentSalesOrderCreationHelper).createOrderHeader(any(), anyString(), anyString());
 
         Order result = dropshipmentOrderService.createDropshipmentSubsequentOrderJson(salesOrder, newOrderNumber,
                 skuList, invoiceNumber);
 
-        assertThat(result.getOrderHeader().getOrderNumber()).isEqualTo(newOrderNumber);
-        assertThat(result.getOrderHeader().getOrderGroupId()).isEqualTo(
-                salesOrder.getLatestJson().getOrderHeader().getOrderGroupId());
-        assertThat(result.getOrderHeader().getPlatform()).isEqualTo(Platform.SOH);
-        assertThat(result.getOrderHeader().getDocumentRefNumber()).isEqualTo(invoiceNumber);
-        expectedOrderJson.getOrderRows().remove(0);
-        assertThat(result.getOrderRows()).isEqualTo(expectedOrderJson.getOrderRows());
-
-        assertEquals(salesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostGross(), BigDecimal.ZERO);
-        assertEquals(salesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostNet(), BigDecimal.ZERO);
+        assertThat(result.getOrderRows().stream().map(OrderRows::getSku).collect(Collectors.toList())).containsOnly("sku-3", "sku-2");
+        assertEquals(BigDecimal.ZERO, salesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostGross());
+        assertEquals(BigDecimal.ZERO, salesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostNet());
     }
 }
