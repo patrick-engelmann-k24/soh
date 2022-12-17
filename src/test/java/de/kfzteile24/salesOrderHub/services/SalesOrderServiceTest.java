@@ -14,11 +14,11 @@ import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
 import de.kfzteile24.soh.order.dto.CustomerType;
-import de.kfzteile24.soh.order.dto.GrandTotalTaxes;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.PaymentProviderData;
 import de.kfzteile24.soh.order.dto.Payments;
+import de.kfzteile24.soh.order.dto.Platform;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.DisplayName;
@@ -173,7 +173,6 @@ class SalesOrderServiceTest {
         // Prepare sales order
         var message = getObjectByResource("testmessage.json", Order.class);
         var salesOrder = getSalesOrder(message);
-        var expectedSalesOrder = getSalesOrder(message);
         updateRowIsCancelledFieldAsTrue(salesOrder); //In order to observe change
         String newOrderNumber = "22222";
         OrderRows orderRow = salesOrder.getLatestJson().getOrderRows().get(0);
@@ -183,29 +182,37 @@ class SalesOrderServiceTest {
                 salesOrder.getOrderNumber(),
                 orderRow.getSku());
 
+        // Expected values
+        var invoiceNumber = invoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber();
+        var expectedSalesOrder = getSalesOrder(message);
+        expectedSalesOrder.getLatestJson().getOrderHeader().setOrderGroupId(salesOrder.getOrderNumber());
+        expectedSalesOrder.getLatestJson().getOrderHeader().setOrderNumber(newOrderNumber);
+        expectedSalesOrder.getLatestJson().getOrderHeader().setPlatform(Platform.SOH);
+        expectedSalesOrder.getLatestJson().getOrderHeader().setDocumentRefNumber(invoiceNumber);
+
         // Mock services
         when(invoiceService.getInvoicesByOrderNumber(any())).thenReturn(Set.of());
         when(orderUtil.getLastRowKey(eq(salesOrder))).thenReturn(3);
         when(orderUtil.createNewOrderRow(any(), any(), any())).thenReturn(orderRow);
+        when(orderUtil.removeInvalidGrandTotalTaxes(any())).thenReturn(null);
         when(salesOrderRepository.save(any())).thenAnswer((Answer<SalesOrder>) invocation -> invocation.getArgument(0));
-        when(subsequentSalesOrderCreationHelper.createOrderHeader(any(), anyString(), anyString())).thenReturn(salesOrder.getLatestJson().getOrderHeader());
-        when(subsequentSalesOrderCreationHelper.buildSubsequentSalesOrder(any(), anyString())).thenReturn(salesOrder);
-
-        // Establish some updates before the test in order to see the change
-        GrandTotalTaxes actualGrandTotalTax = GrandTotalTaxes.builder()
-                .rate(BigDecimal.TEN)
-                .value(BigDecimal.TEN)
-                .build();
-        salesOrder.getLatestJson().getOrderHeader().getTotals().setGrandTotalTaxes(List.of(actualGrandTotalTax));
+        when(subsequentSalesOrderCreationHelper.createOrderHeader(any(), anyString(), anyString())).thenReturn(expectedSalesOrder.getLatestJson().getOrderHeader());
 
         var createdSalesOrder = salesOrderService.createSalesOrderForInvoice(
                 invoiceCreatedMessage,
                 salesOrder,
                 newOrderNumber);
 
-        verify(subsequentSalesOrderCreationHelper).buildSubsequentSalesOrder(eq(expectedSalesOrder.getLatestJson()), eq(newOrderNumber));
-
-        assertThat(createdSalesOrder.getInvoiceEvent()).isEqualTo(invoiceCreatedMessage);
+        assertThat(createdSalesOrder.getOrderNumber()).isEqualTo(newOrderNumber);
+        assertThat(createdSalesOrder.getOrderGroupId()).isEqualTo("524001248");
+        assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getOrderNumber()).isEqualTo(newOrderNumber);
+        assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getOrderGroupId()).isEqualTo("524001248");
+        assertThat(createdSalesOrder.getCustomerEmail()).isEqualTo(expectedSalesOrder.getLatestJson().getOrderHeader().getCustomer().getCustomerEmail());
+        assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getPlatform()).isEqualTo(Platform.SOH);
+        assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber()).isEqualTo(invoiceNumber);
+        assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostGross()).isEqualTo(BigDecimal.valueOf(8.7));
+        assertThat(createdSalesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostNet()).isEqualTo(BigDecimal.valueOf(8));
+        assertThat(createdSalesOrder.getLatestJson().getOrderRows().get(0).getSku()).isEqualTo(orderRow.getSku());
     }
 
 
@@ -297,22 +304,31 @@ class SalesOrderServiceTest {
 
 
     private CoreSalesInvoiceCreatedMessage createCoreSalesInvoiceCreatedMessage(String orderNumber, String sku) {
-        BigDecimal quantity = BigDecimal.valueOf(1L);
-        CoreSalesFinancialDocumentLine item = CoreSalesFinancialDocumentLine.builder()
+        var item = CoreSalesFinancialDocumentLine.builder()
                 .itemNumber(sku)
-                .quantity(quantity)
+                .quantity(BigDecimal.valueOf(1L))
                 .unitNetAmount(BigDecimal.valueOf(9))
-                .lineNetAmount(BigDecimal.valueOf(9).multiply(quantity))
+                .lineNetAmount(BigDecimal.valueOf(9))
                 .unitGrossAmount(BigDecimal.valueOf(9.8))
-                .unitGrossAmount(BigDecimal.valueOf(9.8).multiply(quantity))
+                .lineGrossAmount(BigDecimal.valueOf(9.8))
                 .taxRate(BigDecimal.TEN)
                 .isShippingCost(false)
+                .build();
+        var shipping = CoreSalesFinancialDocumentLine.builder()
+                .itemNumber("shipping")
+                .quantity(BigDecimal.valueOf(1L))
+                .unitNetAmount(BigDecimal.valueOf(8))
+                .lineNetAmount(BigDecimal.valueOf(8))
+                .unitGrossAmount(BigDecimal.valueOf(8.7))
+                .lineGrossAmount(BigDecimal.valueOf(8.7))
+                .taxRate(BigDecimal.TEN)
+                .isShippingCost(true)
                 .build();
 
         CoreSalesInvoiceHeader coreSalesInvoiceHeader = new CoreSalesInvoiceHeader();
         coreSalesInvoiceHeader.setOrderNumber(orderNumber);
         coreSalesInvoiceHeader.setInvoiceNumber("50");
-        coreSalesInvoiceHeader.setInvoiceLines(List.of(item));
+        coreSalesInvoiceHeader.setInvoiceLines(List.of(item, shipping));
 
         CoreSalesInvoice coreSalesInvoice = new CoreSalesInvoice();
         coreSalesInvoice.setSalesInvoiceHeader(coreSalesInvoiceHeader);

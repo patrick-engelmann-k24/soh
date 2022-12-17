@@ -2,6 +2,7 @@ package de.kfzteile24.salesOrderHub.services.splitter.decorator;
 
 import de.kfzteile24.salesOrderHub.configuration.DropShipmentConfig;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
+import de.kfzteile24.salesOrderHub.helper.SubsequentSalesOrderCreationHelper;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
@@ -27,27 +28,23 @@ class SplitOrderRecalculationServiceTest {
 
     @Mock
     private SalesOrderRepository orderRepository;
-
     @Mock
     private AuditLogRepository auditLogRepository;
-
     @Mock
     private InvoiceService invoiceService;
-
     @Mock
     private OrderUtil orderUtil;
-
     @Mock
     private SalesOrderReturnService salesOrderReturnService;
-
     @Mock
     private RuntimeService runtimeService;
-
+    @Mock
+    private SubsequentSalesOrderCreationHelper subsequentOrderHelper;
     @InjectMocks
     private SalesOrderService salesOrderService;
 
     @Test
-    public void recalculateOrder() {
+    void recalculateOrder() {
         final var order = getObjectByResource("splitterSalesOrderMessageWithTwoRows.json", Order.class);
 
         salesOrderService.recalculateTotals(order,
@@ -80,11 +77,11 @@ class SplitOrderRecalculationServiceTest {
         assertThat(totals.getGrandTotalGross()).isEqualTo(BigDecimal.valueOf(95.37));
         assertThat(totals.getGrandTotalNet()).isEqualTo(BigDecimal.valueOf(77.13));
 
-        assertThat(totals.getGrandTotalTaxes().size()).isEqualTo(1);
+        assertThat(totals.getGrandTotalTaxes()).hasSize(1);
 
         assertThat(totals.getPaymentTotal()).isEqualTo(BigDecimal.valueOf(95.37));
 
-        assertThat(order.getOrderHeader().getDiscounts().size()).isEqualTo(1);
+        assertThat(order.getOrderHeader().getDiscounts()).hasSize(1);
 
         assertThat(order.getOrderHeader().getDiscounts().get(0).getDiscountValueGross()).isEqualTo(BigDecimal.valueOf(0.4));
     }
