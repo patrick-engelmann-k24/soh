@@ -157,13 +157,14 @@ public class SalesOrderService {
 
         var order = createOrderForSubsequentSalesOrder(salesInvoiceCreatedMessage, originalSalesOrder, newOrderNumber);
         var salesInvoiceHeader = salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
+        salesInvoiceHeader.setOrderNumber(newOrderNumber);
+        salesInvoiceHeader.setOrderGroupId(order.getOrderHeader().getOrderGroupId());
         var shippingCostDocumentLine = salesInvoiceHeader.getInvoiceLines().stream()
                 .filter(CoreSalesFinancialDocumentLine::getIsShippingCost).findFirst().orElse(null);
-
         recalculateTotals(order, shippingCostDocumentLine);
 
         var subsequentOrder = buildSubsequentSalesOrder(order, newOrderNumber);
-
+        subsequentOrder.setInvoiceEvent(salesInvoiceCreatedMessage);
         return createSalesOrder(subsequentOrder);
     }
 

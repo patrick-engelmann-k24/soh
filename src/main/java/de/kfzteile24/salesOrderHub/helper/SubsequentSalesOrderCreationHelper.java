@@ -45,25 +45,4 @@ public class SubsequentSalesOrderCreationHelper {
         throw new NotFoundException("Customer Email is not found for the order number: " +
                 order.getOrderHeader().getOrderNumber());
     }
-
-    /**
-     * ClassA
-     *      methodA {
-     *          methodB()
-     *      }
-     *
-     * ClassB
-     *      static methodB
-     *
-     * ClassATest {
-     *
-     *      test {
-     *
-     *      }
-     * }
-     *
-     *
-     *
-     */
-
 }
