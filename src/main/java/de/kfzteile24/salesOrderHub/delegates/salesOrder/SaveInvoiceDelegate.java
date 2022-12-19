@@ -19,7 +19,7 @@ import javax.transaction.Transactional;
 @Component
 @Slf4j
 @RequiredArgsConstructor
-class SaveInvoiceDelegate implements JavaDelegate {
+public class SaveInvoiceDelegate implements JavaDelegate {
 
     private final SalesOrderService salesOrderService;
     private final InvoiceService invoiceService;
