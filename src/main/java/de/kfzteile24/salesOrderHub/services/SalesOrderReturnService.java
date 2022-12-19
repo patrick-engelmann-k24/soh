@@ -186,6 +186,7 @@ public class SalesOrderReturnService {
         returnOrderJson.getOrderHeader().setOrderNumber(newReturnOrderNumber);
         returnOrderJson.getOrderHeader().setOrderGroupId(orderGroupId);
         returnOrderJson.getOrderHeader().setOrderDateTime(DATE_TIME_FORMATTER.format(LocalDateTime.now()));
+        returnOrderJson.getOrderHeader().setDocumentRefNumber(messageHeader.getCreditNoteNumber());
         return returnOrderJson;
     }
 

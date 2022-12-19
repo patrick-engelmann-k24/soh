@@ -31,8 +31,8 @@ class InvoiceSavedDelegate implements JavaDelegate {
     private boolean isDropShipmentRelated(String orderNumber) {
         final var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber);
         if (salesOrder.isPresent()) {
-            final var originalOrder = (Order) salesOrder.get().getOriginalOrder();
-            return InvoiceUrlExtractor.isDropShipmentRelated(originalOrder.getOrderHeader().getOrderFulfillment());
+            final var orderJson = (Order) salesOrder.get().getLatestJson();
+            return InvoiceUrlExtractor.isDropShipmentRelated(orderJson.getOrderHeader().getOrderFulfillment());
         }
         return false;
     }

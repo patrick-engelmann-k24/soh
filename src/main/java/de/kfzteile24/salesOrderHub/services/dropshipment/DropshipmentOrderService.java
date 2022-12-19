@@ -39,6 +39,7 @@ import org.springframework.util.StringUtils;
 
 import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -102,6 +103,7 @@ public class DropshipmentOrderService {
     @EnrichMessageForDlq
     public void handleDropshipmentPurchaseOrderReturnConfirmed(
             DropshipmentPurchaseOrderReturnConfirmedMessage message, MessageWrapper messageWrapper) {
+        checkDropshipmentOrderReturnIsPaused(message);
         var salesCreditNoteCreatedMessage = buildSalesCreditNoteCreatedMessage(message);
 
         var orderNumber = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber();
@@ -247,6 +249,28 @@ public class DropshipmentOrderService {
         log.info("Set value of '{}' to '{}'", key, newValue);
 
         return savedKeyValueProperty;
+    }
+
+    private void checkDropshipmentOrderReturnIsPaused(DropshipmentPurchaseOrderReturnConfirmedMessage message) {
+        var preventDropshipmentOrderReturnConfirmed =
+                keyValuePropertyService.getPropertyByKey(PersistentProperties.PREVENT_DROPSHIPMENT_ORDER_RETURN_CONFIRMED)
+                        .orElseThrow(() -> {
+                            throw new NotFoundException("Could not find persistent property with key " +
+                                    "'preventDropshipmentOrderReturnConfirmed'");
+                        });
+
+        var orderNumber = message.getSalesOrderNumber();
+
+        if (Boolean.TRUE.equals(preventDropshipmentOrderReturnConfirmed.getTypedValue())) {
+            var errorMsg = MessageFormat.format(
+                    "Dropshipment Order Return Confirmed process is inactive. " +
+                            "Message with Order number {0} is moved to DLQ", orderNumber);
+            log.error(errorMsg);
+            throw new IllegalStateException(errorMsg);
+        } else {
+            log.info("Received dropshipment purchase order return confirmed message with Sales Order Number: {}, " +
+                    "External Order NUmber: {}", orderNumber, message.getExternalOrderNumber());
+        }
     }
 
     public KeyValueProperty setPauseDropshipmentProcessing(Boolean newPauseDropshipmentProcessing) {

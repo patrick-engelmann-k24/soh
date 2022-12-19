@@ -39,10 +39,12 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_PURCHASE_ORDER_SUCCESSFUL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.THROW_MSG_DROPSHIPMENT_ORDER_CREATED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_RETURN_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_ECP;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_DROPSHIPMENT_ORDER_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrderFromOrder;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -242,6 +244,8 @@ class DropshipmentSqsReceiveServiceIntegrationTest extends AbstractIntegrationTe
         var message = getObjectByResource("dropshipmentPurchaseOrderReturnConfirmed.json",
                 DropshipmentPurchaseOrderReturnConfirmedMessage.class);
         message.setSalesOrderNumber(salesOrder.getOrderNumber());
+
+        dropshipmentOrderService.setPreventDropshipmentOrderReturnConfirmed(true);
         assertThatThrownBy(() -> dropshipmentSqsReceiveService.queueListenerDropshipmentPurchaseOrderReturnConfirmed(message, messageWrapper))
                 .isExactlyInstanceOf(IllegalStateException.class)
                 .hasMessageContaining(MessageFormat.format("Dropshipment Order Return Confirmed process is inactive. Message with Order number {0} is moved to DLQ", salesOrder.getOrderNumber()));
@@ -249,9 +253,10 @@ class DropshipmentSqsReceiveServiceIntegrationTest extends AbstractIntegrationTe
         dropshipmentOrderService.setPreventDropshipmentOrderReturnConfirmed(false);
         dropshipmentSqsReceiveService.queueListenerDropshipmentPurchaseOrderReturnConfirmed(message, messageWrapper);
 
-        verify(dropshipmentOrderService).handleDropshipmentPurchaseOrderReturnConfirmed(
-                argThat(msg -> StringUtils.equals(msg.getSalesOrderNumber(), salesOrder.getOrderNumber())),
-                eq(messageWrapper)
+        verify(salesOrderReturnService).handleSalesOrderReturn(
+                argThat(msg -> StringUtils.equals(msg.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber(), salesOrder.getOrderNumber())),
+                eq(DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED),
+                eq(DROPSHIPMENT_ORDER_RETURN_CONFIRMED)
         );
     }
 

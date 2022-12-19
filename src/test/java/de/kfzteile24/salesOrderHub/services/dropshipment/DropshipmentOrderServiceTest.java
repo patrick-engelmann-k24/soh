@@ -2,8 +2,10 @@ package de.kfzteile24.salesOrderHub.services.dropshipment;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.kfzteile24.salesOrderHub.constants.PersistentProperties;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.domain.property.KeyValueProperty;
 import de.kfzteile24.salesOrderHub.dto.shared.creditnote.SalesCreditNote;
 import de.kfzteile24.salesOrderHub.dto.shared.creditnote.SalesCreditNoteHeader;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
@@ -23,6 +25,7 @@ import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
+import de.kfzteile24.salesOrderHub.services.property.KeyValuePropertyService;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderHeader;
@@ -44,6 +47,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 
 import java.math.BigDecimal;
+import java.text.MessageFormat;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -64,6 +68,7 @@ import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ITEM_SHIPPED
 import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -85,6 +90,8 @@ class DropshipmentOrderServiceTest {
     @InjectMocks
     @Spy
     private DropshipmentOrderService dropshipmentOrderService;
+    @Mock
+    private KeyValuePropertyService keyValuePropertyService;
     @Mock
     private SalesOrderService salesOrderService;
     @Mock
@@ -126,10 +133,29 @@ class DropshipmentOrderServiceTest {
                                 .build())
                         .build())
                 .build();
+
+        when(keyValuePropertyService.getPropertyByKey(PersistentProperties.PREVENT_DROPSHIPMENT_ORDER_RETURN_CONFIRMED))
+                .thenReturn(Optional.of(KeyValueProperty.builder().typedValue(false).build()));
         doReturn(salesCreditNoteCreatedMessage).when(dropshipmentOrderService).buildSalesCreditNoteCreatedMessage(message);
 
         dropshipmentOrderService.handleDropshipmentPurchaseOrderReturnConfirmed(message, messageWrapper);
         verify(salesOrderReturnService).handleSalesOrderReturn(salesCreditNoteCreatedMessage, DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED, DROPSHIPMENT_ORDER_RETURN_CONFIRMED);
+    }
+
+    @Test
+    @SneakyThrows
+    void testHandleDropshipmentPurchaseOrderReturnConfirmedPrevented() {
+        var message = getObjectByResource("dropshipmentPurchaseOrderReturnConfirmed.json", DropshipmentPurchaseOrderReturnConfirmedMessage.class);
+        var expectedErrorMessage = MessageFormat.format(
+                "Dropshipment Order Return Confirmed process is inactive. " +
+                        "Message with Order number {0} is moved to DLQ", message.getSalesOrderNumber());
+        when(keyValuePropertyService.getPropertyByKey(PersistentProperties.PREVENT_DROPSHIPMENT_ORDER_RETURN_CONFIRMED))
+                .thenReturn(Optional.of(KeyValueProperty.builder().typedValue(true).build()));
+
+        assertThatThrownBy(() -> dropshipmentOrderService.handleDropshipmentPurchaseOrderReturnConfirmed(
+                message, messageWrapper))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining(expectedErrorMessage);
     }
 
     @Test

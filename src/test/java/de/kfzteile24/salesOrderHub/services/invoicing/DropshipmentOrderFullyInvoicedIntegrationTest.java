@@ -118,7 +118,7 @@ class DropshipmentOrderFullyInvoicedIntegrationTest extends AbstractIntegrationT
             i++;
             assertThat(updatedSalesOrder.getInvoiceEvent()).isNotNull();
             assertThat(updatedSalesOrder.getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber()).isEqualTo(invoiceNumber);
-        };
+        }
     }
 
     private DropshipmentShipmentConfirmedMessage createShipmentConfirmedMessage(SalesOrder salesOrder) {
