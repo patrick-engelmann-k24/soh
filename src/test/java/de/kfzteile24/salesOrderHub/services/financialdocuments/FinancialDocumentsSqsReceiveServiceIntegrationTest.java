@@ -41,6 +41,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -470,10 +471,15 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
         SalesOrder originalSalesOrder = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber()).orElseThrow();
         originalSalesOrder.getLatestJson().getOrderRows().stream().map(OrderRows::getIsCancelled).forEach(Assertions::assertTrue);
 
+        timedPollingService.poll(Duration.ofSeconds(1), Duration.ofSeconds(12), () ->
+            camundaHelper.hasPassed(orderProcess.getProcessInstanceId(), "eventEndCoreSalesInvoiceCreatedReceived"));
+
         SalesOrder subsequentSalesOrder = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber() + ORDER_NUMBER_SEPARATOR + invoiceNumber).orElseThrow();
         assertNotNull(subsequentSalesOrder.getInvoiceEvent());
         assertNotNull(subsequentSalesOrder.getLatestJson().getOrderHeader().getOrderGroupId());
         assertNotNull(subsequentSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber());
+        assertEquals(subsequentSalesOrder.getLatestJson().getOrderHeader().getOrderNumber(),
+                subsequentSalesOrder.getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getOrderNumber());
         assertEquals(subsequentSalesOrder.getLatestJson().getOrderHeader().getOrderGroupId(),
                 subsequentSalesOrder.getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getOrderGroupId());
         assertEquals(subsequentSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber(),

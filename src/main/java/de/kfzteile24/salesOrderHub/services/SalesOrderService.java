@@ -7,12 +7,10 @@ import de.kfzteile24.salesOrderHub.domain.audit.Action;
 import de.kfzteile24.salesOrderHub.domain.audit.AuditLog;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesFinancialDocumentLine;
-import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
-import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundCustomException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
-import de.kfzteile24.salesOrderHub.helper.OrderMapper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
+import de.kfzteile24.salesOrderHub.helper.SubsequentSalesOrderCreationHelper;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
@@ -20,7 +18,6 @@ import de.kfzteile24.soh.order.dto.GrandTotalTaxes;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.Payments;
-import de.kfzteile24.soh.order.dto.Platform;
 import de.kfzteile24.soh.order.dto.SumValues;
 import de.kfzteile24.soh.order.dto.Surcharges;
 import de.kfzteile24.soh.order.dto.Totals;
@@ -29,7 +26,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,6 +48,7 @@ import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getSumValue;
 import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.isNotNullAndEqual;
 import static de.kfzteile24.salesOrderHub.helper.PaymentUtil.updatePaymentProvider;
+import static de.kfzteile24.salesOrderHub.helper.SubsequentSalesOrderCreationHelper.buildSubsequentSalesOrder;
 import static de.kfzteile24.soh.order.dto.CustomerType.BUSINESS;
 import static java.text.MessageFormat.format;
 import static java.util.stream.Collectors.toList;
@@ -73,6 +70,9 @@ public class SalesOrderService {
 
     @NonNull
     private final OrderUtil orderUtil;
+
+    @NonNull
+    private final SubsequentSalesOrderCreationHelper subsequentOrderHelper;
 
     @Transactional
     public SalesOrder updateProcessInstanceId(String orderNumber, String processInstanceId) {
@@ -155,53 +155,23 @@ public class SalesOrderService {
                                                  SalesOrder originalSalesOrder,
                                                  String newOrderNumber) {
 
-        CoreSalesInvoiceHeader salesInvoiceHeader = salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
-        Order order = createOrderForSubsequentSalesOrder(salesInvoiceCreatedMessage, originalSalesOrder);
-        order.getOrderHeader().setPlatform(Platform.SOH);
-        order.getOrderHeader().setOrderNumber(newOrderNumber);
-        order.getOrderHeader().setOrderGroupId(originalSalesOrder.getOrderGroupId());
-        order.getOrderHeader().setDocumentRefNumber(salesInvoiceHeader.getInvoiceNumber());
+        var order = createOrderForSubsequentSalesOrder(salesInvoiceCreatedMessage, originalSalesOrder, newOrderNumber);
+        var salesInvoiceHeader = salesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
         salesInvoiceHeader.setOrderNumber(newOrderNumber);
         salesInvoiceHeader.setOrderGroupId(order.getOrderHeader().getOrderGroupId());
         var shippingCostDocumentLine = salesInvoiceHeader.getInvoiceLines().stream()
                 .filter(CoreSalesFinancialDocumentLine::getIsShippingCost).findFirst().orElse(null);
         recalculateTotals(order, shippingCostDocumentLine);
 
-        var customerEmail = Strings.isNotEmpty(originalSalesOrder.getCustomerEmail()) ?
-                originalSalesOrder.getCustomerEmail() :
-                getCustomerEmailByOrderJson(order);
-        var salesOrder = SalesOrder.builder()
-                .orderNumber(newOrderNumber)
-                .orderGroupId(originalSalesOrder.getOrderGroupId())
-                .salesChannel(order.getOrderHeader().getSalesChannel())
-                .customerEmail(customerEmail)
-                .originalOrder(originalSalesOrder.getLatestJson())
-                .latestJson(order)
-                .invoiceEvent(salesInvoiceCreatedMessage)
-                .build();
-        return createSalesOrder(salesOrder);
-    }
-
-    @Transactional
-    public SalesOrder cancelOrder(String orderNumber) {
-        var salesOrder = getOrderByOrderNumber(orderNumber)
-                .orElseThrow(() -> new SalesOrderNotFoundException("Could not find order: " + orderNumber));
-        log.info("Order with order number: {} is being fully cancelled", salesOrder.getOrderNumber());
-        salesOrder.setCancelled(true);
-        return save(salesOrder, Action.ORDER_CANCELLED);
-    }
-
-    public String getCustomerEmailByOrderJson(Order order) {
-        if (order.getOrderHeader().getCustomer() != null) {
-            return order.getOrderHeader().getCustomer().getCustomerEmail();
-        }
-        throw new NotFoundException("Customer Email is not found for the order number: " +
-                order.getOrderHeader().getOrderNumber());
+        var subsequentOrder = buildSubsequentSalesOrder(order, newOrderNumber);
+        subsequentOrder.setInvoiceEvent(salesInvoiceCreatedMessage);
+        return createSalesOrder(subsequentOrder);
     }
 
     protected Order createOrderForSubsequentSalesOrder(CoreSalesInvoiceCreatedMessage coreSalesInvoiceCreatedMessage,
-                                                       SalesOrder originalSalesOrder) {
-        CoreSalesInvoiceHeader salesInvoiceHeader = coreSalesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
+                                                       SalesOrder originalSalesOrder,
+                                                       String newOrderNumber) {
+        var salesInvoiceHeader = coreSalesInvoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
         var items = salesInvoiceHeader.getInvoiceLines();
         List<OrderRows> orderRows = new ArrayList<>();
         var lastRowKey = new AtomicInteger(orderUtil.getLastRowKey(originalSalesOrder));
@@ -214,13 +184,21 @@ public class SalesOrderService {
                 .filter(Objects::nonNull)
                 .collect(toList());
 
-        var version = originalSalesOrder.getLatestJson().getVersion();
-        var orderHeader = originalSalesOrder.getLatestJson().getOrderHeader();
+        var invoiceNumber = salesInvoiceHeader.getInvoiceNumber();
         return Order.builder()
-                .version(version)
-                .orderHeader(OrderMapper.INSTANCE.toOrderHeader(orderHeader))
+                .version(originalSalesOrder.getLatestJson().getVersion())
+                .orderHeader(subsequentOrderHelper.createOrderHeader(originalSalesOrder, newOrderNumber, invoiceNumber))
                 .orderRows(orderRows)
                 .build();
+    }
+
+    @Transactional
+    public SalesOrder cancelOrder(String orderNumber) {
+        var salesOrder = getOrderByOrderNumber(orderNumber)
+                .orElseThrow(() -> new SalesOrderNotFoundException("Could not find order: " + orderNumber));
+        log.info("Order with order number: {} is being fully cancelled", salesOrder.getOrderNumber());
+        salesOrder.setCancelled(true);
+        return save(salesOrder, Action.ORDER_CANCELLED);
     }
 
     public boolean isFullyMatchedWithOriginalOrder(SalesOrder originalSalesOrder,

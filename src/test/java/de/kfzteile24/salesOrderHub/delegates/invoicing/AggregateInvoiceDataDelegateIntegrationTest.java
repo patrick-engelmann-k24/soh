@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.INVOICING_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.AGGREGATE_INVOICE_DATA;
@@ -168,60 +169,79 @@ class AggregateInvoiceDataDelegateIntegrationTest extends AbstractIntegrationTes
     private void verifyIfOrderPartiallyInvoicedAndFirstSubsequentOrderNumberCreation() {
         var salesOrders = salesOrderRepository.findAllByOrderGroupIdOrderByUpdatedAtDesc("423456789");
         Assertions.assertThat(salesOrders).hasSize(2);
-        Assertions.assertThat(salesOrders.get(0).getOrderNumber()).isEqualTo("423456789");
-        Assertions.assertThat(salesOrders.get(0).getLatestJson().getOrderHeader().getDocumentRefNumber()).isNull();
-        Assertions.assertThat(salesOrders.get(0).getInvoiceEvent()).isNull();
-        Assertions.assertThat(salesOrders.get(0).isCancelled()).isFalse();
-        Assertions.assertThat(salesOrders.get(0).getLatestJson().getOrderHeader().getTotals().getShippingCostGross()).isEqualTo(BigDecimal.ZERO);
-        Assertions.assertThat(salesOrders.get(0).getLatestJson().getOrderHeader().getTotals().getShippingCostNet()).isEqualTo(BigDecimal.ZERO);
-        Assertions.assertThat(salesOrders.get(1).getOrderNumber()).isEqualTo("423456789-1");
-        Assertions.assertThat(salesOrders.get(1).getLatestJson().getOrderHeader().getDocumentRefNumber()).isNotNull();
-        Assertions.assertThat(salesOrders.get(1).getLatestJson().getOrderHeader().getDocumentRefNumber()).isEqualTo(nextInvoiceNumber());
-        Assertions.assertThat(salesOrders.get(1).getInvoiceEvent()).isNotNull();
-        Assertions.assertThat(salesOrders.get(1).getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getOrderNumber()).isEqualTo("423456789-1");
-        Assertions.assertThat(salesOrders.get(1).getLatestJson().getOrderHeader().getTotals().getShippingCostGross()).isEqualTo(new BigDecimal(100));
-        Assertions.assertThat(salesOrders.get(1).getLatestJson().getOrderHeader().getTotals().getShippingCostNet()).isEqualTo(new BigDecimal(80));
+        var original = salesOrders.stream()
+                .filter(salesOrder -> salesOrder.getOrderNumber().equals("423456789"))
+                .findFirst();
+        Assertions.assertThat(original).isPresent();
+        Assertions.assertThat(original.get().getLatestJson().getOrderHeader().getDocumentRefNumber()).isNull();
+        Assertions.assertThat(original.get().getInvoiceEvent()).isNull();
+        Assertions.assertThat(original.get().isCancelled()).isFalse();
+        Assertions.assertThat(original.get().getLatestJson().getOrderHeader().getTotals().getShippingCostGross()).isEqualTo(BigDecimal.ZERO);
+        Assertions.assertThat(original.get().getLatestJson().getOrderHeader().getTotals().getShippingCostNet()).isEqualTo(BigDecimal.ZERO);
+        var subsequent = salesOrders.stream()
+                .filter(salesOrder -> salesOrder.getOrderNumber().equals("423456789-1"))
+                .findFirst();
+        Assertions.assertThat(subsequent).isPresent();
+        Assertions.assertThat(subsequent.get().getLatestJson().getOrderHeader().getDocumentRefNumber()).isNotNull();
+        Assertions.assertThat(subsequent.get().getLatestJson().getOrderHeader().getDocumentRefNumber()).isEqualTo(nextInvoiceNumber());
+        Assertions.assertThat(subsequent.get().getInvoiceEvent()).isNotNull();
+        Assertions.assertThat(subsequent.get().getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getOrderNumber()).isEqualTo("423456789-1");
+        Assertions.assertThat(subsequent.get().getLatestJson().getOrderHeader().getTotals().getShippingCostGross()).isEqualTo(new BigDecimal(100));
+        Assertions.assertThat(subsequent.get().getLatestJson().getOrderHeader().getTotals().getShippingCostNet()).isEqualTo(new BigDecimal(80));
     }
 
     private void verifyIfOrderPartiallyInvoicedAndSecondSubsequentOrderNumberCreation() {
         var salesOrders = salesOrderRepository.findAllByOrderGroupIdOrderByUpdatedAtDesc("523456789");
         Assertions.assertThat(salesOrders).hasSize(3);
-        Assertions.assertThat(salesOrders.get(0).getOrderNumber()).isEqualTo("523456789");
-        Assertions.assertThat(salesOrders.get(0).getLatestJson().getOrderHeader().getDocumentRefNumber()).isNull();
-        Assertions.assertThat(salesOrders.get(0).getInvoiceEvent()).isNull();
-        Assertions.assertThat(salesOrders.get(0).isCancelled()).isFalse();
-        Assertions.assertThat(salesOrders.get(0).getLatestJson().getOrderHeader().getTotals().getShippingCostGross()).isEqualTo(BigDecimal.ZERO);
-        Assertions.assertThat(salesOrders.get(0).getLatestJson().getOrderHeader().getTotals().getShippingCostNet()).isEqualTo(BigDecimal.ZERO);
-        Assertions.assertThat(salesOrders.get(1).getOrderNumber()).isEqualTo("523456789-2");
-        Assertions.assertThat(salesOrders.get(1).getLatestJson().getOrderHeader().getDocumentRefNumber()).isNotNull();
-        Assertions.assertThat(salesOrders.get(1).getLatestJson().getOrderHeader().getDocumentRefNumber()).isEqualTo(nextInvoiceNumber());
-        Assertions.assertThat(salesOrders.get(1).getInvoiceEvent()).isNotNull();
-        Assertions.assertThat(salesOrders.get(1).getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getOrderNumber()).isEqualTo("523456789-2");
-        Assertions.assertThat(salesOrders.get(1).getLatestJson().getOrderHeader().getTotals().getShippingCostGross()).isEqualTo(new BigDecimal(100));
-        Assertions.assertThat(salesOrders.get(1).getLatestJson().getOrderHeader().getTotals().getShippingCostNet()).isEqualTo(new BigDecimal(80));
-        Assertions.assertThat(salesOrders.get(2).getOrderNumber()).isEqualTo("523456789-1");
-        Assertions.assertThat(salesOrders.get(2).getLatestJson().getOrderHeader().getDocumentRefNumber()).isNull();
-        Assertions.assertThat(salesOrders.get(2).getInvoiceEvent()).isNull();
-        Assertions.assertThat(salesOrders.get(1).getLatestJson().getOrderHeader().getTotals().getShippingCostGross()).isEqualTo(new BigDecimal(100));
-        Assertions.assertThat(salesOrders.get(1).getLatestJson().getOrderHeader().getTotals().getShippingCostNet()).isEqualTo(new BigDecimal(80));
+        var original = salesOrders.stream()
+                .filter(salesOrder -> salesOrder.getOrderNumber().equals("523456789"))
+                .findFirst();
+        Assertions.assertThat(original).isPresent();
+        Assertions.assertThat(original.get().getLatestJson().getOrderHeader().getDocumentRefNumber()).isNull();
+        Assertions.assertThat(original.get().getInvoiceEvent()).isNull();
+        Assertions.assertThat(original.get().isCancelled()).isFalse();
+        Assertions.assertThat(original.get().getLatestJson().getOrderHeader().getTotals().getShippingCostGross()).isEqualTo(BigDecimal.ZERO);
+        Assertions.assertThat(original.get().getLatestJson().getOrderHeader().getTotals().getShippingCostNet()).isEqualTo(BigDecimal.ZERO);
+        var subsequent1 = salesOrders.stream()
+                .filter(salesOrder -> salesOrder.getOrderNumber().equals("523456789-1"))
+                .findFirst();
+        Assertions.assertThat(subsequent1).isPresent();
+        Assertions.assertThat(subsequent1.get().getLatestJson().getOrderHeader().getDocumentRefNumber()).isNull();
+        Assertions.assertThat(subsequent1.get().getInvoiceEvent()).isNull();
+        var subsequent2 = salesOrders.stream()
+                .filter(salesOrder -> salesOrder.getOrderNumber().equals("523456789-2"))
+                .findFirst();
+        Assertions.assertThat(subsequent2).isPresent();
+        Assertions.assertThat(subsequent2.get().getLatestJson().getOrderHeader().getDocumentRefNumber()).isNotNull();
+        Assertions.assertThat(subsequent2.get().getLatestJson().getOrderHeader().getDocumentRefNumber()).isEqualTo(nextInvoiceNumber());
+        Assertions.assertThat(subsequent2.get().getInvoiceEvent()).isNotNull();
+        Assertions.assertThat(subsequent2.get().getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getOrderNumber()).isEqualTo("523456789-2");
+        Assertions.assertThat(subsequent2.get().getLatestJson().getOrderHeader().getTotals().getShippingCostGross()).isEqualTo(new BigDecimal(100));
+        Assertions.assertThat(subsequent2.get().getLatestJson().getOrderHeader().getTotals().getShippingCostNet()).isEqualTo(new BigDecimal(80));
     }
 
     private void verifyIfOrderPartiallyInvoicedAndOrderFullyCancelled() {
         var salesOrders = salesOrderRepository.findAllByOrderGroupIdOrderByUpdatedAtDesc("623456789");
         Assertions.assertThat(salesOrders).hasSize(2);
-        Assertions.assertThat(salesOrders.get(0).getOrderNumber()).isEqualTo("623456789");
-        Assertions.assertThat(salesOrders.get(0).getLatestJson().getOrderHeader().getDocumentRefNumber()).isNull();
-        Assertions.assertThat(salesOrders.get(0).getInvoiceEvent()).isNull();
-        Assertions.assertThat(salesOrders.get(0).isCancelled()).isTrue();
-        Assertions.assertThat(salesOrders.get(0).getLatestJson().getOrderHeader().getTotals().getShippingCostGross()).isEqualTo(BigDecimal.ZERO);
-        Assertions.assertThat(salesOrders.get(0).getLatestJson().getOrderHeader().getTotals().getShippingCostNet()).isEqualTo(BigDecimal.ZERO);
-        Assertions.assertThat(salesOrders.get(1).getOrderNumber()).isEqualTo("623456789-1");
-        Assertions.assertThat(salesOrders.get(1).getLatestJson().getOrderHeader().getDocumentRefNumber()).isNotNull();
-        Assertions.assertThat(salesOrders.get(1).getLatestJson().getOrderHeader().getDocumentRefNumber()).isEqualTo(nextInvoiceNumber());
-        Assertions.assertThat(salesOrders.get(1).getInvoiceEvent()).isNotNull();
-        Assertions.assertThat(salesOrders.get(1).getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getOrderNumber()).isEqualTo("623456789-1");
-        Assertions.assertThat(salesOrders.get(1).getLatestJson().getOrderHeader().getTotals().getShippingCostGross()).isEqualTo(new BigDecimal(100));
-        Assertions.assertThat(salesOrders.get(1).getLatestJson().getOrderHeader().getTotals().getShippingCostNet()).isEqualTo(new BigDecimal(80));
+        Optional<SalesOrder> original = salesOrders.stream()
+                .filter(salesOrder -> salesOrder.getOrderNumber().equals("623456789"))
+                .findFirst();
+        Assertions.assertThat(original).isPresent();
+        Assertions.assertThat(original.get().getLatestJson().getOrderHeader().getDocumentRefNumber()).isNull();
+        Assertions.assertThat(original.get().getInvoiceEvent()).isNull();
+        Assertions.assertThat(original.get().isCancelled()).isTrue();
+        Assertions.assertThat(original.get().getLatestJson().getOrderHeader().getTotals().getShippingCostGross()).isEqualTo(BigDecimal.ZERO);
+        Assertions.assertThat(original.get().getLatestJson().getOrderHeader().getTotals().getShippingCostNet()).isEqualTo(BigDecimal.ZERO);
+        Optional<SalesOrder> subsequent = salesOrders.stream()
+                .filter(salesOrder -> salesOrder.getOrderNumber().equals("623456789-1"))
+                .findFirst();
+        Assertions.assertThat(subsequent).isPresent();
+        Assertions.assertThat(subsequent.get().getLatestJson().getOrderHeader().getDocumentRefNumber()).isNotNull();
+        Assertions.assertThat(subsequent.get().getLatestJson().getOrderHeader().getDocumentRefNumber()).isEqualTo(nextInvoiceNumber());
+        Assertions.assertThat(subsequent.get().getInvoiceEvent()).isNotNull();
+        Assertions.assertThat(subsequent.get().getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getOrderNumber()).isEqualTo("623456789-1");
+        Assertions.assertThat(subsequent.get().getLatestJson().getOrderHeader().getTotals().getShippingCostGross()).isEqualTo(new BigDecimal(100));
+        Assertions.assertThat(subsequent.get().getLatestJson().getOrderHeader().getTotals().getShippingCostNet()).isEqualTo(new BigDecimal(80));
     }
 
     private String nextInvoiceNumber() {
