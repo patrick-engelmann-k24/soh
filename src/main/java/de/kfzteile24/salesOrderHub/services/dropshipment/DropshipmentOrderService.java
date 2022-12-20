@@ -1,7 +1,9 @@
 package de.kfzteile24.salesOrderHub.services.dropshipment;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.kfzteile24.salesOrderHub.constants.CustomEventName;
 import de.kfzteile24.salesOrderHub.constants.PersistentProperties;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Signals;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
@@ -16,9 +18,10 @@ import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
-import de.kfzteile24.salesOrderHub.helper.SubsequentSalesOrderCreationHelper;
+import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.helper.ReturnOrderHelper;
+import de.kfzteile24.salesOrderHub.helper.SubsequentSalesOrderCreationHelper;
 import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderRowService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
@@ -49,10 +52,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static de.kfzteile24.salesOrderHub.constants.CustomEventName.DROPSHIPMENT_ORDER_CANCELLED;
+import static de.kfzteile24.salesOrderHub.constants.CustomEventName.DROPSHIPMENT_ORDER_RETURN_CONFIRMED;
+import static de.kfzteile24.salesOrderHub.constants.CustomEventName.DROPSHIPMENT_ORDER_RETURN_CREATED;
+import static de.kfzteile24.salesOrderHub.constants.CustomEventName.DROPSHIPMENT_ORDER_RETURN_NOTIFIED;
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.ORDER_NUMBER_SEPARATOR;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_CONFIRMED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_RETURN_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_DROPSHIPMENT_ORDER_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_ORDER_CANCELLED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_INVOICE_STORED;
@@ -84,6 +89,8 @@ public class DropshipmentOrderService {
 
     @NotNull
     private final SubsequentSalesOrderCreationHelper subsequentOrderHelper;
+    @NotNull
+    private final MetricsHelper metricsHelper;
 
     @EnrichMessageForDlq
     public void handleDropShipmentOrderConfirmed(
@@ -96,8 +103,13 @@ public class DropshipmentOrderService {
         salesOrder = salesOrderService.save(salesOrder, DROPSHIPMENT_PURCHASE_ORDER_BOOKED);
         var isDropshipmentOrderBooked = message.getBooked();
 
-        helper.correlateMessage(DROPSHIPMENT_ORDER_CONFIRMED, salesOrder,
+        helper.correlateMessage(Messages.DROPSHIPMENT_ORDER_CONFIRMED, salesOrder,
                 Variables.putValue(IS_DROPSHIPMENT_ORDER_CONFIRMED.getName(), isDropshipmentOrderBooked));
+        if (isDropshipmentOrderBooked) {
+            metricsHelper.sendCustomEventForDropshipmentOrder(salesOrder, CustomEventName.DROPSHIPMENT_ORDER_CONFIRMED);
+        } else {
+            metricsHelper.sendCustomEventForDropshipmentOrder(salesOrder, DROPSHIPMENT_ORDER_CANCELLED);
+        }
     }
 
     @EnrichMessageForDlq
@@ -109,7 +121,11 @@ public class DropshipmentOrderService {
         var orderNumber = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber();
         log.info("Received dropshipment purchase order return confirmed message with order number: {}", orderNumber);
 
-        salesOrderReturnService.handleSalesOrderReturn(salesCreditNoteCreatedMessage, DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED, DROPSHIPMENT_ORDER_RETURN_CONFIRMED);
+        salesOrderReturnService.handleSalesOrderReturn(salesCreditNoteCreatedMessage, DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED, Messages.DROPSHIPMENT_ORDER_RETURN_CONFIRMED);
+        var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
+                .orElseThrow(() -> new SalesOrderNotFoundException("Could not find order: " + orderNumber));
+        metricsHelper.sendCustomEventForDropshipmentOrder(salesOrder, DROPSHIPMENT_ORDER_RETURN_CONFIRMED);
+        metricsHelper.sendCustomEventForDropshipmentOrder(salesOrder, DROPSHIPMENT_ORDER_RETURN_CREATED);
     }
 
     public SalesCreditNoteCreatedMessage buildSalesCreditNoteCreatedMessage(DropshipmentPurchaseOrderReturnConfirmedMessage message) {
@@ -301,6 +317,7 @@ public class DropshipmentOrderService {
                     .orElseThrow(() -> new SalesOrderNotFoundException(message.getSalesOrderNumber()));
 
             snsPublishService.publishDropshipmentOrderReturnNotifiedEvent(salesOrder, message);
+            metricsHelper.sendCustomEventForDropshipmentOrder(salesOrder, DROPSHIPMENT_ORDER_RETURN_NOTIFIED);
         } catch (Exception e) {
             log.error("Dropshipment purchase order return notified message error:\r\nOrderNumber: " +
                             "{}\r\nExternalOrderNumber: {}\r\nError-Message: {}",

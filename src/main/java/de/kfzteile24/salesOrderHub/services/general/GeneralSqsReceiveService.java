@@ -1,6 +1,7 @@
 package de.kfzteile24.salesOrderHub.services.general;
 
 import com.newrelic.api.agent.Trace;
+import de.kfzteile24.salesOrderHub.services.returnorder.DropshipmentReturnOrderHandler;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ParcelShippedMessage;
@@ -20,6 +21,7 @@ public class GeneralSqsReceiveService extends AbstractSqsReceiveService {
 
     private final ParcelShippedService parcelShippedService;
     private final CamundaHelper camundaHelper;
+    private final DropshipmentReturnOrderHandler dropshipmentReturnOrderHandler;
 
     /**
      * Consume messages from sqs for event invoice from core
@@ -30,7 +32,7 @@ public class GeneralSqsReceiveService extends AbstractSqsReceiveService {
 
         if (InvoiceUrlExtractor.matchesCreditNoteNumberPattern(message)) {
             log.info("url: {} is for credit note", message);
-            camundaHelper.handleCreditNoteFromDropshipmentOrderReturn(message, messageWrapper);
+            dropshipmentReturnOrderHandler.handleCreditNoteFromDropshipmentOrderReturn(message, messageWrapper);
         } else {
             log.info("url: {} is for invoice", message);
             camundaHelper.handleInvoiceFromCore(message, messageWrapper);

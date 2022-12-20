@@ -9,6 +9,7 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.exception.NoProcessInstanceFoundException;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
+import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
 import de.kfzteile24.salesOrderHub.helper.SleuthHelper;
 import de.kfzteile24.salesOrderHub.services.InvoiceUrlExtractor;
 import de.kfzteile24.salesOrderHub.services.sqs.EnrichMessageForDlq;
@@ -186,23 +187,6 @@ public class CamundaHelper {
         );
         runtimeService.startProcessInstanceByMessage(Messages.INVOICE_CREATED.getName(), orderNumber, processVariables);
         log.info("Invoice {} from core for order-number {} successfully received", invoiceUrl, orderNumber);
-    }
-
-    @EnrichMessageForDlq
-    public void handleCreditNoteFromDropshipmentOrderReturn(String invoiceUrl, MessageWrapper messageWrapper) {
-
-        final var returnOrderNumber = InvoiceUrlExtractor.extractReturnOrderNumber(invoiceUrl);
-        log.info("Received credit note from dropshipment with return order number: {} ", returnOrderNumber);
-
-        String message = Messages.DROPSHIPMENT_CREDIT_NOTE_DOCUMENT_GENERATED.getName();
-        final Map<String, Object> processVariables = Map.of(
-                ORDER_NUMBER.getName(), returnOrderNumber,
-                INVOICE_URL.getName(), invoiceUrl
-        );
-
-        runtimeService.startProcessInstanceByMessage(message, returnOrderNumber, processVariables);
-        log.info("Invoice {} for credit note of dropshipment order return for order-number {} successfully received",
-                invoiceUrl, returnOrderNumber);
     }
 
     public ProcessInstance createReturnOrderProcess(SalesOrderReturn salesOrderReturn, Messages originChannel) {

@@ -33,6 +33,19 @@ public class MetricsHelper {
         sendCustomEvent(customEventName, eventAttributes);
     }
 
+    public void sendCustomEventForDropshipmentOrder(SalesOrder salesOrder, CustomEventName customEventName) {
+        var order = salesOrder.getLatestJson();
+        var invoiceEvent = salesOrder.getInvoiceEvent();
+        Map<String, Object> eventAttributes = new HashMap<>();
+        eventAttributes.put("OrderNumber", salesOrder.getOrderNumber());
+        eventAttributes.put("OrderGroupId", salesOrder.getOrderGroupId());
+        eventAttributes.put("Platform", order.getOrderHeader().getPlatform().name());
+        eventAttributes.put("SalesChannel", order.getOrderHeader().getSalesChannel());
+        eventAttributes.put("TotalGrossAmount", order.getOrderHeader().getTotals().getGoodsTotalGross());
+        eventAttributes.put("TotalNetAmount", order.getOrderHeader().getTotals().getGoodsTotalNet());
+        sendCustomEvent(customEventName, eventAttributes);
+    }
+
     public void sendCustomEvent(CustomEventName customEventName, Map<String, Object> eventAttributes) {
         insights.recordCustomEvent(customEventName.getName(), eventAttributes);
     }

@@ -1,5 +1,6 @@
 package de.kfzteile24.salesOrderHub.services.general;
 
+import de.kfzteile24.salesOrderHub.services.returnorder.DropshipmentReturnOrderHandler;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ParcelShippedMessage;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
@@ -27,6 +28,8 @@ class GeneralSqsReceiveServiceTest {
     private ParcelShippedService parcelShippedService;
     @Mock
     private CamundaHelper camundaHelper;
+    @Mock
+    private DropshipmentReturnOrderHandler dropshipmentReturnOrderHandler;
 
     @Test
     void testQueueListenerParcelShipped() {
@@ -47,7 +50,7 @@ class GeneralSqsReceiveServiceTest {
 
         generalSqsReceiveService.queueListenerInvoiceReceivedFromCore(message, messageWrapper);
 
-        verify(camundaHelper).handleCreditNoteFromDropshipmentOrderReturn(message, messageWrapper);
+        verify(dropshipmentReturnOrderHandler).handleCreditNoteFromDropshipmentOrderReturn(message, messageWrapper);
     }
 
     @Test
