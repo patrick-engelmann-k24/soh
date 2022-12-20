@@ -17,6 +17,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoice;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
 import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
+import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.helper.ReturnOrderHelper;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
@@ -109,6 +110,8 @@ class DropshipmentOrderServiceTest {
     @Mock
     private OrderUtil orderUtil;
     @Mock
+    private MetricsHelper metricsHelper;
+    @Mock
     private SubsequentSalesOrderCreationHelper subsequentSalesOrderCreationHelper;
     private final MessageWrapper messageWrapper = MessageWrapper.builder().build();
 
@@ -138,6 +141,7 @@ class DropshipmentOrderServiceTest {
                 .thenReturn(Optional.of(KeyValueProperty.builder().typedValue(false).build()));
         doReturn(salesCreditNoteCreatedMessage).when(dropshipmentOrderService).buildSalesCreditNoteCreatedMessage(message);
 
+        when(salesOrderService.getOrderByOrderNumber(message.getSalesOrderNumber())).thenReturn(Optional.of(SalesOrder.builder().build()));
         dropshipmentOrderService.handleDropshipmentPurchaseOrderReturnConfirmed(message, messageWrapper);
         verify(salesOrderReturnService).handleSalesOrderReturn(salesCreditNoteCreatedMessage, DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED, DROPSHIPMENT_ORDER_RETURN_CONFIRMED);
     }

@@ -3,6 +3,7 @@ package de.kfzteile24.salesOrderHub.delegates.invoicing;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.dropshipment.InvoiceData;
+import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentInvoiceRowService;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentOrderService;
@@ -34,6 +35,8 @@ class CreateDropshipmentSubsequentOrderDelegateTest {
     private DropshipmentOrderService dropshipmentOrderService;
     @Mock
     private DropshipmentInvoiceRowService dropshipmentInvoiceRowService;
+    @Mock
+    private MetricsHelper metricsHelper;
     @InjectMocks
     private CreateDropshipmentSubsequentOrderDelegate createDropshipmentSubsequentOrderDelegate;
 

@@ -33,10 +33,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 public class DropshipmentReturnOrderHandler implements ReturnOrderCreator {
 
     private final SalesOrderService salesOrderService;
-    private final SalesOrderReturnService salesOrderReturnService;
     private final OrderUtil orderUtil;
-    private final RuntimeService runtimeService;
-    private final MetricsHelper metricsHelper;
 
     @Override
     public List<SalesOrder> getSalesOrderList(String orderGroupId) {
@@ -46,26 +43,5 @@ public class DropshipmentReturnOrderHandler implements ReturnOrderCreator {
                 .filter(order -> orderUtil.isDropshipmentOrder(order.getLatestJson()))
                 .sorted(Comparator.comparing(SalesOrder::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
                 .collect(Collectors.toList());
-    }
-
-    @EnrichMessageForDlq
-    public void handleCreditNoteFromDropshipmentOrderReturn(String invoiceUrl, MessageWrapper messageWrapper) {
-
-        final var returnOrderNumber = InvoiceUrlExtractor.extractReturnOrderNumber(invoiceUrl);
-        log.info("Received credit note from dropshipment with return order number: {} ", returnOrderNumber);
-
-        String message = Messages.DROPSHIPMENT_CREDIT_NOTE_DOCUMENT_GENERATED.getName();
-        final Map<String, Object> processVariables = Map.of(
-                ORDER_NUMBER.getName(), returnOrderNumber,
-                INVOICE_URL.getName(), invoiceUrl
-        );
-
-        runtimeService.startProcessInstanceByMessage(message, returnOrderNumber, processVariables);
-        var returnOrder = salesOrderReturnService.getByOrderNumber(returnOrderNumber)
-                .orElseThrow(() -> new SalesOrderReturnNotFoundException(returnOrderNumber));
-        var salesOrder = returnOrder.getSalesOrder();
-        metricsHelper.sendCustomEventForDropshipmentOrder(salesOrder, DROPSHIPMENT_ORDER_CREDIT_NOTE_CREATED);
-        log.info("Invoice {} for credit note of dropshipment order return for order-number {} successfully received",
-                invoiceUrl, returnOrderNumber);
     }
 }
