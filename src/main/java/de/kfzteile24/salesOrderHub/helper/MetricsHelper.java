@@ -41,8 +41,8 @@ public class MetricsHelper {
         eventAttributes.put("OrderGroupId", salesOrder.getOrderGroupId());
         eventAttributes.put("Platform", order.getOrderHeader().getPlatform().name());
         eventAttributes.put("SalesChannel", order.getOrderHeader().getSalesChannel());
-        eventAttributes.put("TotalGrossAmount", order.getOrderHeader().getTotals().getGoodsTotalGross());
-        eventAttributes.put("TotalNetAmount", order.getOrderHeader().getTotals().getGoodsTotalNet());
+        eventAttributes.put("TotalGrossAmount", order.getOrderHeader().getTotals().getGrandTotalGross());
+        eventAttributes.put("TotalNetAmount", order.getOrderHeader().getTotals().getGrandTotalNet());
         sendCustomEvent(customEventName, eventAttributes);
     }
 

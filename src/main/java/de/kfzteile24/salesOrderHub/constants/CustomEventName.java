@@ -23,7 +23,6 @@ public enum CustomEventName {
     DROPSHIPMENT_ORDER_CANCELLED("DropshipmentOrderCancelled"),
     DROPSHIPMENT_ORDER_FULLY_INVOICED("DropshipmentOrderFullyInvoiced"),
     DROPSHIPMENT_ORDER_RETURN_NOTIFIED("DropshipmentOrderReturnNotified"),
-    DROPSHIPMENT_ORDER_RETURN_CONFIRMED("DropshipmentOrderReturnConfirmed"),
     DROPSHIPMENT_ORDER_RETURN_CREATED("DropshipmentOrderReturnCreated"),
     DROPSHIPMENT_ORDER_CREDIT_NOTE_CREATED("DropshipmentOrderCreditNoteCreated");
 

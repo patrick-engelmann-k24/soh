@@ -53,7 +53,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.CustomEventName.DROPSHIPMENT_ORDER_CANCELLED;
-import static de.kfzteile24.salesOrderHub.constants.CustomEventName.DROPSHIPMENT_ORDER_RETURN_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.CustomEventName.DROPSHIPMENT_ORDER_RETURN_CREATED;
 import static de.kfzteile24.salesOrderHub.constants.CustomEventName.DROPSHIPMENT_ORDER_RETURN_NOTIFIED;
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
@@ -124,7 +123,6 @@ public class DropshipmentOrderService {
         salesOrderReturnService.handleSalesOrderReturn(salesCreditNoteCreatedMessage, DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED, Messages.DROPSHIPMENT_ORDER_RETURN_CONFIRMED);
         var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException("Could not find order: " + orderNumber));
-        metricsHelper.sendCustomEventForDropshipmentOrder(salesOrder, DROPSHIPMENT_ORDER_RETURN_CONFIRMED);
         metricsHelper.sendCustomEventForDropshipmentOrder(salesOrder, DROPSHIPMENT_ORDER_RETURN_CREATED);
     }
 
