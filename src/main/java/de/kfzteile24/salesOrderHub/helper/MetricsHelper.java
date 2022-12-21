@@ -1,8 +1,8 @@
 package de.kfzteile24.salesOrderHub.helper;
 
 import com.newrelic.api.agent.Insights;
-import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.constants.CustomEventName;
+import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
