@@ -122,6 +122,7 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
         var message = DropshipmentPurchaseOrderBookedMessage.builder()
                 .salesOrderNumber(salesOrder.getOrderNumber())
                 .externalOrderNumber("13.2")
+                .booked(true)
                 .build();
         dropshipmentOrderService.handleDropShipmentOrderConfirmed(message, messageWrapper);
 

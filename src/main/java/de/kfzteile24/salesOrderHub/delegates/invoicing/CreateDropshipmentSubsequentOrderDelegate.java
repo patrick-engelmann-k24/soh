@@ -4,6 +4,7 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.delegates.CommonDelegate;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
+import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentInvoiceRowService;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentOrderService;
@@ -13,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.springframework.stereotype.Component;
 
+import static de.kfzteile24.salesOrderHub.constants.CustomEventName.DROPSHIPMENT_SUBSEQUENT_ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROWS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SALES_ORDER_ID;
@@ -28,6 +30,8 @@ public class CreateDropshipmentSubsequentOrderDelegate extends CommonDelegate {
     private final DropshipmentOrderService dropshipmentOrderService;
     @NonNull
     private final DropshipmentInvoiceRowService dropshipmentInvoiceRowService;
+    @NonNull
+    private final MetricsHelper metricsHelper;
 
     @Override
     public void execute(DelegateExecution delegateExecution) throws Exception {
@@ -45,6 +49,8 @@ public class CreateDropshipmentSubsequentOrderDelegate extends CommonDelegate {
                 skuList,
                 invoiceNumber,
                 delegateExecution.getActivityInstanceId());
+
+        metricsHelper.sendCustomEventForDropshipmentOrder(subsequentOrder, DROPSHIPMENT_SUBSEQUENT_ORDER_CREATED);
 
         delegateExecution.setVariable(SUBSEQUENT_ORDER_NUMBER.getName(), subsequentOrder.getOrderNumber());
         delegateExecution.setVariable(ORDER_NUMBER.getName(), orderNumber);

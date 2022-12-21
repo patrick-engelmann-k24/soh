@@ -1,5 +1,6 @@
 package de.kfzteile24.salesOrderHub.delegates.dropshipmentorder;
 
+import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
@@ -8,6 +9,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.geo.Metric;
 
 import java.util.Optional;
 
@@ -31,6 +33,9 @@ class PublishDropshipmentOrderCreatedDelegateTest {
 
     @Mock
     private SnsPublishService snsPublishService;
+
+    @Mock
+    private MetricsHelper metricsHelper;
 
     @InjectMocks
     private PublishDropshipmentOrderCreatedDelegate publishDropshipmentOrderCreatedDelegate;

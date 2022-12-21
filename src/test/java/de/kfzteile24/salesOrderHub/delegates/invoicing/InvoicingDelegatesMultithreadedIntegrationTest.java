@@ -9,6 +9,7 @@ import de.kfzteile24.salesOrderHub.domain.dropshipment.DropshipmentInvoiceRow;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.DropshipmentInvoiceRowRepository;
+import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
@@ -22,11 +23,12 @@ import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -42,6 +44,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Paymen
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createNewSalesOrderV3;
 import static org.assertj.core.api.Assertions.fail;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -55,6 +58,9 @@ class InvoicingDelegatesMultithreadedIntegrationTest extends AbstractIntegration
 
     @Autowired
     private DropshipmentInvoiceRowRepository dropshipmentInvoiceRowRepository;
+
+    @Autowired
+    private SalesOrderInvoiceRepository salesOrderInvoiceRepository;
 
     @Autowired
     private RuntimeService runtimeService;
@@ -82,6 +88,14 @@ class InvoicingDelegatesMultithreadedIntegrationTest extends AbstractIntegration
 
     @Autowired
     private InvoiceService invoiceService;
+
+    @BeforeEach
+    public void setup() {
+        pollingService.retry(() -> bpmUtil.cleanUp());
+        pollingService.retry(() -> salesOrderRepository.deleteAll());
+        pollingService.retry(() -> dropshipmentInvoiceRowRepository.deleteAll());
+        pollingService.retry(() -> salesOrderInvoiceRepository.deleteAll());
+    }
 
     @Test
     @SneakyThrows
@@ -121,9 +135,6 @@ class InvoicingDelegatesMultithreadedIntegrationTest extends AbstractIntegration
 
                     test(firstOrderNumber, secondOrderNumber, firstInvoiceNumber, secondInvoiceNumber);
 
-                    verifyIfOrderPartiallyInvoicedAndFirstSubsequentOrderNumberCreation(firstOrderNumber, firstInvoiceNumber);
-                    verifyIfOrderPartiallyInvoicedAndSecondSubsequentOrderNumberCreation(secondOrderNumber, secondInvoiceNumber);
-
                 } catch (Exception e) {
                     log.error(e.getMessage());
                     throw e;
@@ -138,6 +149,27 @@ class InvoicingDelegatesMultithreadedIntegrationTest extends AbstractIntegration
         for (Thread thread: threads) {
             thread.start();
         }
+
+        pollingService.poll(Duration.ofMillis(500), Duration.ofSeconds(10), () -> salesOrderRepository.count() == 50);
+        pollingService.poll(Duration.ofMillis(500), Duration.ofSeconds(10), () -> salesOrderInvoiceRepository.count() == 20);
+
+        assertTrue(salesOrderRepository.count() == 50);
+        assertTrue(salesOrderInvoiceRepository.count() == 20);
+
+        for (Pair<Pair<String,String>, Pair<SalesOrder, SalesOrder>> pair : orders) {
+            var invoicePair = pair.getLeft();
+            var orderPair = pair.getRight();
+            var firstOrder = orderPair.getLeft();
+            var secondOrder = orderPair.getRight();
+            var firstInvoiceNumber = invoicePair.getLeft();
+            var secondInvoiceNumber = invoicePair.getRight();
+            var firstOrderNumber = firstOrder.getOrderNumber();
+            var secondOrderNumber = secondOrder.getOrderNumber();
+
+            verifyIfOrderPartiallyInvoicedAndFirstSubsequentOrderNumberCreation(firstOrderNumber, firstInvoiceNumber);
+            verifyIfOrderPartiallyInvoicedAndSecondSubsequentOrderNumberCreation(secondOrderNumber, secondInvoiceNumber);
+        }
+
     }
 
     private void preparePartialInvoiceTestData(SalesOrder salesOrderPartiallyInvoiced1, SalesOrder salesOrderPartiallyInvoiced2,
@@ -172,13 +204,11 @@ class InvoicingDelegatesMultithreadedIntegrationTest extends AbstractIntegration
         when(delegateExecution.getVariable(SUBSEQUENT_ORDER_NUMBER.getName())).thenReturn(firstOrderNumber + "-1");
         createDropshipmentSubsequentOrderDelegate.execute(delegateExecution);
         createDropshipmentSubsequentInvoiceDelegate.execute(delegateExecution);
-        verifyIfOrderPartiallyInvoicedAndFirstSubsequentOrderNumberCreation(firstOrderNumber, firstInvoiceNumber);
 
         when(delegateExecution.getVariable(INVOICE_NUMBER.getName())).thenReturn(secondInvoiceNumber);
         when(delegateExecution.getVariable(SUBSEQUENT_ORDER_NUMBER.getName())).thenReturn(secondOrderNumber + "-2");
         createDropshipmentSubsequentOrderDelegate.execute(delegateExecution);
         createDropshipmentSubsequentInvoiceDelegate.execute(delegateExecution);
-        verifyIfOrderPartiallyInvoicedAndSecondSubsequentOrderNumberCreation(secondOrderNumber, secondInvoiceNumber);
 
         testSubsequentOrder(firstOrderNumber + "-1", firstInvoiceNumber);
         testSubsequentOrder(secondOrderNumber + "-2", secondInvoiceNumber);
@@ -194,30 +224,22 @@ class InvoicingDelegatesMultithreadedIntegrationTest extends AbstractIntegration
                 orderNumber + "-" + invoiceNumber + ".pdf");
         when(delegateExecution.getVariable(IS_DUPLICATE_DROPSHIPMENT_INVOICE.getName())).thenReturn(false);
 
-        var thread2 = new Thread(() -> {
-            try {
-                dropshipmentOrderStoreInvoiceDelegate.execute(delegateExecution);
-            } catch (Exception e) {
-                fail(e.getMessage());
-            }
-        });
-        thread2.start();
-        var thread3 = new Thread(() -> {
+        var thread1 = new Thread(() -> {
             try {
                 saveInvoiceDelegate.execute(delegateExecution);
             } catch (Exception e) {
                 fail(e.getMessage());
             }
         });
-        thread3.start();
-        var thread4 = new Thread(() -> {
+        thread1.start();
+        var thread2 = new Thread(() -> {
             try {
                 invoiceSavedDelegate.execute(delegateExecution);
             } catch (Exception e) {
                 fail(e.getMessage());
             }
         });
-        thread4.start();
+        thread2.start();
 
         //TODO: the test fails if saveInvoiceDelegate is called several times in parallel
         //saveInvoiceDelegate.execute(delegateExecution);
@@ -245,6 +267,7 @@ class InvoicingDelegatesMultithreadedIntegrationTest extends AbstractIntegration
     private void verifyIfOrderPartiallyInvoicedAndFirstSubsequentOrderNumberCreation(String orderNumber, String invoiceNumber) {
         var salesOrders = salesOrderRepository.findAllByOrderGroupIdOrderByUpdatedAtDesc(orderNumber);
         Assertions.assertThat(salesOrders).hasSize(2);
+
         Assertions.assertThat(salesOrders.get(0).getOrderNumber()).isEqualTo(orderNumber + "-1");
         Assertions.assertThat(salesOrders.get(0).getLatestJson().getOrderHeader().getDocumentRefNumber()).isEqualTo(invoiceNumber);
         Assertions.assertThat(salesOrders.get(0).getInvoiceEvent()).isNotNull();
@@ -260,6 +283,7 @@ class InvoicingDelegatesMultithreadedIntegrationTest extends AbstractIntegration
         Assertions.assertThat(salesOrders.get(1).isCancelled()).isFalse();
         Assertions.assertThat(salesOrders.get(1).getLatestJson().getOrderHeader().getTotals().getShippingCostGross()).isEqualTo(BigDecimal.ZERO);
         Assertions.assertThat(salesOrders.get(1).getLatestJson().getOrderHeader().getTotals().getShippingCostNet()).isEqualTo(BigDecimal.ZERO);
+
     }
 
 
@@ -303,6 +327,7 @@ class InvoicingDelegatesMultithreadedIntegrationTest extends AbstractIntegration
         pollingService.retry(() -> bpmUtil.cleanUp());
         pollingService.retry(() -> salesOrderRepository.deleteAll());
         pollingService.retry(() -> dropshipmentInvoiceRowRepository.deleteAll());
+        pollingService.retry(() -> salesOrderInvoiceRepository.deleteAll());
     }
 
     private SalesOrder createSalesOrderWithRandomOrderNumber() {

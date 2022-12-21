@@ -1,6 +1,7 @@
 package de.kfzteile24.salesOrderHub.delegates.dropshipmentorder;
 
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
+import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import lombok.NonNull;
@@ -11,6 +12,7 @@ import org.camunda.bpm.engine.delegate.JavaDelegate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import static de.kfzteile24.salesOrderHub.constants.CustomEventName.DROPSHIPMENT_ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 
 @Component
@@ -23,6 +25,8 @@ public class PublishDropshipmentOrderCreatedDelegate implements JavaDelegate {
 
     @NonNull
     private final SnsPublishService snsPublishService;
+    @NonNull
+    private final MetricsHelper metricsHelper;
 
     @Override
     @Transactional
@@ -33,6 +37,7 @@ public class PublishDropshipmentOrderCreatedDelegate implements JavaDelegate {
 
         log.info("Dropshipment Order Created Event with order number {} is published", orderNumber);
         snsPublishService.publishDropshipmentOrderCreatedEvent(salesOrder);
+        metricsHelper.sendCustomEventForDropshipmentOrder(salesOrder, DROPSHIPMENT_ORDER_CREATED);
     }
 
 }

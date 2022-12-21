@@ -1,8 +1,9 @@
 package de.kfzteile24.salesOrderHub.services.general;
 
-import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
-import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ParcelShippedMessage;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
+import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ParcelShippedMessage;
+import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentOrderReturnService;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -27,6 +28,8 @@ class GeneralSqsReceiveServiceTest {
     private ParcelShippedService parcelShippedService;
     @Mock
     private CamundaHelper camundaHelper;
+    @Mock
+    private DropshipmentOrderReturnService dropshipmentOrderReturnService;
 
     @Test
     void testQueueListenerParcelShipped() {
@@ -47,7 +50,7 @@ class GeneralSqsReceiveServiceTest {
 
         generalSqsReceiveService.queueListenerInvoiceReceivedFromCore(message, messageWrapper);
 
-        verify(camundaHelper).handleCreditNoteFromDropshipmentOrderReturn(message, messageWrapper);
+        verify(dropshipmentOrderReturnService).handleCreditNoteFromDropshipmentOrderReturn(message, messageWrapper);
     }
 
     @Test
