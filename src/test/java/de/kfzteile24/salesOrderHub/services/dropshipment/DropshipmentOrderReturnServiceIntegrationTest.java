@@ -31,22 +31,12 @@ import static org.mockito.Mockito.verify;
 
 @Slf4j
 class DropshipmentOrderReturnServiceIntegrationTest extends AbstractIntegrationTest {
-
-    @Autowired
-    private DropshipmentSqsReceiveService dropshipmentSqsReceiveService;
     @Autowired
     private DropshipmentOrderReturnService dropshipmentOrderReturnService;
     @Autowired
     private TimedPollingService timedPollingService;
     @Autowired
     private SalesOrderRepository salesOrderRepository;
-    @Autowired
-    private AuditLogRepository auditLogRepository;
-    @Autowired
-    private BpmUtil bpmUtil;
-
-    @SpyBean
-    private Insights insights;
 
     @BeforeEach
     public void setup() {
