@@ -1,7 +1,7 @@
 package de.kfzteile24.salesOrderHub.services.dropshipment;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
-import de.kfzteile24.salesOrderHub.exception.SalesOrderReturnNotFoundException;
+import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
 import de.kfzteile24.salesOrderHub.services.InvoiceUrlExtractor;
 import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
@@ -39,9 +39,9 @@ public class DropshipmentOrderReturnService {
         );
 
         runtimeService.startProcessInstanceByMessage(message, returnOrderNumber, processVariables);
-        var returnOrder = salesOrderReturnService.getByOrderNumber(returnOrderNumber)
-                .orElseThrow(() -> new SalesOrderReturnNotFoundException(returnOrderNumber));
-        var salesOrder = returnOrder.getSalesOrder();
+
+        var salesOrder = salesOrderReturnService.getOrderByReturnOrderNumber(returnOrderNumber)
+                .orElseThrow(() -> new SalesOrderNotFoundException("Could not find order by return order number: " + returnOrderNumber));
         metricsHelper.sendCustomEventForDropshipmentOrder(salesOrder, DROPSHIPMENT_ORDER_CREDIT_NOTE_CREATED);
         log.info("Invoice {} for credit note of dropshipment order return for order-number {} successfully received",
                 invoiceUrl, returnOrderNumber);

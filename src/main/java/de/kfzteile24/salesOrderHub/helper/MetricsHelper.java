@@ -21,15 +21,20 @@ public class MetricsHelper {
         eventAttributes.put("Platform", order.getOrderHeader().getPlatform().name());
         eventAttributes.put("SalesChannel", order.getOrderHeader().getSalesChannel());
         eventAttributes.put("SalesOrderNumber", order.getOrderHeader().getOrderNumber());
+        eventAttributes.put("TotalGrossAmount", order.getOrderHeader().getTotals().getGrandTotalGross());
+        eventAttributes.put("TotalNetAmount", order.getOrderHeader().getTotals().getGrandTotalNet());
         sendCustomEvent(customEventName, eventAttributes);
     }
 
     public void sendCustomEventForInvoices(SalesOrder salesOrder, CustomEventName customEventName) {
         var invoiceEvent = salesOrder.getInvoiceEvent();
+        var order = salesOrder.getLatestJson();
         Map<String, Object> eventAttributes = new HashMap<>();
         eventAttributes.put("OrderNumber", salesOrder.getOrderNumber());
         eventAttributes.put("OrderGroupId", salesOrder.getOrderGroupId());
         eventAttributes.put("InvoiceNumber", invoiceEvent.getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber());
+        eventAttributes.put("TotalGrossAmount", order.getOrderHeader().getTotals().getGrandTotalGross());
+        eventAttributes.put("TotalNetAmount", order.getOrderHeader().getTotals().getGrandTotalNet());
         sendCustomEvent(customEventName, eventAttributes);
     }
 
