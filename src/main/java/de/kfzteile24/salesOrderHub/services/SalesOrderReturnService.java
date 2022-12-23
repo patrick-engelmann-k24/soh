@@ -12,6 +12,7 @@ import de.kfzteile24.salesOrderHub.dto.shared.creditnote.SalesCreditNote;
 import de.kfzteile24.salesOrderHub.dto.shared.creditnote.SalesCreditNoteHeader;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
+import de.kfzteile24.salesOrderHub.exception.SalesOrderReturnNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderReturnRepository;
@@ -72,6 +73,13 @@ public class SalesOrderReturnService {
 
     public Optional<SalesOrderReturn> getByOrderNumber(String orderNumber) {
         return salesOrderReturnRepository.findByOrderNumber(orderNumber);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<SalesOrder> getOrderByReturnOrderNumber(String returnOrderNumber) {
+        SalesOrderReturn returnOrder = getByOrderNumber(returnOrderNumber)
+                .orElseThrow(() -> new SalesOrderReturnNotFoundException(returnOrderNumber));
+        return salesOrderService.getOrderByOrderNumber(returnOrder.getSalesOrder().getOrderNumber());
     }
 
     @Transactional(readOnly = true)
