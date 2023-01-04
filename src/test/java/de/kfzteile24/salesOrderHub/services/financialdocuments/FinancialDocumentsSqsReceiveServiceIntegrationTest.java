@@ -15,6 +15,7 @@ import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.InvoiceNumberCounterRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
+import de.kfzteile24.salesOrderHub.services.SalesOrderProcessService;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import de.kfzteile24.salesOrderHub.services.salesorder.SalesOrderSqsReceiveService;
 import de.kfzteile24.salesOrderHub.services.splitter.decorator.ItemSplitService;
@@ -103,6 +104,8 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
     private SalesOrderSqsReceiveService salesOrderSqsReceiveService;
     @Autowired
     private ItemSplitService itemSplitService;
+    @Autowired
+    private SalesOrderProcessService salesOrderProcessService;
 
     @BeforeEach
     public void setup() {
@@ -263,7 +266,7 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
     void testQueueListenerCoreSalesInvoiceCreated() {
 
         var salesOrder = salesOrderUtil.createNewSalesOrder();
-        final ProcessInstance orderProcess = camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
+        final ProcessInstance orderProcess = salesOrderProcessService.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
         assertTrue(bpmUtil.isProcessWaitingAtExpectedToken(orderProcess, MSG_ORDER_PAYMENT_SECURED.getName()));
         bpmUtil.sendMessage(Messages.ORDER_RECEIVED_PAYMENT_SECURED.getName(), salesOrder.getOrderNumber());
 
@@ -280,7 +283,7 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
         financialDocumentsSqsReceiveService.queueListenerCoreSalesInvoiceCreated(message, messageWrapper);
 
         verify(camundaHelper).correlateMessage(eq(ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED),
-                argThat(order -> StringUtils.equals(order.getOrderNumber(), originalOrderNumber)));
+                argThat((SalesOrder order) -> StringUtils.equals(order.getOrderNumber(), originalOrderNumber)));
 
         String newOrderNumberCreatedInSoh = createOrderNumberInSOH(originalOrderNumber, invoiceNumber);
         checkTotalsValues(newOrderNumberCreatedInSoh,
@@ -301,7 +304,7 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
     void testQueueListenerCoreSalesInvoiceCreatedWaitingOnOrderPaymentSecured() {
 
         var salesOrder = salesOrderUtil.createNewSalesOrder();
-        final ProcessInstance orderProcess = camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
+        final ProcessInstance orderProcess = salesOrderProcessService.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
         assertTrue(bpmUtil.isProcessWaitingAtExpectedToken(orderProcess, MSG_ORDER_PAYMENT_SECURED.getName()));
 
         String originalOrderNumber = salesOrder.getOrderNumber();
@@ -316,7 +319,7 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
         financialDocumentsSqsReceiveService.queueListenerCoreSalesInvoiceCreated(message, messageWrapper);
 
         verify(camundaHelper, never()).correlateMessage(eq(ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED),
-                argThat(order -> StringUtils.equals(order.getOrderNumber(), originalOrderNumber)));
+                argThat((SalesOrder order) -> StringUtils.equals(order.getOrderNumber(), originalOrderNumber)));
 
         assertFalse(bpmUtil.isProcessEnded(orderProcess));
     }
@@ -325,12 +328,9 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
     void testQueueListenerCoreSalesInvoiceCreateWithMultipleItemsSameSkus() {
 
         String invoiceNumber = "10";
-        String rowSku1 = "1440-47378";
-        String rowSku2 = "2010-10183";
-        String rowSku3 = "2022-KBA";
 
         var salesOrder = salesOrderUtil.createNewSalesOrder();
-        final ProcessInstance orderProcess = camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
+        final ProcessInstance orderProcess = salesOrderProcessService.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
         assertTrue(bpmUtil.isProcessWaitingAtExpectedToken(orderProcess, MSG_ORDER_PAYMENT_SECURED.getName()));
         bpmUtil.sendMessage(Messages.ORDER_RECEIVED_PAYMENT_SECURED.getName(), salesOrder.getOrderNumber());
 
@@ -360,7 +360,7 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
     void testQueueListenerCoreSalesInvoiceCreatedWithMultipleItems() {
 
         var salesOrder = salesOrderUtil.createNewSalesOrder();
-        final ProcessInstance orderProcess = camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
+        final ProcessInstance orderProcess = salesOrderProcessService.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
         assertTrue(bpmUtil.isProcessWaitingAtExpectedToken(orderProcess, MSG_ORDER_PAYMENT_SECURED.getName()));
 
         String originalOrderNumber = salesOrder.getOrderNumber();
@@ -401,7 +401,7 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
         salesOrder.getLatestJson().getOrderRows().add(duplicatedOrderRow);
         salesOrderService.save(salesOrder, ORDER_CREATED);
 
-        final ProcessInstance orderProcess = camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
+        final ProcessInstance orderProcess = salesOrderProcessService.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
         assertTrue(bpmUtil.isProcessWaitingAtExpectedToken(orderProcess, MSG_ORDER_PAYMENT_SECURED.getName()));
 
         String invoiceNumber = "10";
@@ -443,7 +443,7 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
         salesOrder.getLatestJson().getOrderRows().add(duplicatedOrderRow);
         salesOrderService.save(salesOrder, ORDER_CREATED);
 
-        final ProcessInstance orderProcess = camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
+        final ProcessInstance orderProcess = salesOrderProcessService.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
         assertTrue(bpmUtil.isProcessWaitingAtExpectedToken(orderProcess, MSG_ORDER_PAYMENT_SECURED.getName()));
 
         String invoiceNumber = "10";
@@ -472,7 +472,7 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
         originalSalesOrder.getLatestJson().getOrderRows().stream().map(OrderRows::getIsCancelled).forEach(Assertions::assertTrue);
 
         timedPollingService.poll(Duration.ofSeconds(1), Duration.ofSeconds(12), () ->
-            camundaHelper.hasPassed(orderProcess.getProcessInstanceId(), "eventEndCoreSalesInvoiceCreatedReceived"));
+                bpmUtil.hasPassed(orderProcess.getProcessInstanceId(), "eventEndCoreSalesInvoiceCreatedReceived"));
 
         SalesOrder subsequentSalesOrder = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber() + ORDER_NUMBER_SEPARATOR + invoiceNumber).orElseThrow();
         assertNotNull(subsequentSalesOrder.getInvoiceEvent());

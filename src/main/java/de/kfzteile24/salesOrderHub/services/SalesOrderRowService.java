@@ -1,6 +1,7 @@
 package de.kfzteile24.salesOrderHub.services;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
@@ -44,7 +45,7 @@ public class SalesOrderRowService {
         if (salesOrder.getLatestJson().getOrderRows().stream().allMatch(OrderRows::getIsCancelled)) {
             log.info("Order with order number: {} is fully cancelled", salesOrder.getOrderNumber());
             for (OrderRows orderRow : salesOrder.getLatestJson().getOrderRows()) {
-                if (!helper.isShipped(orderRow.getShippingType())) {
+                if (!ShipmentMethod.isShipped(orderRow.getShippingType())) {
                     orderRow.setIsCancelled(true);
                 }
             }
@@ -60,7 +61,7 @@ public class SalesOrderRowService {
 
         markOrderRowAsCancelled(orderNumber, orderRowId);
 
-        if (helper.checkIfActiveProcessExists(orderNumber)) {
+        if (helper.checkIfActiveProcessExists(SALES_ORDER_PROCESS, orderNumber)) {
             removeCancelledOrderRowFromProcessVariables(orderNumber, orderRowId);
         } else {
             log.debug("Sales order process does not exist for order number {}", orderNumber);

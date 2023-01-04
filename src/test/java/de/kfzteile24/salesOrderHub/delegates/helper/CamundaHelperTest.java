@@ -1,5 +1,15 @@
 package de.kfzteile24.salesOrderHub.delegates.helper;
 
+import de.kfzteile24.salesOrderHub.services.SalesOrderProcessService;
+import de.kfzteile24.soh.order.dto.Order;
+import de.kfzteile24.soh.order.dto.OrderRows;
+import de.kfzteile24.soh.order.dto.Payments;
+import org.junit.jupiter.api.Test;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.RECURRING;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.CUSTOMER_TYPE;
@@ -19,31 +29,7 @@ import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createOrderRow;
 import static de.kfzteile24.soh.order.dto.Platform.SOH;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import de.kfzteile24.soh.order.dto.Order;
-import de.kfzteile24.soh.order.dto.OrderRows;
-import de.kfzteile24.soh.order.dto.Payments;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-import org.camunda.bpm.engine.HistoryService;
-import org.camunda.bpm.engine.RuntimeService;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-@ExtendWith(MockitoExtension.class)
 class CamundaHelperTest {
-
-    @Mock
-    private HistoryService historyService;
-
-    @Mock
-    private RuntimeService runtimeService;
-
-    @InjectMocks
-    private CamundaHelper camundaHelper;
 
     @Test
     void theProcessVariablesAreCreatedCorrectly() {
@@ -61,7 +47,7 @@ class CamundaHelperTest {
                 .map(OrderRows::getSku)
                 .collect(Collectors.toList());
 
-        final var processVariables = camundaHelper.createProcessVariables(salesOrder);
+        final var processVariables = SalesOrderProcessService.createProcessVariables(salesOrder);
 
         assertThat(processVariables.get(SHIPMENT_METHOD.getName())).isEqualTo(shipmentMethod.getName());
         assertThat(processVariables.get(ORDER_NUMBER.getName())).isEqualTo(salesOrder.getOrderNumber());
@@ -76,7 +62,7 @@ class CamundaHelperTest {
     void ifAnOrderHasNoVirtualItemsThenTheProcessVariablesDoNotContainTheVirtualOrderRowsVariable() {
         final var salesOrder = createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
 
-        final var processVariables = camundaHelper.createProcessVariables(salesOrder);
+        final var processVariables = SalesOrderProcessService.createProcessVariables(salesOrder);
         assertThat(processVariables.containsKey(VIRTUAL_ORDER_ROWS.getName())).isFalse();
     }
 
@@ -84,7 +70,7 @@ class CamundaHelperTest {
     void recurringOrdersCreateTheCorrectCustomerTypeProcessVariable() {
         final var salesOrder = createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, RECURRING);
 
-        final var processVariables = camundaHelper.createProcessVariables(salesOrder);
+        final var processVariables = SalesOrderProcessService.createProcessVariables(salesOrder);
         assertThat(processVariables.get(CUSTOMER_TYPE.getName())).isEqualTo(RECURRING.getType());
     }
 
@@ -96,7 +82,7 @@ class CamundaHelperTest {
         orderRows.add(createOrderRow("virtual-sku-2", NONE));
         orderJson.setOrderRows(orderRows);
 
-        final var processVariables = camundaHelper.createProcessVariables(salesOrder);
+        final var processVariables = SalesOrderProcessService.createProcessVariables(salesOrder);
 
         final var expectedVirtualOrderRowSkus = orderRows.stream()
                 .filter(orderRow -> orderRow.getShippingType().equals(NONE.getName()))
@@ -116,7 +102,7 @@ class CamundaHelperTest {
         );
         orderJson.getOrderHeader().setPayments(payments);
 
-        final var processVariables = camundaHelper.createProcessVariables(salesOrder);
+        final var processVariables = SalesOrderProcessService.createProcessVariables(salesOrder);
         assertThat(processVariables.get(PAYMENT_TYPE.getName())).isEqualTo(CREDIT_CARD.getName());
     }
 }

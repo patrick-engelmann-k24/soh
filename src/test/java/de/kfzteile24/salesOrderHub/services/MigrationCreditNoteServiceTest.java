@@ -9,7 +9,7 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.dto.mapper.CreditNoteEventMapper;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
-import de.kfzteile24.salesOrderHub.services.financialdocuments.CoreSalesCreditNoteCreatedService;
+import de.kfzteile24.salesOrderHub.services.financialdocuments.CoreSalesCreditNoteService;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.FinancialDocumentsSqsReceiveService;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
@@ -51,7 +51,7 @@ class MigrationCreditNoteServiceTest {
     private SalesOrderReturnService salesOrderReturnService;
 
     @Mock
-    private CoreSalesCreditNoteCreatedService coreSalesCreditNoteCreatedService;
+    private CoreSalesCreditNoteService coreSalesCreditNoteCreatedService;
 
     @Mock
     private FeatureFlagConfig featureFlagConfig;

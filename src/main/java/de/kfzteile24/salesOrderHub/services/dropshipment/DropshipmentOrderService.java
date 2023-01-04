@@ -19,7 +19,6 @@ import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
-import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.helper.ReturnOrderHelper;
 import de.kfzteile24.salesOrderHub.helper.SubsequentSalesOrderCreationHelper;
 import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
@@ -35,6 +34,7 @@ import de.kfzteile24.soh.order.dto.OrderRows;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.variable.Variables;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,8 +57,12 @@ import static de.kfzteile24.salesOrderHub.constants.CustomEventName.DROPSHIPMENT
 import static de.kfzteile24.salesOrderHub.constants.CustomEventName.DROPSHIPMENT_ORDER_RETURN_NOTIFIED;
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.ORDER_NUMBER_SEPARATOR;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_ROW_SHIPMENT_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_DROPSHIPMENT_ORDER_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_ORDER_CANCELLED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROW;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.TRACKING_LINKS;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_INVOICE_STORED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_BOOKED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED;
@@ -74,7 +78,6 @@ import static java.util.function.Predicate.not;
 @RequiredArgsConstructor
 public class DropshipmentOrderService {
 
-    private final CamundaHelper helper;
     private final SalesOrderService salesOrderService;
     private final SalesOrderRowService salesOrderRowService;
     private final InvoiceService invoiceService;
@@ -84,7 +87,6 @@ public class DropshipmentOrderService {
     private final ReturnOrderHelper returnOrderHelper;
     private final ObjectMapper objectMapper;
     private final CamundaHelper camundaHelper;
-    private final OrderUtil orderUtil;
 
     @NotNull
     private final SubsequentSalesOrderCreationHelper subsequentOrderHelper;
@@ -102,7 +104,7 @@ public class DropshipmentOrderService {
         salesOrder = salesOrderService.save(salesOrder, DROPSHIPMENT_PURCHASE_ORDER_BOOKED);
         var isDropshipmentOrderBooked = message.getBooked();
 
-        helper.correlateMessage(Messages.DROPSHIPMENT_ORDER_CONFIRMED, salesOrder,
+        camundaHelper.correlateMessage(Messages.DROPSHIPMENT_ORDER_CONFIRMED, salesOrder,
                 Variables.putValue(IS_DROPSHIPMENT_ORDER_CONFIRMED.getName(), isDropshipmentOrderBooked));
         if (isDropshipmentOrderBooked) {
             metricsHelper.sendCustomEventForDropshipmentOrder(salesOrder, CustomEventName.DROPSHIPMENT_ORDER_CONFIRMED);
@@ -151,6 +153,20 @@ public class DropshipmentOrderService {
         sendShipmentConfirmedMessageForEachOrderRow(savedSalesOrder, shippedItems, orderRows);
     }
 
+    public ProcessInstance correlateDropshipmentOrderRowShipmentConfirmedMessage(SalesOrder salesOrder,
+                                                                                 String sku,
+                                                                                 List<String> trackingLinks) {
+        Map<String, Object> variables = Map.of(
+                ORDER_NUMBER.getName(), salesOrder.getOrderNumber(),
+                ORDER_ROW.getName(), sku,
+                TRACKING_LINKS.getName(), trackingLinks);
+
+        String businessKey = salesOrder.getOrderNumber() + "#" + sku;
+
+        return camundaHelper.correlateMessage(DROPSHIPMENT_ORDER_ROW_SHIPMENT_CONFIRMED, businessKey, variables)
+                .getProcessInstance();
+    }
+
     private SalesOrder updateSalesOrderWithTrackingInformation(SalesOrder salesOrder,
                                                                Collection<ShipmentItem> shippedItems,
                                                                List<OrderRows> orderRows) {
@@ -178,7 +194,7 @@ public class DropshipmentOrderService {
                 orderRows.stream()
                         .filter(row -> StringUtils.pathEquals(row.getSku(), item.getProductNumber()))
                         .forEach(row ->
-                                camundaHelper.correlateDropshipmentOrderRowShipmentConfirmedMessage(savedSalesOrder, row.getSku(),
+                                correlateDropshipmentOrderRowShipmentConfirmedMessage(savedSalesOrder, row.getSku(),
                                         Collections.singletonList(getTrackingLink(item, skuMap)))
                         )
         );
@@ -342,7 +358,7 @@ public class DropshipmentOrderService {
         var currentPauseDropshipmentProcessing = currentPauseDropshipmentProcessingProperty.getTypedValue();
 
         if (Boolean.TRUE.equals(currentPauseDropshipmentProcessing) && Boolean.FALSE.equals(newPauseDropshipmentProcessing)) {
-            helper.sendSignal(Signals.CONTINUE_PROCESSING_DROPSHIPMENT_ORDERS);
+            camundaHelper.sendSignal(Signals.CONTINUE_PROCESSING_DROPSHIPMENT_ORDERS);
             log.info("Sent signal to all the process instances waiting for dropshipment order continuation");
         }
     }
@@ -363,7 +379,18 @@ public class DropshipmentOrderService {
     }
 
     public void startDropshipmentSubsequentOrderProcess(SalesOrder subsequentOrder) {
-        camundaHelper.startDropshipmentSubsequentOrderCreatedProcess(subsequentOrder);
+        String orderNumber = subsequentOrder.getOrderNumber();
+        ProcessInstance result = camundaHelper.startProcessByMessage(
+                Messages.DROPSHIPMENT_SUBSEQUENT_ORDER_CREATED,
+                orderNumber,
+                Map.of(ORDER_NUMBER.getName(), orderNumber));
+        if (result != null) {
+            log.info("The process of Dropshipment Subsequent Order Created for order number {} successfully started",
+                    orderNumber);
+        } else {
+            log.error("The process of Dropshipment Subsequent Order Created for order number {} could not be started",
+                    orderNumber);
+        }
     }
 
     public SalesOrder createDropshipmentSubsequentSalesOrder(SalesOrder salesOrder,

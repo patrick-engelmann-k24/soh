@@ -1,6 +1,7 @@
 package de.kfzteile24.salesOrderHub.delegates.invoicing;
 
 import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.dropshipment.DropshipmentInvoiceRow;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
@@ -9,7 +10,6 @@ import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import de.kfzteile24.soh.order.dto.Order;
 import org.assertj.core.api.Assertions;
-import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
@@ -32,6 +32,7 @@ import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createNewSalesOr
 import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
 
 class AggregateInvoiceDataDelegateIntegrationTest extends AbstractIntegrationTest {
@@ -45,9 +46,6 @@ class AggregateInvoiceDataDelegateIntegrationTest extends AbstractIntegrationTes
     private DropshipmentInvoiceRowRepository dropshipmentInvoiceRowRepository;
 
     @Autowired
-    private RuntimeService runtimeService;
-
-    @Autowired
     private TimedPollingService pollingService;
 
     @Autowired
@@ -57,10 +55,9 @@ class AggregateInvoiceDataDelegateIntegrationTest extends AbstractIntegrationTes
     void testSubprocessCreationAndSubsequentOrderCreation() {
 
         prepareTestData();
-        doReturn(null).when(camundaHelper).correlateDropshipmentOrderCancelledMessage(any());
-        doReturn(null).when(camundaHelper).correlateDropshipmentOrderFullyInvoicedMessage(any());
+        doReturn(messageCorrelationResult).when(camundaHelper).correlateMessage(any(Messages.class), anyString());
 
-        ProcessInstance processInstance = runtimeService.startProcessInstanceByKey(INVOICING_PROCESS.getName());
+        ProcessInstance processInstance = camundaHelper.startProcessByProcessDefinition(INVOICING_PROCESS);
 
         assertTrue(pollingService.pollWithDefaultTiming(() -> {
             assertThat(processInstance).hasPassedInOrder(

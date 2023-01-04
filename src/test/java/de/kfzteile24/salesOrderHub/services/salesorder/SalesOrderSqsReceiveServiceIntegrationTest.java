@@ -9,8 +9,10 @@ import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.InvoiceNumberCounterRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
+import de.kfzteile24.salesOrderHub.services.SalesOrderProcessService;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceNumberCounterService;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +22,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.MSG_ORDER_CORE_SALES_INVOICE_CREATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_ECP;
 import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
@@ -43,6 +46,8 @@ class SalesOrderSqsReceiveServiceIntegrationTest extends AbstractIntegrationTest
     @Autowired
     private InvoiceNumberCounterService invoiceNumberCounterService;
     @Autowired
+    private SalesOrderProcessService salesOrderProcessService;
+    @Autowired
     private BpmUtil bpmUtil;
 
     @BeforeEach
@@ -63,9 +68,9 @@ class SalesOrderSqsReceiveServiceIntegrationTest extends AbstractIntegrationTest
         orderMessage.getOrderHeader().getPayments().get(0).setType("paypal");
         SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(orderMessage));
 
-        ProcessInstance orderProcessInstance = camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
+        ProcessInstance orderProcessInstance = salesOrderProcessService.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
 
-        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(SALES_ORDER_PROCESS, salesOrder.getOrderNumber())));
 
         var isWaitingForPaymentSecured =
                 bpmUtil.isProcessWaitingAtExpectedToken(orderProcessInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName());
@@ -90,9 +95,9 @@ class SalesOrderSqsReceiveServiceIntegrationTest extends AbstractIntegrationTest
         orderMessage.getOrderHeader().getPayments().get(0).setType("creditcard");
         SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(orderMessage));
 
-        ProcessInstance orderProcessInstance = camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
+        ProcessInstance orderProcessInstance = salesOrderProcessService.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
 
-        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(SALES_ORDER_PROCESS, salesOrder.getOrderNumber())));
 
         var isWaitingForPaymentSecured =
                 bpmUtil.isProcessWaitingAtExpectedToken(orderProcessInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName());
@@ -115,10 +120,11 @@ class SalesOrderSqsReceiveServiceIntegrationTest extends AbstractIntegrationTest
         var orderMessage = getObjectByResource("ecpOrderMessage.json", Order.class);
         orderMessage.getOrderHeader().setOrderNumber("500000996");
         SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(orderMessage));
+        var messageWrapper = MessageWrapper.builder().build();
 
-        ProcessInstance orderProcessInstance = camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
+        ProcessInstance orderProcessInstance = salesOrderProcessService.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
 
-        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(SALES_ORDER_PROCESS, salesOrder.getOrderNumber())));
 
         var isWaitingForPaymentSecured =
                 bpmUtil.isProcessWaitingAtExpectedToken(orderProcessInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName());

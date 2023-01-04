@@ -11,6 +11,7 @@ import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
+import de.kfzteile24.salesOrderHub.services.SalesOrderProcessService;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
@@ -33,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.DROPSHIPMENT_ORDER_ROWS_CANCELLATION;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_PURCHASE_ORDER_CREATED;
@@ -66,6 +68,8 @@ class DropshipmentSqsReceiveServiceIntegrationTest extends AbstractIntegrationTe
     private AuditLogRepository auditLogRepository;
     @Autowired
     private BpmUtil bpmUtil;
+    @Autowired
+    private SalesOrderProcessService salesOrderProcessService;
 
     @BeforeEach
     public void setup() {
@@ -157,22 +161,22 @@ class DropshipmentSqsReceiveServiceIntegrationTest extends AbstractIntegrationTe
 
     @SneakyThrows
     private void callQueueListenerDropshipmentShipmentConfirmed(SalesOrder salesOrder) {
-        ProcessInstance orderProcess = camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
+        ProcessInstance orderProcess = salesOrderProcessService.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
 
         assertTrue(timedPollingService.pollWithDefaultTiming(() -> 
-                camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
+                camundaHelper.checkIfActiveProcessExists(SALES_ORDER_PROCESS, salesOrder.getOrderNumber())));
 
-        assertTrue(timedPollingService.pollWithDefaultTiming(() -> 
-                camundaHelper.hasPassed(orderProcess.getProcessInstanceId(), EVENT_THROW_MSG_PURCHASE_ORDER_CREATED.getName())));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() ->
+                bpmUtil.hasPassed(orderProcess.getProcessInstanceId(), EVENT_THROW_MSG_PURCHASE_ORDER_CREATED.getName())));
 
         bpmUtil.sendMessage(Messages.DROPSHIPMENT_ORDER_CONFIRMED, salesOrder.getOrderNumber(),
                 Map.of(IS_DROPSHIPMENT_ORDER_CONFIRMED.getName(), true));
 
-        assertTrue(timedPollingService.pollWithDefaultTiming(() -> 
-                camundaHelper.hasPassed(orderProcess.getProcessInstanceId(), THROW_MSG_DROPSHIPMENT_ORDER_CREATED.getName())));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() ->
+                bpmUtil.hasPassed(orderProcess.getProcessInstanceId(), THROW_MSG_DROPSHIPMENT_ORDER_CREATED.getName())));
 
         assertTrue(timedPollingService.pollWithDefaultTiming(() ->
-                camundaHelper.hasPassed(orderProcess.getProcessInstanceId(), EVENT_THROW_MSG_PURCHASE_ORDER_SUCCESSFUL.getName())));
+                bpmUtil.hasPassed(orderProcess.getProcessInstanceId(), EVENT_THROW_MSG_PURCHASE_ORDER_SUCCESSFUL.getName())));
 
         dropshipmentSqsReceiveService.queueListenerDropshipmentShipmentConfirmed(getDropshipmentShipmentConfirmed(salesOrder), messageWrapper);
 
@@ -192,23 +196,23 @@ class DropshipmentSqsReceiveServiceIntegrationTest extends AbstractIntegrationTe
         var orderMessage = getObjectByResource("ecpOrderMessageWithTwoRows.json", Order.class);
         orderMessage.getOrderHeader().setOrderFulfillment(DELTICOM.getName());
         SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(orderMessage));
-        camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
+        salesOrderProcessService.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
 
         assertTrue(timedPollingService.pollWithDefaultTiming(() -> 
-                camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
+                camundaHelper.checkIfActiveProcessExists(SALES_ORDER_PROCESS, salesOrder.getOrderNumber())));
 
         assertTrue(timedPollingService.pollWithDefaultTiming(() ->
-                camundaHelper.hasPassed(salesOrder.getProcessId(), EVENT_THROW_MSG_PURCHASE_ORDER_CREATED.getName())));
+                bpmUtil.hasPassed(salesOrder.getProcessId(), EVENT_THROW_MSG_PURCHASE_ORDER_CREATED.getName())));
 
         var message = getObjectByResource("dropshipmentOrderPurchasedBooked.json", DropshipmentPurchaseOrderBookedMessage.class);
         message.setSalesOrderNumber(salesOrder.getOrderNumber());
         dropshipmentSqsReceiveService.queueListenerDropshipmentPurchaseOrderBooked(message, messageWrapper);
 
-        assertTrue(timedPollingService.pollWithDefaultTiming(() -> 
-                camundaHelper.hasPassed(salesOrder.getProcessId(), EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED.getName())));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() ->
+                bpmUtil.hasPassed(salesOrder.getProcessId(), EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED.getName())));
 
-        assertTrue(timedPollingService.pollWithDefaultTiming(() -> 
-                camundaHelper.hasPassed(salesOrder.getProcessId(), EVENT_THROW_MSG_PURCHASE_ORDER_SUCCESSFUL.getName())));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() ->
+                bpmUtil.hasPassed(salesOrder.getProcessId(), EVENT_THROW_MSG_PURCHASE_ORDER_SUCCESSFUL.getName())));
     }
 
     @Test
@@ -217,21 +221,21 @@ class DropshipmentSqsReceiveServiceIntegrationTest extends AbstractIntegrationTe
         var orderMessage = getObjectByResource("ecpOrderMessageWithTwoRows.json", Order.class);
         orderMessage.getOrderHeader().setOrderFulfillment(DELTICOM.getName());
         SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(orderMessage));
-        camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
+        salesOrderProcessService.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
 
         assertTrue(timedPollingService.pollWithDefaultTiming(() -> 
-                camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
+                camundaHelper.checkIfActiveProcessExists(SALES_ORDER_PROCESS, salesOrder.getOrderNumber())));
 
         var message = getObjectByResource("dropshipmentOrderPurchasedBooked.json", DropshipmentPurchaseOrderBookedMessage.class);
         message.setSalesOrderNumber(salesOrder.getOrderNumber());
         message.setBooked(false);
         dropshipmentSqsReceiveService.queueListenerDropshipmentPurchaseOrderBooked(message, messageWrapper);
 
-        assertTrue(timedPollingService.pollWithDefaultTiming(() -> 
-                camundaHelper.hasPassed(salesOrder.getProcessId(), EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED.getName())));
+        assertTrue(timedPollingService.pollWithDefaultTiming(() ->
+                bpmUtil.hasPassed(salesOrder.getProcessId(), EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED.getName())));
 
         assertTrue(timedPollingService.pollWithDefaultTiming(() ->
-                camundaHelper.hasPassed(salesOrder.getProcessId(), DROPSHIPMENT_ORDER_ROWS_CANCELLATION.getName())));
+                bpmUtil.hasPassed(salesOrder.getProcessId(), DROPSHIPMENT_ORDER_ROWS_CANCELLATION.getName())));
     }
 
     @Test

@@ -15,7 +15,7 @@ import static de.kfzteile24.salesOrderHub.domain.audit.Action.RETURN_ORDER_CREAT
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class CoreSalesCreditNoteCreatedService {
+public class CoreSalesCreditNoteService {
 
     private final SalesOrderReturnService salesOrderReturnService;
     private final FeatureFlagConfig featureFlagConfig;

@@ -5,6 +5,7 @@ import com.github.tomakehurst.wiremock.client.WireMock;
 import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +23,7 @@ import java.util.Objects;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_ECP;
 import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.copyOrderJson;
 import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
@@ -45,6 +47,8 @@ class MigrationSalesOrderServiceIntegrationTest extends AbstractIntegrationTest 
     private MigrationSalesOrderService migrationSalesOrderService;
     @Autowired
     private TimedPollingService pollingService;
+    @Autowired
+    private SalesOrderProcessService salesOrderProcessService;
 
     @Test
     void testHandleMigrationCoreSalesOrderCreated() throws URISyntaxException, IOException {
@@ -60,11 +64,12 @@ class MigrationSalesOrderServiceIntegrationTest extends AbstractIntegrationTest 
 
         var message = getObjectByResource("ecpOrderMessage.json", Order.class);
         Order originalOrder = copyOrderJson(message);
+        var messageWrapper = MessageWrapper.builder().build();
 
         migrationSalesOrderService.handleMigrationCoreSalesOrderCreated(message, messageWrapper);
 
         assertFalse(timedPollingService.pollWithDefaultTiming(
-                () -> camundaHelper.checkIfActiveProcessExists(message.getOrderHeader().getOrderNumber())));
+                () -> camundaHelper.checkIfActiveProcessExists(SALES_ORDER_PROCESS, message.getOrderHeader().getOrderNumber())));
 
         SalesOrder updated = salesOrderService.getOrderByOrderNumber(message.getOrderHeader().getOrderNumber()).orElse(null);
         assertNotNull(updated);
@@ -80,18 +85,19 @@ class MigrationSalesOrderServiceIntegrationTest extends AbstractIntegrationTest 
     void testHandleMigrationCoreSalesOrderCreatedDuplicateOrder() {
 
         var message = getObjectByResource("ecpOrderMessageWithTwoRows.json", Order.class);
+        var messageWrapper = MessageWrapper.builder().build();
         Order originalOrder = copyOrderJson(message);
         SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(message));
-        camundaHelper.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
+        salesOrderProcessService.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
 
         assertTrue(timedPollingService.pollWithDefaultTiming(() ->
-                camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber()))
+                camundaHelper.checkIfActiveProcessExists(SALES_ORDER_PROCESS, salesOrder.getOrderNumber()))
         );
 
         migrationSalesOrderService.handleMigrationCoreSalesOrderCreated(message, messageWrapper);
 
         assertTrue(timedPollingService.pollWithDefaultTiming(
-                () -> camundaHelper.checkIfActiveProcessExists(message.getOrderHeader().getOrderNumber())));
+                () -> camundaHelper.checkIfActiveProcessExists(SALES_ORDER_PROCESS, message.getOrderHeader().getOrderNumber())));
 
         SalesOrder updated = salesOrderService.getOrderByOrderNumber(message.getOrderHeader().getOrderNumber()).orElse(null);
         assertNotNull(updated);

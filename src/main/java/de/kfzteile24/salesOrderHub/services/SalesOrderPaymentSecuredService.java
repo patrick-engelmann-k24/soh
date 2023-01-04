@@ -82,7 +82,7 @@ public class SalesOrderPaymentSecuredService {
                 .map(SalesOrder::getLatestJson)
                 .map(Order::getOrderHeader)
                 .map(OrderHeader::getPayments)
-                .map(camundaHelper::getPaymentType)
+                .map(PaymentType::getPaymentType)
                 .map(paymentType -> StringUtils.equalsIgnoreCase(paymentType, PaymentType.PAYPAL.getName()))
                 .orElse(Boolean.FALSE);
     }
@@ -90,7 +90,7 @@ public class SalesOrderPaymentSecuredService {
     private void correlateOrderReceivedPaymentSecured(String orderNumber, Collection<Exception> exceptions) {
         try {
             var result =
-                    camundaHelper.correlateMessageByBusinessKey(Messages.ORDER_RECEIVED_PAYMENT_SECURED,
+                    camundaHelper.correlateMessage(Messages.ORDER_RECEIVED_PAYMENT_SECURED,
                             orderNumber);
 
             if (!result.getExecution().getProcessInstanceId().isEmpty()) {

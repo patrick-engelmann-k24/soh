@@ -23,6 +23,9 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.ProcessEngine;
+import org.camunda.bpm.engine.impl.runtime.CorrelationHandlerResult;
+import org.camunda.bpm.engine.impl.runtime.MessageCorrelationResultImpl;
+import org.camunda.bpm.extension.mockito.process.ProcessInstanceFake;
 import org.camunda.bpm.spring.boot.starter.CamundaBpmConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -97,6 +100,8 @@ public abstract class AbstractIntegrationTest implements ApplicationContextAware
     @SpyBean
     protected AmazonEmailService amazonEmailService;
 
+    protected MessageCorrelationResultImpl messageCorrelationResult;
+
     /**
      * The application context gets created only once for all the model tests
      */
@@ -124,5 +129,7 @@ public abstract class AbstractIntegrationTest implements ApplicationContextAware
         init(processEngine);
         doNothing().when(notificationMessagingTemplate).sendNotification(any(), any(), any());
         doNothing().when(amazonEmailService).sendOrderCancelledEmail(any());
+        messageCorrelationResult = new MessageCorrelationResultImpl(new CorrelationHandlerResult());
+        messageCorrelationResult.setProcessInstance(ProcessInstanceFake.builder().build());
     }
 }

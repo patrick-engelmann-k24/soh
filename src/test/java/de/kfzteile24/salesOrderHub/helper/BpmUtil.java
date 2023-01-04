@@ -3,11 +3,14 @@ package de.kfzteile24.salesOrderHub.helper;
 import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.EventType;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.camunda.bpm.engine.HistoryService;
 import org.camunda.bpm.engine.RuntimeService;
+import org.camunda.bpm.engine.TaskService;
+import org.camunda.bpm.engine.history.HistoricActivityInstance;
+import org.camunda.bpm.engine.history.HistoricActivityInstanceQuery;
 import org.camunda.bpm.engine.history.HistoricProcessInstance;
 import org.camunda.bpm.engine.runtime.EventSubscription;
 import org.camunda.bpm.engine.runtime.MessageCorrelationBuilder;
@@ -22,6 +25,7 @@ import java.util.Optional;
 import java.util.Random;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toUnmodifiableList;
 import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat;
 import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.historyService;
@@ -33,10 +37,9 @@ import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.runtime
 @RequiredArgsConstructor
 public class BpmUtil {
 
-    @NonNull
     private final RuntimeService runtimeService;
-
-    @NonNull
+    private final HistoryService historyService;
+    private final TaskService taskService;
     private final TimedPollingService pollingService;
 
     public final List<MessageCorrelationResult> sendMessage(BpmItem message, String orderNumber) {
@@ -118,4 +121,28 @@ public class BpmUtil {
                 .eventName(eventName)
                 .list();
     }
+
+    public boolean hasPassed(final String processInstance, final String activityId) {
+        var tasks = taskService.createTaskQuery().taskAssigned().list();
+        tasks.forEach(task -> taskService.complete(task.getId()));
+        final List<HistoricActivityInstance> finishedInstances = historicActivityInstanceQuery(processInstance)
+                .finished()
+                .orderByHistoricActivityInstanceEndTime().asc()
+                .orderPartiallyByOccurrence().asc()
+                .list();
+        final List<HistoricActivityInstance> collect = finishedInstances.parallelStream()
+                .filter(e -> e.getActivityId().equals(activityId))
+                .collect(toList());
+        return !collect.isEmpty();
+    }
+
+    public boolean hasNotPassed(final String processInstance, final String activityId) {
+        return !hasPassed(processInstance, activityId);
+    }
+
+    protected HistoricActivityInstanceQuery historicActivityInstanceQuery(final String processInstance) {
+        return historyService.createHistoricActivityInstanceQuery()
+                .processInstanceId(processInstance);
+    }
+
 }

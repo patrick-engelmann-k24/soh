@@ -34,4 +34,8 @@ public enum ShipmentMethod implements BpmItem {
         return UNKNOWN;
     }
 
+    public static boolean isShipped(String shippingType) {
+        return !ShipmentMethod.NONE.getName().equals(shippingType);
+    }
+
 }

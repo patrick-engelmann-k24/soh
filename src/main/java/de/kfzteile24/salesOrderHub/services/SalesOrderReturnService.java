@@ -23,9 +23,11 @@ import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +36,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -43,12 +46,18 @@ import static de.kfzteile24.salesOrderHub.constants.SOHConstants.DATE_TIME_FORMA
 import static de.kfzteile24.salesOrderHub.constants.SalesOrderType.DROPSHIPMENT;
 import static de.kfzteile24.salesOrderHub.constants.SalesOrderType.REGULAR;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_RETURN_CONFIRMED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.PUBLISH_DELAY;
 import static de.kfzteile24.salesOrderHub.helper.OrderUtil.getOrderGroupIdFromOrderNumber;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class SalesOrderReturnService {
+
+    @Value("${kfzteile.orderReturnProcess.publishDelay}")
+    @Setter
+    private String publishDelay;
 
     @NonNull
     private final SalesOrderReturnRepository salesOrderReturnRepository;
@@ -63,7 +72,7 @@ public class SalesOrderReturnService {
     private final CreditNoteNumberCounterService creditNoteNumberCounterService;
 
     @NonNull
-    private final CamundaHelper helper;
+    private final CamundaHelper camundaHelper;
 
     @NonNull
     private final OrderUtil orderUtil;
@@ -152,12 +161,22 @@ public class SalesOrderReturnService {
                     salesCreditNoteCreatedMessage,
                     salesOrders);
 
-            ProcessInstance result = helper.createReturnOrderProcess(save(salesOrderReturn, action), message);
+            ProcessInstance result = createReturnOrderProcess(save(salesOrderReturn, action), message);
             if (result != null) {
                 log.info("New return order process started for order number: {}. Process-Instance-ID: {} ",
                         orderNumber, result.getProcessInstanceId());
             }
         }
+    }
+
+    public ProcessInstance createReturnOrderProcess(SalesOrderReturn salesOrderReturn, Messages originChannel) {
+
+        Map<String, Object> variables = Map.of(
+                ORDER_NUMBER.getName(), salesOrderReturn.getOrderNumber(),
+                PUBLISH_DELAY.getName(), publishDelay);
+        return camundaHelper.correlateMessage(originChannel,
+                salesOrderReturn.getOrderNumber(),
+                variables).getProcessInstance();
     }
 
     private SalesOrderReturn createSalesOrderReturn(SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage,

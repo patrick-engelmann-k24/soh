@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
 
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_CANCELLED;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -41,6 +42,6 @@ public class CancelDropshipmentOrderDelegateTest {
         when(delegateExecution.getVariable(Variables.ORDER_NUMBER.getName())).thenReturn(expectedOrderNumber);
         when(salesOrderService.getOrderByOrderNumber(expectedOrderNumber)).thenReturn(Optional.of(SalesOrder.builder().build()));
         cancelDropshipmentOrderDelegate.execute(delegateExecution);
-        verify(camundaHelper).correlateDropshipmentOrderCancelledMessage(expectedOrderNumber);
+        verify(camundaHelper).correlateMessage(DROPSHIPMENT_ORDER_CANCELLED, expectedOrderNumber);
     }
 }

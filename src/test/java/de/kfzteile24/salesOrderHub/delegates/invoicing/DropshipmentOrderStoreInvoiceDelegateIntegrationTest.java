@@ -4,14 +4,13 @@ import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
-import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
+import de.kfzteile24.salesOrderHub.services.SalesOrderProcessService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import de.kfzteile24.soh.order.dto.Order;
@@ -34,9 +33,6 @@ import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertT
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DropshipmentOrderStoreInvoiceDelegateIntegrationTest extends AbstractIntegrationTest {
-
-    @Autowired
-    private BpmUtil util;
 
     @Autowired
     private SalesOrderService salesOrderService;
@@ -65,6 +61,9 @@ class DropshipmentOrderStoreInvoiceDelegateIntegrationTest extends AbstractInteg
     @Autowired
     private OrderUtil orderUtil;
 
+    @Autowired
+    private SalesOrderProcessService salesOrderProcessService;
+
     @Test
     void testInvoiceIsStoredCorrectly() {
         var testOrder = salesOrderUtil.createNewDropshipmentSalesOrder();
@@ -86,7 +85,7 @@ class DropshipmentOrderStoreInvoiceDelegateIntegrationTest extends AbstractInteg
     }
 
     private ProcessInstance createAndVerifyOrderProcess(SalesOrder testOrder) {
-        var orderProcess = camundaHelper.createOrderProcess(testOrder, Messages.ORDER_RECEIVED_ECP);
+        var orderProcess = salesOrderProcessService.createOrderProcess(testOrder, Messages.ORDER_RECEIVED_ECP);
         assertTrue(pollingService.pollWithDefaultTiming(() -> {
             assertThat(orderProcess).hasPassedInOrder(
                     START_MSG_ORDER_RECEIVED_FROM_ECP.getName(),
@@ -110,15 +109,6 @@ class DropshipmentOrderStoreInvoiceDelegateIntegrationTest extends AbstractInteg
             );
             return true;
         }));
-    }
-
-    private void verifyIfInvoiceEventIsSaved(String orderNumber, CoreSalesInvoiceCreatedMessage invoiceEvent) {
-        var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
-                .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
-        invoiceEvent.getSalesInvoice().getSalesInvoiceHeader().setInvoiceNumber(null);
-        invoiceEvent.getSalesInvoice().getSalesInvoiceHeader().setInvoiceDate(
-                salesOrder.getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getInvoiceDate());
-        org.assertj.core.api.Assertions.assertThat(salesOrder.getInvoiceEvent()).isEqualTo(invoiceEvent);
     }
 
     @AfterEach

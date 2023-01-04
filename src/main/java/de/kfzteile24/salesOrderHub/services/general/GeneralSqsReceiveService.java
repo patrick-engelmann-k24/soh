@@ -1,10 +1,10 @@
 package de.kfzteile24.salesOrderHub.services.general;
 
 import com.newrelic.api.agent.Trace;
-import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ParcelShippedMessage;
 import de.kfzteile24.salesOrderHub.services.InvoiceUrlExtractor;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentOrderReturnService;
+import de.kfzteile24.salesOrderHub.services.financialdocuments.CoreSalesInvoiceService;
 import de.kfzteile24.salesOrderHub.services.sqs.AbstractSqsReceiveService;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +20,7 @@ import static org.springframework.cloud.aws.messaging.listener.SqsMessageDeletio
 public class GeneralSqsReceiveService extends AbstractSqsReceiveService {
 
     private final ParcelShippedService parcelShippedService;
-    private final CamundaHelper camundaHelper;
+    private final CoreSalesInvoiceService coreSalesInvoiceCreatedService;
     private final DropshipmentOrderReturnService dropshipmentOrderReturnService;
 
     /**
@@ -35,7 +35,7 @@ public class GeneralSqsReceiveService extends AbstractSqsReceiveService {
             dropshipmentOrderReturnService.handleCreditNoteFromDropshipmentOrderReturn(message, messageWrapper);
         } else {
             log.info("url: {} is for invoice", message);
-            camundaHelper.handleInvoiceFromCore(message, messageWrapper);
+            coreSalesInvoiceCreatedService.handleInvoiceFromCore(message, messageWrapper);
         }
     }
 

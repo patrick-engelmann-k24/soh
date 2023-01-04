@@ -1,8 +1,8 @@
 package de.kfzteile24.salesOrderHub.services.general;
 
-import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.dto.sns.parcelshipped.ParcelShippedMessage;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentOrderReturnService;
+import de.kfzteile24.salesOrderHub.services.financialdocuments.CoreSalesInvoiceService;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,7 +27,7 @@ class GeneralSqsReceiveServiceTest {
     @Mock
     private ParcelShippedService parcelShippedService;
     @Mock
-    private CamundaHelper camundaHelper;
+    private CoreSalesInvoiceService coreSalesInvoiceService;
     @Mock
     private DropshipmentOrderReturnService dropshipmentOrderReturnService;
 
@@ -61,6 +61,6 @@ class GeneralSqsReceiveServiceTest {
 
         generalSqsReceiveService.queueListenerInvoiceReceivedFromCore(message, messageWrapper);
 
-        verify(camundaHelper).handleInvoiceFromCore(message, messageWrapper);
+        verify(coreSalesInvoiceService).handleInvoiceFromCore(message, messageWrapper);
     }
 }

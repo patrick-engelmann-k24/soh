@@ -13,6 +13,7 @@ import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.DropshipmentInvoiceRowRepository;
 import de.kfzteile24.salesOrderHub.repositories.InvoiceNumberCounterRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
+import de.kfzteile24.salesOrderHub.services.SalesOrderProcessService;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentInvoiceRowService;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentOrderService;
@@ -34,6 +35,7 @@ import java.util.TreeSet;
 
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.INVOICING_PROCESS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.AGGREGATE_INVOICE_DATA;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.DROPSHIPMENT_ORDER_ROW_SHIPMENT_CONFIRMED_SUB_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_INVOICING_DROPSHIPMENT_ORDER_FULLY_INVOICED;
@@ -74,6 +76,8 @@ class DropshipmentOrderFullyInvoicedIntegrationTest extends AbstractIntegrationT
     protected DropshipmentInvoiceRowRepository dropshipmentInvoiceRowRepository;
     @Autowired
     private RuntimeService runtimeService;
+    @Autowired
+    private SalesOrderProcessService salesOrderProcessService;
 
     @BeforeEach
     public void setup() {
@@ -100,10 +104,10 @@ class DropshipmentOrderFullyInvoicedIntegrationTest extends AbstractIntegrationT
         starInvoicingProcess();
 
         assertTrue(timerService.pollWithDefaultTiming(() ->
-                camundaHelper.hasPassed(processInstance1.getId(), END_MSG_ORDER_COMPLETED.getName())));
+                bpmUtil.hasPassed(processInstance1.getId(), END_MSG_ORDER_COMPLETED.getName())));
 
         assertTrue(timerService.pollWithDefaultTiming(() ->
-                camundaHelper.hasPassed(processInstance2.getId(), END_MSG_ORDER_COMPLETED.getName())));
+                bpmUtil.hasPassed(processInstance2.getId(), END_MSG_ORDER_COMPLETED.getName())));
 
         Set<String> orderNumbers = new TreeSet<>();
         orderNumbers.add(salesOrder.getOrderNumber());
@@ -153,13 +157,13 @@ class DropshipmentOrderFullyInvoicedIntegrationTest extends AbstractIntegrationT
     }
 
     private ProcessInstance startDropshipmentConfirmedProcess(SalesOrder salesOrder, DropshipmentShipmentConfirmedMessage message) {
-        ProcessInstance processInstance = camundaHelper.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
+        ProcessInstance processInstance = salesOrderProcessService.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
 
         assertTrue(timerService.pollWithDefaultTiming(() ->
-                camundaHelper.checkIfActiveProcessExists(salesOrder.getOrderNumber())));
+                camundaHelper.checkIfActiveProcessExists(SALES_ORDER_PROCESS, salesOrder.getOrderNumber())));
 
         assertTrue(timerService.pollWithDefaultTiming(() ->
-                camundaHelper.hasPassed(processInstance.getId(), EVENT_THROW_MSG_PURCHASE_ORDER_CREATED.getName())));
+                bpmUtil.hasPassed(processInstance.getId(), EVENT_THROW_MSG_PURCHASE_ORDER_CREATED.getName())));
 
         var messageCorrelationResult = bpmUtil.sendMessage(Messages.DROPSHIPMENT_ORDER_CONFIRMED, salesOrder.getOrderNumber(),
                 Variables.putValue(IS_DROPSHIPMENT_ORDER_CONFIRMED.getName(), true));
@@ -167,12 +171,12 @@ class DropshipmentOrderFullyInvoicedIntegrationTest extends AbstractIntegrationT
         assertThat(messageCorrelationResult.getExecution().getProcessInstanceId()).isNotBlank();
 
         assertTrue(timerService.pollWithDefaultTiming(() ->
-                    camundaHelper.hasPassed(processInstance.getId(), EVENT_THROW_MSG_PURCHASE_ORDER_SUCCESSFUL.getName())));
+                bpmUtil.hasPassed(processInstance.getId(), EVENT_THROW_MSG_PURCHASE_ORDER_SUCCESSFUL.getName())));
 
         dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(message, messageWrapper);
 
         assertTrue(timerService.pollWithDefaultTiming(() ->
-                camundaHelper.hasPassed(processInstance.getId(), DROPSHIPMENT_ORDER_ROW_SHIPMENT_CONFIRMED_SUB_PROCESS.getName())));
+                bpmUtil.hasPassed(processInstance.getId(), DROPSHIPMENT_ORDER_ROW_SHIPMENT_CONFIRMED_SUB_PROCESS.getName())));
 
         return processInstance;
     }
@@ -181,19 +185,19 @@ class DropshipmentOrderFullyInvoicedIntegrationTest extends AbstractIntegrationT
         ProcessInstance processInstance = runtimeService.startProcessInstanceByKey(INVOICING_PROCESS.getName());
 
         assertTrue(timerService.pollWithDefaultTiming(() ->
-                camundaHelper.hasPassed(processInstance.getId(),AGGREGATE_INVOICE_DATA.getName())));
+                bpmUtil.hasPassed(processInstance.getId(),AGGREGATE_INVOICE_DATA.getName())));
 
         assertTrue(timerService.pollWithDefaultTiming(() ->
-                camundaHelper.hasPassed(processInstance.getId(), INVOICING_CREATE_DROPSHIPMENT_SALES_ORDER_INVOICE.getName())));
+                bpmUtil.hasPassed(processInstance.getId(), INVOICING_CREATE_DROPSHIPMENT_SALES_ORDER_INVOICE.getName())));
 
         assertTrue(timerService.pollWithDefaultTiming(() ->
-                camundaHelper.hasPassed(processInstance.getId(), EVENT_THROW_MSG_INVOICING_PUBLISH_FULLY_INVOICED_DATA.getName())));
+                bpmUtil.hasPassed(processInstance.getId(), EVENT_THROW_MSG_INVOICING_PUBLISH_FULLY_INVOICED_DATA.getName())));
 
         assertTrue(timerService.pollWithDefaultTiming(() ->
-                camundaHelper.hasPassed(processInstance.getId(), EVENT_THROW_MSG_INVOICING_DROPSHIPMENT_ORDER_FULLY_INVOICED.getName())));
+                bpmUtil.hasPassed(processInstance.getId(), EVENT_THROW_MSG_INVOICING_DROPSHIPMENT_ORDER_FULLY_INVOICED.getName())));
 
         assertTrue(timerService.pollWithDefaultTiming(() ->
-                camundaHelper.hasPassed(processInstance.getId(), EVENT_THROW_MSG_INVOICING_GENERATE_FULLY_INVOICED_PDF.getName())));
+                bpmUtil.hasPassed(processInstance.getId(), EVENT_THROW_MSG_INVOICING_GENERATE_FULLY_INVOICED_PDF.getName())));
 
         return processInstance;
     }

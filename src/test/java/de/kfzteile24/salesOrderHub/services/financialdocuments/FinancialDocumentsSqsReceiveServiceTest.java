@@ -26,9 +26,9 @@ class FinancialDocumentsSqsReceiveServiceTest {
     @Spy
     private FinancialDocumentsSqsReceiveService financialDocumentsSqsReceiveService;
     @Mock
-    private CoreSalesCreditNoteCreatedService coreSalesCreditNoteCreatedService;
+    private CoreSalesCreditNoteService coreSalesCreditNoteCreatedService;
     @Mock
-    private CoreSalesInvoiceCreatedService coreSalesInvoiceCreatedService;
+    private CoreSalesInvoiceService coreSalesInvoiceCreatedService;
     @Mock
     private PaypalRefundInstructionSuccessfulService paypalRefundInstructionSuccessfulService;
 

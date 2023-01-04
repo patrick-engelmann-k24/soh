@@ -19,8 +19,8 @@ import static org.springframework.cloud.aws.messaging.listener.SqsMessageDeletio
 @RequiredArgsConstructor
 public class FinancialDocumentsSqsReceiveService extends AbstractSqsReceiveService {
 
-    private final CoreSalesInvoiceCreatedService coreSalesInvoiceCreatedService;
-    private final CoreSalesCreditNoteCreatedService coreSalesCreditNoteCreatedService;
+    private final CoreSalesInvoiceService coreSalesInvoiceCreatedService;
+    private final CoreSalesCreditNoteService coreSalesCreditNoteCreatedService;
     private final PaypalRefundInstructionSuccessfulService paypalRefundInstructionSuccessfulService;
 
     /**

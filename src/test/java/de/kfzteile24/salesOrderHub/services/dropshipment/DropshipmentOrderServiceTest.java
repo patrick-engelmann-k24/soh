@@ -23,6 +23,7 @@ import de.kfzteile24.salesOrderHub.helper.ReturnOrderHelper;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.helper.SubsequentSalesOrderCreationHelper;
 import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
+import de.kfzteile24.salesOrderHub.services.SalesOrderRowService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
@@ -41,6 +42,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.Answers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
@@ -59,6 +61,7 @@ import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.K24;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_RETURN_CONFIRMED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_ROW_SHIPMENT_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_DROPSHIPMENT_ORDER_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
@@ -101,7 +104,8 @@ class DropshipmentOrderServiceTest {
     private SnsPublishService snsPublishService;
     @Mock
     private InvoiceService invoiceService;
-    @Mock
+
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private CamundaHelper camundaHelper;
     @Mock
     private ReturnOrderHelper returnOrderHelper;
@@ -113,6 +117,8 @@ class DropshipmentOrderServiceTest {
     private MetricsHelper metricsHelper;
     @Mock
     private SubsequentSalesOrderCreationHelper subsequentSalesOrderCreationHelper;
+    @Mock
+    private SalesOrderRowService salesOrderRowService;
     private final MessageWrapper messageWrapper = MessageWrapper.builder().build();
 
     @ParameterizedTest
@@ -250,6 +256,8 @@ class DropshipmentOrderServiceTest {
 
         when(salesOrderService.getOrderByOrderNumber(message.getSalesOrderNumber())).thenReturn(Optional.of(salesOrder));
         when(salesOrderService.save(salesOrder, ORDER_ITEM_SHIPPED)).thenReturn(salesOrder);
+        when(camundaHelper.correlateMessage(eq(DROPSHIPMENT_ORDER_ROW_SHIPMENT_CONFIRMED),
+                anyString(), any()).getProcessInstance()).thenReturn(null);
 
         dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(message, messageWrapper);
 
@@ -264,7 +272,7 @@ class DropshipmentOrderServiceTest {
                 }),
                 eq(ORDER_ITEM_SHIPPED));
 
-            verify(camundaHelper, times(3)).correlateDropshipmentOrderRowShipmentConfirmedMessage(
+            verify(dropshipmentOrderService, times(3)).correlateDropshipmentOrderRowShipmentConfirmedMessage(
                     eq(salesOrder),
                     any(),
                     any()

@@ -1,17 +1,22 @@
 package de.kfzteile24.salesOrderHub.services;
 
-import de.kfzteile24.salesOrderHub.helper.CustomValidator;
-import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.split.SalesOrderSplit;
+import de.kfzteile24.salesOrderHub.helper.CustomValidator;
+import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
+import de.kfzteile24.salesOrderHub.helper.SleuthHelper;
+import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
+import org.camunda.bpm.extension.mockito.process.ProcessInstanceFake;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
@@ -29,6 +34,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -39,8 +45,6 @@ class SalesOrderProcessServiceTest {
     @Mock
     private SalesOrderService salesOrderService;
     @Mock
-    private CamundaHelper camundaHelper;
-    @Mock
     private SplitterService splitterService;
     @Mock
     private OrderUtil orderUtil;
@@ -48,10 +52,27 @@ class SalesOrderProcessServiceTest {
     private SnsPublishService snsPublishService;
     @Mock
     private CustomValidator customValidator;
+    @Mock
+    private SleuthHelper sleuthHelper;
+
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    private CamundaHelper camundaHelper;
+
+    @Mock
+    private MetricsHelper metricsHelper;
 
     @InjectMocks
     @Spy
     private SalesOrderProcessService salesOrderProcessService;
+
+
+    @BeforeEach
+    void setUp() {
+        lenient().doNothing().when(metricsHelper).sendCustomEvent(any(SalesOrder.class), any());
+        lenient().doNothing().when(sleuthHelper).updateTraceId(anyString());
+        lenient().when(camundaHelper.correlateMessage(any(), anyString(), any()).getProcessInstance())
+                .thenReturn(ProcessInstanceFake.builder().build());
+    }
 
     @Test
     void testHandleShopOrdersReceived() {
@@ -67,7 +88,7 @@ class SalesOrderProcessServiceTest {
 
         salesOrderProcessService.handleShopOrdersReceived(message, messageWrapper);
 
-        verify(camundaHelper).createOrderProcess(any(SalesOrder.class), any(Messages.class));
+        verify(salesOrderProcessService).createOrderProcess(any(SalesOrder.class), any(Messages.class));
         verify(salesOrderService).createSalesOrder(salesOrder);
         verify(salesOrderService).checkOrderNotExists(salesOrder.getOrderNumber());
         verify(salesOrderService).enrichInitialOrder(message);
@@ -97,8 +118,8 @@ class SalesOrderProcessServiceTest {
 
         salesOrderProcessService.handleShopOrdersReceived(message, messageWrapper);
 
-        verify(camundaHelper).createOrderProcess(eq(regularOrder), any(Messages.class));
-        verify(camundaHelper).createOrderProcess(eq(splittedOrder), any(Messages.class));
+        verify(salesOrderProcessService).createOrderProcess(eq(regularOrder), any(Messages.class));
+        verify(salesOrderProcessService).createOrderProcess(eq(splittedOrder), any(Messages.class));
         verify(salesOrderService).createSalesOrder(regularOrder);
         verify(salesOrderService).createSalesOrder(splittedOrder);
         verify(salesOrderService).checkOrderNotExists(regularOrder.getOrderNumber());
@@ -119,7 +140,7 @@ class SalesOrderProcessServiceTest {
 
         salesOrderProcessService.handleShopOrdersReceived(message,  messageWrapper);
 
-        verify(camundaHelper, never()).createOrderProcess(any(SalesOrder.class), any(Messages.class));
+        verify(salesOrderProcessService, never()).createOrderProcess(any(SalesOrder.class), any(Messages.class));
         verify(salesOrderService).checkOrderNotExists("524001240");
         verify(salesOrderService).enrichInitialOrder(message);
     }
@@ -143,7 +164,7 @@ class SalesOrderProcessServiceTest {
 
         salesOrderProcessService.handleShopOrdersReceived(message,  messageWrapper);
 
-        verify(camundaHelper, never()).createOrderProcess(any(SalesOrder.class), any(Messages.class));
+        verify(salesOrderProcessService, never()).createOrderProcess(any(SalesOrder.class), any(Messages.class));
         verify(salesOrderService).createSalesOrder(salesOrder);
         verify(salesOrderService).checkOrderNotExists(salesOrder.getOrderNumber());
         verify(salesOrderService).enrichInitialOrder(message);

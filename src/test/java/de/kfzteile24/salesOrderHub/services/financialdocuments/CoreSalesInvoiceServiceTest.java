@@ -14,9 +14,12 @@ import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
+import org.apache.commons.lang3.StringUtils;
+import org.camunda.bpm.extension.mockito.process.ProcessInstanceFake;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
@@ -41,15 +44,17 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class CoreSalesInvoiceCreatedServiceTest {
+class CoreSalesInvoiceServiceTest {
 
     public static final String ANY_PROCESS_ID = UUID.randomUUID().toString();
+    public static final UUID ANY_SALES_ORDER_ID = UUID.randomUUID();
 
     @Mock
     private SalesOrderService salesOrderService;
     @Mock
     private SalesOrderRowService salesOrderRowService;
-    @Mock
+
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private CamundaHelper camundaHelper;
     @Mock
     private FeatureFlagConfig featureFlagConfig;
@@ -61,13 +66,15 @@ class CoreSalesInvoiceCreatedServiceTest {
     private MetricsHelper metricsHelper;
     @InjectMocks
     @Spy
-    private CoreSalesInvoiceCreatedService coreSalesInvoiceCreatedService;
+    private CoreSalesInvoiceService coreSalesInvoiceCreatedService;
 
     @Test
     @DisplayName("Test That Subsequent Order should be created, even if Invoice is Fully Matched With Original Order, but sales invoice event was already published for the Original Order")
     void testQueueListenerSubsequentOrderCreatedIfSalesInvoicePublished() {
         SalesOrder salesOrder = getSalesOrder(getObjectByResource("ecpOrderMessage.json", Order.class));
         salesOrder.setProcessId(ANY_PROCESS_ID);
+        salesOrder.setId(ANY_SALES_ORDER_ID);
+        salesOrder.setOrderGroupId(salesOrder.getOrderNumber());
         salesOrder.getLatestJson().getOrderHeader().setDocumentRefNumber("not null");
         salesOrder.setInvoiceEvent(new CoreSalesInvoiceCreatedMessage(new CoreSalesInvoice(new CoreSalesInvoiceHeader(), Collections.emptyList())));
 
@@ -81,19 +88,22 @@ class CoreSalesInvoiceCreatedServiceTest {
 
         var message = getObjectByResource("coreSalesInvoiceCreatedOneItem.json", CoreSalesInvoiceCreatedMessage.class);
         var messageWrapper = MessageWrapper.builder().build();
+        coreSalesInvoiceCreatedService.setPublishDelayForSubsequentOrders(StringUtils.EMPTY);
         coreSalesInvoiceCreatedService.handleCoreSalesInvoiceCreated(message, messageWrapper);
 
         verify(camundaHelper).waitsOnActivityForMessage(salesOrder.getProcessId(), MSG_ORDER_CORE_SALES_INVOICE_CREATED,
                 ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED);
-        verify(camundaHelper, never()).correlateMessage(eq(ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED), any());
+        verify(camundaHelper, never()).correlateMessage(eq(ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED), anyString());
         verify(salesOrderService).createSalesOrderForInvoice(any(CoreSalesInvoiceCreatedMessage.class), any(SalesOrder.class), any(String.class));
-        verify(camundaHelper).startInvoiceCreatedReceivedProcess(salesOrder);
+        verify(coreSalesInvoiceCreatedService).startInvoiceCreatedReceivedProcess(salesOrder);
     }
 
     @Test
     void testQueueListenerInvoiceCreatedMsgReceived() {
         SalesOrder salesOrder = getSalesOrder(getObjectByResource("ecpOrderMessage.json", Order.class));
         salesOrder.setProcessId(ANY_PROCESS_ID);
+        salesOrder.setId(ANY_SALES_ORDER_ID);
+        salesOrder.setOrderGroupId(salesOrder.getOrderNumber());
 
         when(salesOrderService.checkOrderNotExists(any())).thenReturn(true);
         when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.of(salesOrder));
@@ -102,16 +112,18 @@ class CoreSalesInvoiceCreatedServiceTest {
         when(salesOrderService.createOrderNumberInSOH(any(), any())).thenReturn(salesOrder.getOrderNumber(), "10");
         when(orderUtil.checkIfOrderHasOrderRows(any())).thenReturn(true);
         when(camundaHelper.waitsOnActivityForMessage(anyString(), any(BpmItem.class), any(BpmItem.class))).thenReturn(true);
+        when(camundaHelper.correlateMessage(any(), anyString(), any()).getProcessInstance()).thenReturn(ProcessInstanceFake.builder().build());
 
         var message = getObjectByResource("coreSalesInvoiceCreatedOneItem.json", CoreSalesInvoiceCreatedMessage.class);
         var messageWrapper = MessageWrapper.builder().build();
+        coreSalesInvoiceCreatedService.setPublishDelayForSubsequentOrders(StringUtils.EMPTY);
         coreSalesInvoiceCreatedService.handleCoreSalesInvoiceCreated(message, messageWrapper);
 
         verify(camundaHelper).waitsOnActivityForMessage(salesOrder.getProcessId(), MSG_ORDER_CORE_SALES_INVOICE_CREATED,
                 ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED);
         verify(camundaHelper).correlateMessage(ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED, salesOrder);
         verify(salesOrderService).createSalesOrderForInvoice(any(CoreSalesInvoiceCreatedMessage.class), any(SalesOrder.class),any(String.class));
-        verify(camundaHelper).startInvoiceCreatedReceivedProcess(salesOrder);
+        verify(coreSalesInvoiceCreatedService).startInvoiceCreatedReceivedProcess(salesOrder);
     }
 
     @Test
@@ -121,6 +133,7 @@ class CoreSalesInvoiceCreatedServiceTest {
         String orderNumber = salesOrder.getOrderNumber();
         salesOrder.setProcessId(ANY_PROCESS_ID);
         salesOrder.setOrderGroupId(orderNumber);
+        salesOrder.setId(ANY_SALES_ORDER_ID);
         salesOrder.getLatestJson().getOrderHeader().setOrderGroupId(orderNumber);
         var message = getObjectByResource("coreSalesInvoiceCreatedOneItem.json", CoreSalesInvoiceCreatedMessage.class);
         var messageWrapper = MessageWrapper.builder().build();
@@ -133,13 +146,14 @@ class CoreSalesInvoiceCreatedServiceTest {
         when(salesOrderService.isFullyMatchedWithOriginalOrder(eq(salesOrder), any())).thenReturn(true);
         when(camundaHelper.waitsOnActivityForMessage(anyString(), any(BpmItem.class), any(BpmItem.class))).thenReturn(false);
 
+        coreSalesInvoiceCreatedService.setPublishDelayForSubsequentOrders(StringUtils.EMPTY);
         coreSalesInvoiceCreatedService.handleCoreSalesInvoiceCreated(message, messageWrapper);
 
         verify(camundaHelper).waitsOnActivityForMessage(salesOrder.getProcessId(), MSG_ORDER_CORE_SALES_INVOICE_CREATED,
                 ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED);
-        verify(camundaHelper, never()).correlateMessage(eq(ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED), any());
+        verify(camundaHelper, never()).correlateMessage(eq(ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED), anyString());
         verify(salesOrderService).updateOrder(salesOrder);
-        verify(camundaHelper).startInvoiceCreatedReceivedProcess(salesOrder);
+        verify(coreSalesInvoiceCreatedService).startInvoiceCreatedReceivedProcess(salesOrder);
 
         assertNotNull(salesOrder.getLatestJson().getOrderHeader().getOrderGroupId());
         assertEquals(salesOrder.getLatestJson().getOrderHeader().getOrderGroupId(), salesOrder.getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getOrderGroupId());

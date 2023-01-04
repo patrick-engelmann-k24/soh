@@ -1,5 +1,6 @@
 package de.kfzteile24.salesOrderHub.services;
 
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
@@ -8,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
@@ -18,9 +20,9 @@ import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createNewSalesOr
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class SalesOrderRowServiceTest {
@@ -49,7 +51,9 @@ class SalesOrderRowServiceTest {
         var salesOrder = createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
         salesOrder.getLatestJson().getOrderRows().forEach(orderRows -> orderRows.setIsCancelled(true));
 
-        when(camundaHelper.isShipped(anyString())).thenReturn(true);
+        try (MockedStatic<ShipmentMethod> mockStatic = mockStatic(ShipmentMethod.class)) {
+            mockStatic.when(() -> ShipmentMethod.isShipped(anyString())).thenReturn(true);
+        }
 
         salesOrderRowService.cancelOrderProcessIfFullyCancelled(salesOrder);
 

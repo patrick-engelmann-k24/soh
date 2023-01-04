@@ -1,8 +1,8 @@
 package de.kfzteile24.salesOrderHub.services.processmigration.handler.salesorderprocess.v1.step;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
-import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.services.SalesOrderProcessService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.processmigration.ProcessQueryService;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +19,7 @@ public class ModificationStepV1 implements Step {
 
     private final ProcessQueryService processQueryService;
     private final SalesOrderService salesOrderService;
-    private final CamundaHelper camundaHelper;
+    private final SalesOrderProcessService salesOrderProcessService;
 
     @Override
     public void perform(StepExecutionContext stepExecutionContext) {
@@ -32,7 +32,7 @@ public class ModificationStepV1 implements Step {
                 .createProcessInstanceModification(processInstanceId)
                 .cancelAllForActivity("eventMsgOrderPaymentSecured")
                 .startAfterActivity("eventThrowMsgOrderCreated")
-                .setVariables(camundaHelper.createProcessVariables(salesOrder))
+                .setVariables(salesOrderProcessService.createProcessVariables(salesOrder))
                 .execute();
     }
 }

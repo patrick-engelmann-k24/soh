@@ -1,6 +1,9 @@
 package de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
+import de.kfzteile24.soh.order.dto.Payments;
+
+import java.util.List;
 
 /**
  * All available payment types
@@ -28,4 +31,11 @@ public enum PaymentType implements BpmItem {
         return name;
     }
 
+    public static String getPaymentType(List<Payments> payments) {
+        return payments.stream()
+                .map(Payments::getType)
+                .filter(paymentType -> !VOUCHER.getName().equals(paymentType))
+                .findAny()
+                .orElseThrow(() -> new IllegalArgumentException("Order does not contain a valid payment type"));
+    }
 }

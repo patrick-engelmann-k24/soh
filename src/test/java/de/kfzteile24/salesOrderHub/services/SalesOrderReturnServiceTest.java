@@ -13,9 +13,12 @@ import de.kfzteile24.salesOrderHub.services.financialdocuments.CreditNoteNumberC
 import de.kfzteile24.salesOrderHub.services.returnorder.ReturnOrderServiceAdaptor;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
+import org.apache.commons.lang3.StringUtils;
+import org.camunda.bpm.extension.mockito.process.ProcessInstanceFake;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
@@ -36,8 +39,8 @@ import static java.time.LocalDateTime.now;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -57,8 +60,8 @@ class SalesOrderReturnServiceTest {
     @Mock
     private CreditNoteNumberCounterService creditNoteNumberCounterService;
 
-    @Mock
-    private CamundaHelper helper;
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    private CamundaHelper camundaHelper;
 
     @Spy
     private OrderUtil orderUtil = new OrderUtil(new DropShipmentConfig(), new ObjectUtil(new ObjectMapper()));
@@ -125,12 +128,15 @@ class SalesOrderReturnServiceTest {
         var message = getObjectByResource("coreSalesCreditNoteCreated.json", SalesCreditNoteCreatedMessage.class);
         message.getSalesCreditNote().getSalesCreditNoteHeader().setOrderNumber(orderNumber);
         message.getSalesCreditNote().getSalesCreditNoteHeader().setOrderGroupId(null);
-        when(adaptor.getSalesOrderList(eq(orderGroupId), eq(DROPSHIPMENT))).thenReturn(List.of(salesOrder2, salesOrder1));
-        when(salesOrderService.getOrderByOrderNumber(eq(orderGroupId))).thenReturn(Optional.of(salesOrder1));
+        when(adaptor.getSalesOrderList(orderGroupId, DROPSHIPMENT)).thenReturn(List.of(salesOrder2, salesOrder1));
+        when(salesOrderService.getOrderByOrderNumber(orderGroupId)).thenReturn(Optional.of(salesOrder1));
         when(salesOrderReturnRepository.findByOrderNumber(any())).thenReturn(Optional.empty());
         when(salesOrderReturnRepository.save(any())).thenAnswer((Answer<SalesOrderReturn>) invocation -> invocation.getArgument(0));
         doReturn(null).when(auditLogRepository).save(any());
+        when(camundaHelper.correlateMessage(any(), anyString(), any()).getProcessInstance())
+                .thenReturn(ProcessInstanceFake.builder().build());
 
+        salesOrderReturnService.setPublishDelay(StringUtils.EMPTY);
         salesOrderReturnService.handleSalesOrderReturn(message, DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED, DROPSHIPMENT_ORDER_RETURN_CONFIRMED);
 
         verify(salesOrderReturnRepository).save(argThat(

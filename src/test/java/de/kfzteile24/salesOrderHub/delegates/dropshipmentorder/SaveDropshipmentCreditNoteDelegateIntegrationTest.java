@@ -6,6 +6,7 @@ import de.kfzteile24.salesOrderHub.exception.SalesOrderReturnNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderReturnRepository;
+import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.api.Assertions;
@@ -47,6 +48,9 @@ class SaveDropshipmentCreditNoteDelegateIntegrationTest extends AbstractIntegrat
     @Autowired
     private BpmUtil bpmUtil;
 
+    @Autowired
+    private SalesOrderReturnService salesOrderReturnService;
+
     @Test
     void testInvoiceIsStoredCorrectly() {
 
@@ -58,7 +62,7 @@ class SaveDropshipmentCreditNoteDelegateIntegrationTest extends AbstractIntegrat
         Assertions.assertThat(salesOrderReturn.getUrl()).isNull();
         var invoiceUrl = String.format("s3://k24-invoices/app_android-kfzteile24-de/2021/06/04/%s.pdf", salesOrderReturn.getOrderNumber() + "-" + creditNoteNumber);
 
-        camundaHelper.createReturnOrderProcess(salesOrderReturn, CORE_CREDIT_NOTE_CREATED);
+        salesOrderReturnService.createReturnOrderProcess(salesOrderReturn, CORE_CREDIT_NOTE_CREATED);
         final Map<String, Object> processVariables = new HashMap<>();
         processVariables.put(INVOICE_URL.getName(), invoiceUrl);
         processVariables.put(ORDER_NUMBER.getName(), salesOrderReturn.getOrderNumber());
