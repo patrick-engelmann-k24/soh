@@ -1,10 +1,8 @@
 package de.kfzteile24.salesOrderHub.services.dropshipment;
 
 import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
-import de.kfzteile24.salesOrderHub.domain.dropshipment.DropshipmentInvoiceRow;
 import de.kfzteile24.salesOrderHub.domain.dropshipment.DropshipmentOrderRow;
 import de.kfzteile24.salesOrderHub.helper.DropshipmentHelper;
-import de.kfzteile24.salesOrderHub.repositories.DropshipmentInvoiceRowRepository;
 import de.kfzteile24.salesOrderHub.repositories.DropshipmentOrderRowRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
