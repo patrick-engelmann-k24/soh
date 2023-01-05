@@ -28,7 +28,6 @@ public class DropshipmentOrderRow {
     @GeneratedValue
     private UUID id;
 
-    @Column(name = "sku")
     @NotNull
     private String sku;
 
@@ -36,7 +35,6 @@ public class DropshipmentOrderRow {
     @NotNull
     private String orderNumber;
 
-    @Column(name = "quantity")
     @NotNull
     private Integer quantity;
 
