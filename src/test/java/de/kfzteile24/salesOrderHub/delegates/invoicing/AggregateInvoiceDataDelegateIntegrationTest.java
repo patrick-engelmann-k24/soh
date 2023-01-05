@@ -5,6 +5,7 @@ import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.dropshipment.DropshipmentInvoiceRow;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
+import de.kfzteile24.salesOrderHub.helper.DropshipmentHelper;
 import de.kfzteile24.salesOrderHub.repositories.DropshipmentInvoiceRowRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
@@ -50,6 +51,9 @@ class AggregateInvoiceDataDelegateIntegrationTest extends AbstractIntegrationTes
 
     @Autowired
     private BpmUtil bpmUtil;
+
+    @Autowired
+    private DropshipmentHelper dropshipmentHelper;
 
     @Test
     void testSubprocessCreationAndSubsequentOrderCreation() {
@@ -97,40 +101,19 @@ class AggregateInvoiceDataDelegateIntegrationTest extends AbstractIntegrationTes
 
         List<DropshipmentInvoiceRow> dropshipmentInvoiceRowList = List.of(
 
-        DropshipmentInvoiceRow.builder()
-                .orderNumber(salesOrderFullyInvoiced.getOrderNumber())
-                .sku("sku-1")
-                .build(),
+            dropshipmentHelper.createDropshipmentInvoiceRow("sku-1", salesOrderFullyInvoiced.getOrderNumber()),
 
-        DropshipmentInvoiceRow.builder()
-                .orderNumber(salesOrderFullyInvoiced.getOrderNumber())
-                .sku("sku-2")
-                .build(),
+            dropshipmentHelper.createDropshipmentInvoiceRow("sku-2", salesOrderFullyInvoiced.getOrderNumber()),
 
-        DropshipmentInvoiceRow.builder()
-                .orderNumber(salesOrderFullyInvoiced.getOrderNumber())
-                .sku("sku-3")
-                .build(),
+            dropshipmentHelper.createDropshipmentInvoiceRow("sku-3", salesOrderFullyInvoiced.getOrderNumber()),
 
-        DropshipmentInvoiceRow.builder()
-                .orderNumber(salesOrderPartiallyInvoiced1.getOrderNumber())
-                .sku("sku-1")
-                .build(),
+            dropshipmentHelper.createDropshipmentInvoiceRow("sku-1", salesOrderPartiallyInvoiced1.getOrderNumber()),
 
-        DropshipmentInvoiceRow.builder()
-                .orderNumber(salesOrderPartiallyInvoiced2.getOrderNumber())
-                .sku("sku-1")
-                .build(),
+            dropshipmentHelper.createDropshipmentInvoiceRow("sku-1", salesOrderPartiallyInvoiced2.getOrderNumber()),
 
-        DropshipmentInvoiceRow.builder()
-                .orderNumber(salesOrderPartiallyInvoiced3.getOrderNumber())
-                .sku("sku-2")
-                .build(),
+            dropshipmentHelper.createDropshipmentInvoiceRow("sku-2", salesOrderPartiallyInvoiced3.getOrderNumber()),
 
-        DropshipmentInvoiceRow.builder()
-                .orderNumber(salesOrderPartiallyInvoiced3.getOrderNumber())
-                .sku("sku-3")
-                .build()
+            dropshipmentHelper.createDropshipmentInvoiceRow("sku-3", salesOrderPartiallyInvoiced3.getOrderNumber())
         );
         dropshipmentInvoiceRowRepository.saveAll(dropshipmentInvoiceRowList);
     }

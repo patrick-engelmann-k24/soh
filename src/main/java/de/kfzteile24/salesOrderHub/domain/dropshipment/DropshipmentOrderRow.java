@@ -15,13 +15,13 @@ import javax.validation.constraints.NotNull;
 import java.util.UUID;
 
 @Entity
-@Table(name = "dropshipment_invoice_row", schema = "public", catalog = "soh")
+@Table(name = "dropshipment_order_row", schema = "public", catalog = "soh")
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @Valid
-public class DropshipmentInvoiceRow {
+public class DropshipmentOrderRow {
 
     @Id
     @Column(name = "id", columnDefinition = "uuid", updatable = false)
@@ -34,8 +34,8 @@ public class DropshipmentInvoiceRow {
     @NotNull
     private String orderNumber;
 
-    private String invoiceNumber;
-
     @NotNull
     private Integer quantity;
+
+    private Integer quantityShipped = 0;
 }
