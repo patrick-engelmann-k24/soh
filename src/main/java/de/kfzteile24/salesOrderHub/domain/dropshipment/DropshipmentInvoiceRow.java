@@ -28,18 +28,14 @@ public class DropshipmentInvoiceRow {
     @GeneratedValue
     private UUID id;
 
-    @Column(name = "sku")
     @NotNull
     private String sku;
 
-    @Column(name = "order_number")
     @NotNull
     private String orderNumber;
 
-    @Column(name = "invoice_number")
     private String invoiceNumber;
 
-    @Column(name = "quantity")
     @NotNull
     private Integer quantity;
 }

@@ -31,13 +31,11 @@ public class DropshipmentOrderRow {
     @NotNull
     private String sku;
 
-    @Column(name = "order_number")
     @NotNull
     private String orderNumber;
 
     @NotNull
     private Integer quantity;
 
-    @Column(name = "quantity_shipped")
     private Integer quantityShipped = 0;
 }
