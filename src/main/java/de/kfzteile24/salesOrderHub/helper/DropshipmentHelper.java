@@ -1,6 +1,7 @@
 package de.kfzteile24.salesOrderHub.helper;
 
 import de.kfzteile24.salesOrderHub.domain.dropshipment.DropshipmentInvoiceRow;
+import de.kfzteile24.salesOrderHub.domain.dropshipment.DropshipmentOrderRow;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -15,6 +16,16 @@ public class DropshipmentHelper {
         return DropshipmentInvoiceRow.builder()
                 .sku(sku)
                 .orderNumber(orderNumber)
+                .quantity(0) //TODO: implement quantity
+                .build();
+    }
+
+    public DropshipmentOrderRow createDropshipmentOrderRow(String sku, String orderNumber) {
+
+        return DropshipmentOrderRow.builder()
+                .sku(sku)
+                .orderNumber(orderNumber)
+                .quantity(0) //TODO: implement quantity
                 .build();
     }
 }

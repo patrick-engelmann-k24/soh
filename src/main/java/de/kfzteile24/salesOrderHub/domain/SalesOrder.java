@@ -71,4 +71,6 @@ public class SalesOrder extends AbstractBaseEntity {
     private Set<SalesOrderInvoice> salesOrderInvoiceList;
 
     private boolean cancelled = false;
+
+    private boolean shipped = false;
 }
