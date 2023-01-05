@@ -75,13 +75,6 @@ class DropshipmentOrderStoreInvoiceDelegateIntegrationTest extends AbstractInteg
 
         ProcessInstance orderProcess = createAndVerifyOrderProcess(testOrder);
         sendAndVerifyDropshipmentOrderConfirmed(orderNumber, orderProcess);
-
-        //this functionality has already been tested with model tests and in DropshipmentOrderServiceIntegrationTest
-        //sendAndVerifyTrackingInfoReceived(orderNumber, orderProcess);
-
-        //TODO: implement test case, which would start invoicing process after shipment confirmed message is received and then later check updated sales order to make sure
-        //that the invoice event is saved
-        //verifyIfInvoiceEventIsSaved(orderNumber, invoiceEvent);
     }
 
     private ProcessInstance createAndVerifyOrderProcess(SalesOrder testOrder) {
