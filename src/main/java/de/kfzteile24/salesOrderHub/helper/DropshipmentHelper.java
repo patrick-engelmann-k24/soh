@@ -20,12 +20,23 @@ public class DropshipmentHelper {
                 .build();
     }
 
+    public DropshipmentInvoiceRow createDropshipmentInvoiceRow(String sku, String orderNumber, String invoiceNumber) {
+
+        return DropshipmentInvoiceRow.builder()
+                .sku(sku)
+                .orderNumber(orderNumber)
+                .invoiceNumber(invoiceNumber)
+                .quantity(0) //TODO: implement quantity
+                .build();
+    }
+
     public DropshipmentOrderRow createDropshipmentOrderRow(String sku, String orderNumber) {
 
         return DropshipmentOrderRow.builder()
                 .sku(sku)
                 .orderNumber(orderNumber)
                 .quantity(0) //TODO: implement quantity
+                .quantityShipped(0)
                 .build();
     }
 }

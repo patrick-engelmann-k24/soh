@@ -7,6 +7,7 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
 import de.kfzteile24.salesOrderHub.domain.dropshipment.DropshipmentInvoiceRow;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
+import de.kfzteile24.salesOrderHub.helper.DropshipmentHelper;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.DropshipmentInvoiceRowRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
@@ -88,6 +89,9 @@ class InvoicingDelegatesMultithreadedIntegrationTest extends AbstractIntegration
 
     @Autowired
     private InvoiceService invoiceService;
+
+    @Autowired
+    private DropshipmentHelper dropshipmentHelper;
 
     @BeforeEach
     public void setup() {
@@ -179,18 +183,8 @@ class InvoicingDelegatesMultithreadedIntegrationTest extends AbstractIntegration
         getSalesOrder(secondOrderNumber + "-1", secondOrderNumber, false);
 
         List<DropshipmentInvoiceRow> dropshipmentInvoiceRowList = List.of(
-
-                DropshipmentInvoiceRow.builder()
-                        .orderNumber(salesOrderPartiallyInvoiced1.getOrderNumber())
-                        .sku("sku-1")
-                        .invoiceNumber(firstInvoiceNumber)
-                        .build(),
-
-                DropshipmentInvoiceRow.builder()
-                        .orderNumber(salesOrderPartiallyInvoiced2.getOrderNumber())
-                        .sku("sku-1")
-                        .invoiceNumber(secondInvoiceNumber)
-                        .build()
+                dropshipmentHelper.createDropshipmentInvoiceRow("sku-1", salesOrderPartiallyInvoiced1.getOrderNumber(), firstInvoiceNumber),
+                dropshipmentHelper.createDropshipmentInvoiceRow("sku-1", salesOrderPartiallyInvoiced2.getOrderNumber(), secondInvoiceNumber)
         );
         dropshipmentInvoiceRowRepository.saveAll(dropshipmentInvoiceRowList);
     }

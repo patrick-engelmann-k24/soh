@@ -6,6 +6,7 @@ import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.DropshipmentOrder
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.dropshipment.DropshipmentInvoiceRow;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
+import de.kfzteile24.salesOrderHub.helper.DropshipmentHelper;
 import de.kfzteile24.salesOrderHub.repositories.DropshipmentInvoiceRowRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
@@ -63,6 +64,9 @@ class CreateDropshipmentSubsequentOrderDelegateIntegrationTest extends AbstractI
 
     @Autowired
     private BpmUtil bpmUtil;
+
+    @Autowired
+    private DropshipmentHelper dropshipmentHelper;
 
     @Autowired
     private CreateDropshipmentSubsequentOrderDelegate createDropshipmentSubsequentOrderDelegate;
@@ -168,16 +172,8 @@ class CreateDropshipmentSubsequentOrderDelegateIntegrationTest extends AbstractI
         getSalesOrder(SECOND_PARTIAL_INVOICE_ORDER_NUMBER + "-1", SECOND_PARTIAL_INVOICE_ORDER_NUMBER, false);
 
         List<DropshipmentInvoiceRow> dropshipmentInvoiceRowList = List.of(
-
-                DropshipmentInvoiceRow.builder()
-                        .orderNumber(salesOrderPartiallyInvoiced1.getOrderNumber())
-                        .sku("sku-1")
-                        .build(),
-
-                DropshipmentInvoiceRow.builder()
-                        .orderNumber(salesOrderPartiallyInvoiced2.getOrderNumber())
-                        .sku("sku-1")
-                        .build()
+                dropshipmentHelper.createDropshipmentInvoiceRow("sku-1", salesOrderPartiallyInvoiced1.getOrderNumber()),
+                dropshipmentHelper.createDropshipmentInvoiceRow("sku-1", salesOrderPartiallyInvoiced2.getOrderNumber())
         );
         dropshipmentInvoiceRowRepository.saveAll(dropshipmentInvoiceRowList);
     }
@@ -189,16 +185,8 @@ class CreateDropshipmentSubsequentOrderDelegateIntegrationTest extends AbstractI
                 getSalesOrder(PARTIAL_INVOICE_FULLY_CANCELLED_ORDER_NUMBER, PARTIAL_INVOICE_FULLY_CANCELLED_ORDER_NUMBER, true);
 
         List<DropshipmentInvoiceRow> dropshipmentInvoiceRowList = List.of(
-
-                DropshipmentInvoiceRow.builder()
-                        .orderNumber(salesOrderPartiallyInvoiced3.getOrderNumber())
-                        .sku("sku-2")
-                        .build(),
-
-                DropshipmentInvoiceRow.builder()
-                        .orderNumber(salesOrderPartiallyInvoiced3.getOrderNumber())
-                        .sku("sku-3")
-                        .build()
+                dropshipmentHelper.createDropshipmentInvoiceRow("sku-2", salesOrderPartiallyInvoiced3.getOrderNumber()),
+                dropshipmentHelper.createDropshipmentInvoiceRow("sku-3", salesOrderPartiallyInvoiced3.getOrderNumber())
         );
         dropshipmentInvoiceRowRepository.saveAll(dropshipmentInvoiceRowList);
     }
@@ -210,20 +198,9 @@ class CreateDropshipmentSubsequentOrderDelegateIntegrationTest extends AbstractI
 
         List<DropshipmentInvoiceRow> dropshipmentInvoiceRowList = List.of(
 
-                DropshipmentInvoiceRow.builder()
-                        .orderNumber(salesOrderFullyInvoiced.getOrderNumber())
-                        .sku("sku-1")
-                        .build(),
-
-                DropshipmentInvoiceRow.builder()
-                        .orderNumber(salesOrderFullyInvoiced.getOrderNumber())
-                        .sku("sku-2")
-                        .build(),
-
-                DropshipmentInvoiceRow.builder()
-                        .orderNumber(salesOrderFullyInvoiced.getOrderNumber())
-                        .sku("sku-3")
-                        .build()
+                dropshipmentHelper.createDropshipmentInvoiceRow("sku-1", salesOrderFullyInvoiced.getOrderNumber()),
+                dropshipmentHelper.createDropshipmentInvoiceRow("sku-2", salesOrderFullyInvoiced.getOrderNumber()),
+                dropshipmentHelper.createDropshipmentInvoiceRow("sku-3", salesOrderFullyInvoiced.getOrderNumber())
         );
         dropshipmentInvoiceRowRepository.saveAll(dropshipmentInvoiceRowList);
     }
