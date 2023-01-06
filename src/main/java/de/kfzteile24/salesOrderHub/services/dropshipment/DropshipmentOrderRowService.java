@@ -46,6 +46,16 @@ public class DropshipmentOrderRowService {
     }
 
     @Transactional(readOnly = true)
+    public Integer getQuantityBySkuAndOrderNumber(String sku, String orderNumber) {
+        return (dropshipmentOrderRowRepository.findBySkuAndOrderNumber(sku, orderNumber)).get().getQuantity();
+    }
+
+    @Transactional(readOnly = true)
+    public Integer getQuantityShippedBySkuAndOrderNumber(String sku, String orderNumber) {
+        return (dropshipmentOrderRowRepository.findBySkuAndOrderNumber(sku, orderNumber)).get().getQuantityShipped();
+    }
+
+    @Transactional(readOnly = true)
     public List<DropshipmentOrderRow> getByOrderNumber(String orderNumber) {
         return dropshipmentOrderRowRepository.findByOrderNumber(orderNumber);
     }
