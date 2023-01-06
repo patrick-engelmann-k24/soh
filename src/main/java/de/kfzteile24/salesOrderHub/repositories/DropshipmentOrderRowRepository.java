@@ -1,6 +1,5 @@
 package de.kfzteile24.salesOrderHub.repositories;
 
-import de.kfzteile24.salesOrderHub.domain.dropshipment.DropshipmentInvoiceRow;
 import de.kfzteile24.salesOrderHub.domain.dropshipment.DropshipmentOrderRow;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -17,4 +16,6 @@ public interface DropshipmentOrderRowRepository extends JpaRepository<Dropshipme
     List<DropshipmentOrderRow> findByOrderNumber(String orderNumber);
 
     List<DropshipmentOrderRow> findAllByOrderByOrderNumberAsc();
+
+    long countByOrderNumber(String orderNumber);
 }
