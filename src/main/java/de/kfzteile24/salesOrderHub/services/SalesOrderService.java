@@ -14,6 +14,7 @@ import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.helper.SubsequentSalesOrderCreationHelper;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
+import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentOrderRowService;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
 import de.kfzteile24.soh.order.dto.GrandTotalTaxes;
 import de.kfzteile24.soh.order.dto.Order;
@@ -69,6 +70,9 @@ public class SalesOrderService {
 
     @NonNull
     private final InvoiceService invoiceService;
+
+    @NonNull
+    private final DropshipmentOrderRowService dropshipmentOrderRowService;
 
     @NonNull
     private final OrderUtil orderUtil;
@@ -245,7 +249,23 @@ public class SalesOrderService {
     public boolean isFullyMatched(List<String> skuList, String orderNumber) {
         var salesOrder = getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
-        return salesOrder.getLatestJson().getOrderRows().stream().allMatch(row -> skuList.contains(row.getSku()));
+        if (salesOrder.getLatestJson().getOrderRows().stream().allMatch(row -> skuList.contains(row.getSku())) == true) {
+            return isQuantityForEachOrderRowMatched(skuList, orderNumber);
+        } else {
+            return false;
+            }
+    }
+
+    @Transactional
+    public boolean isQuantityForEachOrderRowMatched(List<String> skuList, String orderNumber) {
+
+        for (String sku : skuList) {
+            if (dropshipmentOrderRowService.getQuantityBySkuAndOrderNumber(sku, orderNumber)
+                    != dropshipmentOrderRowService.getQuantityShippedBySkuAndOrderNumber(sku, orderNumber)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private boolean isShippingCostNetMatch(SalesOrder originalSalesOrder, CoreSalesFinancialDocumentLine shippingCostDocumentLine) {
