@@ -20,7 +20,6 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_END_MSG_DROPSHIPMENT_ORDER_ROW_CANCELLED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_ORDER_ROW_SHIPMENT_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.END_MSG_ORDER_CANCELLED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Gateways.XOR_CHECK_DROPSHIPMENT_ORDER_SUCCESSFUL;
@@ -54,8 +53,6 @@ class DropshipmentOrderRowCancellationModelTest extends AbstractWorkflowTest {
         processVariables.put(IS_DROPSHIPMENT_ORDER_CONFIRMED.getName(), false);
 
         when(processScenario.waitsAtReceiveTask(EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED.getName()))
-                .thenReturn(RECEIVED_RECEIVER_TASK_ACTION);
-        when(processScenario.waitsAtReceiveTask(EVENT_MSG_DROPSHIPMENT_ORDER_ROW_SHIPMENT_CONFIRMED.getName()))
                 .thenReturn(RECEIVED_RECEIVER_TASK_ACTION);
         when(processScenario.runsCallActivity(CALL_ACTIVITY_DROPSHIPMENT_ORDER_ROWS_CANCELLATION.getName()))
                 .thenReturn(executeCallActivity());

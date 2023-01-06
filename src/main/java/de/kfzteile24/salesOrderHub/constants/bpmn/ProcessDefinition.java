@@ -17,7 +17,7 @@ public enum ProcessDefinition {
     RETURN_ORDER_PROCESS("ReturnOrderProcess"),
     INVOICE_CREATED_RECEIVED_PROCESS("InvoiceCreatedReceivedProcess"),
     INVOICING_PROCESS("InvoicingProcess"),
-    DROPSHIPMENT_ORDER_ROW_SHIPMENT_CONFIRMED_PROCESS("DropshipmentOrderRowShipmentConfirmedProcess"),
+    DROPSHIPMENT_SHIPMENT_PROCESS("DropshipmentShipmentProcess"),
     ORDER_ROW_CANCELLATION_PROCESS("OrderRowsCancellationProcess")
     ;
 

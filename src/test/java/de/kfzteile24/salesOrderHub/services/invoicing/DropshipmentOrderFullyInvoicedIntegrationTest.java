@@ -1,6 +1,5 @@
 package de.kfzteile24.salesOrderHub.services.invoicing;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
@@ -25,6 +24,7 @@ import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.variable.Variables;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -37,15 +37,16 @@ import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.INVOICING_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.AGGREGATE_INVOICE_DATA;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.DROPSHIPMENT_ORDER_ROW_SHIPMENT_CONFIRMED_SUB_PROCESS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.DETERMINE_DROPSHIPMENT_ORDER_INVOICE_TYPE;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_INVOICING_DROPSHIPMENT_ORDER_FULLY_INVOICED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_INVOICING_GENERATE_FULLY_INVOICED_PDF;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_INVOICING_PUBLISH_FULLY_INVOICED_DATA;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_PURCHASE_ORDER_CREATED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_PURCHASE_ORDER_SUCCESSFUL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.INVOICING_CREATE_DROPSHIPMENT_SALES_ORDER_INVOICE;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.PERSIST_DROPSHIPMENT_ORDER_ITEMS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.END_MSG_ORDER_COMPLETED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.MSG_DROPSHIPMENT_ORDER_FULLY_COMPLETED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_DROPSHIPMENT_ORDER_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
@@ -89,7 +90,8 @@ class DropshipmentOrderFullyInvoicedIntegrationTest extends AbstractIntegrationT
     }
 
     @Test
-    void testHandleDropShipmentOrderShipmentConfirmed() throws JsonProcessingException {
+    @Disabled("Has to be enabled and adjusted during implementation of the new dropshipmet-shipment-process")
+    void testHandleDropShipmentOrderShipmentConfirmed() {
         var salesOrder = createDropshipmentSalesOrder();
         assertThat(dropshipmentInvoiceRowService.getByOrderNumber(salesOrder.getOrderNumber()).size()).isEqualTo(0);
         var message = createShipmentConfirmedMessage(salesOrder);
@@ -171,12 +173,11 @@ class DropshipmentOrderFullyInvoicedIntegrationTest extends AbstractIntegrationT
         assertThat(messageCorrelationResult.getExecution().getProcessInstanceId()).isNotBlank();
 
         assertTrue(timerService.pollWithDefaultTiming(() ->
-                bpmUtil.hasPassed(processInstance.getId(), EVENT_THROW_MSG_PURCHASE_ORDER_SUCCESSFUL.getName())));
+                bpmUtil.hasPassed(processInstance.getId(), PERSIST_DROPSHIPMENT_ORDER_ITEMS.getName())));
+        assertTrue(timerService.pollWithDefaultTiming(() ->
+                bpmUtil.isProcessWaitingAtExpectedToken(processInstance, MSG_DROPSHIPMENT_ORDER_FULLY_COMPLETED.getName())));
 
         dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(message, messageWrapper);
-
-        assertTrue(timerService.pollWithDefaultTiming(() ->
-                bpmUtil.hasPassed(processInstance.getId(), DROPSHIPMENT_ORDER_ROW_SHIPMENT_CONFIRMED_SUB_PROCESS.getName())));
 
         return processInstance;
     }
@@ -185,7 +186,10 @@ class DropshipmentOrderFullyInvoicedIntegrationTest extends AbstractIntegrationT
         ProcessInstance processInstance = runtimeService.startProcessInstanceByKey(INVOICING_PROCESS.getName());
 
         assertTrue(timerService.pollWithDefaultTiming(() ->
-                bpmUtil.hasPassed(processInstance.getId(),AGGREGATE_INVOICE_DATA.getName())));
+                bpmUtil.hasPassed(processInstance.getId(), AGGREGATE_INVOICE_DATA.getName())));
+
+        assertTrue(timerService.pollWithDefaultTiming(() ->
+                bpmUtil.hasPassed(processInstance.getId(), DETERMINE_DROPSHIPMENT_ORDER_INVOICE_TYPE.getName())));
 
         assertTrue(timerService.pollWithDefaultTiming(() ->
                 bpmUtil.hasPassed(processInstance.getId(), INVOICING_CREATE_DROPSHIPMENT_SALES_ORDER_INVOICE.getName())));

@@ -30,9 +30,12 @@ public enum Events implements BpmItem {
     START_MSG_CORE_CREDIT_NOTE_CREATED("eventStartMsgCoreCreditNoteCreated"),
     START_MSG_DROPSHIPMENT_ORDER_RETURN_CONFIRMED("eventStartMsgDropshipmentOrderReturnConfirmed"),
     MSG_ORDER_CORE_SALES_INVOICE_CREATED("eventMsgOrderCoreSalesInvoiceCreated"),
-
     START_MSG_CORE_SALES_ORDER_CANCELLED("eventStartMsgCoreSalesOrderCancelled"),
-    END_MSG_CORE_SALES_ORDER_CANCELLED("eventEndMsgCoreSalesOrderCancelled")
+    END_MSG_CORE_SALES_ORDER_CANCELLED("eventEndMsgCoreSalesOrderCancelled"),
+    START_MSG_DROPSHIPMENT_SHIPMENT_CONFIRMATION_RECEIVED("eventStartMsgDropshipmentShipmentConfirmationReceived"),
+    END_MSG_PUBLISH_DROPSHIPMENT_ITEM_SHIPMENT_COMPLETED("eventEndMsgPublishDropshipmentItemShipmentCompleted"),
+    MSG_DROPSHIPMENT_ORDER_FULLY_COMPLETED("eventMsgDropshipmentOrderFullyCompleted"),
+    END_DROPSHIPMENT_SHIPMENT("eventEndDropshipmentShipment")
     ;
 
     @Getter

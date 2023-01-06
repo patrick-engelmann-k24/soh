@@ -2,7 +2,6 @@ package de.kfzteile24.salesOrderHub.delegates.invoicing;
 
 import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
-import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
@@ -24,8 +23,10 @@ import java.util.Map;
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_PURCHASE_ORDER_CREATED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.EVENT_THROW_MSG_PURCHASE_ORDER_SUCCESSFUL;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.PERSIST_DROPSHIPMENT_ORDER_ITEMS;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.MSG_DROPSHIPMENT_ORDER_FULLY_COMPLETED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.START_MSG_ORDER_RECEIVED_FROM_ECP;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.THROW_MSG_DROPSHIPMENT_ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Gateways.XOR_CHECK_DROPSHIPMENT_ORDER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Gateways.XOR_CHECK_DROPSHIPMENT_ORDER_SUCCESSFUL;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_DROPSHIPMENT_ORDER_CONFIRMED;
@@ -51,9 +52,6 @@ class DropshipmentOrderStoreInvoiceDelegateIntegrationTest extends AbstractInteg
 
     @Autowired
     private TimedPollingService pollingService;
-
-    @Autowired
-    private CamundaHelper camundaHelper;
 
     @Autowired
     private BpmUtil bpmUtil;
@@ -97,9 +95,11 @@ class DropshipmentOrderStoreInvoiceDelegateIntegrationTest extends AbstractInteg
         assertTrue(pollingService.pollWithDefaultTiming(() -> {
             assertThat(orderProcess).hasPassedInOrder(
                     EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED.getName(),
+                    THROW_MSG_DROPSHIPMENT_ORDER_CREATED.getName(),
                     XOR_CHECK_DROPSHIPMENT_ORDER_SUCCESSFUL.getName(),
-                    EVENT_THROW_MSG_PURCHASE_ORDER_SUCCESSFUL.getName()
+                    PERSIST_DROPSHIPMENT_ORDER_ITEMS.getName()
             );
+            assertThat(orderProcess).isWaitingAtExactly(MSG_DROPSHIPMENT_ORDER_FULLY_COMPLETED.getName());
             return true;
         }));
     }

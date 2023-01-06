@@ -57,12 +57,9 @@ import static de.kfzteile24.salesOrderHub.constants.CustomEventName.DROPSHIPMENT
 import static de.kfzteile24.salesOrderHub.constants.CustomEventName.DROPSHIPMENT_ORDER_RETURN_NOTIFIED;
 import static de.kfzteile24.salesOrderHub.constants.FulfillmentType.DELTICOM;
 import static de.kfzteile24.salesOrderHub.constants.SOHConstants.ORDER_NUMBER_SEPARATOR;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_ORDER_ROW_SHIPMENT_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_DROPSHIPMENT_ORDER_CONFIRMED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_ORDER_CANCELLED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROW;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.TRACKING_LINKS;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_INVOICE_STORED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_BOOKED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED;
@@ -153,20 +150,6 @@ public class DropshipmentOrderService {
         sendShipmentConfirmedMessageForEachOrderRow(savedSalesOrder, shippedItems, orderRows);
     }
 
-    public ProcessInstance correlateDropshipmentOrderRowShipmentConfirmedMessage(SalesOrder salesOrder,
-                                                                                 String sku,
-                                                                                 List<String> trackingLinks) {
-        Map<String, Object> variables = Map.of(
-                ORDER_NUMBER.getName(), salesOrder.getOrderNumber(),
-                ORDER_ROW.getName(), sku,
-                TRACKING_LINKS.getName(), trackingLinks);
-
-        String businessKey = salesOrder.getOrderNumber() + "#" + sku;
-
-        return camundaHelper.correlateMessage(DROPSHIPMENT_ORDER_ROW_SHIPMENT_CONFIRMED, businessKey, variables)
-                .getProcessInstance();
-    }
-
     private SalesOrder updateSalesOrderWithTrackingInformation(SalesOrder salesOrder,
                                                                Collection<ShipmentItem> shippedItems,
                                                                List<OrderRows> orderRows) {
@@ -193,10 +176,7 @@ public class DropshipmentOrderService {
         shippedItems.forEach(item ->
                 orderRows.stream()
                         .filter(row -> StringUtils.pathEquals(row.getSku(), item.getProductNumber()))
-                        .forEach(row ->
-                                correlateDropshipmentOrderRowShipmentConfirmedMessage(savedSalesOrder, row.getSku(),
-                                        Collections.singletonList(getTrackingLink(item, skuMap)))
-                        )
+                        .forEach(row -> {})
         );
     }
 

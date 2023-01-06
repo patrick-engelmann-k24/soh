@@ -20,7 +20,6 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.tuple.Pair;
 import org.assertj.core.api.Assertions;
-import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
@@ -64,9 +63,6 @@ class InvoicingDelegatesMultithreadedIntegrationTest extends AbstractIntegration
     private SalesOrderInvoiceRepository salesOrderInvoiceRepository;
 
     @Autowired
-    private RuntimeService runtimeService;
-
-    @Autowired
     private TimedPollingService pollingService;
 
     @Autowired
@@ -80,9 +76,6 @@ class InvoicingDelegatesMultithreadedIntegrationTest extends AbstractIntegration
 
     @Autowired
     private InvoiceSavedDelegate invoiceSavedDelegate;
-
-    @Autowired
-    private DropshipmentOrderStoreInvoiceDelegate dropshipmentOrderStoreInvoiceDelegate;
 
     @Autowired
     private CreateDropshipmentSubsequentInvoiceDelegate createDropshipmentSubsequentInvoiceDelegate;

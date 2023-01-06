@@ -14,19 +14,14 @@ public enum Activities implements BpmItem {
     EVENT_THROW_MSG_ORDER_CREATED("eventThrowMsgOrderCreated"),
     EVENT_THROW_MSG_PURCHASE_ORDER_CREATED("eventThrowMsgPurchaseOrderCreated"),
     EVENT_MSG_DROPSHIPMENT_ORDER_CONFIRMED("eventMsgDropShipmentOrderConfirmed"),
-    EVENT_THROW_MSG_PURCHASE_ORDER_SUCCESSFUL("eventThrowMsgPurchaseOrderSuccessful"),
-    EVENT_MSG_DROPSHIPMENT_ORDER_ROW_SHIPMENT_CONFIRMED("eventMsgDropshipmentOrderRowShipmentConfirmed"),
     EVENT_MSG_DROPSHIPMENT_ORDER_ROW_CANCELLATION_RECEIVED("eventMsgDropshipmentOrderRowCancellationReceived"),
     EVENT_END_MSG_DROPSHIPMENT_ORDER_ROW_CANCELLED("eventEndMsgDropshipmentOrderRowCancelled"),
     DROPSHIPMENT_ORDER_ROWS_CANCELLATION("activityDropshipmentOrderRowsCancellation"),
     DROPSHIPMENT_ORDER_CANCELLATION("activityDropshipmentOrderCancellation"),
     EVENT_SIGNAL_PAUSE_PROCESSING_DROPSHIPMENT_ORDER("eventSignalPauseProcessingDropShipmentOrder"),
-
     SUB_PROCESS_CORE_SALES_ORDER_CANCELLED("activitySubProcessCoreSalesOrderCancelled"),
     CORE_SALES_ORDER_CANCELLED("activityCoreSalesOrderCancelled"),
-
-    DROPSHIPMENT_ORDER_ROW_SHIPMENT_CONFIRMED_SUB_PROCESS("activityDropshipmentOrderRowShipmentConfirmedProcess"),
-    DROPSHIPMENT_ORDER_ROW_CREATE_ENTRY("activityDropshipmentOrderRowCreateEntry"),
+    DROPSHIPMENT_CREATE_UPDATE_SHIPMENT_DATA("activityDropshipmentCreateUpdateShipmentData"),
     EVENT_END_MSG_DROPSHIPMENT_ORDER_ROW_PUBLISH_TRACKING_INFORMATION("eventEndMsgDropshipmentOrderRowPublishTrackingInformation"),
     INVOICING_CREATE_SUBSEQUENT_ORDER("activityCreateInvoiceSubsequentOrder"),
     EVENT_THROW_MSG_START_DROPSHIPMENT_SUBSEQUENT_PROCESS("eventThrowMsgStartDropshipmentSubsequentProcess"),
@@ -41,8 +36,8 @@ public enum Activities implements BpmItem {
     EVENT_THROW_MSG_INVOICING_GENERATE_FULLY_INVOICED_PDF("eventThrowMsgGenerateFullyInvoicedPdf"),
     EVENT_MSG_DROPSHIPMENT_ORDER_FULLY_INVOICED("eventMsgDropshipmentOrderFullyInvoiced"),
     AGGREGATE_INVOICE_DATA("activityAggregateInvoiceData"),
-    SCRIPT_SET_TRACKING_ID_RECEIVED("scriptSetTrackingIdReceived"),
-    DETERMINE_DROPSHIPMENT_ORDER_INVOICE_TYPE("activityDetermineDropshipmentOrderInvoiceType");
+    DETERMINE_DROPSHIPMENT_ORDER_INVOICE_TYPE("activityDetermineDropshipmentOrderInvoiceType"),
+    PERSIST_DROPSHIPMENT_ORDER_ITEMS("activityPersistDropshipmentOrderItems");
 
 
     @Getter

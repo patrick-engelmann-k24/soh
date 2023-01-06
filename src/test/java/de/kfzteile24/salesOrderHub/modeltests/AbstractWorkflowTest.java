@@ -3,11 +3,13 @@ package de.kfzteile24.salesOrderHub.modeltests;
 import de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod;
+import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.DropshipmentCreateUpdateShipmentDataDelegate;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.DropshipmentOrderCancellationDelegate;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.DropshipmentOrderRowsCancellationDelegate;
+import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.PublishDropshipmentItemShipmentCompletedDelegate;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.PublishDropshipmentOrderCreatedDelegate;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.PublishDropshipmentOrderRowTrackingInformationDelegate;
-import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.SaveDropshipmentOrderRowDelegate;
+import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.SaveDropshipmentOrderItemsDelegate;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.listener.CheckIsDropshipmentOrderListener;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.listener.CheckProcessingDropshipmentOrderListener;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.listener.NewRelicAwareTimerListener;
@@ -122,7 +124,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Paymen
         CheckPlatformTypeDelegate.class,
         CancelOrderDelegate.class,
         PublishDropshipmentOrderRowTrackingInformationDelegate.class,
-        SaveDropshipmentOrderRowDelegate.class,
+        DropshipmentCreateUpdateShipmentDataDelegate.class,
         AggregateInvoiceDataDelegate.class,
         DetermineDropshipmentOrderInvoiceTypeDelegate.class,
         CreateDropshipmentSubsequentOrderDelegate.class,
@@ -132,7 +134,9 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Paymen
         DropshipmentOrderGenerateInvoicePdfDelegate.class,
         DropshipmentOrderFullyInvoicedDelegate.class,
         CleanupDropshipmentInvoiceRowTableDelegate.class,
-        OrderRowCancelledDelegate.class
+        OrderRowCancelledDelegate.class,
+        PublishDropshipmentItemShipmentCompletedDelegate.class,
+        SaveDropshipmentOrderItemsDelegate.class
 })
 public abstract class AbstractWorkflowTest implements ApplicationContextAware {
 
