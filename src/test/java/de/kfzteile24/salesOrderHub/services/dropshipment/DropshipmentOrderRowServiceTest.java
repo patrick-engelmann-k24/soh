@@ -81,4 +81,14 @@ class DropshipmentOrderRowServiceTest {
                 .quantityShipped(quantity)
                 .build();
     }
+
+    @Test
+    @MethodSource("addQuantityShipped")
+    void testAddQuantityShipped() {
+        var dropshipmentOrderRow = createDropshipmentOrderRow("123456789", "sku-1", 2);
+        when(dropshipmentOrderRowRepository.findBySkuAndOrderNumber(anyString(), anyString())).thenReturn(Optional.of(dropshipmentOrderRow));
+
+        dropshipmentOrderRowService.addQuantityShipped("sku-1", "123456789", 3);
+        verify(dropshipmentOrderRowRepository).save(eq(dropshipmentOrderRow));
+    }
 }

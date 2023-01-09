@@ -72,7 +72,7 @@ public class DropshipmentOrderRowService {
     @Transactional
     public DropshipmentOrderRow addQuantityShipped(String sku, String orderNumber, Integer quantityShipped) {
         if (quantityShipped == null || quantityShipped.equals(0)) {
-            throw new IllegalArgumentException("Shipped Quantity must not be null or zero, when updating Dropshipment Order Row with saveQuantityShipped method");
+            throw new IllegalArgumentException("Shipped Quantity must not be null or zero, when updating Dropshipment Order Row with addQuantityShipped method");
         }
         var dropshipmentOrderRow = dropshipmentOrderRowRepository.findBySkuAndOrderNumber(sku, orderNumber)
                 .orElseThrow(() -> new DropshipmentOrderRowNotFoundException(sku, orderNumber));
