@@ -16,6 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_ORDER_SHIPPED;
+
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -92,6 +94,14 @@ public class DropshipmentOrderRowService {
                 return false;
             }
         }
+        updateSalesOrderAsShipped(orderNumber);
         return true;
+    }
+
+    private void updateSalesOrderAsShipped(String orderNumber) {
+        var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
+                .orElseThrow(() -> new SalesOrderNotFoundException("Could not find dropshipment order: " + orderNumber));
+        salesOrder.setShipped(true);
+        salesOrderService.save(salesOrder, DROPSHIPMENT_ORDER_SHIPPED);
     }
 }
