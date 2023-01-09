@@ -28,15 +28,12 @@ class DropshipmentOrderRowServiceIntegrationTest extends AbstractIntegrationTest
     @Autowired
     private DropshipmentOrderRowRepository dropshipmentOrderRowRepository;
     @Autowired
-    private DropshipmentInvoiceRowRepository dropshipmentInvoiceRowRepository;
-    @Autowired
     private DropshipmentHelper dropshipmentHelper;
 
     @BeforeEach
     public void setup() {
         super.setUp();
         dropshipmentOrderRowRepository.deleteAllInBatch();
-        dropshipmentInvoiceRowRepository.deleteAllInBatch();
     }
 
     @Test
@@ -54,18 +51,6 @@ class DropshipmentOrderRowServiceIntegrationTest extends AbstractIntegrationTest
                     assertThat(orderRows.getQuantity().intValue()).isEqualTo(dropshipmentOrderRow.getQuantity());
                     assertThat(orderNumber).isEqualTo(dropshipmentOrderRow.getOrderNumber());
                     assertThat(0).isEqualTo(dropshipmentOrderRow.getQuantityShipped());
-                    found = true;
-                    break;
-                }
-            }
-            assertThat(found).isTrue();
-        }
-        for (DropshipmentInvoiceRow dropshipmentInvoiceRow: dropshipmentInvoiceRowService.getByOrderNumber(orderNumber)) {
-            boolean found = false;
-            for (OrderRows orderRows: salesOrder.getLatestJson().getOrderRows()) {
-                if (orderRows.getSku().equals(dropshipmentInvoiceRow.getSku())) {
-                    assertThat(orderRows.getQuantity()).isEqualTo(BigDecimal.valueOf(dropshipmentInvoiceRow.getQuantity()));
-                    assertThat(orderNumber).isEqualTo(dropshipmentInvoiceRow.getOrderNumber());
                     found = true;
                     break;
                 }

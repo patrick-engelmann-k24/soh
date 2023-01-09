@@ -28,9 +28,6 @@ public class DropshipmentOrderRowService {
     private final DropshipmentHelper dropshipmentHelper;
 
     @NonNull
-    private final DropshipmentInvoiceRowService dropshipmentInvoiceRowService;
-
-    @NonNull
     private final SalesOrderService salesOrderService;
 
     @Transactional
@@ -40,7 +37,6 @@ public class DropshipmentOrderRowService {
         if (dropshipmentOrderRowRepository.countByOrderNumber(orderNumber) == 0) {
             for (OrderRows orderRows: salesOrder.getLatestJson().getOrderRows()) {
                 create(orderRows.getSku(), orderNumber, orderRows.getQuantity().intValue());
-                dropshipmentInvoiceRowService.create(orderRows.getSku(), orderNumber, orderRows.getQuantity().intValue());
             }
         }
     }
