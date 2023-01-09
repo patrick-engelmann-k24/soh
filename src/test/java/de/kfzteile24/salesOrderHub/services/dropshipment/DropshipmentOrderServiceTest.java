@@ -12,11 +12,9 @@ import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnNotifiedMessage;
-import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentShipmentConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoice;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
-import de.kfzteile24.salesOrderHub.dto.sns.shipment.ShipmentItem;
 import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.helper.ReturnOrderHelper;
@@ -67,13 +65,11 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.Shipme
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_INVOICE_STORED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_BOOKED;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED;
-import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ITEM_SHIPPED;
 import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -87,7 +83,6 @@ import static org.mockito.Mockito.when;
 class DropshipmentOrderServiceTest {
 
     public static final String ANY_INVOICE_NUMBER = RandomStringUtils.randomNumeric(10);
-    public static final String ANY_PROCESS_ID = RandomStringUtils.randomNumeric(10);
 
     @InjectMocks
     @Spy
@@ -231,42 +226,6 @@ class DropshipmentOrderServiceTest {
                 eq(DROPSHIPMENT_PURCHASE_ORDER_BOOKED));
         verify(camundaHelper).correlateMessage(eq(DROPSHIPMENT_ORDER_CONFIRMED), eq(salesOrder),
                 eq(Variables.putValue(IS_DROPSHIPMENT_ORDER_CONFIRMED.getName(), message.getBooked())));
-    }
-
-    @Test
-    @SneakyThrows
-    void testHandleDropShipmentOrderTrackingInformationReceived() {
-
-        var salesOrder = SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
-        salesOrder.setProcessId(ANY_PROCESS_ID);
-        var items = salesOrder.getLatestJson().getOrderRows().stream().map(
-                row -> ShipmentItem.builder()
-                        .productNumber(row.getSku())
-                        .parcelNumber(row.getSku())
-                        .serviceProviderName(row.getSku())
-                        .trackingLink(row.getName())
-                        .build()
-        ).collect(Collectors.toList());
-        var message = DropshipmentShipmentConfirmedMessage.builder()
-                .salesOrderNumber(salesOrder.getOrderNumber())
-                .items(items)
-                .build();
-
-        when(salesOrderService.getOrderByOrderNumber(message.getSalesOrderNumber())).thenReturn(Optional.of(salesOrder));
-        when(salesOrderService.save(salesOrder, ORDER_ITEM_SHIPPED)).thenReturn(salesOrder);
-
-        dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(message, messageWrapper);
-
-        verify(salesOrderService).save(
-                argThat(so -> {
-                    so.getLatestJson().getOrderRows().forEach(row -> {
-                                assertEquals(row.getSku(), row.getShippingProvider());
-                                assertTrue(row.getTrackingNumbers().contains(row.getSku()));
-                            }
-                    );
-                    return true;
-                }),
-                eq(ORDER_ITEM_SHIPPED));
     }
 
     private static Stream<Arguments> provideArgumentsForIsDropShipmentOrder() {

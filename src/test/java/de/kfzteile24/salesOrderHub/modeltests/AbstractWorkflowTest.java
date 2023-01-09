@@ -13,6 +13,7 @@ import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.SaveDropshipmentO
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.listener.CheckIsDropshipmentOrderListener;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.listener.CheckProcessingDropshipmentOrderListener;
 import de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.listener.NewRelicAwareTimerListener;
+import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.delegates.invoicing.AggregateInvoiceDataDelegate;
 import de.kfzteile24.salesOrderHub.delegates.invoicing.CreateDropshipmentSubsequentInvoiceDelegate;
 import de.kfzteile24.salesOrderHub.delegates.invoicing.CreateDropshipmentSubsequentOrderDelegate;
@@ -170,6 +171,9 @@ public abstract class AbstractWorkflowTest implements ApplicationContextAware {
     @Autowired
     protected RuntimeService runtimeService;
 
+    @Autowired
+    protected CamundaHelper camundaHelper;
+
     protected Map<String, Object> processVariables;
 
     protected String businessKey;
@@ -203,7 +207,7 @@ public abstract class AbstractWorkflowTest implements ApplicationContextAware {
 
     protected Scenario startByKey(ProcessDefinition processDefinition, String businessKey, Map<String, Object> processVars) {
         return Scenario.run(processScenario)
-                .startBy(() -> runtimeService.startProcessInstanceByKey(processDefinition.getName(),
+                .startBy(() -> camundaHelper.startProcessByProcessDefinition(processDefinition,
                         businessKey, processVars))
                 .engine(processEngine)
                 .execute();
@@ -211,7 +215,7 @@ public abstract class AbstractWorkflowTest implements ApplicationContextAware {
 
     protected Scenario startByMessage(Messages message, String businessKey, Map<String, Object> processVars) {
         return Scenario.run(processScenario)
-                .startBy(() -> runtimeService.startProcessInstanceByMessage(message.getName(), businessKey, processVars))
+                .startBy(() -> camundaHelper.startProcessByMessage(message, businessKey, processVars))
                 .engine(processEngine)
                 .execute();
     }

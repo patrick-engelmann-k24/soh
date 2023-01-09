@@ -21,7 +21,6 @@ import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -57,7 +56,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 
 @Slf4j
-@Disabled("Has to be enabled and adjusted during implementation of the new dropshipmet-shipment-process")
 class DropshipmentSqsReceiveServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
@@ -96,7 +94,6 @@ class DropshipmentSqsReceiveServiceIntegrationTest extends AbstractIntegrationTe
     }
 
     @Test
-    @DisplayName("IT testing dropshipment shipment confirmed event handling multiple time to see the increment on invoice number")
     void testQueueListenerDropshipmentShipmentConfirmedMultipleTime(TestInfo testInfo) {
 
         log.info(testInfo.getDisplayName());
@@ -120,7 +117,6 @@ class DropshipmentSqsReceiveServiceIntegrationTest extends AbstractIntegrationTe
     }
 
     @Test
-    @DisplayName("IT testing dropshipment shipment confirmed event handling multiple time in threads to see the increment on invoice number")
     void testQueueListenerDropshipmentShipmentConfirmedMultipleTimeInThreads(TestInfo testInfo) {
 
         log.info(testInfo.getDisplayName());

@@ -34,6 +34,11 @@ public class CamundaHelper {
 
     private final RuntimeService runtimeService;
 
+    public ProcessInstance startProcessByProcessDefinition(ProcessDefinition processDefinition, String businessKey,
+                                                           Map<String, Object> processVars) {
+        return runtimeService.startProcessInstanceByKey(processDefinition.getName(), businessKey, processVars);
+    }
+
     public ProcessInstance startProcessByProcessDefinition(ProcessDefinition processDefinition) {
         return runtimeService.startProcessInstanceByKey(processDefinition.getName());
     }

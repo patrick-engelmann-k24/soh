@@ -20,6 +20,7 @@ import static org.springframework.cloud.aws.messaging.listener.SqsMessageDeletio
 public class DropshipmentSqsReceiveService extends AbstractSqsReceiveService {
 
     private final DropshipmentOrderService dropshipmentOrderService;
+    private final DropshipmentShipmentService dropshipmentShipmentService;
 
     /**
      * Consume messages from sqs for dropshipment shipment confirmed published by P&R
@@ -29,7 +30,7 @@ public class DropshipmentSqsReceiveService extends AbstractSqsReceiveService {
     public void queueListenerDropshipmentShipmentConfirmed(
             DropshipmentShipmentConfirmedMessage message, MessageWrapper messageWrapper) {
 
-        dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(message, messageWrapper);
+        dropshipmentShipmentService.handleDropshipmentShipmentConfirmed(message, messageWrapper);
     }
 
     /**

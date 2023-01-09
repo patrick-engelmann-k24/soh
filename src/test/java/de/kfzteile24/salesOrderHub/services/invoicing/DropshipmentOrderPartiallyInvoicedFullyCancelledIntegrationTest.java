@@ -16,7 +16,7 @@ import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.services.SalesOrderProcessService;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentInvoiceRowService;
-import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentOrderService;
+import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentShipmentService;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceNumberCounterService;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
@@ -55,7 +55,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class DropshipmentOrderPartiallyInvoicedFullyCancelledIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
-    private DropshipmentOrderService dropshipmentOrderService;
+    private DropshipmentShipmentService dropshipmentShipmentService;
     @Autowired
     private SalesOrderRepository salesOrderRepository;
     @Autowired
@@ -92,7 +92,7 @@ class DropshipmentOrderPartiallyInvoicedFullyCancelledIntegrationTest extends Ab
     @Disabled("Has to be enabled and adjusted during implementation of the new dropshipmet-shipment-process")
     void testHandleDropShipmentOrderShipmentConfirmed(){
         var salesOrder = createDropshipmentSalesOrder();
-        assertThat(dropshipmentInvoiceRowService.getByOrderNumber(salesOrder.getOrderNumber()).size()).isEqualTo(0);
+        assertThat(dropshipmentInvoiceRowService.getByOrderNumber(salesOrder.getOrderNumber()).size()).isZero();
         var message = createPartialShipmentConfirmedMessage(salesOrder);
 
         var processInstance1 = startDropshipmentConfirmedProcess(salesOrder, message);
@@ -102,7 +102,7 @@ class DropshipmentOrderPartiallyInvoicedFullyCancelledIntegrationTest extends Ab
         assertTrue(timerService.pollWithDefaultTiming(() ->
                 bpmUtil.hasPassed(processInstance1.getId(), END_MSG_ORDER_CANCELLED.getName())));
 
-        var updatedSalesOrder = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber()).get();
+        var updatedSalesOrder = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber()).orElseThrow();
         assertThat(updatedSalesOrder.getInvoiceEvent()).isNull();
         assertThat(updatedSalesOrder.isCancelled()).isTrue();
     }
@@ -159,7 +159,7 @@ class DropshipmentOrderPartiallyInvoicedFullyCancelledIntegrationTest extends Ab
         assertTrue(timerService.pollWithDefaultTiming(() ->
                 bpmUtil.isProcessWaitingAtExpectedToken(processInstance, MSG_DROPSHIPMENT_ORDER_FULLY_COMPLETED.getName())));
 
-        dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(message, messageWrapper);
+        dropshipmentShipmentService.handleDropshipmentShipmentConfirmed(message, messageWrapper);
 
         //small hack to simulate partial invoice in invoicing process
         //other solution would be to create 2 additional processes (which is more time-consuming)

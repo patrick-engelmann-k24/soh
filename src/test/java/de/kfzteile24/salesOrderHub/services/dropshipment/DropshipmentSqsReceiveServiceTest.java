@@ -24,6 +24,9 @@ class DropshipmentSqsReceiveServiceTest {
     private DropshipmentOrderService dropshipmentOrderService;
 
     @Mock
+    private DropshipmentShipmentService dropshipmentShipmentService;
+
+    @Mock
     private KeyValuePropertyService keyValuePropertyService;
 
     @Spy
@@ -52,7 +55,7 @@ class DropshipmentSqsReceiveServiceTest {
 
         dropshipmentSqsReceiveService.queueListenerDropshipmentShipmentConfirmed(message, messageWrapper);
 
-        verify(dropshipmentOrderService).handleDropShipmentOrderTrackingInformationReceived(message, messageWrapper);
+        verify(dropshipmentShipmentService).handleDropshipmentShipmentConfirmed(message, messageWrapper);
     }
 
     @Test

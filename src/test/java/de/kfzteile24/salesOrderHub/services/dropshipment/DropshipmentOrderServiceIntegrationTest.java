@@ -88,6 +88,8 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private DropshipmentOrderService dropshipmentOrderService;
     @Autowired
+    private DropshipmentShipmentService dropshipmentShipmentService;
+    @Autowired
     private SalesOrderRepository salesOrderRepository;
     @Autowired
     private AuditLogRepository auditLogRepository;
@@ -183,7 +185,7 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
 
         var message = createShipmentConfirmedMessage(salesOrder);
         assertThat(dropshipmentInvoiceRowService.getByOrderNumber(salesOrder.getOrderNumber()).size()).isEqualTo(0);
-        dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(message, messageWrapper);
+        dropshipmentShipmentService.handleDropshipmentShipmentConfirmed(message, messageWrapper);
 
         var optUpdatedSalesOrder = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber());
         assertThat(optUpdatedSalesOrder).isNotEmpty();
@@ -235,8 +237,8 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
         startDropshipmentConfirmedProcess(salesOrder1, true);
         startDropshipmentConfirmedProcess(salesOrder2, true);
 
-        dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(createShipmentConfirmedMessage(salesOrder1), messageWrapper);
-        dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(createShipmentConfirmedMessage(salesOrder2), messageWrapper);
+        dropshipmentShipmentService.handleDropshipmentShipmentConfirmed(createShipmentConfirmedMessage(salesOrder1), messageWrapper);
+        dropshipmentShipmentService.handleDropshipmentShipmentConfirmed(createShipmentConfirmedMessage(salesOrder2), messageWrapper);
 
         var optUpdatedSalesOrder = salesOrderService.getOrderByOrderNumber(salesOrder2.getOrderNumber());
         assertThat(optUpdatedSalesOrder).isNotEmpty();

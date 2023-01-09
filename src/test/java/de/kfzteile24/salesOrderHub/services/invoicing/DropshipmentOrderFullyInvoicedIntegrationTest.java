@@ -15,7 +15,7 @@ import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.services.SalesOrderProcessService;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentInvoiceRowService;
-import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentOrderService;
+import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentShipmentService;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceNumberCounterService;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
@@ -54,9 +54,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DropshipmentOrderFullyInvoicedIntegrationTest extends AbstractIntegrationTest {
-
     @Autowired
-    private DropshipmentOrderService dropshipmentOrderService;
+    private DropshipmentShipmentService dropshipmentShipmentService;
     @Autowired
     private SalesOrderRepository salesOrderRepository;
     @Autowired
@@ -93,11 +92,11 @@ class DropshipmentOrderFullyInvoicedIntegrationTest extends AbstractIntegrationT
     @Disabled("Has to be enabled and adjusted during implementation of the new dropshipmet-shipment-process")
     void testHandleDropShipmentOrderShipmentConfirmed() {
         var salesOrder = createDropshipmentSalesOrder();
-        assertThat(dropshipmentInvoiceRowService.getByOrderNumber(salesOrder.getOrderNumber()).size()).isEqualTo(0);
+        assertThat(dropshipmentInvoiceRowService.getByOrderNumber(salesOrder.getOrderNumber()).size()).isZero();
         var message = createShipmentConfirmedMessage(salesOrder);
 
         var salesOrder2 = createDropshipmentSalesOrder();
-        assertThat(dropshipmentInvoiceRowService.getByOrderNumber(salesOrder2.getOrderNumber()).size()).isEqualTo(0);
+        assertThat(dropshipmentInvoiceRowService.getByOrderNumber(salesOrder2.getOrderNumber()).size()).isZero();
         var message2 = createShipmentConfirmedMessage(salesOrder2);
 
         var processInstance1 = startDropshipmentConfirmedProcess(salesOrder, message);
@@ -116,7 +115,7 @@ class DropshipmentOrderFullyInvoicedIntegrationTest extends AbstractIntegrationT
         orderNumbers.add(salesOrder2.getOrderNumber());
         int i = 1;
         for (String orderNumber: orderNumbers) {
-            var updatedSalesOrder = salesOrderService.getOrderByOrderNumber(orderNumber).get();
+            var updatedSalesOrder = salesOrderService.getOrderByOrderNumber(orderNumber).orElseThrow();
             var invoiceNumber = updatedSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber();
             assertThat(invoiceNumber).hasSize(18);
             assertThat(invoiceNumber).isEqualTo(LocalDateTime.now().getYear()
@@ -177,7 +176,7 @@ class DropshipmentOrderFullyInvoicedIntegrationTest extends AbstractIntegrationT
         assertTrue(timerService.pollWithDefaultTiming(() ->
                 bpmUtil.isProcessWaitingAtExpectedToken(processInstance, MSG_DROPSHIPMENT_ORDER_FULLY_COMPLETED.getName())));
 
-        dropshipmentOrderService.handleDropShipmentOrderTrackingInformationReceived(message, messageWrapper);
+        dropshipmentShipmentService.handleDropshipmentShipmentConfirmed(message, messageWrapper);
 
         return processInstance;
     }
