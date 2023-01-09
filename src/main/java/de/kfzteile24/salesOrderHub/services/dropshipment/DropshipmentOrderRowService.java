@@ -83,7 +83,11 @@ public class DropshipmentOrderRowService {
 
     @Transactional
     public boolean isItemsFullyShipped(String orderNumber) {
-        for (DropshipmentOrderRow dropshipmentOrderRow : getByOrderNumber(orderNumber)) {
+        var dropshipmentOrderRows = getByOrderNumber(orderNumber);
+        if (dropshipmentOrderRows.isEmpty()) {
+            return false;
+        }
+        for (DropshipmentOrderRow dropshipmentOrderRow : dropshipmentOrderRows) {
             if (dropshipmentOrderRow.getQuantityShipped() < dropshipmentOrderRow.getQuantity()) {
                 return false;
             }
