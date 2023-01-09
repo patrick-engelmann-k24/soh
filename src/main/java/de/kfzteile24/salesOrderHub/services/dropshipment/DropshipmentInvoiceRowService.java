@@ -31,8 +31,9 @@ public class DropshipmentInvoiceRowService {
 
     private final DropshipmentHelper dropshipmentHelper;
 
-    public DropshipmentInvoiceRow create(String sku, String orderNumber) {
-        final var dropshipmentInvoiceRow = dropshipmentHelper.createDropshipmentInvoiceRow(sku, orderNumber);
+    @Transactional
+    public DropshipmentInvoiceRow create(String sku, String orderNumber, int quantity) {
+        final var dropshipmentInvoiceRow = dropshipmentHelper.createDropshipmentInvoiceRow(sku, orderNumber, quantity);
         return save(dropshipmentInvoiceRow);
     }
 

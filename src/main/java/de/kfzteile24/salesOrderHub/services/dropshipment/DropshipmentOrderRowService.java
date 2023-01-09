@@ -1,29 +1,20 @@
 package de.kfzteile24.salesOrderHub.services.dropshipment;
 
-import de.kfzteile24.salesOrderHub.domain.dropshipment.DropshipmentInvoiceRow;
 import de.kfzteile24.salesOrderHub.domain.dropshipment.DropshipmentOrderRow;
-import de.kfzteile24.salesOrderHub.domain.dropshipment.InvoiceData;
 import de.kfzteile24.salesOrderHub.exception.DropshipmentOrderRowNotFoundException;
-import de.kfzteile24.salesOrderHub.exception.InvoiceNotFoundException;
-import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.DropshipmentHelper;
-import de.kfzteile24.salesOrderHub.repositories.DropshipmentInvoiceRowRepository;
 import de.kfzteile24.salesOrderHub.repositories.DropshipmentOrderRowRepository;
+import de.kfzteile24.salesOrderHub.services.SalesOrderService;
+import de.kfzteile24.soh.order.dto.OrderRows;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.TreeMap;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -33,10 +24,30 @@ public class DropshipmentOrderRowService {
     @NonNull
     private final DropshipmentOrderRowRepository dropshipmentOrderRowRepository;
 
+    @NonNull
     private final DropshipmentHelper dropshipmentHelper;
 
-    public DropshipmentOrderRow create(String sku, String orderNumber) {
-        final var dropshipmentOrderRow = dropshipmentHelper.createDropshipmentOrderRow(sku, orderNumber);
+    @NonNull
+    private final DropshipmentInvoiceRowService dropshipmentInvoiceRowService;
+
+    @NonNull
+    private final SalesOrderService salesOrderService;
+
+    @Transactional
+    public void saveDropshipmentOrderItems(String orderNumber) {
+        var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
+                .orElseThrow(() -> new SalesOrderNotFoundException("Could not find dropshipment order: " + orderNumber));
+        if (dropshipmentOrderRowRepository.countByOrderNumber(orderNumber) == 0) {
+            for (OrderRows orderRows: salesOrder.getLatestJson().getOrderRows()) {
+                create(orderRows.getSku(), orderNumber, orderRows.getQuantity().intValue());
+                dropshipmentInvoiceRowService.create(orderRows.getSku(), orderNumber, orderRows.getQuantity().intValue());
+            }
+        }
+    }
+
+    @Transactional
+    public DropshipmentOrderRow create(String sku, String orderNumber, int quantity) {
+        final var dropshipmentOrderRow = dropshipmentHelper.createDropshipmentOrderRow(sku, orderNumber, quantity);
         return save(dropshipmentOrderRow);
     }
 

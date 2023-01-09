@@ -11,31 +11,31 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class DropshipmentHelper {
 
-    public DropshipmentInvoiceRow createDropshipmentInvoiceRow(String sku, String orderNumber) {
+    public DropshipmentInvoiceRow createDropshipmentInvoiceRow(String sku, String orderNumber, int quantity) {
 
         return DropshipmentInvoiceRow.builder()
                 .sku(sku)
                 .orderNumber(orderNumber)
-                .quantity(0) //TODO: implement quantity
+                .quantity(quantity)
                 .build();
     }
 
-    public DropshipmentInvoiceRow createDropshipmentInvoiceRow(String sku, String orderNumber, String invoiceNumber) {
+    public DropshipmentInvoiceRow createDropshipmentInvoiceRow(String sku, String orderNumber, String invoiceNumber, int quantity) {
 
         return DropshipmentInvoiceRow.builder()
                 .sku(sku)
                 .orderNumber(orderNumber)
                 .invoiceNumber(invoiceNumber)
-                .quantity(0) //TODO: implement quantity
+                .quantity(quantity)
                 .build();
     }
 
-    public DropshipmentOrderRow createDropshipmentOrderRow(String sku, String orderNumber) {
+    public DropshipmentOrderRow createDropshipmentOrderRow(String sku, String orderNumber, int quantity) {
 
         return DropshipmentOrderRow.builder()
                 .sku(sku)
                 .orderNumber(orderNumber)
-                .quantity(0) //TODO: implement quantity
+                .quantity(quantity)
                 .quantityShipped(0)
                 .build();
     }

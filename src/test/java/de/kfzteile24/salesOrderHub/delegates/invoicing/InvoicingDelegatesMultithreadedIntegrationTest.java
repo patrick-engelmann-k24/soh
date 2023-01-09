@@ -176,8 +176,8 @@ class InvoicingDelegatesMultithreadedIntegrationTest extends AbstractIntegration
         getSalesOrder(secondOrderNumber + "-1", secondOrderNumber, false);
 
         List<DropshipmentInvoiceRow> dropshipmentInvoiceRowList = List.of(
-                dropshipmentHelper.createDropshipmentInvoiceRow("sku-1", salesOrderPartiallyInvoiced1.getOrderNumber(), firstInvoiceNumber),
-                dropshipmentHelper.createDropshipmentInvoiceRow("sku-1", salesOrderPartiallyInvoiced2.getOrderNumber(), secondInvoiceNumber)
+                dropshipmentHelper.createDropshipmentInvoiceRow("sku-1", salesOrderPartiallyInvoiced1.getOrderNumber(), firstInvoiceNumber, 0),
+                dropshipmentHelper.createDropshipmentInvoiceRow("sku-1", salesOrderPartiallyInvoiced2.getOrderNumber(), secondInvoiceNumber, 0)
         );
         dropshipmentInvoiceRowRepository.saveAll(dropshipmentInvoiceRowList);
     }
