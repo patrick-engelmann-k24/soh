@@ -38,4 +38,8 @@ public class DropshipmentOrderRow {
     private Integer quantity;
 
     private Integer quantityShipped = 0;
+
+    public void addQuantityShipped(Integer quantityShipped) {
+        this.quantityShipped = this.quantityShipped + quantityShipped;
+    }
 }

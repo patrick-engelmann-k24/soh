@@ -67,22 +67,31 @@ public class DropshipmentOrderRowService {
         dropshipmentOrderRowRepository.deleteAll();
     }
 
-    public List<DropshipmentOrderRow> findAllOrderByOrderNumberAsc() {
-        var list = dropshipmentOrderRowRepository.findAllByOrderByOrderNumberAsc();
+    public List<DropshipmentOrderRow> findAllByOrderNumberAsc() {
+        var list = dropshipmentOrderRowRepository.findAllByOrderNumberAsc();
         log.info("All aggregated dropshipment order row data are retrieved from table. Count of entries: {}", list.size());
         return list;
     }
 
     @Transactional
-    public void saveQuantityShipped(String sku, String orderNumber, Integer quantityShipped) {
+    public DropshipmentOrderRow addQuantityShipped(String sku, String orderNumber, Integer quantityShipped) {
         if (quantityShipped == null || quantityShipped.equals(0)) {
             throw new IllegalArgumentException("Shipped Quantity must not be null or zero, when updating Dropshipment Order Row with saveQuantityShipped method");
         }
         var dropshipmentOrderRow = dropshipmentOrderRowRepository.findBySkuAndOrderNumber(sku, orderNumber)
                 .orElseThrow(() -> new DropshipmentOrderRowNotFoundException(sku, orderNumber));
         log.info("Dropshipment Order Row with sku: {} and order number: {} is updated with shipped quantity: {}", sku, orderNumber, quantityShipped);
-        dropshipmentOrderRow.setQuantityShipped(quantityShipped);
-        save(dropshipmentOrderRow);
+        dropshipmentOrderRow.addQuantityShipped(quantityShipped);
+        return save(dropshipmentOrderRow);
     }
 
+    @Transactional(readOnly = true)
+    public boolean isItemsFullyShipped(String orderNumber) {
+        for (DropshipmentOrderRow dropshipmentOrderRow : getByOrderNumber(orderNumber)) {
+            if (dropshipmentOrderRow.getQuantityShipped() < dropshipmentOrderRow.getQuantity()) {
+                return false;
+            }
+        }
+        return true;
+    }
 }
