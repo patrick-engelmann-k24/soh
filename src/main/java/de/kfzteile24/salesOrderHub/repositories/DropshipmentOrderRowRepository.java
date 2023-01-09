@@ -15,7 +15,5 @@ public interface DropshipmentOrderRowRepository extends JpaRepository<Dropshipme
 
     List<DropshipmentOrderRow> findByOrderNumber(String orderNumber);
 
-    List<DropshipmentOrderRow> findAllByOrderNumberAsc();
-
     long countByOrderNumber(String orderNumber);
 }

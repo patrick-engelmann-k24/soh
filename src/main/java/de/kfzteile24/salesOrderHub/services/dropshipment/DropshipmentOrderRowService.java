@@ -69,12 +69,6 @@ public class DropshipmentOrderRowService {
         dropshipmentOrderRowRepository.deleteAll();
     }
 
-    public List<DropshipmentOrderRow> findAllByOrderNumberAsc() {
-        var list = dropshipmentOrderRowRepository.findAllByOrderNumberAsc();
-        log.info("All aggregated dropshipment order row data are retrieved from table. Count of entries: {}", list.size());
-        return list;
-    }
-
     @Transactional
     public DropshipmentOrderRow addQuantityShipped(String sku, String orderNumber, Integer quantityShipped) {
         if (quantityShipped == null || quantityShipped.equals(0)) {
@@ -87,7 +81,7 @@ public class DropshipmentOrderRowService {
         return save(dropshipmentOrderRow);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public boolean isItemsFullyShipped(String orderNumber) {
         for (DropshipmentOrderRow dropshipmentOrderRow : getByOrderNumber(orderNumber)) {
             if (dropshipmentOrderRow.getQuantityShipped() < dropshipmentOrderRow.getQuantity()) {

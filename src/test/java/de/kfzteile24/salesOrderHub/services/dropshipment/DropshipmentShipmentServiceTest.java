@@ -27,6 +27,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.D
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_FULLY_SHIPPED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROW;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROW_QUANTITY;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.TRACKING_LINKS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
@@ -65,6 +66,7 @@ class DropshipmentShipmentServiceTest {
         val items = salesOrder.getLatestJson().getOrderRows().stream()
                 .map(row -> ShipmentItem.builder()
                         .productNumber(row.getSku())
+                        .quantity(1)
                         .parcelNumber(row.getSku())
                         .serviceProviderName(row.getSku())
                         .trackingLink(row.getSku() + " trackingLink")
@@ -108,6 +110,7 @@ class DropshipmentShipmentServiceTest {
                 .containsExactlyInAnyOrderEntriesOf(Map.of(
                         ORDER_NUMBER.getName(), message.getSalesOrderNumber(),
                         ORDER_ROW.getName(), item.getProductNumber(),
+                        ORDER_ROW_QUANTITY.getName(), item.getQuantity(),
                         TRACKING_LINKS.getName(), List.of(objectMapper.writeValueAsString(TrackingLink.builder()
                                 .url(item.getTrackingLink())
                                 .orderItem(item.getProductNumber())
