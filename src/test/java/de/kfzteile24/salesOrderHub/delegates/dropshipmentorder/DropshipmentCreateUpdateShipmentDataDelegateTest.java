@@ -13,7 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ITEM_FULLY_SHIPPED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROW;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROW_QUANTITY;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.QUANTITY_SHIPPED;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -45,7 +45,7 @@ class DropshipmentCreateUpdateShipmentDataDelegateTest {
                 .build();
         when(delegateExecution.getVariable(ORDER_NUMBER.getName())).thenReturn(orderNumber);
         when(delegateExecution.getVariable(ORDER_ROW.getName())).thenReturn(sku);
-        when(delegateExecution.getVariable(ORDER_ROW_QUANTITY.getName())).thenReturn(quantityShipped);
+        when(delegateExecution.getVariable(QUANTITY_SHIPPED.getName())).thenReturn(quantityShipped);
         when(dropshipmentOrderRowService.addQuantityShipped(eq(sku), eq(orderNumber), eq(quantityShipped))).thenReturn(dropshipmentOrderRow);
         when(dropshipmentOrderRowService.isItemsFullyShipped(eq(orderNumber))).thenReturn(false);
 
@@ -66,7 +66,7 @@ class DropshipmentCreateUpdateShipmentDataDelegateTest {
                 .build();
         when(delegateExecution.getVariable(ORDER_NUMBER.getName())).thenReturn(orderNumber);
         when(delegateExecution.getVariable(ORDER_ROW.getName())).thenReturn(sku);
-        when(delegateExecution.getVariable(ORDER_ROW_QUANTITY.getName())).thenReturn(quantityShipped);
+        when(delegateExecution.getVariable(QUANTITY_SHIPPED.getName())).thenReturn(quantityShipped);
         when(dropshipmentOrderRowService.addQuantityShipped(eq(sku), eq(orderNumber), eq(quantityShipped))).thenReturn(dropshipmentOrderRow);
         when(dropshipmentOrderRowService.isItemsFullyShipped(eq(orderNumber))).thenReturn(true);
 

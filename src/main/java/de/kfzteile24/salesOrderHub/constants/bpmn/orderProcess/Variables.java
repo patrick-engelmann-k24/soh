@@ -38,7 +38,7 @@ public enum Variables implements BpmItem {
     SUBSEQUENT_ORDER_NUMBER("subsequentOrderNumber"),
     ORDER_FULLY_SHIPPED("shipped"),
     ITEM_FULLY_SHIPPED("itemFullyShipped"),
-    ORDER_ROW_QUANTITY("orderRowQuantity"),
+    QUANTITY_SHIPPED("quantityShipped"),
     ;
 
     private final String name;

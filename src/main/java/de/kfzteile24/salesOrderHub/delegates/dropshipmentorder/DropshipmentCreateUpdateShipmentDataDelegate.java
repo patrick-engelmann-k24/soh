@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ITEM_FULLY_SHIPPED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROW;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROW_QUANTITY;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.QUANTITY_SHIPPED;
 
 @Component
 @Slf4j
@@ -29,7 +29,7 @@ public class DropshipmentCreateUpdateShipmentDataDelegate implements JavaDelegat
     public void execute(DelegateExecution delegateExecution) throws Exception {
         final var orderNumber = (String) delegateExecution.getVariable(ORDER_NUMBER.getName());
         final var sku = (String) delegateExecution.getVariable(ORDER_ROW.getName());
-        final var quantityShipped = (Integer) delegateExecution.getVariable(ORDER_ROW_QUANTITY.getName());
+        final var quantityShipped = (Integer) delegateExecution.getVariable(QUANTITY_SHIPPED.getName());
         log.info("Update Dropshipment Shipment Confirmed Quantity information " +
                 "for orderNumber {}, sku {} and quantity {}", orderNumber, sku, quantityShipped);
 
