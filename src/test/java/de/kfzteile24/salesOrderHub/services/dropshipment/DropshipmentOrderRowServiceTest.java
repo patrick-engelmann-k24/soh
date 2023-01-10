@@ -24,6 +24,7 @@ import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_ORDER
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -37,9 +38,9 @@ class DropshipmentOrderRowServiceTest {
     @Mock
     private DropshipmentOrderRowRepository dropshipmentOrderRowRepository;
     @Mock
-    private DropshipmentHelper dropshipmentHelper;
-    @Mock
     private SalesOrderService salesOrderService;
+    @Mock
+    private DropshipmentHelper dropshipmentHelper;
 
     @Test
     @MethodSource("isItemsFullyShipped is false")
@@ -89,6 +90,11 @@ class DropshipmentOrderRowServiceTest {
         when(dropshipmentOrderRowRepository.findBySkuAndOrderNumber(anyString(), anyString())).thenReturn(Optional.of(dropshipmentOrderRow));
 
         dropshipmentOrderRowService.addQuantityShipped("sku-1", "123456789", 3);
-        verify(dropshipmentOrderRowRepository).save(eq(dropshipmentOrderRow));
+        dropshipmentOrderRow.setQuantityShipped(5);
+        verify(dropshipmentOrderRowRepository).save(argThat(entry -> {
+                    assertThat(entry.getQuantityShipped()).isEqualTo(5);
+                    return true;
+                }
+        ));
     }
 }
