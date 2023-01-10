@@ -16,6 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
+import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_ORDER_SHIPPED;
+
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -67,22 +69,37 @@ public class DropshipmentOrderRowService {
         dropshipmentOrderRowRepository.deleteAll();
     }
 
-    public List<DropshipmentOrderRow> findAllOrderByOrderNumberAsc() {
-        var list = dropshipmentOrderRowRepository.findAllByOrderByOrderNumberAsc();
-        log.info("All aggregated dropshipment order row data are retrieved from table. Count of entries: {}", list.size());
-        return list;
-    }
-
     @Transactional
-    public void saveQuantityShipped(String sku, String orderNumber, Integer quantityShipped) {
+    public DropshipmentOrderRow addQuantityShipped(String sku, String orderNumber, Integer quantityShipped) {
         if (quantityShipped == null || quantityShipped.equals(0)) {
-            throw new IllegalArgumentException("Shipped Quantity must not be null or zero, when updating Dropshipment Order Row with saveQuantityShipped method");
+            throw new IllegalArgumentException("Shipped Quantity must not be null or zero, when updating Dropshipment Order Row with addQuantityShipped method");
         }
         var dropshipmentOrderRow = dropshipmentOrderRowRepository.findBySkuAndOrderNumber(sku, orderNumber)
                 .orElseThrow(() -> new DropshipmentOrderRowNotFoundException(sku, orderNumber));
         log.info("Dropshipment Order Row with sku: {} and order number: {} is updated with shipped quantity: {}", sku, orderNumber, quantityShipped);
-        dropshipmentOrderRow.setQuantityShipped(quantityShipped);
-        save(dropshipmentOrderRow);
+        dropshipmentOrderRow.addQuantityShipped(quantityShipped);
+        return save(dropshipmentOrderRow);
     }
 
+    @Transactional
+    public boolean isItemsFullyShipped(String orderNumber) {
+        var dropshipmentOrderRows = getByOrderNumber(orderNumber);
+        if (dropshipmentOrderRows.isEmpty()) {
+            return false;
+        }
+        for (DropshipmentOrderRow dropshipmentOrderRow : dropshipmentOrderRows) {
+            if (dropshipmentOrderRow.getQuantityShipped() < dropshipmentOrderRow.getQuantity()) {
+                return false;
+            }
+        }
+        updateSalesOrderAsShipped(orderNumber);
+        return true;
+    }
+
+    private void updateSalesOrderAsShipped(String orderNumber) {
+        var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
+                .orElseThrow(() -> new SalesOrderNotFoundException("Could not find dropshipment order: " + orderNumber));
+        salesOrder.setShipped(true);
+        salesOrderService.save(salesOrder, DROPSHIPMENT_ORDER_SHIPPED);
+    }
 }

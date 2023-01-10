@@ -16,7 +16,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerTy
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.END_DROPSHIPMENT_SHIPMENT;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.END_MSG_PUBLISH_DROPSHIPMENT_ITEM_SHIPMENT_COMPLETED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_SHIPMENT_CONFIRMATION_RECEIVED;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ITEM_FULLY_SHIPPED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ITEMS_FULLY_SHIPPED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_FULLY_SHIPPED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
@@ -44,7 +44,7 @@ class DropshipmentShipmentModelTest extends AbstractWorkflowTest {
         log.info("{} - {}", testinfo.getDisplayName(), testinfo.getTags());
 
         processVariables.put(ORDER_FULLY_SHIPPED.getName(), false);
-        processVariables.put(ITEM_FULLY_SHIPPED.getName(), true);
+        processVariables.put(ITEMS_FULLY_SHIPPED.getName(), true);
 
         scenario = startByMessage(DROPSHIPMENT_SHIPMENT_CONFIRMATION_RECEIVED, businessKey, processVariables);
 
@@ -62,7 +62,7 @@ class DropshipmentShipmentModelTest extends AbstractWorkflowTest {
         log.info("{} - {}", testinfo.getDisplayName(), testinfo.getTags());
 
         processVariables.put(ORDER_FULLY_SHIPPED.getName(), false);
-        processVariables.put(ITEM_FULLY_SHIPPED.getName(), false);
+        processVariables.put(ITEMS_FULLY_SHIPPED.getName(), false);
 
         scenario = startByMessage(DROPSHIPMENT_SHIPMENT_CONFIRMATION_RECEIVED, businessKey, processVariables);
 

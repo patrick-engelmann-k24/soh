@@ -31,6 +31,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.D
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_FULLY_SHIPPED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROW;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.QUANTITY_SHIPPED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.TRACKING_LINKS;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.ORDER_ITEM_SHIPPED;
 import static java.text.MessageFormat.format;
@@ -100,6 +101,7 @@ public class DropshipmentShipmentService {
                             val variablesMap = Variables
                                     .putValue(ORDER_NUMBER.getName(), savedSalesOrder.getOrderNumber())
                                     .putValue(ORDER_ROW.getName(), row.getSku())
+                                    .putValue(QUANTITY_SHIPPED.getName(), item.getQuantity())
                                     .putValue(TRACKING_LINKS.getName(), List.of(getTrackingLink(item, skuMap)))
                                     .putValue(ORDER_FULLY_SHIPPED.getName(), savedSalesOrder.isShipped());
                             camundaHelper.startProcessByMessage(DROPSHIPMENT_SHIPMENT_CONFIRMATION_RECEIVED,

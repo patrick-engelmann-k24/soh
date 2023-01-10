@@ -37,7 +37,8 @@ public enum Variables implements BpmItem {
     IS_PARTIAL_INVOICE("isPartialInvoice"),
     SUBSEQUENT_ORDER_NUMBER("subsequentOrderNumber"),
     ORDER_FULLY_SHIPPED("shipped"),
-    ITEM_FULLY_SHIPPED("itemFullyShipped"),
+    ITEMS_FULLY_SHIPPED("itemsFullyShipped"),
+    QUANTITY_SHIPPED("quantityShipped"),
     ;
 
     private final String name;
