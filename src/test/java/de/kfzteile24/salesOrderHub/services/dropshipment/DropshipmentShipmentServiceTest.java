@@ -18,6 +18,7 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -98,9 +99,60 @@ class DropshipmentShipmentServiceTest {
 
         items.forEach(item -> verify(camundaHelper).startProcessByMessage(
                 eq(DROPSHIPMENT_SHIPMENT_CONFIRMATION_RECEIVED),
-                eq(message.getSalesOrderNumber() + "#" + item.getProductNumber()),
+                eq(message.getSalesOrderNumber() + "#" + item.getProductNumber() + "#" + item.getTrackingLink()),
                 argThat(variablesMap -> assertProcessVariablesMap(message, item, variablesMap)))
         );
+    }
+
+    @Test
+    @SneakyThrows
+    void testHandleDropshipmentShipmentConfirmedWithSameShippedItemHavingMultipleTrackingLinks() {
+
+        val salesOrder = SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
+        salesOrder.setProcessId(ANY_PROCESS_ID);
+        salesOrder.setShipped(true);
+        val items = new ArrayList<ShipmentItem>();
+        items.add(ShipmentItem.builder()
+                .productNumber("sku-1")
+                .parcelNumber("sku-1")
+                .serviceProviderName("sku-1")
+                .trackingLink("trackingLink1")
+                .build());
+        items.add(ShipmentItem.builder()
+                .productNumber("sku-1")
+                .parcelNumber("sku-1")
+                .serviceProviderName("sku-1")
+                .trackingLink("trackingLink2")
+                .build());
+        val message = DropshipmentShipmentConfirmedMessage.builder()
+                .salesOrderNumber(salesOrder.getOrderNumber())
+                .items(items)
+                .build();
+
+        when(salesOrderService.getOrderByOrderNumber(message.getSalesOrderNumber())).thenReturn(Optional.of(salesOrder));
+        when(salesOrderService.save(salesOrder, ORDER_ITEM_SHIPPED)).thenReturn(salesOrder);
+
+        dropshipmentShipmentService.handleDropshipmentShipmentConfirmed(message, MessageWrapper.builder().build());
+
+        verify(salesOrderService).getOrderByOrderNumber(message.getSalesOrderNumber());
+
+        verify(camundaHelper).startProcessByMessage(
+                eq(DROPSHIPMENT_SHIPMENT_CONFIRMATION_RECEIVED),
+                eq(message.getSalesOrderNumber() + "#" + "sku-1" + "#" + "trackingLink1"),
+                argThat(variablesMap -> {
+                    assertThat(variablesMap.get(ORDER_ROW.getName())).isEqualTo("sku-1");
+                    assertThat(variablesMap.get(TRACKING_LINKS.getName())).isEqualTo(List.of("{\"url\":\"trackingLink1\",\"order_items\":[\"sku-1\"]}"));
+                    return true;
+                }));
+
+        verify(camundaHelper).startProcessByMessage(
+                eq(DROPSHIPMENT_SHIPMENT_CONFIRMATION_RECEIVED),
+                eq(message.getSalesOrderNumber() + "#" + "sku-1" + "#" + "trackingLink2"),
+                argThat(variablesMap -> {
+                    assertThat(variablesMap.get(ORDER_ROW.getName())).isEqualTo("sku-1");
+                    assertThat(variablesMap.get(TRACKING_LINKS.getName())).isEqualTo(List.of("{\"url\":\"trackingLink2\",\"order_items\":[\"sku-1\"]}"));
+                    return true;
+                }));
     }
 
     @SneakyThrows
