@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.DROPSHIPMENT_SHIPMENT_CONFIRMATION_RECEIVED;
@@ -96,7 +97,8 @@ public class DropshipmentShipmentService {
                 orderRows.stream()
                         .filter(row -> StringUtils.pathEquals(row.getSku(), item.getProductNumber()))
                         .forEach(row -> {
-                            val businessKey = format("{0}#{1}", savedSalesOrder.getOrderNumber(), row.getSku());
+                            val businessKey = format("{0}#{1}#{2}", savedSalesOrder.getOrderNumber(),
+                                    row.getSku(), item.getTrackingLink());
                             val variablesMap = Variables
                                     .putValue(ORDER_NUMBER.getName(), savedSalesOrder.getOrderNumber())
                                     .putValue(ORDER_ROW.getName(), row.getSku())
@@ -104,6 +106,7 @@ public class DropshipmentShipmentService {
                                     .putValue(ORDER_FULLY_SHIPPED.getName(), savedSalesOrder.isShipped());
                             camundaHelper.startProcessByMessage(DROPSHIPMENT_SHIPMENT_CONFIRMATION_RECEIVED,
                                     businessKey, variablesMap);
+                            log.info("Dropshipment shipment process started. Variables: {}", variablesMap);
                         })
         );
     }
@@ -131,7 +134,12 @@ public class DropshipmentShipmentService {
         var parcelNumber = item.getParcelNumber();
         Optional.ofNullable(row.getTrackingNumbers())
                 .ifPresentOrElse(trackingNumbers -> trackingNumbers.add(parcelNumber),
-                        () -> row.setTrackingNumbers(List.of(parcelNumber)));
+                        () -> {
+                            if (Objects.isNull(row.getTrackingNumbers())) {
+                                row.setTrackingNumbers(new ArrayList<>());
+                            }
+                            row.getTrackingNumbers().add(parcelNumber);
+                        });
     }
 
     private static void addServiceProviderName(ShipmentItem item, OrderRows row) {
