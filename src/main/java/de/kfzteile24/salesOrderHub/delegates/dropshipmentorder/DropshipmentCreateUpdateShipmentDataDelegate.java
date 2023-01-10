@@ -10,7 +10,7 @@ import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.JavaDelegate;
 import org.springframework.stereotype.Component;
 
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ITEM_FULLY_SHIPPED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ITEMS_FULLY_SHIPPED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.QUANTITY_SHIPPED;
@@ -38,22 +38,26 @@ public class DropshipmentCreateUpdateShipmentDataDelegate implements JavaDelegat
                 orderNumber,
                 quantityShipped);
 
-        dropshipmentInvoiceRowService.create(
-                sku,
-                orderNumber,
-                getQuantityToBeInvoiced(quantityShipped, dropshipmentOrderRow));
+        var quantityToBeInvoiced = calculateQuantityToBeInvoiced(quantityShipped, dropshipmentOrderRow);
+        dropshipmentInvoiceRowService.create(sku, orderNumber, quantityToBeInvoiced);
 
         var itemsFullyShipped = dropshipmentOrderRowService.isItemsFullyShipped(orderNumber);
-        delegateExecution.setVariable(ITEM_FULLY_SHIPPED.getName(), itemsFullyShipped);
+        delegateExecution.setVariable(ITEMS_FULLY_SHIPPED.getName(), itemsFullyShipped);
+
         log.info("Dropshipment Shipment Confirmed Quantity information is updated " +
                 "for orderNumber {}. Items are fully shipped: {}", orderNumber, itemsFullyShipped);
     }
 
-    private static Integer getQuantityToBeInvoiced(Integer quantityShipped, DropshipmentOrderRow dropshipmentOrderRow) {
-        var quantityToBeInvoiced = quantityShipped;
-        if (quantityShipped > dropshipmentOrderRow.getQuantity()) {
-            quantityToBeInvoiced = dropshipmentOrderRow.getQuantity();
+    private static Integer calculateQuantityToBeInvoiced(Integer quantityShipped, DropshipmentOrderRow dropshipmentOrderRow) {
+        var totalQuantityShipped = dropshipmentOrderRow.getQuantityShipped();
+
+        if (totalQuantityShipped > dropshipmentOrderRow.getQuantity()) {
+            var difference = totalQuantityShipped - dropshipmentOrderRow.getQuantity();
+            quantityShipped = quantityShipped - difference;
+            log.error("Total shipped quantity is bigger than the total quantity of the order row " +
+                    "for orderNumber {}. Total quantity shipped : {} > total quantity of order row : {}",
+                    dropshipmentOrderRow.getOrderNumber(), totalQuantityShipped, dropshipmentOrderRow.getQuantity());
         }
-        return quantityToBeInvoiced;
+        return quantityShipped;
     }
 }

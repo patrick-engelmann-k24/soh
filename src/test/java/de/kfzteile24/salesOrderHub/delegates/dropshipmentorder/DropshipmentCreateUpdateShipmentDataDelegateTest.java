@@ -10,7 +10,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ITEM_FULLY_SHIPPED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ITEMS_FULLY_SHIPPED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.QUANTITY_SHIPPED;
@@ -51,7 +51,7 @@ class DropshipmentCreateUpdateShipmentDataDelegateTest {
 
         dropshipmentCreateUpdateShipmentDataDelegate.execute(delegateExecution);
         verify(dropshipmentInvoiceRowService).create(eq(sku), eq(orderNumber), eq(quantityShipped));
-        verify(delegateExecution).setVariable(ITEM_FULLY_SHIPPED.getName(), false);
+        verify(delegateExecution).setVariable(ITEMS_FULLY_SHIPPED.getName(), false);
     }
 
     @Test
@@ -72,6 +72,6 @@ class DropshipmentCreateUpdateShipmentDataDelegateTest {
 
         dropshipmentCreateUpdateShipmentDataDelegate.execute(delegateExecution);
         verify(dropshipmentInvoiceRowService).create(eq(sku), eq(orderNumber), eq(3));
-        verify(delegateExecution).setVariable(ITEM_FULLY_SHIPPED.getName(), true);
+        verify(delegateExecution).setVariable(ITEMS_FULLY_SHIPPED.getName(), true);
     }
 }
