@@ -52,11 +52,12 @@ public class DropshipmentCreateUpdateShipmentDataDelegate implements JavaDelegat
         var totalQuantityShipped = dropshipmentOrderRow.getQuantityShipped();
 
         if (totalQuantityShipped > dropshipmentOrderRow.getQuantity()) {
-            var difference = totalQuantityShipped - dropshipmentOrderRow.getQuantity();
-            quantityShipped = quantityShipped - difference;
             log.error("Total shipped quantity is bigger than the total quantity of the order row " +
-                    "for orderNumber {}. Total quantity shipped : {} > total quantity of order row : {}",
+                            "for orderNumber {}. Total quantity shipped : {} > total quantity of order row : {}",
                     dropshipmentOrderRow.getOrderNumber(), totalQuantityShipped, dropshipmentOrderRow.getQuantity());
+
+            var difference = totalQuantityShipped - dropshipmentOrderRow.getQuantity();
+            return quantityShipped - difference;
         }
         return quantityShipped;
     }

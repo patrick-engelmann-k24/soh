@@ -42,6 +42,7 @@ class DropshipmentCreateUpdateShipmentDataDelegateTest {
                 .orderNumber(orderNumber)
                 .sku(sku)
                 .quantity(3)
+                .quantityShipped(2)
                 .build();
         when(delegateExecution.getVariable(ORDER_NUMBER.getName())).thenReturn(orderNumber);
         when(delegateExecution.getVariable(ORDER_ROW.getName())).thenReturn(sku);
@@ -62,7 +63,8 @@ class DropshipmentCreateUpdateShipmentDataDelegateTest {
         final var dropshipmentOrderRow = DropshipmentOrderRow.builder()
                 .orderNumber(orderNumber)
                 .sku(sku)
-                .quantity(3)
+                .quantity(6)
+                .quantityShipped(7)
                 .build();
         when(delegateExecution.getVariable(ORDER_NUMBER.getName())).thenReturn(orderNumber);
         when(delegateExecution.getVariable(ORDER_ROW.getName())).thenReturn(sku);
