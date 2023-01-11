@@ -9,6 +9,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesFinancialDocumentLine;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundCustomException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
+import de.kfzteile24.salesOrderHub.helper.OrderMapper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.helper.SubsequentSalesOrderCreationHelper;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
@@ -24,6 +25,7 @@ import de.kfzteile24.soh.order.dto.Totals;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
@@ -287,6 +289,11 @@ public class SalesOrderService {
         }
 
         return foundSalesOrders.stream().map(SalesOrder::getOrderNumber).distinct().collect(toList());
+    }
+
+    public void recalculateSumValues(OrderRows orderRows, BigDecimal newQuantity) {
+        val sumValues = orderUtil.toSumValues(orderRows, newQuantity);
+        orderRows.setSumValues(sumValues);
     }
 
     public void recalculateTotals(Order order, CoreSalesFinancialDocumentLine shippingCostLine) {

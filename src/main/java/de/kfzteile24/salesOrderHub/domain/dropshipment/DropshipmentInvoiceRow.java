@@ -38,4 +38,8 @@ public class DropshipmentInvoiceRow {
 
     @NotNull
     private Integer quantity;
+
+    public void addQuantity(Integer quantity) {
+        this.quantity = this.quantity + quantity;
+    }
 }

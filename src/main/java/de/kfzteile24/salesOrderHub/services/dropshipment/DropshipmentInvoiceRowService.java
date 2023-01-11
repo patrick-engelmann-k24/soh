@@ -9,6 +9,7 @@ import de.kfzteile24.salesOrderHub.repositories.DropshipmentInvoiceRowRepository
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,7 +19,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 @Service
@@ -62,6 +65,11 @@ public class DropshipmentInvoiceRowService {
         dropshipmentInvoiceRowRepository.deleteAll();
     }
 
+    @Transactional
+    public void delete(DropshipmentInvoiceRow dropshipmentInvoiceRow) {
+        dropshipmentInvoiceRowRepository.delete(dropshipmentInvoiceRow);
+    }
+
     public List<DropshipmentInvoiceRow> findAllOrderByOrderNumberAsc() {
         var list = dropshipmentInvoiceRowRepository.findAllByOrderByOrderNumberAsc();
         log.info("All aggregated invoice data are retrieved from table. Count of entries: {}", list.size());
@@ -93,26 +101,51 @@ public class DropshipmentInvoiceRowService {
             throw new NotFoundException("Matching invoice row not found for the given invoice number " + invoiceNumber);
         }
 
-        var orderNumber = dropshipmentInvoiceRows.get(0).getOrderNumber();
-        var orderRows = dropshipmentInvoiceRows.stream().map(DropshipmentInvoiceRow::getSku).collect(Collectors.toList());
+        val orderNumber = dropshipmentInvoiceRows.get(0).getOrderNumber();
+        val orderRows = dropshipmentInvoiceRows.stream().map(DropshipmentInvoiceRow::getSku).collect(Collectors.toList());
+        val quantities = dropshipmentInvoiceRows.stream().map(DropshipmentInvoiceRow::getQuantity).collect(Collectors.toList());
 
         return InvoiceData.builder()
                 .orderNumber(orderNumber)
                 .invoiceNumber(invoiceNumber)
                 .orderRows(orderRows)
+                .quantities(quantities)
                 .build();
     }
 
-    public Map<String, List<String>> buildInvoiceDataMap(Collection<DropshipmentInvoiceRow> dropshipmentInvoiceRows) {
-        Map<String, List<String>> dropshipmentInvoiceRowMap = new TreeMap<>();
+    public Set<String> buildOrderNumberSet(Collection<DropshipmentInvoiceRow> dropshipmentInvoiceRows) {
+        Set<String> result = new TreeSet<>();
         dropshipmentInvoiceRows.forEach(item -> {
-            var key = item.getOrderNumber();
-            var value = item.getSku();
-            var valueList = dropshipmentInvoiceRowMap.computeIfAbsent(key, k -> new ArrayList<>());
-            valueList.add(value);
-            dropshipmentInvoiceRowMap.put(key, valueList);
+            result.add(item.getOrderNumber());
         });
-        return dropshipmentInvoiceRowMap;
+        return result;
+    }
+
+    @Transactional
+    public Collection<DropshipmentInvoiceRow> mergeRowsByOrderNumberAndSku(Collection<DropshipmentInvoiceRow> dropshipmentInvoiceRows) {
+        Map<String, Map<String, List<DropshipmentInvoiceRow>>> rowsMap = new TreeMap<>();
+        dropshipmentInvoiceRows.forEach(item -> {
+            val orderNumberKey = item.getOrderNumber();
+            val skuKey = item.getSku();
+            rowsMap.computeIfAbsent(orderNumberKey, k -> new TreeMap<>())
+                    .computeIfAbsent(skuKey, k -> new ArrayList<>()).add(item);
+        });
+        val result = new ArrayList<DropshipmentInvoiceRow>();
+        for (val maps : rowsMap.values()) {
+            for (val rows: maps.values()) {
+                val mainRow = rows.get(0);
+                if (rows.size() > 1) {
+                    for (int i = 1; i < rows.size(); i++) {
+                        val row = rows.get(i);
+                        mainRow.addQuantity(row.getQuantity());
+                        delete(row);
+                    }
+                    save(mainRow);
+                }
+                result.add(mainRow);
+            }
+        }
+        return result;
     }
 
     @Transactional(readOnly = true)
