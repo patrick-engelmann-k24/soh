@@ -311,7 +311,7 @@ public class DropshipmentOrderService {
                 row -> {
                     val quantity = BigDecimal.valueOf(skuQuantityMap.get(row.getSku()));
                     if (row.getQuantity().intValue() != quantity.intValue()) {
-                        salesOrderService.recalculateSumValues(row, BigDecimal.valueOf(skuQuantityMap.get(row.getSku())));
+                        salesOrderService.recalculateSumValues(row, quantity);
                     }
                 });
 

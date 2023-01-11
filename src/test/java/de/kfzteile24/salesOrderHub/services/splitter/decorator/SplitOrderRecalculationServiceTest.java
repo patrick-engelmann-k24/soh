@@ -41,8 +41,6 @@ class SplitOrderRecalculationServiceTest {
     private RuntimeService runtimeService;
     @Mock
     private SubsequentSalesOrderCreationHelper subsequentOrderHelper;
-    @Mock
-    private ObjectMapper objectMapper;
     @InjectMocks
     private SalesOrderService salesOrderService;
 

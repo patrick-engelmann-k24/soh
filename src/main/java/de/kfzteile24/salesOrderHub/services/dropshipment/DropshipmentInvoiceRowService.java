@@ -14,10 +14,8 @@ import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.sql.Array;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -124,7 +122,7 @@ public class DropshipmentInvoiceRowService {
     }
 
     @Transactional
-    public Collection<DropshipmentInvoiceRow> mergeRowsBySku(Collection<DropshipmentInvoiceRow> dropshipmentInvoiceRows) {
+    public Collection<DropshipmentInvoiceRow> mergeRowsByOrderNumberAndSku(Collection<DropshipmentInvoiceRow> dropshipmentInvoiceRows) {
         Map<String, Map<String, List<DropshipmentInvoiceRow>>> rowsMap = new TreeMap<>();
         dropshipmentInvoiceRows.forEach(item -> {
             val orderNumberKey = item.getOrderNumber();
@@ -148,10 +146,6 @@ public class DropshipmentInvoiceRowService {
             }
         }
         return result;
-    }
-
-    private void mergeRowsBySku(String sku, List<DropshipmentInvoiceRow> rows) {
-
     }
 
     @Transactional(readOnly = true)

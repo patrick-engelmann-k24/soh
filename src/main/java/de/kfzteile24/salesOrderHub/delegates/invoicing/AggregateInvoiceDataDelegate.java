@@ -31,7 +31,7 @@ public class AggregateInvoiceDataDelegate implements JavaDelegate {
         log.info("Daily aggregation of invoice data has started.");
 
         val rows = dropshipmentInvoiceRowService.findAllOrderByOrderNumberAsc();
-        val mergedRows = dropshipmentInvoiceRowService.mergeRowsBySku(rows);
+        val mergedRows = dropshipmentInvoiceRowService.mergeRowsByOrderNumberAndSku(rows);
         val orderNumbers = dropshipmentInvoiceRowService.buildOrderNumberSet(mergedRows);
 
         List<String> invoiceNumberList = new ArrayList<>();

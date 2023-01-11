@@ -2,7 +2,6 @@ package de.kfzteile24.salesOrderHub.delegates.invoicing;
 
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
-import de.kfzteile24.salesOrderHub.delegates.invoicing.AggregateInvoiceDataDelegate;
 import de.kfzteile24.salesOrderHub.domain.dropshipment.DropshipmentInvoiceRow;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentInvoiceRowService;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
@@ -18,9 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.TreeSet;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -60,7 +57,7 @@ public class AggregateInvoiceDataDelegateTest {
 
         //Stub interactions
         when(dropshipmentInvoiceRowService.findAllOrderByOrderNumberAsc()).thenReturn(invoiceRowList);
-        when(dropshipmentInvoiceRowService.mergeRowsBySku(invoiceRowList)).thenReturn(invoiceRowList);
+        when(dropshipmentInvoiceRowService.mergeRowsByOrderNumberAndSku(invoiceRowList)).thenReturn(invoiceRowList);
         when(dropshipmentInvoiceRowService.buildOrderNumberSet(invoiceRowList)).thenReturn(orderNumberSet);
         when(invoiceService.createInvoiceNumber())
                 .thenReturn(invoiceNumber1)
