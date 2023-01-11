@@ -14,6 +14,8 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_ROW;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.QUANTITY_SHIPPED;
+import static de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.DropshipmentCreateUpdateShipmentDataDelegate.calculateQuantityToBeInvoiced;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -75,5 +77,33 @@ class DropshipmentCreateUpdateShipmentDataDelegateTest {
         dropshipmentCreateUpdateShipmentDataDelegate.execute(delegateExecution);
         verify(dropshipmentInvoiceRowService).create(eq(sku), eq(orderNumber), eq(3));
         verify(delegateExecution).setVariable(ITEMS_FULLY_SHIPPED.getName(), true);
+    }
+
+    @Test
+    void testCalculateQuantityToBeInvoiced() {
+        final var dropshipmentOrderRow = DropshipmentOrderRow.builder()
+                .orderNumber("123456789")
+                .sku("sku-1")
+                .quantity(3)
+                .quantityShipped(2)
+                .build();
+
+        Integer quantityToBeInvoiced = calculateQuantityToBeInvoiced(1, dropshipmentOrderRow);
+
+        assertEquals(1, quantityToBeInvoiced);
+    }
+
+    @Test
+    void testCalculateQuantityToBeInvoicedOverShipping() {
+        final var dropshipmentOrderRow = DropshipmentOrderRow.builder()
+                .orderNumber("123456789")
+                .sku("sku-1")
+                .quantity(3)
+                .quantityShipped(6)
+                .build();
+
+        Integer quantityToBeInvoiced = calculateQuantityToBeInvoiced(4, dropshipmentOrderRow);
+
+        assertEquals(1, quantityToBeInvoiced);
     }
 }

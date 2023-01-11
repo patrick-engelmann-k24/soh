@@ -6,8 +6,10 @@ import de.kfzteile24.salesOrderHub.controller.dto.ErrorResponse;
 import de.kfzteile24.salesOrderHub.controller.handler.AbstractActionHandler;
 import de.kfzteile24.salesOrderHub.controller.handler.exception.NoActionHandlerFoundException;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.dto.dropshipment.DropshipmentOrderShipped;
 import de.kfzteile24.salesOrderHub.services.SalesOrderAddressService;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
+import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentOrderRowService;
 import de.kfzteile24.soh.order.dto.BillingAddress;
 import de.kfzteile24.soh.order.dto.Order;
 import io.swagger.v3.oas.annotations.Hidden;
@@ -65,6 +67,7 @@ public class OrderController implements IBaseController {
     private final SalesOrderService salesOrderService;
     private final SalesOrderAddressService orderAddressService;
     private final Collection<AbstractActionHandler> republishHandlers;
+    private final DropshipmentOrderRowService dropshipmentOrderRowService;
 
     /**
      * Change billing address if there no invoice exists
@@ -134,6 +137,26 @@ public class OrderController implements IBaseController {
                     throw new NoActionHandlerFoundException(actionType);
                 });
         return isEmpty(errors) ? ResponseEntity.ok().build() : ResponseEntity.badRequest().body(errors);
+    }
+
+    @Operation(summary = "Confirm shipping for a list of item in a particular order", parameters = {
+            @Parameter(in = ParameterIn.QUERY, name = "dropshipmentOrderShipped",
+                    description = "Items to be shipped")
+    })
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Items shipped successfully"),
+            @ApiResponse(responseCode = "400", description = "Shipping failed for some of the items", content = {
+                    @Content(mediaType = "application/json", array =
+                    @ArraySchema(schema = @Schema(implementation = ErrorResponse.class)))})
+    })
+    @PostMapping("/ship-items")
+    public ResponseEntity<Object> shipItems(@RequestBody DropshipmentOrderShipped dropshipmentOrderShipped) {
+        try {
+            dropshipmentOrderRowService.shipItems(dropshipmentOrderShipped);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e);
+        }
     }
 
     @Hidden

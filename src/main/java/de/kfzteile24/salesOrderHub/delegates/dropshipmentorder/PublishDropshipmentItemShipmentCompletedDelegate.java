@@ -20,7 +20,6 @@ public class PublishDropshipmentItemShipmentCompletedDelegate implements JavaDel
     public void execute(DelegateExecution delegateExecution) throws Exception {
         final var orderNumber = (String) delegateExecution.getVariable(Variables.ORDER_NUMBER.getName());
         log.info("Dropshipment Order Fully Shipped Delegate for order number {}", orderNumber);
-        camundaHelper.correlateMessage(Messages.DROPSHIPMENT_ORDER_FULLY_COMPLETED, orderNumber)
-                .getProcessInstance();
+        camundaHelper.correlateMessage(Messages.DROPSHIPMENT_ORDER_FULLY_COMPLETED, orderNumber);
     }
 }
