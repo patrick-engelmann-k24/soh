@@ -19,7 +19,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -52,13 +54,13 @@ public class AggregateInvoiceDataDelegateTest {
                 DropshipmentInvoiceRow.builder().orderNumber(orderNumber1).sku("sku1.2").build(),
                 DropshipmentInvoiceRow.builder().orderNumber(orderNumber2).sku("sku2.1").build()
         );
-        Map<String, List<String>> invoiceDataMap = new TreeMap<>();
-        invoiceDataMap.put(orderNumber1, List.of("sku1.1", "sku1.2"));
-        invoiceDataMap.put(orderNumber2, List.of("sku2.1"));
+        Set<String> orderNumberSet = new TreeSet<>();
+        orderNumberSet.add(orderNumber1);
+        orderNumberSet.add(orderNumber2);
 
         //Stub interactions
         when(dropshipmentInvoiceRowService.findAllOrderByOrderNumberAsc()).thenReturn(invoiceRowList);
-        when(dropshipmentInvoiceRowService.buildInvoiceDataMap(invoiceRowList)).thenReturn(invoiceDataMap);
+        when(dropshipmentInvoiceRowService.buildOrderNumberSet(invoiceRowList)).thenReturn(orderNumberSet);
         when(invoiceService.createInvoiceNumber())
                 .thenReturn(invoiceNumber1)
                 .thenReturn(invoiceNumber2);
@@ -85,7 +87,7 @@ public class AggregateInvoiceDataDelegateTest {
     void testAggregateInvoiceDataWithEmptyList() {
 
         when(dropshipmentInvoiceRowService.findAllOrderByOrderNumberAsc()).thenReturn(new ArrayList<>());
-        when(dropshipmentInvoiceRowService.buildInvoiceDataMap(new ArrayList<>())).thenReturn(new TreeMap<>());
+        when(dropshipmentInvoiceRowService.buildOrderNumberSet(new ArrayList<>())).thenReturn(new TreeSet<>());
 
         aggregateInvoiceDataDelegate.execute(delegateExecution);
 

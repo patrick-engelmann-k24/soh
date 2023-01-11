@@ -9,6 +9,7 @@ import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentInvoiceRowS
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentOrderService;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
+import lombok.val;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,15 +51,18 @@ class CreateDropshipmentSubsequentOrderDelegateTest {
         final var subsequentOrder =
                 SalesOrder.builder().orderNumber(orderNumber + "-1").latestJson(Order.builder().build()).build();
         final var skuList = List.of("sku1", "sku2");
+        val quantities = List.of(0, 0);
         final var invoiceData =
                 InvoiceData.builder().invoiceNumber(invoiceNumber).orderNumber(orderNumber)
-                        .orderRows(skuList).build();
+                        .orderRows(skuList)
+                        .quantities(quantities).build();
+        val skuQuantityMap = invoiceData.getSkuQuantityMap();
         when(delegateExecution.getVariable(Variables.INVOICE_NUMBER.getName())).thenReturn(invoiceNumber);
         when(dropshipmentInvoiceRowService.getInvoiceData(invoiceNumber)).thenReturn(invoiceData);
         when(salesOrderService.getOrderByOrderNumber(orderNumber)).thenReturn(Optional.of(salesOrder));
         when(dropshipmentOrderService.createDropshipmentSubsequentSalesOrder(
                 eq(salesOrder),
-                eq(skuList),
+                eq(skuQuantityMap),
                 eq(invoiceNumber),
                 any())).thenReturn(subsequentOrder);
         createDropshipmentSubsequentOrderDelegate.execute(delegateExecution);

@@ -27,7 +27,7 @@ import static org.mockito.Mockito.when;
 class DetermineDropshipmentOrderInvoiceTypeDelegateTest {
 
     private final String invoiceNumber = "2022-1000000000001";
-    private final InvoiceData invoiceData = new InvoiceData(invoiceNumber, "orderNumber", List.of("sku1.1", "sku1.2"));
+    private final InvoiceData invoiceData = new InvoiceData(invoiceNumber, "orderNumber", List.of("sku1.1", "sku1.2"), List.of(0, 0));
 
     @Mock
     private DelegateExecution delegateExecution;

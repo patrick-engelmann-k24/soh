@@ -5,6 +5,7 @@ import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.JavaDelegate;
 import org.springframework.stereotype.Component;
@@ -29,12 +30,12 @@ public class AggregateInvoiceDataDelegate implements JavaDelegate {
     public void execute(DelegateExecution delegateExecution) throws Exception {
         log.info("Daily aggregation of invoice data has started.");
 
-        var invoiceDataMap = dropshipmentInvoiceRowService.buildInvoiceDataMap(
-                dropshipmentInvoiceRowService.findAllOrderByOrderNumberAsc());
+        val rows = dropshipmentInvoiceRowService.findAllOrderByOrderNumberAsc();
+        val mergedRows = dropshipmentInvoiceRowService.mergeRowsBySku(rows);
+        val orderNumbers = dropshipmentInvoiceRowService.buildOrderNumberSet(mergedRows);
 
         List<String> invoiceNumberList = new ArrayList<>();
-        for (var orderNumber : invoiceDataMap.keySet()) {
-
+        for (var orderNumber : orderNumbers) {
             var invoiceNumber = invoiceService.createInvoiceNumber();
             dropshipmentInvoiceRowService.saveInvoiceNumber(orderNumber, invoiceNumber);
             invoiceNumberList.add(invoiceNumber);
