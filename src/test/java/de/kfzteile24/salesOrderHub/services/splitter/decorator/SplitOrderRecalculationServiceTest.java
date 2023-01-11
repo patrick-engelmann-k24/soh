@@ -1,5 +1,6 @@
 package de.kfzteile24.salesOrderHub.services.splitter.decorator;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.DropShipmentConfig;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.helper.SubsequentSalesOrderCreationHelper;
@@ -40,6 +41,8 @@ class SplitOrderRecalculationServiceTest {
     private RuntimeService runtimeService;
     @Mock
     private SubsequentSalesOrderCreationHelper subsequentOrderHelper;
+    @Mock
+    private ObjectMapper objectMapper;
     @InjectMocks
     private SalesOrderService salesOrderService;
 

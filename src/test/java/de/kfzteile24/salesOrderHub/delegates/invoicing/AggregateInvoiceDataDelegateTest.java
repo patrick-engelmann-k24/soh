@@ -60,6 +60,7 @@ public class AggregateInvoiceDataDelegateTest {
 
         //Stub interactions
         when(dropshipmentInvoiceRowService.findAllOrderByOrderNumberAsc()).thenReturn(invoiceRowList);
+        when(dropshipmentInvoiceRowService.mergeRowsBySku(invoiceRowList)).thenReturn(invoiceRowList);
         when(dropshipmentInvoiceRowService.buildOrderNumberSet(invoiceRowList)).thenReturn(orderNumberSet);
         when(invoiceService.createInvoiceNumber())
                 .thenReturn(invoiceNumber1)

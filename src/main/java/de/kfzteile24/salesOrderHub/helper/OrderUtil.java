@@ -1,5 +1,6 @@
 package de.kfzteile24.salesOrderHub.helper;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.DropShipmentConfig;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesFinancialDocumentLine;
@@ -45,6 +46,8 @@ public class OrderUtil {
 
     private final ObjectUtil objectUtil;
 
+    private final OrderMapper orderMapper;
+
     public Order copyOrderJson(Order orderJson) {
         return objectUtil.deepCopyOf(orderJson, Order.class);
     }
@@ -69,6 +72,10 @@ public class OrderUtil {
 
     public String createReturnOrderNumberInSOH(String creditNoteNumber) {
         return RETURN_ORDER_NUMBER_PREFIX + ORDER_NUMBER_SEPARATOR + creditNoteNumber;
+    }
+
+    public SumValues toSumValues(OrderRows orderRows, BigDecimal quantity) {
+        return orderMapper.toSumValues(orderRows.getUnitValues(), quantity);
     }
 
     public OrderRows createNewOrderRow(OrderItem item, List<SalesOrder> salesOrders, AtomicInteger lastRowKey) {

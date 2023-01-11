@@ -76,9 +76,6 @@ public class SalesOrderService {
     @NonNull
     private final SubsequentSalesOrderCreationHelper subsequentOrderHelper;
 
-    @NonNull
-    private final OrderMapper orderMapper;
-
     @Transactional
     public SalesOrder updateProcessInstanceId(String orderNumber, String processInstanceId) {
         Optional<SalesOrder> salesOrderOptional = getOrderByOrderNumber(orderNumber);
@@ -295,10 +292,9 @@ public class SalesOrderService {
     }
 
     public void recalculateSumValues(OrderRows orderRows, BigDecimal newQuantity) {
-        val sumValues = orderMapper.toSumValues(orderRows.getUnitValues(), newQuantity);
+        val sumValues = orderUtil.toSumValues(orderRows, newQuantity);
         orderRows.setSumValues(sumValues);
     }
-
 
     public void recalculateTotals(Order order, CoreSalesFinancialDocumentLine shippingCostLine) {
         BigDecimal shippingCostNet = shippingCostLine != null ? shippingCostLine.getLineNetAmount() : BigDecimal.ZERO;

@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.sql.Array;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -124,23 +125,27 @@ public class DropshipmentInvoiceRowService {
 
     @Transactional
     public Collection<DropshipmentInvoiceRow> mergeRowsBySku(Collection<DropshipmentInvoiceRow> dropshipmentInvoiceRows) {
-        Map<String, List<DropshipmentInvoiceRow>> rowsMap = new TreeMap<>();
+        Map<String, Map<String, List<DropshipmentInvoiceRow>>> rowsMap = new TreeMap<>();
         dropshipmentInvoiceRows.forEach(item -> {
-            var key = item.getSku();
-            rowsMap.computeIfAbsent(key, k -> new ArrayList<>()).add(item);
+            val orderNumberKey = item.getOrderNumber();
+            val skuKey = item.getSku();
+            rowsMap.computeIfAbsent(orderNumberKey, k -> new TreeMap<>())
+                    .computeIfAbsent(skuKey, k -> new ArrayList<>()).add(item);
         });
         val result = new ArrayList<DropshipmentInvoiceRow>();
-        for (val rows : rowsMap.values()) {
-            val mainRow = rows.get(0);
-            if (rows.size() > 1) {
-                for (int i = 1; i < rows.size(); i++) {
-                    val row = rows.get(i);
-                    mainRow.addQuantity(row.getQuantity());
-                    delete(row);
+        for (val maps : rowsMap.values()) {
+            for (val rows: maps.values()) {
+                val mainRow = rows.get(0);
+                if (rows.size() > 1) {
+                    for (int i = 1; i < rows.size(); i++) {
+                        val row = rows.get(i);
+                        mainRow.addQuantity(row.getQuantity());
+                        delete(row);
+                    }
+                    save(mainRow);
                 }
-                save(mainRow);
+                result.add(mainRow);
             }
-            result.add(mainRow);
         }
         return result;
     }
