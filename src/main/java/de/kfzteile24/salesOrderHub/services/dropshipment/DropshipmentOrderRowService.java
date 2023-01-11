@@ -1,7 +1,13 @@
 package de.kfzteile24.salesOrderHub.services.dropshipment;
 
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
+import de.kfzteile24.salesOrderHub.controller.dto.ErrorResponse;
+import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.dropshipment.DropshipmentOrderRow;
+import de.kfzteile24.salesOrderHub.dto.dropshipment.DropshipmentItemQuantity;
+import de.kfzteile24.salesOrderHub.dto.dropshipment.DropshipmentOrderShipped;
 import de.kfzteile24.salesOrderHub.exception.DropshipmentOrderRowNotFoundException;
+import de.kfzteile24.salesOrderHub.exception.DropshipmentOrderRowOverShippedException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.DropshipmentHelper;
 import de.kfzteile24.salesOrderHub.repositories.DropshipmentOrderRowRepository;
@@ -13,9 +19,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Optional;
 
+import static de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.DropshipmentCreateUpdateShipmentDataDelegate.calculateQuantityToBeInvoiced;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_ORDER_SHIPPED;
 
 @Service
@@ -26,18 +34,50 @@ public class DropshipmentOrderRowService {
     @NonNull
     private final DropshipmentOrderRowRepository dropshipmentOrderRowRepository;
 
+    @NotNull
+    private final DropshipmentInvoiceRowService dropshipmentInvoiceRowService;
+
     @NonNull
     private final DropshipmentHelper dropshipmentHelper;
 
     @NonNull
     private final SalesOrderService salesOrderService;
 
+    @NotNull
+    private final CamundaHelper camundaHelper;
+
+    @Transactional
+    public List<ErrorResponse> shipItems(DropshipmentOrderShipped dropshipmentOrderShipped) {
+        var orderNumber = dropshipmentOrderShipped.getOrderNumber();
+        for (DropshipmentItemQuantity itemQuantity : dropshipmentOrderShipped.getItems()) {
+            var sku = itemQuantity.getSku();
+            var quantity = itemQuantity.getQuantity();
+            DropshipmentOrderRow dropshipmentOrderRow =
+                    dropshipmentOrderRowRepository.findBySkuAndOrderNumber(sku, orderNumber)
+                            .orElseThrow(() -> new DropshipmentOrderRowNotFoundException(sku, orderNumber));
+            var totalQuantity = quantity + dropshipmentOrderRow.getQuantityShipped();
+            if(totalQuantity > dropshipmentOrderRow.getQuantity()) {
+                throw new DropshipmentOrderRowOverShippedException(sku, orderNumber, quantity);
+            } else {
+                dropshipmentOrderRow = addQuantityShipped(sku, orderNumber, quantity);
+                var quantityToBeInvoiced = calculateQuantityToBeInvoiced(quantity, dropshipmentOrderRow);
+                dropshipmentInvoiceRowService.create(sku, orderNumber, quantityToBeInvoiced);
+            }
+        }
+
+        var isFullyShipped = isItemsFullyShipped(orderNumber);
+        if (isFullyShipped) {
+            camundaHelper.correlateMessage(Messages.DROPSHIPMENT_ORDER_FULLY_COMPLETED, orderNumber);
+        }
+        return List.of();
+    }
+
     @Transactional
     public void saveDropshipmentOrderItems(String orderNumber) {
         var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException("Could not find dropshipment order: " + orderNumber));
         if (dropshipmentOrderRowRepository.countByOrderNumber(orderNumber) == 0) {
-            for (OrderRows orderRows: salesOrder.getLatestJson().getOrderRows()) {
+            for (OrderRows orderRows : salesOrder.getLatestJson().getOrderRows()) {
                 create(orderRows.getSku(), orderNumber, orderRows.getQuantity().intValue());
             }
         }

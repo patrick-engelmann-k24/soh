@@ -48,7 +48,7 @@ public class DropshipmentCreateUpdateShipmentDataDelegate implements JavaDelegat
                 "for orderNumber {}. Items are fully shipped: {}", orderNumber, itemsFullyShipped);
     }
 
-    private static Integer calculateQuantityToBeInvoiced(Integer quantityShipped, DropshipmentOrderRow dropshipmentOrderRow) {
+    public static Integer calculateQuantityToBeInvoiced(Integer quantityShipped, DropshipmentOrderRow dropshipmentOrderRow) {
         var totalQuantityShipped = dropshipmentOrderRow.getQuantityShipped();
 
         if (totalQuantityShipped > dropshipmentOrderRow.getQuantity()) {
