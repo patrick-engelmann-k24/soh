@@ -12,6 +12,7 @@ import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.helper.SubsequentSalesOrderCreationHelper;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
+import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentOrderRowService;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
 import de.kfzteile24.soh.order.dto.CustomerType;
 import de.kfzteile24.soh.order.dto.Order;
@@ -77,6 +78,9 @@ class SalesOrderServiceTest {
 
     @Mock
     private SubsequentSalesOrderCreationHelper subsequentSalesOrderCreationHelper;
+
+    @Mock
+    private DropshipmentOrderRowService dropshipmentOrderRowService;
 
     @Spy
     @InjectMocks

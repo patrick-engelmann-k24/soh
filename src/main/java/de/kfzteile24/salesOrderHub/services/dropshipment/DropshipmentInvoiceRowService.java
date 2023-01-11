@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -92,6 +94,18 @@ public class DropshipmentInvoiceRowService {
         return buildInvoiceDataForIndividualOrderNumber(invoiceData, invoiceNumber);
     }
 
+    @Transactional(readOnly = true)
+    public Integer getOrderRowQuantity(String orderNumber, String orderRow) {
+        Integer sumQuantity = 0;
+        List<DropshipmentInvoiceRow> allSkuAndOrderNumber
+                = dropshipmentInvoiceRowRepository.findAllBySkuAndOrderNumber(orderRow, orderNumber);
+        // {"sku1, orderNumber1, invoiceNumber, 1","sku1, orderNumber1, invoiceNumber, 1"}
+        for (Object dropshipmentInvoiceRow : allSkuAndOrderNumber){
+            sumQuantity += getOrderRowQuantity(orderNumber, orderRow);
+        }
+        return sumQuantity;
+        // sumQuantity for (orderNumber1, sku1) : 2
+    }
     /**
      * returns invoice data object for ONLY ONE invoice number results from dropshipment invoice row entity list
      */
