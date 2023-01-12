@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.constants.PersistentProperties;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
+import de.kfzteile24.salesOrderHub.domain.dropshipment.InvoiceData;
 import de.kfzteile24.salesOrderHub.domain.property.KeyValueProperty;
 import de.kfzteile24.salesOrderHub.dto.shared.creditnote.SalesCreditNote;
 import de.kfzteile24.salesOrderHub.dto.shared.creditnote.SalesCreditNoteHeader;
@@ -31,6 +32,7 @@ import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderHeader;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import lombok.SneakyThrows;
+import lombok.val;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.bpm.engine.variable.Variables;
@@ -251,9 +253,11 @@ class DropshipmentOrderServiceTest {
     void testCreateDropshipmentSubsequentSalesOrder() {
         var salesOrder = SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
         var skuList = List.of("sku-1", "sku-2");
+        var quantityList = List.of(0, 0);
         var invoiceNumber = "2023";
         var newOrderNumber = salesOrder.getOrderGroupId()+"-100";
         var activityInstanceId = "1010";
+        val invoiceData = new InvoiceData(invoiceNumber, newOrderNumber, skuList, quantityList);
         var orderHeader = buildExpectedOrderHeader(salesOrder, newOrderNumber, invoiceNumber);
         when(salesOrderService.save(any(), any())).thenAnswer((Answer<SalesOrder>) invocation -> invocation.getArgument(0));
         when(salesOrderService.getNextOrderNumberIndexCounter(eq(salesOrder.getOrderGroupId()))).thenReturn(100);
@@ -261,7 +265,7 @@ class DropshipmentOrderServiceTest {
         when(invoiceService.getShippingCostLine(any())).thenReturn(null);
         doNothing().when(salesOrderService).recalculateTotals(any(), any());
 
-        var subsequentOrder = dropshipmentOrderService.createDropshipmentSubsequentSalesOrder(salesOrder, skuList, invoiceNumber, activityInstanceId);
+        var subsequentOrder = dropshipmentOrderService.createDropshipmentSubsequentSalesOrder(salesOrder, invoiceData.getSkuQuantityMap(), invoiceNumber, activityInstanceId);
 
         assertThat(subsequentOrder.getOrderNumber()).isEqualTo(newOrderNumber);
         assertThat(subsequentOrder.getOrderGroupId()).isEqualTo(salesOrder.getOrderNumber());
@@ -291,14 +295,16 @@ class DropshipmentOrderServiceTest {
                 false, REGULAR, CREDIT_CARD, NEW);
         var newOrderNumber = salesOrder.getOrderNumber() + "-1";
         var skuList = List.of("sku-3", "sku-2");
+        var quantities = List.of(0, 0);
         var invoiceNumber = "123";
+        val invoiceData = new InvoiceData(invoiceNumber, newOrderNumber, skuList, quantities);
 
         when(invoiceService.getShippingCostLine(eq(salesOrder))).thenReturn(null);
         doNothing().when(salesOrderService).recalculateTotals(any(), any());
         doReturn(salesOrder.getLatestJson().getOrderHeader()).when(subsequentSalesOrderCreationHelper).createOrderHeader(any(), anyString(), anyString());
 
         Order result = dropshipmentOrderService.createDropshipmentSubsequentOrderJson(salesOrder, newOrderNumber,
-                skuList, invoiceNumber);
+                invoiceData.getSkuQuantityMap(), invoiceNumber);
 
         assertThat(result.getOrderRows().stream().map(OrderRows::getSku).collect(Collectors.toList())).containsOnly("sku-3", "sku-2");
         assertEquals(BigDecimal.ZERO, salesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostGross());

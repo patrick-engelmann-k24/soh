@@ -11,6 +11,7 @@ import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentOrderServic
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.springframework.stereotype.Component;
 
@@ -38,15 +39,16 @@ public class CreateDropshipmentSubsequentOrderDelegate extends CommonDelegate {
         log.info("{} delegate invoked", CreateDropshipmentSubsequentOrderDelegate.class.getSimpleName());
 
         final var invoiceNumber = (String) delegateExecution.getVariable(Variables.INVOICE_NUMBER.getName());
-        var invoiceData = dropshipmentInvoiceRowService.getInvoiceData(invoiceNumber);
-        var orderNumber = invoiceData.getOrderNumber();
-        var skuList = invoiceData.getOrderRows();
-        var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
+        val invoiceData = dropshipmentInvoiceRowService.getInvoiceData(invoiceNumber);
+        val orderNumber = invoiceData.getOrderNumber();
+        val skuList = invoiceData.getOrderRows();
+        val skuQuantityMap = invoiceData.getSkuQuantityMap();
+        val salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                 .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
 
         SalesOrder subsequentOrder = dropshipmentOrderService.createDropshipmentSubsequentSalesOrder(
                 salesOrder,
-                skuList,
+                skuQuantityMap,
                 invoiceNumber,
                 delegateExecution.getActivityInstanceId());
 

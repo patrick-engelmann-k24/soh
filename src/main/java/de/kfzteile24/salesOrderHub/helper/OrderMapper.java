@@ -22,10 +22,8 @@ import static de.kfzteile24.salesOrderHub.helper.CalculationUtil.getDiscountResu
  * @author samet
  */
 
-@Mapper
+@Mapper(componentModel = "spring")
 public interface OrderMapper {
-
-    OrderMapper INSTANCE = Mappers.getMapper(OrderMapper.class);
 
     @Mapping(target = "orderDateTime", source = "orderDateTime", qualifiedByName = "evaluateOrderDateTime")
     OrderHeader toOrderHeader(OrderHeader orderHeader);

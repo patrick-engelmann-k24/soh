@@ -41,6 +41,7 @@ import java.math.BigDecimal;
 import java.text.MessageFormat;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.CustomEventName.DROPSHIPMENT_ORDER_CANCELLED;
@@ -280,11 +281,11 @@ public class DropshipmentOrderService {
     }
 
     public SalesOrder createDropshipmentSubsequentSalesOrder(SalesOrder salesOrder,
-                                                             List<String> skuList,
+                                                             Map<String, Integer> skuQuantityMap,
                                                              String invoiceNumber,
                                                              String activityInstanceId) {
         String newOrderNumber = createDropshipmentNewOrderNumber(salesOrder);
-        Order orderJson = createDropshipmentSubsequentOrderJson(salesOrder, newOrderNumber, skuList, invoiceNumber);
+        Order orderJson = createDropshipmentSubsequentOrderJson(salesOrder, newOrderNumber, skuQuantityMap, invoiceNumber);
         var subsequentOrder = buildSubsequentSalesOrder(orderJson, newOrderNumber);
         subsequentOrder.setProcessId(activityInstanceId);
 
@@ -293,16 +294,26 @@ public class DropshipmentOrderService {
 
     public Order createDropshipmentSubsequentOrderJson(SalesOrder salesOrder,
                                                        String newOrderNumber,
-                                                       List<String> skuList,
+                                                       Map<String, Integer> skuQuantityMap,
                                                        String invoiceNumber) {
         Order orderJson = Order.builder()
                 .version(salesOrder.getLatestJson().getVersion())
                 .orderHeader(subsequentOrderHelper.createOrderHeader(salesOrder, newOrderNumber, invoiceNumber))
                 .build();
 
+        val skuList = skuQuantityMap.keySet();
+
         orderJson.setOrderRows(salesOrder.getLatestJson().getOrderRows().stream()
                 .filter(row -> skuList.contains(row.getSku()))
                 .collect(Collectors.toList()));
+
+        orderJson.getOrderRows().forEach(
+                row -> {
+                    val quantity = BigDecimal.valueOf(skuQuantityMap.get(row.getSku()));
+                    if (row.getQuantity().intValue() != quantity.intValue()) {
+                        salesOrderService.recalculateSumValues(row, quantity);
+                    }
+                });
 
         salesOrderService.recalculateTotals(orderJson, invoiceService.getShippingCostLine(salesOrder));
         removeShippingCostFromOriginalOrder(salesOrder);

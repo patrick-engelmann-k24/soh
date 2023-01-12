@@ -10,10 +10,12 @@ import de.kfzteile24.salesOrderHub.repositories.DropshipmentInvoiceRowRepository
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import de.kfzteile24.soh.order.dto.Order;
+import lombok.val;
 import org.assertj.core.api.Assertions;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -234,6 +236,13 @@ class AggregateInvoiceDataDelegateIntegrationTest extends AbstractIntegrationTes
     private String getInvoiceNumber(SalesOrder salesOrder) {
         Assertions.assertThat(salesOrder.getInvoiceEvent()).isNotNull();
         return salesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber();
+    }
+
+    @BeforeEach
+    public void prepare() {
+        pollingService.retry(() -> bpmUtil.cleanUp());
+        pollingService.retry(() -> salesOrderRepository.deleteAll());
+        pollingService.retry(() -> dropshipmentInvoiceRowRepository.deleteAll());
     }
 
     @AfterEach
