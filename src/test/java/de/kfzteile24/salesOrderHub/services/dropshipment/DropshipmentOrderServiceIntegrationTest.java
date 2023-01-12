@@ -176,7 +176,6 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("Has to be enabled and adjusted during implementation of the new dropshipmet-shipment-process")
     void testHandleDropShipmentOrderTrackingInformationReceived() {
 
         var salesOrder = createDropshipmentSalesOrder();
