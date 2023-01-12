@@ -61,7 +61,7 @@ class DropshipmentOrderRowServiceIntegrationTest extends AbstractIntegrationTest
 
     @Test
     void testCreateDropshipmentOrderRow() {
-        DropshipmentOrderRow dropshipmentOrderRow = dropshipmentHelper.createDropshipmentOrderRow("sku", "orderNumber", 0);
+        DropshipmentOrderRow dropshipmentOrderRow = dropshipmentHelper.createDropshipmentOrderRow("sku", "orderNumber", 1);
         dropshipmentOrderRowService.save(dropshipmentOrderRow);
         var test = dropshipmentOrderRowService.getBySkuAndOrderNumber("sku", "orderNumber");
         assertThat(test.get().getSku()).isEqualTo("sku");
@@ -74,8 +74,8 @@ class DropshipmentOrderRowServiceIntegrationTest extends AbstractIntegrationTest
     @Test
     void testDeleteAll() {
 
-        DropshipmentOrderRow dropshipmentOrderRow1 = dropshipmentHelper.createDropshipmentOrderRow("sku1", "orderNumber1", 0);
-        DropshipmentOrderRow dropshipmentOrderRow2 = dropshipmentHelper.createDropshipmentOrderRow("sku2", "orderNumber2", 0);
+        DropshipmentOrderRow dropshipmentOrderRow1 = dropshipmentHelper.createDropshipmentOrderRow("sku1", "orderNumber1", 1);
+        DropshipmentOrderRow dropshipmentOrderRow2 = dropshipmentHelper.createDropshipmentOrderRow("sku2", "orderNumber2", 1);
         dropshipmentOrderRowRepository.save(dropshipmentOrderRow1);
         dropshipmentOrderRowRepository.save(dropshipmentOrderRow2);
 

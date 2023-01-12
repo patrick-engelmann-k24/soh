@@ -54,7 +54,7 @@ class OrderMapperTest {
     }
 
     @Test
-    void testToNullSumValues() {
+    void testToSumValuesWithNullUnitValues() {
         val salesOrder = getSalesOrder(getObjectByResource("ecpOrderMessage.json", Order.class));
         val orderRows = salesOrder.getLatestJson().getOrderRows().get(0);
         val unitValues = UnitValues.builder().build();
