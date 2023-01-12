@@ -3,10 +3,12 @@ package de.kfzteile24.salesOrderHub.utils;
 import de.kfzteile24.salesOrderHub.configuration.DropShipmentConfig;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesFinancialDocumentLine;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
+import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderHeader;
 import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.UnitValues;
+import lombok.val;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,6 +42,8 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class OrderUtilTest {
+
+
 
     @Mock
     private DropShipmentConfig dropShipmentConfig;
@@ -235,4 +239,5 @@ class OrderUtilTest {
         var orderGroupId = getOrderGroupIdFromOrderNumber(orderNumber);
         assertThat(orderGroupId).isEqualTo("123456789");
     }
+
 }

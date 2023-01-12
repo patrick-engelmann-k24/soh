@@ -78,6 +78,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -253,7 +254,9 @@ class DropshipmentOrderServiceTest {
     void testCreateDropshipmentSubsequentSalesOrder() {
         var salesOrder = SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
         var skuList = List.of("sku-1", "sku-2");
-        var quantityList = List.of(0, 0);
+        val differentQuantity= salesOrder.getLatestJson().getOrderRows().get(0).getQuantity().add(BigDecimal.valueOf(1));
+        val sameQuantity= salesOrder.getLatestJson().getOrderRows().get(1).getQuantity();
+        var quantityList = List.of(differentQuantity.intValue(), sameQuantity.intValue());
         var invoiceNumber = "2023";
         var newOrderNumber = salesOrder.getOrderGroupId()+"-100";
         var activityInstanceId = "1010";
@@ -267,6 +270,8 @@ class DropshipmentOrderServiceTest {
 
         var subsequentOrder = dropshipmentOrderService.createDropshipmentSubsequentSalesOrder(salesOrder, invoiceData.getSkuQuantityMap(), invoiceNumber, activityInstanceId);
 
+        verify(salesOrderService).recalculateSumValues(eq(salesOrder.getLatestJson().getOrderRows().get(0)), eq(differentQuantity));
+        verify(salesOrderService, never()).recalculateSumValues(eq(salesOrder.getLatestJson().getOrderRows().get(1)), eq(sameQuantity));
         assertThat(subsequentOrder.getOrderNumber()).isEqualTo(newOrderNumber);
         assertThat(subsequentOrder.getOrderGroupId()).isEqualTo(salesOrder.getOrderNumber());
         assertThat(subsequentOrder.getSalesChannel()).isEqualTo(salesOrder.getLatestJson().getOrderHeader().getSalesChannel());
