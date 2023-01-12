@@ -1,3 +1,23 @@
 {
-  "Message": "{\n  \"SupplierInternalId\": 45445308,\n  \"PurchaseOrderNumber\": \"123-PO\",\n  \"SalesOrderNumber\": \"526637097\",\n  \"ServiceProviderName\": \"GLS\",\n  \"ShipmentDate\": \"2021-10-14\",\n  \"Items\": [\n    {\n      \"ProductNumber\": \"1321-104914\",\n      \"ParcelNumber\": \"00F8F0LT\",\n      \"TrackingLink\": \"http://abc1\",\n      \"Quantity\": 4,\n      \"ServiceProviderName\": \"abc1\"\n    }\n  ]\n}"
+  "SupplierInternalId": 45445308,
+  "PurchaseOrderNumber": "123-PO",
+  "SalesOrderNumber": "580309129",
+  "ServiceProviderName": "GLS",
+  "ShipmentDate": "2021-10-14",
+  "Items": [
+    {
+      "ProductNumber": "sku-1",
+      "ParcelNumber": "00F8F0LT",
+      "TrackingLink": "http://abc1",
+      "Quantity": 2,
+      "ServiceProviderName": "abc1"
+    },
+    {
+      "ProductNumber": "sku-3",
+      "ParcelNumber": "00F8F0LT2",
+      "TrackingLink": "http://abc2",
+      "Quantity": 2,
+      "ServiceProviderName": "abc2"
+    }
+  ]
 }
