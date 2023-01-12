@@ -71,6 +71,7 @@ class DropshipmentShipmentServiceTest {
                         .parcelNumber(row.getSku())
                         .serviceProviderName(row.getSku())
                         .trackingLink(row.getSku() + " trackingLink")
+                        .quantity(1)
                         .build())
                 .collect(toUnmodifiableList());
 
@@ -117,12 +118,14 @@ class DropshipmentShipmentServiceTest {
                 .parcelNumber("sku-1")
                 .serviceProviderName("sku-1")
                 .trackingLink("trackingLink1")
+                .quantity(1)
                 .build());
         items.add(ShipmentItem.builder()
                 .productNumber("sku-1")
                 .parcelNumber("sku-1")
                 .serviceProviderName("sku-1")
                 .trackingLink("trackingLink2")
+                .quantity(1)
                 .build());
         val message = DropshipmentShipmentConfirmedMessage.builder()
                 .salesOrderNumber(salesOrder.getOrderNumber())

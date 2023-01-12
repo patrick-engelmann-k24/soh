@@ -20,6 +20,7 @@ import org.camunda.bpm.engine.variable.Variables;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -55,12 +56,22 @@ public class DropshipmentShipmentService {
                 .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
 
         val shippedItems = message.getItems();
+        validateShippedItems(shippedItems);
         val orderRows = salesOrder.getLatestJson().getOrderRows();
 
         val savedSalesOrder = updateSalesOrderWithTrackingInformation(
                 salesOrder, shippedItems, orderRows);
 
         startDropshipmentShipmentProcess(savedSalesOrder, shippedItems, orderRows);
+    }
+
+    private void validateShippedItems(Collection<ShipmentItem> shippedItems) {
+        for (ShipmentItem item: shippedItems) {
+            if (item.getQuantity() == null || item.getQuantity() <= 0) {
+                throw new IllegalArgumentException("Shipped Quantity must not be null or zero, when handling " +
+                        "DropshipmentShipmentConfirmed event. ");
+            }
+        }
     }
 
     private SalesOrder updateSalesOrderWithTrackingInformation(SalesOrder salesOrder,

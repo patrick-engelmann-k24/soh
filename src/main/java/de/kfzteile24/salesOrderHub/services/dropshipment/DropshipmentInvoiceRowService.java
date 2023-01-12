@@ -122,7 +122,7 @@ public class DropshipmentInvoiceRowService {
     }
 
     @Transactional
-    public Collection<DropshipmentInvoiceRow> mergeRowsByOrderNumberAndSku(Collection<DropshipmentInvoiceRow> dropshipmentInvoiceRows) {
+    public List<DropshipmentInvoiceRow> mergeRowsByOrderNumberAndSku(List<DropshipmentInvoiceRow> dropshipmentInvoiceRows) {
         Map<String, Map<String, List<DropshipmentInvoiceRow>>> rowsMap = new TreeMap<>();
         dropshipmentInvoiceRows.forEach(item -> {
             val orderNumberKey = item.getOrderNumber();

@@ -89,7 +89,6 @@ class DropshipmentOrderPartiallyInvoicedFullyCancelledIntegrationTest extends Ab
     }
 
     @Test
-    @Disabled("Has to be enabled and adjusted during implementation of the new dropshipmet-shipment-process")
     void testHandleDropShipmentOrderShipmentConfirmed(){
         var salesOrder = createDropshipmentSalesOrder();
         assertThat(dropshipmentInvoiceRowService.getByOrderNumber(salesOrder.getOrderNumber()).size()).isZero();
@@ -110,23 +109,27 @@ class DropshipmentOrderPartiallyInvoicedFullyCancelledIntegrationTest extends Ab
     private DropshipmentShipmentConfirmedMessage createPartialShipmentConfirmedMessage(SalesOrder salesOrder) {
         return DropshipmentShipmentConfirmedMessage.builder()
                 .salesOrderNumber(salesOrder.getOrderNumber())
-                .items(new ArrayList<>(Set.of(ShipmentItem.builder()
-                        .productNumber("sku-1")
-                        .parcelNumber("00F8F0LT")
-                        .trackingLink("http://abc1")
-                        .serviceProviderName("abc1")
-                        .build(),
+                .items(new ArrayList<>(Set.of(
+                        ShipmentItem.builder()
+                                .productNumber("sku-1")
+                                .parcelNumber("00F8F0LT")
+                                .trackingLink("http://abc1")
+                                .serviceProviderName("abc1")
+                                .quantity(1)
+                                .build(),
                         ShipmentItem.builder()
                                 .productNumber("sku-2")
                                 .parcelNumber("00F8F0LT2")
                                 .trackingLink("http://abc2")
                                 .serviceProviderName("abc2")
+                                .quantity(1)
                                 .build(),
                         ShipmentItem.builder()
                                 .productNumber("sku-3")
                                 .parcelNumber("00F8F0LT32")
                                 .trackingLink("http://abc3")
                                 .serviceProviderName("abc3")
+                                .quantity(1)
                                 .build())))
                 .build();
     }
@@ -163,8 +166,8 @@ class DropshipmentOrderPartiallyInvoicedFullyCancelledIntegrationTest extends Ab
 
         //small hack to simulate partial invoice in invoicing process
         //other solution would be to create 2 additional processes (which is more time-consuming)
-        val dropshipmentOrderRow = dropshipmentInvoiceRowService.getBySkuAndOrderNumber("sku-1", salesOrder.getOrderNumber()).get();
-        dropshipmentInvoiceRowRepository.delete(dropshipmentOrderRow);
+        val dropshipmentInvoiceRow = dropshipmentInvoiceRowService.getBySkuAndOrderNumber("sku-1", salesOrder.getOrderNumber()).get();
+        dropshipmentInvoiceRowRepository.delete(dropshipmentInvoiceRow);
 
         return processInstance;
     }

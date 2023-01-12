@@ -39,7 +39,9 @@ public class DropshipmentCreateUpdateShipmentDataDelegate implements JavaDelegat
                 quantityShipped);
 
         var quantityToBeInvoiced = calculateQuantityToBeInvoiced(quantityShipped, dropshipmentOrderRow);
-        dropshipmentInvoiceRowService.create(sku, orderNumber, quantityToBeInvoiced);
+        if (quantityToBeInvoiced > 0) {
+            dropshipmentInvoiceRowService.create(sku, orderNumber, quantityToBeInvoiced);
+        }
 
         var itemsFullyShipped = dropshipmentOrderRowService.isItemsFullyShipped(orderNumber);
         delegateExecution.setVariable(ITEMS_FULLY_SHIPPED.getName(), itemsFullyShipped);
