@@ -19,8 +19,6 @@ class OrderMapperTest {
 
     @Test
     void testToSumValues() {
-        val salesOrder = getSalesOrder(getObjectByResource("ecpOrderMessage.json", Order.class));
-        val orderRows = salesOrder.getLatestJson().getOrderRows().get(0);
         val unitValues = UnitValues.builder()
                 .goodsValueGross(BigDecimal.valueOf(1))
                 .goodsValueNet(BigDecimal.valueOf(2))
@@ -55,8 +53,6 @@ class OrderMapperTest {
 
     @Test
     void testToSumValuesWithNullUnitValues() {
-        val salesOrder = getSalesOrder(getObjectByResource("ecpOrderMessage.json", Order.class));
-        val orderRows = salesOrder.getLatestJson().getOrderRows().get(0);
         val unitValues = UnitValues.builder().build();
 
         val five = BigDecimal.valueOf(5);
