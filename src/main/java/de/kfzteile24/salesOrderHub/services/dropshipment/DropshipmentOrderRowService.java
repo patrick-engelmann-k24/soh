@@ -1,7 +1,6 @@
 package de.kfzteile24.salesOrderHub.services.dropshipment;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
-import de.kfzteile24.salesOrderHub.controller.dto.ErrorResponse;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.dropshipment.DropshipmentOrderRow;
 import de.kfzteile24.salesOrderHub.dto.dropshipment.DropshipmentItemQuantity;
@@ -48,7 +47,7 @@ public class DropshipmentOrderRowService {
     private final CamundaHelper camundaHelper;
 
     @Transactional
-    public List<ErrorResponse> shipItems(DropshipmentOrderShipped dropshipmentOrderShipped) {
+    public void shipItems(DropshipmentOrderShipped dropshipmentOrderShipped) {
         var orderNumber = dropshipmentOrderShipped.getOrderNumber();
         for (DropshipmentItemQuantity itemQuantity : dropshipmentOrderShipped.getItems()) {
             var sku = itemQuantity.getSku();
@@ -57,7 +56,7 @@ public class DropshipmentOrderRowService {
                     dropshipmentOrderRowRepository.findBySkuAndOrderNumber(sku, orderNumber)
                             .orElseThrow(() -> new DropshipmentOrderRowNotFoundException(sku, orderNumber));
             var totalQuantity = quantity + dropshipmentOrderRow.getQuantityShipped();
-            if(totalQuantity > dropshipmentOrderRow.getQuantity()) {
+            if (totalQuantity > dropshipmentOrderRow.getQuantity()) {
                 throw new DropshipmentOrderRowOverShippedException(sku, orderNumber, quantity);
             } else {
                 dropshipmentOrderRow = addQuantityShipped(sku, orderNumber, quantity);
@@ -70,7 +69,6 @@ public class DropshipmentOrderRowService {
         if (isFullyShipped) {
             camundaHelper.correlateMessage(Messages.DROPSHIPMENT_ORDER_FULLY_COMPLETED, orderNumber);
         }
-        return List.of();
     }
 
     @Transactional
