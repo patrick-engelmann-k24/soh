@@ -249,7 +249,6 @@ public class SalesOrderService {
         return isShippingCostNetMatch(originalSalesOrder, shippingCostDocumentLine)
                 && isShippingCostGrossMatch(originalSalesOrder, shippingCostDocumentLine);
     }
-
     @Transactional
     @SneakyThrows
     public boolean isFullyInvoiced(InvoiceData invoiceData) {
