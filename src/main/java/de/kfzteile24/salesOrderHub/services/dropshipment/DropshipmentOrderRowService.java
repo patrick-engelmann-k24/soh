@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.DropshipmentCreateUpdateShipmentDataDelegate.calculateQuantityToBeInvoiced;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_ORDER_SHIPPED;
@@ -141,5 +142,14 @@ public class DropshipmentOrderRowService {
                 .orElseThrow(() -> new SalesOrderNotFoundException("Could not find dropshipment order: " + orderNumber));
         salesOrder.setShipped(true);
         salesOrderService.save(salesOrder, DROPSHIPMENT_ORDER_SHIPPED);
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> getSkuListToBeCancelled(String orderNumber, List<String> skuList) {
+        return getByOrderNumber(orderNumber).stream()
+                .filter(dor -> skuList.contains(dor.getSku()))
+                .filter(dor -> dor.getQuantityShipped() >= dor.getQuantity())
+                .map(DropshipmentOrderRow::getSku)
+                .collect(Collectors.toList());
     }
 }
