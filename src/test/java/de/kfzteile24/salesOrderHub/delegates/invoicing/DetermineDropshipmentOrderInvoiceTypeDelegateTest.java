@@ -44,7 +44,7 @@ class DetermineDropshipmentOrderInvoiceTypeDelegateTest {
 
         when(delegateExecution.getVariable(Variables.INVOICE_NUMBER.getName())).thenReturn(invoiceNumber);
         when(dropshipmentInvoiceRowService.getInvoiceData(eq(invoiceNumber))).thenReturn(invoiceData);
-        when(salesOrderService.isFullyInvoiced(eq(invoiceData.getOrderRows()), eq(invoiceData.getOrderNumber()))).thenReturn(true);
+        when(salesOrderService.isFullyInvoiced(eq(invoiceData))).thenReturn(true);
 
         determineInvoiceTypeDelegate.execute(delegateExecution);
 
@@ -57,7 +57,7 @@ class DetermineDropshipmentOrderInvoiceTypeDelegateTest {
 
         when(delegateExecution.getVariable(Variables.INVOICE_NUMBER.getName())).thenReturn(invoiceNumber);
         when(dropshipmentInvoiceRowService.getInvoiceData(eq(invoiceNumber))).thenReturn(invoiceData);
-        when(salesOrderService.isFullyInvoiced(eq(invoiceData.getOrderRows()), eq(invoiceData.getOrderNumber()))).thenReturn(false);
+        when(salesOrderService.isFullyInvoiced(invoiceData)).thenReturn(false);
 
         determineInvoiceTypeDelegate.execute(delegateExecution);
 
@@ -74,7 +74,7 @@ class DetermineDropshipmentOrderInvoiceTypeDelegateTest {
         assertThatThrownBy(() -> determineInvoiceTypeDelegate.execute(delegateExecution))
                 .isInstanceOf(NotFoundException.class);
 
-        verify(salesOrderService, never()).isFullyInvoiced(any(), any());
+        verify(salesOrderService, never()).isFullyInvoiced(any());
         verify(delegateExecution, never()).setVariable(eq(Variables.IS_PARTIAL_INVOICE.getName()), any());
     }
 }
