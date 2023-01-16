@@ -30,7 +30,7 @@ public class CoreSalesInvoiceHeader {
     @JsonProperty("InvoiceLines")
     private List<CoreSalesFinancialDocumentLine> invoiceLines;
 
-    @NotBlank
+    @NotNull
     @JsonProperty("OrderGroupId")
     private String orderGroupId;
 
@@ -38,7 +38,7 @@ public class CoreSalesInvoiceHeader {
     @JsonProperty("OrderNumber")
     private String orderNumber;
 
-    @NotBlank
+    @NotNull
     @JsonProperty("CurrencyCode")
     private String currencyCode;
 
