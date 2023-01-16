@@ -21,12 +21,12 @@ import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceNumberCoun
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
 import lombok.val;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.variable.Variables;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -109,6 +109,9 @@ class DropshipmentOrderPartiallyInvoicedFullyCancelledIntegrationTest extends Ab
     private DropshipmentShipmentConfirmedMessage createPartialShipmentConfirmedMessage(SalesOrder salesOrder) {
         return DropshipmentShipmentConfirmedMessage.builder()
                 .salesOrderNumber(salesOrder.getOrderNumber())
+                .purchaseOrderNumber(salesOrder.getOrderNumber())
+                .supplierInternalId(10)
+                .shipmentDate(RandomStringUtils.randomAlphabetic(10))
                 .items(new ArrayList<>(Set.of(
                         ShipmentItem.builder()
                                 .productNumber("sku-1")
@@ -166,14 +169,14 @@ class DropshipmentOrderPartiallyInvoicedFullyCancelledIntegrationTest extends Ab
 
         //small hack to simulate partial invoice in invoicing process
         //other solution would be to create 2 additional processes (which is more time-consuming)
-        val dropshipmentInvoiceRow = dropshipmentInvoiceRowService.getBySkuAndOrderNumber("sku-1", salesOrder.getOrderNumber()).get();
+        val dropshipmentInvoiceRow = dropshipmentInvoiceRowService.getBySkuAndOrderNumber("sku-1", salesOrder.getOrderNumber()).orElseThrow();
         dropshipmentInvoiceRowRepository.delete(dropshipmentInvoiceRow);
 
         return processInstance;
     }
 
     @SneakyThrows
-    private ProcessInstance startPartialInvoicingFullyCancelledProcess() {
+    private void startPartialInvoicingFullyCancelledProcess() {
         ProcessInstance processInstance = runtimeService.startProcessInstanceByKey(INVOICING_PROCESS.getName());
 
         assertTrue(timerService.pollWithDefaultTiming(() ->
@@ -194,7 +197,6 @@ class DropshipmentOrderPartiallyInvoicedFullyCancelledIntegrationTest extends Ab
         assertTrue(timerService.pollWithDefaultTiming(() ->
                 bpmUtil.hasPassed(processInstance.getId(), EVENT_THROW_MSG_CANCEL_DROPSHIPMENT_ORDER.getName())));
 
-        return processInstance;
     }
 
     @AfterEach

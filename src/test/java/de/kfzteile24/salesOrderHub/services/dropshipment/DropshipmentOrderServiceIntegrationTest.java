@@ -29,13 +29,13 @@ import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.StringUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.api.AutoCloseableSoftAssertions;
 import org.camunda.bpm.engine.runtime.EventSubscription;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.variable.Variables;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -213,14 +213,17 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
 
         assertThat(dropshipmentInvoiceRowService.getByOrderNumber(salesOrder.getOrderNumber()).size()).isEqualTo(2);
 
-        var dropshipmentInvoiceRow1 = dropshipmentInvoiceRowService.getBySkuAndOrderNumber(sku1Row.getSku(), salesOrder.getOrderNumber()).get();
+        var dropshipmentInvoiceRow1 = dropshipmentInvoiceRowService.
+                getBySkuAndOrderNumber(sku1Row.getSku(), salesOrder.getOrderNumber()).orElseThrow();
         assertThat(dropshipmentInvoiceRow1.getOrderNumber()).isEqualTo(salesOrder.getOrderNumber());
         assertThat(dropshipmentInvoiceRow1.getSku()).isEqualTo(sku1Row.getSku());
 
-        var dropshipmentInvoiceRow2 = dropshipmentInvoiceRowService.getBySkuAndOrderNumber(sku2Row.getSku(), salesOrder.getOrderNumber());
+        var dropshipmentInvoiceRow2 = dropshipmentInvoiceRowService.
+                getBySkuAndOrderNumber(sku2Row.getSku(), salesOrder.getOrderNumber());
         assertThat(dropshipmentInvoiceRow2).isNotPresent();
 
-        var dropshipmentInvoiceRow3 = dropshipmentInvoiceRowService.getBySkuAndOrderNumber(sku3Row.getSku(), salesOrder.getOrderNumber()).get();
+        var dropshipmentInvoiceRow3 = dropshipmentInvoiceRowService.
+                getBySkuAndOrderNumber(sku3Row.getSku(), salesOrder.getOrderNumber()).orElseThrow();
         assertThat(dropshipmentInvoiceRow3.getOrderNumber()).isEqualTo(salesOrder.getOrderNumber());
         assertThat(dropshipmentInvoiceRow3.getSku()).isEqualTo(sku3Row.getSku());
     }
@@ -258,6 +261,9 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
     private DropshipmentShipmentConfirmedMessage createShipmentConfirmedMessage(SalesOrder salesOrder) {
         return DropshipmentShipmentConfirmedMessage.builder()
                 .salesOrderNumber(salesOrder.getOrderNumber())
+                .purchaseOrderNumber(salesOrder.getOrderNumber())
+                .supplierInternalId(10)
+                .shipmentDate(RandomStringUtils.randomAlphabetic(10))
                 .items(new ArrayList<>(Set.of(ShipmentItem.builder()
                         .productNumber("sku-1")
                         .quantity(1)
@@ -321,9 +327,7 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
 
         var updatedSalesOrder =
                 salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber()).orElseThrow();
-        updatedSalesOrder.getLatestJson().getOrderRows().forEach(orderRow -> {
-            assertThat(orderRow.getIsCancelled()).isTrue();
-        });
+        updatedSalesOrder.getLatestJson().getOrderRows().forEach(orderRow -> assertThat(orderRow.getIsCancelled()).isTrue());
         assertThat(updatedSalesOrder.isCancelled()).isTrue();
     }
 
