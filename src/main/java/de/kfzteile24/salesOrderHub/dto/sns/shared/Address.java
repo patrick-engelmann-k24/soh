@@ -7,6 +7,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+
 @Data
 @Builder
 @AllArgsConstructor
@@ -16,21 +19,27 @@ public class Address {
     @JsonProperty("Salutation")
     private String salutation;
 
+    @NotNull
     @JsonProperty("FirstName")
     private String firstName;
 
+    @NotNull
     @JsonProperty("LastName")
     private String lastName;
 
+    @NotNull
     @JsonProperty("Street")
     private String street;
 
+    @NotNull
     @JsonProperty("City")
     private String city;
 
+    @NotNull
     @JsonProperty("ZipCode")
     private String zipCode;
 
+    @NotBlank
     @JsonProperty("CountryCode")
     private String countryCode;
 
