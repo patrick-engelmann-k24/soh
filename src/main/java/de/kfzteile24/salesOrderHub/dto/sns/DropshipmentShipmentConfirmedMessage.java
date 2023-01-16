@@ -7,6 +7,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 import java.util.Collection;
 
 @Data
@@ -15,18 +17,23 @@ import java.util.Collection;
 @NoArgsConstructor
 public class DropshipmentShipmentConfirmedMessage {
 
+    @NotNull
     @JsonProperty("SupplierInternalId")
     private Integer supplierInternalId;
 
+    @NotNull
     @JsonProperty("PurchaseOrderNumber")
     private String purchaseOrderNumber;
 
+    @NotNull
     @JsonProperty("SalesOrderNumber")
     private String salesOrderNumber;
 
+    @NotNull
     @JsonProperty("ShipmentDate")
     private String shipmentDate;
 
+    @NotEmpty
     @JsonProperty("Items")
-    private Collection<ShipmentItem> items;
+    private Collection<@NotNull ShipmentItem> items;
 }
