@@ -215,10 +215,6 @@ class CreateDropshipmentSubsequentOrderDelegateIntegrationTest extends AbstractI
         order.getOrderHeader().setOrderGroupId(orderGroupId);
         if (isFullyCancelled) {
             order.getOrderRows().stream().filter(row -> row.getSku().equals("sku-1")).findFirst().ifPresent(row -> row.setIsCancelled(true));
-        } else {
-            for (var i = 0; i < order.getOrderRows().size(); i++) {
-                order.getOrderRows().get(i).setQuantity(BigDecimal.valueOf(i + 2));
-            }
         }
         salesOrderFullyInvoiced.setLatestJson(order);
         salesOrderFullyInvoiced.setOriginalOrder(order);
