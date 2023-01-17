@@ -53,7 +53,7 @@ public class CoreSalesFinancialDocumentLine implements OrderItem {
     @JsonProperty("IsShippingCost")
     private Boolean isShippingCost;
 
-    @NotBlank
+    @NotNull
     @JsonProperty("Description")
     private String description;
 
