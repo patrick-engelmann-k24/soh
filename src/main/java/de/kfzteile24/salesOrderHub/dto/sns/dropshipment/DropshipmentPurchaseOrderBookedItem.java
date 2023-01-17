@@ -24,11 +24,9 @@ public class DropshipmentPurchaseOrderBookedItem {
     @JsonProperty("SupplierProductNumber")
     private String supplierProductNumber;
 
-    @NotNull
     @JsonProperty("Quantity")
     private Integer quantity;
 
-    @NotNull
     @JsonProperty("PurchasePrice")
     private BigDecimal purchasePrice;
 }

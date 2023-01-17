@@ -7,11 +7,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.List;
-
+̊
 @Data
 @Builder
 @NoArgsConstructor
@@ -34,7 +34,7 @@ public class DropshipmentPurchaseOrderBookedMessage {
     private Integer supplierNumber;
 
     @JsonProperty("Items")
-    private List<@NotNull DropshipmentPurchaseOrderBookedItem> items;
+    private List<@NotEmpty DropshipmentPurchaseOrderBookedItem> items;
 
     @NotNull
     @JsonProperty("BookedDate")
@@ -44,7 +44,6 @@ public class DropshipmentPurchaseOrderBookedMessage {
     @JsonProperty("Booked")
     private Boolean booked;
 
-    @NotNull
     @JsonProperty("Message")
     private String message;
 }
