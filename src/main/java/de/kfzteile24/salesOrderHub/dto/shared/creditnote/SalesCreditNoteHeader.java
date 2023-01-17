@@ -41,9 +41,9 @@ public class SalesCreditNoteHeader {
 
     @NotNull
     @JsonProperty("NetAmount")
-    private
-    @NotNull BigDecimal netAmount;
+    private BigDecimal netAmount;
 
+    @NotNull
     @JsonProperty("GrossAmount")
     private BigDecimal grossAmount;
 
