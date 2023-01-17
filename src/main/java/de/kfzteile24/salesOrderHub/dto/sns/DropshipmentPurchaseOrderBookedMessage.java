@@ -33,8 +33,9 @@ public class DropshipmentPurchaseOrderBookedMessage {
     @JsonProperty("SupplierNumber")
     private Integer supplierNumber;
 
+    @NotEmpty
     @JsonProperty("Items")
-    private List<@NotEmpty DropshipmentPurchaseOrderBookedItem> items;
+    private List<@NotNull DropshipmentPurchaseOrderBookedItem> items;
 
     @NotNull
     @JsonProperty("BookedDate")
