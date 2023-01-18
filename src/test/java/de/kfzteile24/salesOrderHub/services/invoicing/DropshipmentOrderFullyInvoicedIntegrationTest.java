@@ -28,8 +28,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -131,7 +133,7 @@ class DropshipmentOrderFullyInvoicedIntegrationTest extends AbstractIntegrationT
                 .purchaseOrderNumber(salesOrder.getOrderNumber())
                 .supplierInternalId(10)
                 .shipmentDate(RandomStringUtils.randomAlphabetic(10))
-                .items(new ArrayList<>(Set.of(
+                .items(List.of(
                         ShipmentItem.builder()
                             .productNumber("sku-1")
                             .parcelNumber("00F8F0LT")
@@ -140,25 +142,53 @@ class DropshipmentOrderFullyInvoicedIntegrationTest extends AbstractIntegrationT
                             .quantity(1)
                             .build(),
                         ShipmentItem.builder()
+                                .productNumber("sku-1")
+                                .parcelNumber("00F8F0LT")
+                                .trackingLink("http://abc1")
+                                .serviceProviderName("abc1")
+                                .quantity(2)
+                                .build(),
+                        ShipmentItem.builder()
                             .productNumber("sku-2")
                             .parcelNumber("00F8F0LT2")
                             .trackingLink("http://abc2")
                             .serviceProviderName("abc2")
-                            .quantity(1)
+                            .quantity(2)
                             .build(),
+                        ShipmentItem.builder()
+                                .productNumber("sku-2")
+                                .parcelNumber("00F8F0LT2")
+                                .trackingLink("http://abc2")
+                                .serviceProviderName("abc2")
+                                .quantity(2)
+                                .build(),
+                        ShipmentItem.builder()
+                                .productNumber("sku-2")
+                                .parcelNumber("00F8F0LT2")
+                                .trackingLink("http://abc2")
+                                .serviceProviderName("abc2")
+                                .quantity(2)
+                                .build(),
                         ShipmentItem.builder()
                             .productNumber("sku-3")
                             .parcelNumber("00F8F0LT32")
                             .trackingLink("http://abc3")
                             .serviceProviderName("abc3")
-                            .quantity(1)
-                            .build())))
+                            .quantity(4)
+                            .build()))
                 .build();
     }
 
     private SalesOrder createDropshipmentSalesOrder() {
         var salesOrder = SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
-        ((Order) salesOrder.getOriginalOrder()).getOrderHeader().setOrderFulfillment(DELTICOM.getName());
+        ((Order) salesOrder.getLatestJson()).getOrderHeader().setOrderFulfillment(DELTICOM.getName());
+
+        ((Order) salesOrder.getLatestJson()).getOrderRows().stream().filter(r -> "sku-1".equals(r.getSku())).findFirst()
+                .ifPresent(r -> r.setQuantity(BigDecimal.valueOf(3)));
+        ((Order) salesOrder.getLatestJson()).getOrderRows().stream().filter(r -> "sku-2".equals(r.getSku())).findFirst()
+                .ifPresent(r -> r.setQuantity(BigDecimal.valueOf(6)));
+        ((Order) salesOrder.getLatestJson()).getOrderRows().stream().filter(r -> "sku-3".equals(r.getSku())).findFirst()
+                .ifPresent(r -> r.setQuantity(BigDecimal.valueOf(4)));
 
         salesOrderService.save(salesOrder, Action.ORDER_CREATED);
         return salesOrder;

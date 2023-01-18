@@ -15,6 +15,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
+import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.helper.ReturnOrderHelper;
 import de.kfzteile24.salesOrderHub.helper.SubsequentSalesOrderCreationHelper;
 import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
@@ -27,6 +28,7 @@ import de.kfzteile24.salesOrderHub.services.sqs.EnrichMessageForDlq;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -39,7 +41,10 @@ import org.springframework.util.StringUtils;
 import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.CustomEventName.DROPSHIPMENT_ORDER_CANCELLED;
@@ -77,6 +82,8 @@ public class DropshipmentOrderService {
     private final SubsequentSalesOrderCreationHelper subsequentOrderHelper;
     @NotNull
     private final MetricsHelper metricsHelper;
+    @NonNull
+    private final OrderUtil orderUtil;
 
     @EnrichMessageForDlq
     public void handleDropShipmentOrderConfirmed(
@@ -299,23 +306,31 @@ public class DropshipmentOrderService {
                 .orderHeader(subsequentOrderHelper.createOrderHeader(salesOrder, newOrderNumber, invoiceNumber))
                 .build();
 
-        val skuList = skuQuantityMap.keySet();
+        val skuSet = skuQuantityMap.keySet();
 
-        orderJson.setOrderRows(salesOrder.getLatestJson().getOrderRows().stream()
-                .filter(row -> skuList.contains(row.getSku()))
-                .collect(Collectors.toList()));
-
-        orderJson.getOrderRows().forEach(
-                row -> {
-                    val quantity = BigDecimal.valueOf(skuQuantityMap.get(row.getSku()));
-                    if (row.getQuantity().intValue() != quantity.intValue()) {
-                        salesOrderService.recalculateSumValues(row, quantity);
-                    }
-                });
+        orderJson.setOrderRows(createSubsequentOrderRows(salesOrder, skuSet, skuQuantityMap));
 
         salesOrderService.recalculateTotals(orderJson, invoiceService.getShippingCostLine(salesOrder));
         removeShippingCostFromOriginalOrder(salesOrder);
         return orderJson;
+    }
+
+    private List<OrderRows> createSubsequentOrderRows(SalesOrder originalOrder, Set<String> skuSet,
+                                                      Map<String, Integer> skuQuantityMap) {
+        List<OrderRows> subsequentOrderRows = new ArrayList<>();
+        List<OrderRows> originalRows = originalOrder.getLatestJson().getOrderRows().stream()
+                .filter(row -> skuSet.contains(row.getSku()))
+                .collect(Collectors.toList());
+        for (final var originalRow : originalRows) {
+            val quantity = BigDecimal.valueOf(skuQuantityMap.get(originalRow.getSku()));
+            if (originalRow.getQuantity().intValue() != quantity.intValue()) {
+                val newRow = orderUtil.createNewOrderRow(originalRow, quantity);
+                subsequentOrderRows.add(newRow);
+            } else {
+                subsequentOrderRows.add(originalRow);
+            }
+        }
+        return subsequentOrderRows;
     }
 
     private void removeShippingCostFromOriginalOrder(SalesOrder salesOrder) {
