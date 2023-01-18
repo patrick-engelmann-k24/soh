@@ -75,9 +75,13 @@ class AggregateInvoiceDataDelegateIntegrationTest extends AbstractIntegrationTes
                     AGGREGATE_INVOICE_DATA.getName(),
                     "eventStartSubInvoicing",
                     XOR_CHECK_PARTIAL_INVOICE.getName(),
-                    INVOICING_CREATE_DROPSHIPMENT_SALES_ORDER_INVOICE.getName(),
-                    INVOICING_CREATE_SUBSEQUENT_ORDER.getName()
+                    INVOICING_CREATE_DROPSHIPMENT_SALES_ORDER_INVOICE.getName()
                     );
+            return true;
+        }));
+
+        assertTrue(pollingService.pollWithDefaultTiming(() -> {
+            assertThat(processInstance).hasPassed(INVOICING_CREATE_SUBSEQUENT_ORDER.getName());
             return true;
         }));
 
@@ -125,6 +129,7 @@ class AggregateInvoiceDataDelegateIntegrationTest extends AbstractIntegrationTes
 
 
         List<DropshipmentOrderRow> dropshipmentOrderRowList = List.of(
+                DropshipmentOrderRow.builder().orderNumber("623456789").sku("sku-1").quantity(1).quantityShipped(1).build(),
                 DropshipmentOrderRow.builder().orderNumber("623456789").sku("sku-2").quantity(1).quantityShipped(1).build(),
                 DropshipmentOrderRow.builder().orderNumber("623456789").sku("sku-3").quantity(1).quantityShipped(1).build()
         );
@@ -133,19 +138,18 @@ class AggregateInvoiceDataDelegateIntegrationTest extends AbstractIntegrationTes
 
     @NotNull
     private SalesOrder getSalesOrder(String orderNumber, String orderGroupId, boolean isFullyCancelled) {
-        final var salesOrderFullyInvoiced = createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
-        salesOrderFullyInvoiced.setOrderNumber(orderNumber);
-        salesOrderFullyInvoiced.setOrderGroupId(orderGroupId);
-        Order order = salesOrderFullyInvoiced.getLatestJson();
+        final var salesOrder = createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
+        salesOrder.setOrderNumber(orderNumber);
+        salesOrder.setOrderGroupId(orderGroupId);
+        Order order = salesOrder.getLatestJson();
         order.getOrderHeader().setOrderNumber(orderNumber);
         order.getOrderHeader().setOrderGroupId(orderGroupId);
         if (isFullyCancelled) {
             order.getOrderRows().stream().filter(row -> row.getSku().equals("sku-1")).findFirst().ifPresent(row -> row.setIsCancelled(true));
         }
-        salesOrderFullyInvoiced.setLatestJson(order);
-        salesOrderFullyInvoiced.setOriginalOrder(order);
-        salesOrderRepository.save(salesOrderFullyInvoiced);
-        return salesOrderFullyInvoiced;
+        salesOrder.setLatestJson(order);
+        salesOrder.setOriginalOrder(order);
+        return salesOrderRepository.save(salesOrder);
     }
 
     private void verifyIfOrderFullyInvoiced() {
@@ -254,6 +258,7 @@ class AggregateInvoiceDataDelegateIntegrationTest extends AbstractIntegrationTes
         pollingService.retry(() -> bpmUtil.cleanUp());
         pollingService.retry(() -> salesOrderRepository.deleteAll());
         pollingService.retry(() -> dropshipmentInvoiceRowRepository.deleteAll());
+        pollingService.retry(() -> dropshipmentOrderRowRepository.deleteAll());
     }
 
     @AfterEach
@@ -261,5 +266,6 @@ class AggregateInvoiceDataDelegateIntegrationTest extends AbstractIntegrationTes
         pollingService.retry(() -> bpmUtil.cleanUp());
         pollingService.retry(() -> salesOrderRepository.deleteAll());
         pollingService.retry(() -> dropshipmentInvoiceRowRepository.deleteAll());
+        pollingService.retry(() -> dropshipmentOrderRowRepository.deleteAll());
     }
 }
