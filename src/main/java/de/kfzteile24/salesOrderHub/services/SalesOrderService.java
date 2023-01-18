@@ -74,8 +74,6 @@ public class SalesOrderService {
     @NonNull
     private final InvoiceService invoiceService;
 
-    private final DropshipmentInvoiceRowService dropshipmentInvoiceRowService;
-
     @NonNull
     private final OrderUtil orderUtil;
 
