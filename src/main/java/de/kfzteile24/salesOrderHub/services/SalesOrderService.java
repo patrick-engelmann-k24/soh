@@ -5,11 +5,12 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.domain.audit.Action;
 import de.kfzteile24.salesOrderHub.domain.audit.AuditLog;
+import de.kfzteile24.salesOrderHub.domain.dropshipment.InvoiceData;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesFinancialDocumentLine;
+import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundCustomException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
-import de.kfzteile24.salesOrderHub.helper.OrderMapper;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.helper.SubsequentSalesOrderCreationHelper;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
@@ -24,6 +25,7 @@ import de.kfzteile24.soh.order.dto.Surcharges;
 import de.kfzteile24.soh.order.dto.Totals;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.collections.CollectionUtils;
@@ -240,12 +242,32 @@ public class SalesOrderService {
         return isShippingCostNetMatch(originalSalesOrder, shippingCostDocumentLine)
                 && isShippingCostGrossMatch(originalSalesOrder, shippingCostDocumentLine);
     }
-
     @Transactional
-    public boolean isFullyMatched(List<String> skuList, String orderNumber) {
-        var salesOrder = getOrderByOrderNumber(orderNumber)
-                .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
-        return salesOrder.getLatestJson().getOrderRows().stream().allMatch(row -> skuList.contains(row.getSku()));
+    @SneakyThrows
+    public boolean isFullyInvoiced(InvoiceData invoiceData) {
+        var salesOrder = getOrderByOrderNumber(invoiceData.getOrderNumber())
+                .orElseThrow(() -> new SalesOrderNotFoundException(invoiceData.getOrderNumber()));
+
+        if (invoiceData.getOrderRows() == null || invoiceData.getOrderRows().isEmpty()) {
+            throw new NotFoundException("Order row in invoice data is null or empty.");
+        }
+
+        if (!salesOrder.getLatestJson().getOrderRows().stream()
+                .allMatch(row -> invoiceData.getOrderRows().contains(row.getSku()))) {
+            return false;
+        }
+
+        val skuQuantityMap = invoiceData.getSkuQuantityMap();
+        for (String sku : invoiceData.getOrderRows()) {
+            var originalRowQuantity = salesOrder.getLatestJson().getOrderRows().stream()
+                    .filter(row -> row.getSku().equals(sku))
+                    .map(OrderRows::getQuantity).reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            if (originalRowQuantity.compareTo(BigDecimal.valueOf(skuQuantityMap.get(sku))) > 0) {
+                return false; // originalRowQuantity - quantity from invoiceData > 0, then partially invoiced.
+            }
+        }
+       return true;
     }
 
     private boolean isShippingCostNetMatch(SalesOrder originalSalesOrder, CoreSalesFinancialDocumentLine shippingCostDocumentLine) {

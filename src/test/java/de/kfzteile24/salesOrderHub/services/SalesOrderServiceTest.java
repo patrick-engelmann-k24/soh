@@ -3,15 +3,18 @@ package de.kfzteile24.salesOrderHub.services;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderInvoice;
 import de.kfzteile24.salesOrderHub.domain.converter.InvoiceSource;
+import de.kfzteile24.salesOrderHub.domain.dropshipment.InvoiceData;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesFinancialDocumentLine;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoice;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
+import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundCustomException;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.helper.SubsequentSalesOrderCreationHelper;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
+import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentOrderRowService;
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceService;
 import de.kfzteile24.soh.order.dto.CustomerType;
 import de.kfzteile24.soh.order.dto.Order;
@@ -19,6 +22,7 @@ import de.kfzteile24.soh.order.dto.OrderRows;
 import de.kfzteile24.soh.order.dto.PaymentProviderData;
 import de.kfzteile24.soh.order.dto.Payments;
 import de.kfzteile24.soh.order.dto.Platform;
+import lombok.val;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.DisplayName;
@@ -77,6 +81,9 @@ class SalesOrderServiceTest {
 
     @Mock
     private SubsequentSalesOrderCreationHelper subsequentSalesOrderCreationHelper;
+
+    @Mock
+    private DropshipmentOrderRowService dropshipmentOrderRowService;
 
     @Spy
     @InjectMocks
@@ -302,6 +309,106 @@ class SalesOrderServiceTest {
         assertFalse(salesOrderService.isFullyMatchedWithOriginalOrder(salesOrder, salesInvoiceHeader.getInvoiceLines()));
     }
 
+    @Test
+    @DisplayName("Test isFullyInvoiced for Dropshipment with null invoice")
+    void testFullyInvoicedWithNullInvoiceDataThrowsAnException() {
+        // Prepare sales order
+        var message =  getObjectByResource("testmessage.json", Order.class);
+        var salesOrder = getSalesOrder(message);
+
+        // Prepare invoice data
+        InvoiceData invoiceData = InvoiceData.builder().orderNumber(salesOrder.getOrderNumber()).build();
+
+        when(salesOrderRepository.getOrderByOrderNumber(salesOrder.getOrderNumber()))
+                .thenReturn(Optional.of(salesOrder));
+        assertThatThrownBy(() -> salesOrderService.isFullyInvoiced(invoiceData))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessageContaining("Order row in invoice data is null or empty.");
+
+    }
+    @Test
+    @DisplayName("Test isFullyInvoiced for Dropshipment with empty invoice")
+    void testFullyInvoicedWithEmptyInvoiceDataThrowsAnException() {
+        // Prepare sales order
+        var message =  getObjectByResource("testmessage.json", Order.class);
+        var salesOrder = getSalesOrder(message);
+
+        // Prepare invoice data
+        InvoiceData invoiceData = InvoiceData.builder()
+                .orderNumber(salesOrder.getOrderNumber()).orderRows(new ArrayList<>()).build();
+
+        when(salesOrderRepository.getOrderByOrderNumber(salesOrder.getOrderNumber()))
+                .thenReturn(Optional.of(salesOrder));
+        assertThatThrownBy(() -> salesOrderService.isFullyInvoiced(invoiceData))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessageContaining("Order row in invoice data is null or empty.");
+
+    }
+
+    @Test
+    @DisplayName("Test isFullyInvoiced for Dropshipment with order rows not matched")
+    void testFullyInvoicedWithOrderRowNotMatched() {
+        // Prepare sales order
+        var message =  getObjectByResource("testmessage.json", Order.class);
+        var salesOrder = getSalesOrder(message);
+
+        // Prepare invoice data
+        final var invoiceNumber = "456";
+        final var skuList = List.of("1440-47378");
+        val quantities = List.of(1);
+        final var invoiceData =
+                InvoiceData.builder().invoiceNumber(invoiceNumber).orderNumber(salesOrder.getOrderNumber())
+                        .orderRows(skuList)
+                        .quantities(quantities).build();
+
+        when(salesOrderRepository.getOrderByOrderNumber(salesOrder.getOrderNumber()))
+                .thenReturn(Optional.of(salesOrder));
+        assertFalse(salesOrderService.isFullyInvoiced(invoiceData));
+
+    }
+    @Test
+    @DisplayName("Test isFullyInvoiced for Dropshipment with quantity not matched")
+    void testFullyInvoicedWithQuantityNotMatched() {
+        // Prepare sales order
+        var message =  getObjectByResource("testmessage.json", Order.class);
+        var salesOrder = getSalesOrder(message);
+
+        // Prepare invoice data
+        final var invoiceNumber = "456";
+        final var skuList = List.of("1440-47378", "2010-10183");
+        val quantities = List.of(1, 0);
+        final var invoiceData =
+                InvoiceData.builder().invoiceNumber(invoiceNumber).orderNumber(salesOrder.getOrderNumber())
+                        .orderRows(skuList)
+                        .quantities(quantities).build();
+
+        when(salesOrderRepository.getOrderByOrderNumber(salesOrder.getOrderNumber()))
+                .thenReturn(Optional.of(salesOrder));
+        assertFalse(salesOrderService.isFullyInvoiced(invoiceData));
+
+    }
+
+    @Test
+    @DisplayName("Test isFullyInvoiced for Dropshipment with fully matched order rows and quantity")
+    void testFullyInvoicedWithFullInvoice() {
+        // Prepare sales order
+        var message =  getObjectByResource("testmessage.json", Order.class);
+        var salesOrder = getSalesOrder(message);
+
+        // Prepare invoice data
+        final var invoiceNumber = "456";
+        final var skuList = List.of("1440-47378", "2010-10183");
+        val quantities = List.of(1, 1);
+        final var invoiceData =
+                InvoiceData.builder().invoiceNumber(invoiceNumber).orderNumber(salesOrder.getOrderNumber())
+                        .orderRows(skuList)
+                        .quantities(quantities).build();
+
+        when(salesOrderRepository.getOrderByOrderNumber(salesOrder.getOrderNumber()))
+                .thenReturn(Optional.of(salesOrder));
+        assertTrue(salesOrderService.isFullyInvoiced(invoiceData));
+
+    }
 
     private CoreSalesInvoiceCreatedMessage createCoreSalesInvoiceCreatedMessage(String orderNumber, String sku) {
         var item = CoreSalesFinancialDocumentLine.builder()

@@ -23,8 +23,7 @@ public class DetermineDropshipmentOrderInvoiceTypeDelegate implements JavaDelega
 
         final var invoiceNumber = (String) delegateExecution.getVariable(Variables.INVOICE_NUMBER.getName());
         var invoiceData = dropshipmentInvoiceRowService.getInvoiceData(invoiceNumber);
-        var isPartialInvoice =
-                !salesOrderService.isFullyMatched(invoiceData.getOrderRows(), invoiceData.getOrderNumber());
+        var isPartialInvoice = !salesOrderService.isFullyInvoiced(invoiceData);
 
         delegateExecution.setVariable(Variables.IS_PARTIAL_INVOICE.getName(), isPartialInvoice);
     }
