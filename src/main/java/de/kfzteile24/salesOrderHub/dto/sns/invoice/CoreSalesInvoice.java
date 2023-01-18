@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import java.util.List;
 
@@ -16,6 +17,7 @@ import java.util.List;
 public class CoreSalesInvoice {
 
     @NotNull
+    @Valid
     @JsonProperty("SalesInvoiceHeader")
     private CoreSalesInvoiceHeader salesInvoiceHeader;
 

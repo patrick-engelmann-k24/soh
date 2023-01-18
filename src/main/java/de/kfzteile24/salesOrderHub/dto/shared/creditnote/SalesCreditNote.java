@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import java.util.Collection;
 
@@ -17,6 +18,7 @@ import java.util.Collection;
 public class SalesCreditNote {
 
     @NotNull
+    @Valid
     @JsonProperty("SalesCreditNoteHeader")
     private SalesCreditNoteHeader salesCreditNoteHeader;
 
