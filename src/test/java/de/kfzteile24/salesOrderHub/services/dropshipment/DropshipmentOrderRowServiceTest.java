@@ -180,4 +180,17 @@ class DropshipmentOrderRowServiceTest {
         verify(salesOrderService, never()).save(argThat(SalesOrder::isShipped), eq(DROPSHIPMENT_ORDER_SHIPPED));
         verify(camundaHelper, never()).correlateMessage(eq(DROPSHIPMENT_ORDER_FULLY_COMPLETED), eq(orderNumber));
     }
+
+    @Test
+    void testGetSkuListToBeCancelled() {
+        final var orderNumber = "123456789";
+        List<DropshipmentOrderRow> dropshipmentOrderRows = new ArrayList<>();
+        dropshipmentOrderRows.add(createDropshipmentOrderRow(orderNumber, "sku-1", 3, 2));
+        dropshipmentOrderRows.add(createDropshipmentOrderRow(orderNumber, "sku-2", 3, 3));
+        dropshipmentOrderRows.add(createDropshipmentOrderRow(orderNumber, "sku-3", 3, 3));
+        dropshipmentOrderRows.add(createDropshipmentOrderRow(orderNumber, "sku-4", 3, 4));
+        when(dropshipmentOrderRowRepository.findByOrderNumber(anyString())).thenReturn(dropshipmentOrderRows);
+
+        assertThat(dropshipmentOrderRowService.getSkuListToBeCancelled(orderNumber, List.of("sku-1", "sku-3", "sku-4"))).isEqualTo(List.of("sku-3", "sku-4"));
+    }
 }

@@ -19,12 +19,12 @@ import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentShipmentSer
 import de.kfzteile24.salesOrderHub.services.financialdocuments.InvoiceNumberCounterService;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.variable.Variables;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -118,7 +118,7 @@ class DropshipmentOrderFullyInvoicedIntegrationTest extends AbstractIntegrationT
             var invoiceNumber = updatedSalesOrder.getLatestJson().getOrderHeader().getDocumentRefNumber();
             assertThat(invoiceNumber).hasSize(18);
             assertThat(invoiceNumber).isEqualTo(LocalDateTime.now().getYear()
-                    + "-100000000000" + Integer.toString(i));
+                    + "-100000000000" + i);
             i++;
             assertThat(updatedSalesOrder.getInvoiceEvent()).isNotNull();
             assertThat(updatedSalesOrder.getInvoiceEvent().getSalesInvoice().getSalesInvoiceHeader().getInvoiceNumber()).isEqualTo(invoiceNumber);
@@ -128,6 +128,9 @@ class DropshipmentOrderFullyInvoicedIntegrationTest extends AbstractIntegrationT
     private DropshipmentShipmentConfirmedMessage createShipmentConfirmedMessage(SalesOrder salesOrder) {
         return DropshipmentShipmentConfirmedMessage.builder()
                 .salesOrderNumber(salesOrder.getOrderNumber())
+                .purchaseOrderNumber(salesOrder.getOrderNumber())
+                .supplierInternalId(10)
+                .shipmentDate(RandomStringUtils.randomAlphabetic(10))
                 .items(new ArrayList<>(Set.of(
                         ShipmentItem.builder()
                             .productNumber("sku-1")
@@ -185,7 +188,7 @@ class DropshipmentOrderFullyInvoicedIntegrationTest extends AbstractIntegrationT
         return processInstance;
     }
 
-    private ProcessInstance starInvoicingProcess() {
+    private void starInvoicingProcess() {
         ProcessInstance processInstance = runtimeService.startProcessInstanceByKey(INVOICING_PROCESS.getName());
 
         assertTrue(timerService.pollWithDefaultTiming(() ->
@@ -206,7 +209,6 @@ class DropshipmentOrderFullyInvoicedIntegrationTest extends AbstractIntegrationT
         assertTrue(timerService.pollWithDefaultTiming(() ->
                 bpmUtil.hasPassed(processInstance.getId(), EVENT_THROW_MSG_INVOICING_GENERATE_FULLY_INVOICED_PDF.getName())));
 
-        return processInstance;
     }
 
     @AfterEach

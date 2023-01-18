@@ -1,12 +1,13 @@
 package de.kfzteile24.salesOrderHub.dto.sns.invoice;
 
-import java.util.List;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import javax.validation.constraints.NotNull;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -14,6 +15,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class CoreSalesInvoice {
 
+    @NotNull
     @JsonProperty("SalesInvoiceHeader")
     private CoreSalesInvoiceHeader salesInvoiceHeader;
 
