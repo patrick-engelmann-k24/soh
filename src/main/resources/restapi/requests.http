@@ -1,0 +1,36 @@
+### Delete all process instances before the poviding start date (startedBefore) of the process instance and the process definition key
+### (see DeleteProcessInstancesDto and HistoricProcessInstanceQueryDto within the camunda-rest-openapi.yaml for more details)
+POST {{baseUrl}}/process-instance/delete-historic-query-based
+Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
+
+{
+  "historicProcessInstanceQuery": {
+    "startedBefore": "{{startedBefore}}",
+    "processDefinitionKey": "{{processDefinitionKey}}"
+  },
+  "skipCustomListeners": true,
+  "skipSubprocesses": false
+}
+
+
+### Delete all process instances between the poviding start dates (startedAfter, startedBefore) of the process instance regardless of the process definition key
+### (see DeleteProcessInstancesDto and HistoricProcessInstanceQueryDto within the camunda-rest-openapi.yaml for more details)
+POST {{baseUrl}}/process-instance/delete-historic-query-based
+Content-Type: application/json
+Authorization: Basic {{username}} {{password}}
+
+{
+  "historicProcessInstanceQuery": {
+    "startedAfter": "{{startedBefore}}",
+    "startedBefore": "{{startedAfter}}"
+  },
+  "skipCustomListeners": true,
+  "skipSubprocesses": false
+}
+
+### Get current Camunda version
+GET {{baseUrl}}/version
+Authorization: Basic {{username}} {{password}}
+
+### Further requests ....

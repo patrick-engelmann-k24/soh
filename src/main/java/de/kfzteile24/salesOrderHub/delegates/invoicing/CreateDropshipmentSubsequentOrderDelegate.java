@@ -7,6 +7,7 @@ import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentInvoiceRowService;
+import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentOrderRowService;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentOrderService;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,8 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 import static de.kfzteile24.salesOrderHub.constants.CustomEventName.DROPSHIPMENT_SUBSEQUENT_ORDER_CREATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
@@ -31,6 +34,8 @@ public class CreateDropshipmentSubsequentOrderDelegate extends CommonDelegate {
     private final DropshipmentOrderService dropshipmentOrderService;
     @NonNull
     private final DropshipmentInvoiceRowService dropshipmentInvoiceRowService;
+    @NonNull
+    private final DropshipmentOrderRowService dropshipmentOrderRowService;
     @NonNull
     private final MetricsHelper metricsHelper;
 
@@ -57,8 +62,15 @@ public class CreateDropshipmentSubsequentOrderDelegate extends CommonDelegate {
         delegateExecution.setVariable(SUBSEQUENT_ORDER_NUMBER.getName(), subsequentOrder.getOrderNumber());
         delegateExecution.setVariable(ORDER_NUMBER.getName(), orderNumber);
         delegateExecution.setVariable(SALES_ORDER_ID.getName(), subsequentOrder.getId());
-        delegateExecution.setVariable(ORDER_ROWS.getName(), skuList);
+        prepareOrderRowCancellation(delegateExecution, orderNumber, skuList);
         log.info("Dropshipment subsequent order is created. Order Number: {}, Invoice Number: {}",
                 orderNumber, invoiceNumber);
+    }
+
+    private void prepareOrderRowCancellation(DelegateExecution delegateExecution,
+                                             String orderNumber, List<String> skuList) {
+        delegateExecution.setVariable(
+                ORDER_ROWS.getName(),
+                dropshipmentOrderRowService.getSkuListToBeCancelled(orderNumber, skuList));
     }
 }

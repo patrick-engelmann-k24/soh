@@ -7,6 +7,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 import java.util.List;
 
 @Data
@@ -15,13 +17,16 @@ import java.util.List;
 @AllArgsConstructor
 public class DropshipmentPurchaseOrderReturnConfirmedMessage {
 
+    @NotNull
     @JsonProperty("SalesOrderNumber")
     private String salesOrderNumber;
 
+    @NotNull
     @JsonProperty("ExternalOrderNumber")
     private String externalOrderNumber;
 
+    @NotEmpty
     @JsonProperty("Packages")
-    private List<DropshipmentPurchaseOrderPackage> packages;
+    private List<@NotNull DropshipmentPurchaseOrderPackage> packages;
 
 }

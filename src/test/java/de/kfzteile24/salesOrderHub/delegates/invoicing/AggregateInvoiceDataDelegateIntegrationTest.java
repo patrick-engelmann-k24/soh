@@ -4,13 +4,14 @@ import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.dropshipment.DropshipmentInvoiceRow;
+import de.kfzteile24.salesOrderHub.domain.dropshipment.DropshipmentOrderRow;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.DropshipmentHelper;
 import de.kfzteile24.salesOrderHub.repositories.DropshipmentInvoiceRowRepository;
+import de.kfzteile24.salesOrderHub.repositories.DropshipmentOrderRowRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
 import de.kfzteile24.salesOrderHub.services.TimedPollingService;
 import de.kfzteile24.soh.order.dto.Order;
-import lombok.val;
 import org.assertj.core.api.Assertions;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.jetbrains.annotations.NotNull;
@@ -47,6 +48,9 @@ class AggregateInvoiceDataDelegateIntegrationTest extends AbstractIntegrationTes
 
     @Autowired
     private DropshipmentInvoiceRowRepository dropshipmentInvoiceRowRepository;
+
+    @Autowired
+    private DropshipmentOrderRowRepository dropshipmentOrderRowRepository;
 
     @Autowired
     private TimedPollingService pollingService;
@@ -118,6 +122,13 @@ class AggregateInvoiceDataDelegateIntegrationTest extends AbstractIntegrationTes
             dropshipmentHelper.createDropshipmentInvoiceRow("sku-3", salesOrderPartiallyInvoiced3.getOrderNumber(), 1)
         );
         dropshipmentInvoiceRowRepository.saveAll(dropshipmentInvoiceRowList);
+
+
+        List<DropshipmentOrderRow> dropshipmentOrderRowList = List.of(
+                DropshipmentOrderRow.builder().orderNumber("623456789").sku("sku-2").quantity(1).quantityShipped(1).build(),
+                DropshipmentOrderRow.builder().orderNumber("623456789").sku("sku-3").quantity(1).quantityShipped(1).build()
+        );
+        dropshipmentOrderRowRepository.saveAll(dropshipmentOrderRowList);
     }
 
     @NotNull

@@ -1,4 +1,4 @@
-package de.kfzteile24.salesOrderHub.configuration;
+package de.kfzteile24.salesOrderHub.configuration.camunda;
 
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.extension.migration.Migrator;
@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-class CamundaConfig {
+class CamundaBeanConfig {
 
     @Bean
     Migrator migrator(ProcessEngine processEngine) {

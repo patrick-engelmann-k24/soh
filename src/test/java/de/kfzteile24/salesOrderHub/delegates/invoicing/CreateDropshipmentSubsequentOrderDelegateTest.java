@@ -6,6 +6,7 @@ import de.kfzteile24.salesOrderHub.domain.dropshipment.InvoiceData;
 import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
 import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentInvoiceRowService;
+import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentOrderRowService;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentOrderService;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
@@ -37,6 +38,8 @@ class CreateDropshipmentSubsequentOrderDelegateTest {
     @Mock
     private DropshipmentInvoiceRowService dropshipmentInvoiceRowService;
     @Mock
+    private DropshipmentOrderRowService dropshipmentOrderRowService;
+    @Mock
     private MetricsHelper metricsHelper;
     @InjectMocks
     private CreateDropshipmentSubsequentOrderDelegate createDropshipmentSubsequentOrderDelegate;
@@ -59,6 +62,7 @@ class CreateDropshipmentSubsequentOrderDelegateTest {
         val skuQuantityMap = invoiceData.getSkuQuantityMap();
         when(delegateExecution.getVariable(Variables.INVOICE_NUMBER.getName())).thenReturn(invoiceNumber);
         when(dropshipmentInvoiceRowService.getInvoiceData(invoiceNumber)).thenReturn(invoiceData);
+        when(dropshipmentOrderRowService.getSkuListToBeCancelled(eq(orderNumber), eq(skuList))).thenReturn(skuList);
         when(salesOrderService.getOrderByOrderNumber(orderNumber)).thenReturn(Optional.of(salesOrder));
         when(dropshipmentOrderService.createDropshipmentSubsequentSalesOrder(
                 eq(salesOrder),

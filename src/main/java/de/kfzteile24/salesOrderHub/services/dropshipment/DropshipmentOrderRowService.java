@@ -1,7 +1,6 @@
 package de.kfzteile24.salesOrderHub.services.dropshipment;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
-import de.kfzteile24.salesOrderHub.controller.dto.ErrorResponse;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.dropshipment.DropshipmentOrderRow;
 import de.kfzteile24.salesOrderHub.dto.dropshipment.DropshipmentItemQuantity;
@@ -22,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.delegates.dropshipmentorder.DropshipmentCreateUpdateShipmentDataDelegate.calculateQuantityToBeInvoiced;
 import static de.kfzteile24.salesOrderHub.domain.audit.Action.DROPSHIPMENT_ORDER_SHIPPED;
@@ -47,7 +47,7 @@ public class DropshipmentOrderRowService {
     private final CamundaHelper camundaHelper;
 
     @Transactional
-    public List<ErrorResponse> shipItems(DropshipmentOrderShipped dropshipmentOrderShipped) {
+    public void shipItems(DropshipmentOrderShipped dropshipmentOrderShipped) {
         var orderNumber = dropshipmentOrderShipped.getOrderNumber();
         for (DropshipmentItemQuantity itemQuantity : dropshipmentOrderShipped.getItems()) {
             var sku = itemQuantity.getSku();
@@ -56,7 +56,7 @@ public class DropshipmentOrderRowService {
                     dropshipmentOrderRowRepository.findBySkuAndOrderNumber(sku, orderNumber)
                             .orElseThrow(() -> new DropshipmentOrderRowNotFoundException(sku, orderNumber));
             var totalQuantity = quantity + dropshipmentOrderRow.getQuantityShipped();
-            if(totalQuantity > dropshipmentOrderRow.getQuantity()) {
+            if (totalQuantity > dropshipmentOrderRow.getQuantity()) {
                 throw new DropshipmentOrderRowOverShippedException(sku, orderNumber, quantity);
             } else {
                 dropshipmentOrderRow = addQuantityShipped(sku, orderNumber, quantity);
@@ -69,7 +69,6 @@ public class DropshipmentOrderRowService {
         if (isFullyShipped) {
             camundaHelper.correlateMessage(Messages.DROPSHIPMENT_ORDER_FULLY_COMPLETED, orderNumber);
         }
-        return List.of();
     }
 
     @Transactional
@@ -141,5 +140,14 @@ public class DropshipmentOrderRowService {
                 .orElseThrow(() -> new SalesOrderNotFoundException("Could not find dropshipment order: " + orderNumber));
         salesOrder.setShipped(true);
         salesOrderService.save(salesOrder, DROPSHIPMENT_ORDER_SHIPPED);
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> getSkuListToBeCancelled(String orderNumber, List<String> skuList) {
+        return getByOrderNumber(orderNumber).stream()
+                .filter(dor -> skuList.contains(dor.getSku()))
+                .filter(dor -> dor.getQuantityShipped() >= dor.getQuantity())
+                .map(DropshipmentOrderRow::getSku)
+                .collect(Collectors.toList());
     }
 }
