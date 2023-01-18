@@ -125,11 +125,7 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
 
         doNothing().when(camundaHelper).correlateMessage(any(), any(SalesOrder.class), any());
 
-        var message = DropshipmentPurchaseOrderBookedMessage.builder()
-                .salesOrderNumber(salesOrder.getOrderNumber())
-                .externalOrderNumber("13.2")
-                .booked(true)
-                .build();
+        var message = getDropshipmentPurchaseOrderBooked(salesOrder);
         dropshipmentOrderService.handleDropShipmentOrderConfirmed(message, messageWrapper);
 
         SalesOrder updatedOrder = salesOrderService.getOrderByOrderNumber(salesOrder.getOrderNumber()).orElse(null);
@@ -494,6 +490,12 @@ class DropshipmentOrderServiceIntegrationTest extends AbstractIntegrationTest {
         }
 
         return processInstance;
+    }
+
+    private DropshipmentPurchaseOrderBookedMessage getDropshipmentPurchaseOrderBooked(SalesOrder salesOrder) {
+        var message = getObjectByResource("dropshipmentOrderPurchasedBooked.json", DropshipmentPurchaseOrderBookedMessage.class);
+        message.setSalesOrderNumber(salesOrder.getOrderNumber());
+        return message;
     }
 
     @Commit
