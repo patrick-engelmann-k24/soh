@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 
 @Data
@@ -16,6 +17,7 @@ import javax.validation.constraints.NotNull;
 public class CoreSalesInvoiceCreatedMessage {
 
     @NotNull
+    @Valid
     @JsonProperty("SalesInvoice")
     private CoreSalesInvoice salesInvoice;
 

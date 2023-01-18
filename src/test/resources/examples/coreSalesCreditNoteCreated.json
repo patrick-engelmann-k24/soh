@@ -6,6 +6,17 @@
       "CreditNoteNumber": "876130",
       "CreditNoteDate": "2021-07-07T12:00:00.000Z",
       "CurrencyCode": "EUR",
+      "NetAmount": 19.68,
+      "GrossAmount": -42.93,
+      "BillingAddress": {
+        "Salutation": null,
+        "FirstName": "Samet",
+        "LastName": "Nargul",
+        "Street": "Liebenwalder Str. 34",
+        "City": "Berlin",
+        "ZipCode": "13347",
+        "CountryCode": "DE"
+      },
       "CreditNoteLines": [
         {
           "ItemNumber": "sku-1",

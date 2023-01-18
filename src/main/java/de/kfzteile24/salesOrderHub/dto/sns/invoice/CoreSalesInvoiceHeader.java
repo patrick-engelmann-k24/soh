@@ -7,7 +7,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.util.Date;
 import java.util.List;
@@ -26,9 +28,9 @@ public class CoreSalesInvoiceHeader {
     @JsonProperty("InvoiceDate")
     private Date invoiceDate;
 
-    @NotNull
+    @NotEmpty
     @JsonProperty("InvoiceLines")
-    private List<CoreSalesFinancialDocumentLine> invoiceLines;
+    private List<@NotNull @Valid CoreSalesFinancialDocumentLine> invoiceLines;
 
     @NotNull
     @JsonProperty("OrderGroupId")
@@ -51,6 +53,7 @@ public class CoreSalesInvoiceHeader {
     private Double grossAmount;
 
     @NotNull
+    @Valid
     @JsonProperty("BillingAddress")
     private Address billingAddress;
 

@@ -25,6 +25,7 @@
           "LineNetAmount": 335.0,
           "UnitGrossAmount": 201.0,
           "LineGrossAmount": 402.0,
+          "LineTaxAmount": 67.0,
           "TaxRate": 20,
           "IsShippingCost": false,
           "Description": "1440-47378"
@@ -36,6 +37,7 @@
           "LineNetAmount": 335.0,
           "UnitGrossAmount": 201.0,
           "LineGrossAmount": 402.0,
+          "LineTaxAmount": 67.0,
           "TaxRate": 20,
           "IsShippingCost": false,
           "Description": "1440-47378"

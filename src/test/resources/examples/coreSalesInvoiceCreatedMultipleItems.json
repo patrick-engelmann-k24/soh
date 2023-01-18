@@ -25,6 +25,7 @@
           "LineNetAmount": 335.00,
           "UnitGrossAmount": 201.00,
           "LineGrossAmount": 402.00,
+          "LineTaxAmount": 67.0,
           "TaxRate": 20.00,
           "IsShippingCost": false,
           "Description": "Unterdruckpumpe, Bremsanlage"

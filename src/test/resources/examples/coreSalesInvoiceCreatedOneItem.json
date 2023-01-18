@@ -25,6 +25,7 @@
           "LineNetAmount": 10.79,
           "UnitGrossAmount": 12.95,
           "LineGrossAmount": 12.95,
+          "LineTaxAmount": 2.16,
           "TaxRate": 20,
           "IsShippingCost": false,
           "Description": "2010-10183"

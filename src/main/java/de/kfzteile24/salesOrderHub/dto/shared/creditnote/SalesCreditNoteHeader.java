@@ -7,7 +7,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -48,10 +50,11 @@ public class SalesCreditNoteHeader {
     private BigDecimal grossAmount;
 
     @NotNull
+    @Valid
     @JsonProperty("BillingAddress")
     private Address billingAddress;
 
-    @NotNull
+    @NotEmpty
     @JsonProperty("CreditNoteLines")
-    private Collection<CreditNoteLine> creditNoteLines;
+    private Collection<@NotNull @Valid CreditNoteLine> creditNoteLines;
 }
