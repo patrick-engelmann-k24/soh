@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.util.Collection;
@@ -35,5 +36,5 @@ public class DropshipmentShipmentConfirmedMessage {
 
     @NotEmpty
     @JsonProperty("Items")
-    private Collection<@NotNull ShipmentItem> items;
+    private Collection<@NotNull @Valid ShipmentItem> items;
 }
