@@ -1,6 +1,10 @@
 {
   "ExternalOrderNumber": "13.2",
+  "PurchaseOrderNumber": "13.2",
   "SalesOrderNumber": "123",
+  "SupplierNumber": "123",
+  "BookedDate":  "2021-01-19T13:30:27.816Z",
   "Booked": false,
-  "Items": null
+  "Items": [{
+  }]
 }
