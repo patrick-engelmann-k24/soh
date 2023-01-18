@@ -266,12 +266,14 @@ class DropshipmentOrderServiceTest {
         when(salesOrderService.getNextOrderNumberIndexCounter(eq(salesOrder.getOrderGroupId()))).thenReturn(100);
         when(subsequentSalesOrderCreationHelper.createOrderHeader(any(), anyString(), anyString())).thenReturn(orderHeader);
         when(invoiceService.getShippingCostLine(any())).thenReturn(null);
+        when(orderUtil.createNewOrderRow(eq(salesOrder.getLatestJson().getOrderRows().get(0)), eq(differentQuantity)))
+                .thenReturn(salesOrder.getLatestJson().getOrderRows().get(0));
         doNothing().when(salesOrderService).recalculateTotals(any(), any());
 
         var subsequentOrder = dropshipmentOrderService.createDropshipmentSubsequentSalesOrder(salesOrder, invoiceData.getSkuQuantityMap(), invoiceNumber, activityInstanceId);
 
-        verify(salesOrderService).recalculateSumValues(eq(salesOrder.getLatestJson().getOrderRows().get(0)), eq(differentQuantity));
-        verify(salesOrderService, never()).recalculateSumValues(eq(salesOrder.getLatestJson().getOrderRows().get(1)), eq(sameQuantity));
+        verify(orderUtil).createNewOrderRow(eq(salesOrder.getLatestJson().getOrderRows().get(0)), eq(differentQuantity));
+        verify(orderUtil, never()).createNewOrderRow(eq(salesOrder.getLatestJson().getOrderRows().get(1)), eq(sameQuantity));
         assertThat(subsequentOrder.getOrderNumber()).isEqualTo(newOrderNumber);
         assertThat(subsequentOrder.getOrderGroupId()).isEqualTo(salesOrder.getOrderNumber());
         assertThat(subsequentOrder.getSalesChannel()).isEqualTo(salesOrder.getLatestJson().getOrderHeader().getSalesChannel());
@@ -307,10 +309,17 @@ class DropshipmentOrderServiceTest {
         when(invoiceService.getShippingCostLine(eq(salesOrder))).thenReturn(null);
         doNothing().when(salesOrderService).recalculateTotals(any(), any());
         doReturn(salesOrder.getLatestJson().getOrderHeader()).when(subsequentSalesOrderCreationHelper).createOrderHeader(any(), anyString(), anyString());
+        when(orderUtil.createNewOrderRow(eq(salesOrder.getLatestJson().getOrderRows().get(1)), eq(BigDecimal.valueOf(0))))
+                .thenReturn(salesOrder.getLatestJson().getOrderRows().get(1));
+        when(orderUtil.createNewOrderRow(eq(salesOrder.getLatestJson().getOrderRows().get(2)), eq(BigDecimal.valueOf(0))))
+                .thenReturn(salesOrder.getLatestJson().getOrderRows().get(2));
 
         Order result = dropshipmentOrderService.createDropshipmentSubsequentOrderJson(salesOrder, newOrderNumber,
                 invoiceData.getSkuQuantityMap(), invoiceNumber);
 
+        verify(orderUtil, never()).createNewOrderRow(eq(salesOrder.getLatestJson().getOrderRows().get(0)), eq(BigDecimal.valueOf(0)));
+        verify(orderUtil).createNewOrderRow(eq(salesOrder.getLatestJson().getOrderRows().get(1)), eq(BigDecimal.valueOf(0)));
+        verify(orderUtil).createNewOrderRow(eq(salesOrder.getLatestJson().getOrderRows().get(2)), eq(BigDecimal.valueOf(0)));
         assertThat(result.getOrderRows().stream().map(OrderRows::getSku).collect(Collectors.toList())).containsOnly("sku-3", "sku-2");
         assertEquals(BigDecimal.ZERO, salesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostGross());
         assertEquals(BigDecimal.ZERO, salesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostNet());

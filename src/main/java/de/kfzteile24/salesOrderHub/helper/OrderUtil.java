@@ -13,6 +13,7 @@ import de.kfzteile24.soh.order.dto.SumValues;
 import de.kfzteile24.soh.order.dto.UnitValues;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.stereotype.Component;
@@ -74,8 +75,12 @@ public class OrderUtil {
         return RETURN_ORDER_NUMBER_PREFIX + ORDER_NUMBER_SEPARATOR + creditNoteNumber;
     }
 
-    public SumValues toSumValues(OrderRows orderRows, BigDecimal quantity) {
-        return orderMapper.toSumValues(orderRows.getUnitValues(), quantity);
+    public OrderRows createNewOrderRow(OrderRows originalOrderRow, BigDecimal newQuantity) {
+        OrderRows newOrderRow = orderMapper.toOrderRow(originalOrderRow);
+        val sumValues = orderMapper.toSumValues(originalOrderRow.getUnitValues(), newQuantity);
+        newOrderRow.setSumValues(sumValues);
+        newOrderRow.setQuantity(newQuantity);
+        return newOrderRow;
     }
 
     public OrderRows createNewOrderRow(OrderItem item, List<SalesOrder> salesOrders, AtomicInteger lastRowKey) {

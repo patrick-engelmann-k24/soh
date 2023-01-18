@@ -1,5 +1,7 @@
 package de.kfzteile24.salesOrderHub.helper;
 
+import lombok.val;
+
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
@@ -39,7 +41,8 @@ public class CalculationUtil {
 
     public static <T> BigDecimal getSumValue(Function<T, BigDecimal> function, List<T> sumValues) {
 
-        return sumValues.stream().map(function).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+        val sumValue = sumValues.stream().map(function).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+        return Optional.ofNullable(sumValue).orElse(BigDecimal.ZERO);
     }
 
     public static BigDecimal getMultipliedValue(BigDecimal value, BigDecimal quantity) {
