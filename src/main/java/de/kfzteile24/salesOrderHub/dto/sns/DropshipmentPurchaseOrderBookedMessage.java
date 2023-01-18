@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
@@ -35,7 +36,7 @@ public class DropshipmentPurchaseOrderBookedMessage {
 
     @NotEmpty
     @JsonProperty("Items")
-    private List<@NotNull DropshipmentPurchaseOrderBookedItem> items;
+    private List<@NotNull @Valid DropshipmentPurchaseOrderBookedItem> items;
 
     @NotNull
     @JsonProperty("BookedDate")
