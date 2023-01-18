@@ -291,11 +291,6 @@ public class SalesOrderService {
         return foundSalesOrders.stream().map(SalesOrder::getOrderNumber).distinct().collect(toList());
     }
 
-    public void recalculateSumValues(OrderRows orderRows, BigDecimal newQuantity) {
-        val sumValues = orderUtil.toSumValues(orderRows, newQuantity);
-        orderRows.setSumValues(sumValues);
-    }
-
     public void recalculateTotals(Order order, CoreSalesFinancialDocumentLine shippingCostLine) {
         BigDecimal shippingCostNet = shippingCostLine != null ? shippingCostLine.getLineNetAmount() : BigDecimal.ZERO;
         BigDecimal shippingCostGross = shippingCostLine != null ? shippingCostLine.getLineGrossAmount() : BigDecimal.ZERO;
