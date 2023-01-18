@@ -254,12 +254,18 @@ public class SalesOrderService {
             throw new NotFoundException("Order row in invoice data is null or empty.");
         }
 
+        if (!salesOrder.getLatestJson().getOrderRows().stream()
+                .allMatch(row -> invoiceData.getOrderRows().contains(row.getSku()))) {
+            return false;
+        }
+
+        val skuQuantityMap = invoiceData.getSkuQuantityMap();
         for (String sku : invoiceData.getOrderRows()) {
             var originalRowQuantity = salesOrder.getLatestJson().getOrderRows().stream()
                     .filter(row -> row.getSku().equals(sku))
                     .map(OrderRows::getQuantity).reduce(BigDecimal.ZERO, BigDecimal::add);
 
-            if (originalRowQuantity.compareTo(BigDecimal.valueOf(invoiceData.getSkuQuantityMap().get(sku))) > 0) {
+            if (originalRowQuantity.compareTo(BigDecimal.valueOf(skuQuantityMap.get(sku))) > 0) {
                 return false; // originalRowQuantity - quantity from invoiceData > 0, then partially invoiced.
             }
         }
