@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.util.List;
@@ -27,6 +28,6 @@ public class DropshipmentPurchaseOrderReturnConfirmedMessage {
 
     @NotEmpty
     @JsonProperty("Packages")
-    private List<@NotNull DropshipmentPurchaseOrderPackage> packages;
+    private List<@NotNull @Valid DropshipmentPurchaseOrderPackage> packages;
 
 }
