@@ -121,6 +121,7 @@ class DropshipmentOrderPartiallyInvoicedFullyCancelledIntegrationTest extends Ab
         assertThat(updatedSalesOrder.getLatestJson().getOrderRows().get(1).getQuantity().intValue()).isEqualTo(6);
         assertThat(updatedSalesOrder.getLatestJson().getOrderRows().get(2).getSku()).isEqualTo("sku-3");
         assertThat(updatedSalesOrder.getLatestJson().getOrderRows().get(2).getQuantity().intValue()).isEqualTo(5);
+        assertThat(updatedSalesOrder.isShipped()).isTrue();
 
         val dropshipmentOrderRow1 = dropshipmentOrderRowRepository.findBySkuAndOrderNumber("sku-1", updatedSalesOrder.getOrderNumber()).get();
         assertThat(dropshipmentOrderRow1.getOrderNumber()).isEqualTo(updatedSalesOrder.getOrderNumber());
