@@ -15,6 +15,7 @@ import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
 import org.apache.commons.lang3.StringUtils;
+import org.camunda.bpm.engine.variable.Variables;
 import org.camunda.bpm.extension.mockito.process.ProcessInstanceFake;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,7 @@ import java.util.UUID;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.MSG_ORDER_CORE_SALES_INVOICE_CREATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_ORDER_CANCELLED;
 import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -39,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -112,7 +115,7 @@ class CoreSalesInvoiceServiceTest {
         when(salesOrderService.createOrderNumberInSOH(any(), any())).thenReturn(salesOrder.getOrderNumber(), "10");
         when(orderUtil.checkIfOrderHasOrderRows(any())).thenReturn(true);
         when(camundaHelper.waitsOnActivityForMessage(anyString(), any(BpmItem.class), any(BpmItem.class))).thenReturn(true);
-        when(camundaHelper.correlateMessage(any(), anyString(), any()).getProcessInstance()).thenReturn(ProcessInstanceFake.builder().build());
+        doNothing().when(camundaHelper).correlateMessage(any(), eq(salesOrder), any());
 
         var message = getObjectByResource("coreSalesInvoiceCreatedOneItem.json", CoreSalesInvoiceCreatedMessage.class);
         var messageWrapper = MessageWrapper.builder().build();
@@ -121,7 +124,7 @@ class CoreSalesInvoiceServiceTest {
 
         verify(camundaHelper).waitsOnActivityForMessage(salesOrder.getProcessId(), MSG_ORDER_CORE_SALES_INVOICE_CREATED,
                 ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED);
-        verify(camundaHelper).correlateMessage(ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED, salesOrder);
+        verify(camundaHelper).correlateMessage(ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED, salesOrder, Variables.putValue(IS_ORDER_CANCELLED.getName(), true));
         verify(salesOrderService).createSalesOrderForInvoice(any(CoreSalesInvoiceCreatedMessage.class), any(SalesOrder.class),any(String.class));
         verify(coreSalesInvoiceCreatedService).startInvoiceCreatedReceivedProcess(salesOrder);
     }
