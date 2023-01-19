@@ -293,6 +293,7 @@ public class DropshipmentOrderService {
         Order orderJson = createDropshipmentSubsequentOrderJson(salesOrder, newOrderNumber, skuQuantityMap, invoiceNumber);
         var subsequentOrder = buildSubsequentSalesOrder(orderJson, newOrderNumber);
         subsequentOrder.setProcessId(activityInstanceId);
+        subsequentOrder.setShipped(true);
 
         return salesOrderService.save(subsequentOrder, ORDER_CREATED);
     }
