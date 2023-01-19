@@ -14,7 +14,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <spring-cloud-version>2.2.6.RELEASE</spring-cloud-version>
     <json-schema-java-bundle.version>1.0.178</json-schema-java-bundle.version>
-    <soh-order-json.version>1.0.41</soh-order-json.version>
+    <soh-order-json.version>1.0.47</soh-order-json.version>
     <surefire-version>3.0.0-M7</surefire-version>
     <newrelic.version>7.11.1</newrelic.version>
     <mapstruct.version>1.5.3.Final</mapstruct.version>
