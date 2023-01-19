@@ -15,7 +15,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
-import de.kfzteile24.salesOrderHub.helper.OrderUtil;
+import de.kfzteile24.salesOrderHub.helper.OrderMapper;
 import de.kfzteile24.salesOrderHub.helper.ReturnOrderHelper;
 import de.kfzteile24.salesOrderHub.helper.SubsequentSalesOrderCreationHelper;
 import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
@@ -28,7 +28,6 @@ import de.kfzteile24.salesOrderHub.services.sqs.EnrichMessageForDlq;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.OrderRows;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -77,13 +76,12 @@ public class DropshipmentOrderService {
     private final SnsPublishService snsPublishService;
     private final ReturnOrderHelper returnOrderHelper;
     private final CamundaHelper camundaHelper;
+    private final OrderMapper orderMapper;
 
     @NotNull
     private final SubsequentSalesOrderCreationHelper subsequentOrderHelper;
     @NotNull
     private final MetricsHelper metricsHelper;
-    @NonNull
-    private final OrderUtil orderUtil;
 
     @EnrichMessageForDlq
     public void handleDropShipmentOrderConfirmed(
@@ -324,12 +322,11 @@ public class DropshipmentOrderService {
                 .collect(Collectors.toList());
         for (final var originalRow : originalRows) {
             val quantity = BigDecimal.valueOf(skuQuantityMap.get(originalRow.getSku()));
+            val newRow = orderMapper.toOrderRow(originalRow);
             if (originalRow.getQuantity().intValue() != quantity.intValue()) {
-                val newRow = orderUtil.createNewOrderRow(originalRow, quantity);
-                subsequentOrderRows.add(newRow);
-            } else {
-                subsequentOrderRows.add(originalRow);
+                newRow.setQuantity(quantity);
             }
+            subsequentOrderRows.add(newRow);
         }
         return subsequentOrderRows;
     }

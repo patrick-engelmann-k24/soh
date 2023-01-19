@@ -6,7 +6,6 @@ import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.helper.ObjectUtil;
-import de.kfzteile24.salesOrderHub.helper.OrderMapperImpl;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderReturnRepository;
@@ -65,7 +64,7 @@ class SalesOrderReturnServiceTest {
     private CamundaHelper camundaHelper;
 
     @Spy
-    private OrderUtil orderUtil = new OrderUtil(new DropShipmentConfig(), new ObjectUtil(new ObjectMapper()), new OrderMapperImpl());
+    private OrderUtil orderUtil = new OrderUtil(new DropShipmentConfig(), new ObjectUtil(new ObjectMapper()));
 
     @Mock
     private ReturnOrderServiceAdaptor adaptor;
