@@ -268,6 +268,8 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
     void testQueueListenerCoreSalesInvoiceCreated() {
 
         var salesOrder = salesOrderUtil.createNewSalesOrder();
+        salesOrder.getLatestJson().getOrderRows().remove(0);
+        salesOrderService.save(salesOrder, Action.ORDER_ROW_CANCELLED);
         final ProcessInstance orderProcess = salesOrderProcessService.createOrderProcess(salesOrder, Messages.ORDER_RECEIVED_ECP);
         assertTrue(bpmUtil.isProcessWaitingAtExpectedToken(orderProcess, MSG_ORDER_PAYMENT_SECURED.getName()));
         bpmUtil.sendMessage(Messages.ORDER_RECEIVED_PAYMENT_SECURED.getName(), salesOrder.getOrderNumber());
@@ -285,8 +287,7 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
         financialDocumentsSqsReceiveService.queueListenerCoreSalesInvoiceCreated(message, messageWrapper);
 
         verify(camundaHelper).correlateMessage(eq(ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED),
-                argThat((SalesOrder order) -> StringUtils.equals(order.getOrderNumber(), originalOrderNumber)),
-                eq(Variables.putValue(IS_ORDER_CANCELLED.getName(), true)));
+                argThat((SalesOrder order) -> StringUtils.equals(order.getOrderNumber(), originalOrderNumber)));
 
         String newOrderNumberCreatedInSoh = createOrderNumberInSOH(originalOrderNumber, invoiceNumber);
         checkTotalsValues(newOrderNumberCreatedInSoh,
