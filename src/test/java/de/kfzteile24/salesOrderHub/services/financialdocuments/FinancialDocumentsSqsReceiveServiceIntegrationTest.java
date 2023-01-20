@@ -286,6 +286,9 @@ class FinancialDocumentsSqsReceiveServiceIntegrationTest extends AbstractIntegra
 
         financialDocumentsSqsReceiveService.queueListenerCoreSalesInvoiceCreated(message, messageWrapper);
 
+        verify(camundaHelper).correlateMessage(eq(ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED),
+                argThat((SalesOrder order) -> StringUtils.equals(order.getOrderNumber(), originalOrderNumber)));
+
         String newOrderNumberCreatedInSoh = createOrderNumberInSOH(originalOrderNumber, invoiceNumber);
         checkTotalsValues(newOrderNumberCreatedInSoh,
                 "12.95",
