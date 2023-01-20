@@ -210,9 +210,10 @@ public class SalesOrderService {
 
         // Check if there is no other sales order namely subsequent order,
         // filter out cancelled and dropshipment orders
-        var ordersByOrderGroupId =  getOrderByOrderGroupId(originalSalesOrder.getOrderGroupId()).stream()
-                .filter(salesOrder -> !salesOrder.isCancelled())
+        List<SalesOrder> orderByOrderGroupId = getOrderByOrderGroupId(originalSalesOrder.getOrderGroupId());
+        var ordersByOrderGroupId = orderByOrderGroupId.stream()
                 .filter(salesOrder -> !orderUtil.isDropshipmentOrder(salesOrder.getLatestJson()))
+                .filter(salesOrder -> !salesOrder.isCancelled())
                 .collect(toList());
 
         if (ordersByOrderGroupId.size() > 1) {

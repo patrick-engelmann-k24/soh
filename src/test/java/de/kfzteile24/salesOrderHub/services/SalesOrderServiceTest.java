@@ -240,6 +240,39 @@ class SalesOrderServiceTest {
     }
 
     @Test
+    @DisplayName("Test That Invoice is Fully Matched With Original Order for No Shipping Cost LInes")
+    void testFullyMatchedWhenDropshuniipmentOrderAndCancelledOrderInOrderGroupId() {
+        // Prepare sales order
+        var message =  getObjectByResource("testmessage.json", Order.class);
+        var salesOrder1 = getSalesOrder(message);
+        assertEquals(2, salesOrder1.getLatestJson().getOrderRows().size());
+        var orderGroupId = salesOrder1.getOrderGroupId();
+
+        // Prepare cancelled sales order
+        var message2 = getObjectByResource("testmessageCancelled.json", Order.class);
+        var salesOrder2 = getSalesOrder(message2);
+        salesOrder2.setCancelled(true);
+
+        // Prepare DS order
+        var messageDropshipment = getObjectByResource("testmessageDropshipment.json", Order.class);
+        var salesOrder3 = getSalesOrder(messageDropshipment);
+
+        // Prepare sub-sequent delivery note obj
+        var invoiceCreatedMessage =
+                createFullyMatchedItemsMessage(salesOrder1, "2010-10183", BigDecimal.valueOf(1.00), BigDecimal.valueOf(1.19));
+
+        CoreSalesInvoiceHeader salesInvoiceHeader = invoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
+
+        when(salesOrderRepository.findAllByOrderGroupIdOrderByUpdatedAtDesc(orderGroupId))
+                .thenReturn(List.of(salesOrder1, salesOrder2, salesOrder3));
+        when(orderUtil.isDropshipmentOrder(eq(message))).thenReturn(false);
+        when(orderUtil.isDropshipmentOrder(eq(message2))).thenReturn(false);
+        when(orderUtil.isDropshipmentOrder(eq(messageDropshipment))).thenReturn(true);
+
+        assertTrue(salesOrderService.isFullyMatchedWithOriginalOrder(salesOrder1, salesInvoiceHeader.getInvoiceLines()));
+    }
+
+    @Test
     @DisplayName("Test That Invoice is Fully Matched With Original Order for Unknown Sku Shipping Cost LIne")
     void testFullyMatchedWithOriginalOrderUnknownSkuShippingCostLine() {
         // Prepare sales order
