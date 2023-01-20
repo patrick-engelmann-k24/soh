@@ -23,6 +23,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
+import org.camunda.bpm.engine.variable.Variables;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -35,8 +36,10 @@ import java.util.stream.Collectors;
 import static de.kfzteile24.salesOrderHub.constants.CustomEventName.SUBSEQUENT_ORDER_GENERATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.MSG_ORDER_CORE_SALES_INVOICE_CREATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_SALES_INVOICE_CREATED_RECEIVED;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.CORE_SALES_ORDER_CANCELLED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.INVOICE_URL;
+import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.IS_ORDER_CANCELLED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_GROUP_ID;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.PUBLISH_DELAY;
@@ -83,7 +86,8 @@ public class CoreSalesInvoiceService {
 
                 if (Objects.nonNull(processInstanceId) && camundaHelper.waitsOnActivityForMessage(originalSalesOrder.getProcessId(),
                         MSG_ORDER_CORE_SALES_INVOICE_CREATED, ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED)) {
-                    camundaHelper.correlateMessage(ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED, originalSalesOrder);
+                    camundaHelper.correlateMessage(ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED, originalSalesOrder,
+                            Variables.putValue(IS_ORDER_CANCELLED.getName(), true));
                 }
 
                 boolean invoicePublished = isInvoicePublished(originalSalesOrder, invoiceNumber);
