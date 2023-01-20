@@ -14,7 +14,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <spring-cloud-version>2.2.6.RELEASE</spring-cloud-version>
     <json-schema-java-bundle.version>1.0.178</json-schema-java-bundle.version>
-    <soh-order-json.version>1.0.41</soh-order-json.version>
+    <soh-order-json.version>1.0.48</soh-order-json.version>
     <surefire-version>3.0.0-M7</surefire-version>
     <newrelic.version>7.11.1</newrelic.version>
     <mapstruct.version>1.5.3.Final</mapstruct.version>
@@ -58,14 +58,12 @@
       <url>https://artifacts.camunda.com/artifactory/public/</url>
     </repository>
   </repositories>
-
   <dependencies>
     <dependency>
       <groupId>com.newrelic.agent.java</groupId>
       <artifactId>newrelic-api</artifactId>
       <version>${newrelic.version}</version>
     </dependency>
-
     <dependency>
       <groupId>org.camunda.bpm.springboot</groupId>
       <artifactId>camunda-bpm-spring-boot-starter-webapp</artifactId>
@@ -103,7 +101,6 @@
       <artifactId>javax.mail</artifactId>
       <version>1.6.2</version>
     </dependency>
-
     <dependency>
       <groupId>de.kfzteile24.json.schema</groupId>
       <artifactId>json-schema-java-bundle</artifactId>
@@ -114,7 +111,6 @@
       <artifactId>soh-order-json</artifactId>
       <version>${soh-order-json.version}</version>
     </dependency>
-
     <dependency>
       <groupId>com.sun.xml.bind</groupId>
       <artifactId>jaxb-impl</artifactId>
@@ -181,7 +177,6 @@
       <artifactId>camunda-engine-rest-openapi</artifactId>
       <version>${camunda.spring-boot.version}</version>
     </dependency>
-
     <!-- Logging   -->
     <dependency>
       <groupId>de.siegmar</groupId>
@@ -194,7 +189,6 @@
         </exclusion>
       </exclusions>
     </dependency>
-
     <!-- Test dependencies -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -281,7 +275,6 @@
           </execution>
         </executions>
       </plugin>
-
       <plugin>
         <groupId>org.flywaydb</groupId>
         <artifactId>flyway-maven-plugin</artifactId>
