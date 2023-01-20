@@ -323,9 +323,9 @@ public class DropshipmentOrderService {
         for (final var originalRow : originalRows) {
             val quantity = BigDecimal.valueOf(skuQuantityMap.get(originalRow.getSku()));
             val newRow = orderMapper.toOrderRow(originalRow);
-            newRow.setSumValues(orderMapper.toSumValues(originalRow.getUnitValues(), quantity));
             if (originalRow.getQuantity().intValue() != quantity.intValue()) {
                 newRow.setQuantity(quantity);
+                newRow.setSumValues(orderMapper.toSumValues(originalRow.getUnitValues(), quantity));
             }
             subsequentOrderRows.add(newRow);
         }
