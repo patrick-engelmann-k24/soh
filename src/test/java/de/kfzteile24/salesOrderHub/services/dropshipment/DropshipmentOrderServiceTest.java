@@ -17,6 +17,7 @@ import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoice;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesInvoiceHeader;
 import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
+import de.kfzteile24.salesOrderHub.helper.OrderMapperImpl;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.helper.ReturnOrderHelper;
 import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
@@ -78,7 +79,6 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -107,6 +107,8 @@ class DropshipmentOrderServiceTest {
     private ReturnOrderHelper returnOrderHelper;
     @Spy
     private ObjectMapper objectMapper;
+    @Spy
+    private OrderMapperImpl orderMapperImpl;
     @Mock
     private OrderUtil orderUtil;
     @Mock
@@ -266,14 +268,10 @@ class DropshipmentOrderServiceTest {
         when(salesOrderService.getNextOrderNumberIndexCounter(eq(salesOrder.getOrderGroupId()))).thenReturn(100);
         when(subsequentSalesOrderCreationHelper.createOrderHeader(any(), anyString(), anyString())).thenReturn(orderHeader);
         when(invoiceService.getShippingCostLine(any())).thenReturn(null);
-        when(orderUtil.createNewOrderRow(eq(salesOrder.getLatestJson().getOrderRows().get(0)), eq(differentQuantity)))
-                .thenReturn(salesOrder.getLatestJson().getOrderRows().get(0));
         doNothing().when(salesOrderService).recalculateTotals(any(), any());
 
         var subsequentOrder = dropshipmentOrderService.createDropshipmentSubsequentSalesOrder(salesOrder, invoiceData.getSkuQuantityMap(), invoiceNumber, activityInstanceId);
 
-        verify(orderUtil).createNewOrderRow(eq(salesOrder.getLatestJson().getOrderRows().get(0)), eq(differentQuantity));
-        verify(orderUtil, never()).createNewOrderRow(eq(salesOrder.getLatestJson().getOrderRows().get(1)), eq(sameQuantity));
         assertThat(subsequentOrder.getOrderNumber()).isEqualTo(newOrderNumber);
         assertThat(subsequentOrder.getOrderGroupId()).isEqualTo(salesOrder.getOrderNumber());
         assertThat(subsequentOrder.getSalesChannel()).isEqualTo(salesOrder.getLatestJson().getOrderHeader().getSalesChannel());
@@ -309,17 +307,10 @@ class DropshipmentOrderServiceTest {
         when(invoiceService.getShippingCostLine(eq(salesOrder))).thenReturn(null);
         doNothing().when(salesOrderService).recalculateTotals(any(), any());
         doReturn(salesOrder.getLatestJson().getOrderHeader()).when(subsequentSalesOrderCreationHelper).createOrderHeader(any(), anyString(), anyString());
-        when(orderUtil.createNewOrderRow(eq(salesOrder.getLatestJson().getOrderRows().get(1)), eq(BigDecimal.valueOf(0))))
-                .thenReturn(salesOrder.getLatestJson().getOrderRows().get(1));
-        when(orderUtil.createNewOrderRow(eq(salesOrder.getLatestJson().getOrderRows().get(2)), eq(BigDecimal.valueOf(0))))
-                .thenReturn(salesOrder.getLatestJson().getOrderRows().get(2));
 
         Order result = dropshipmentOrderService.createDropshipmentSubsequentOrderJson(salesOrder, newOrderNumber,
                 invoiceData.getSkuQuantityMap(), invoiceNumber);
 
-        verify(orderUtil, never()).createNewOrderRow(eq(salesOrder.getLatestJson().getOrderRows().get(0)), eq(BigDecimal.valueOf(0)));
-        verify(orderUtil).createNewOrderRow(eq(salesOrder.getLatestJson().getOrderRows().get(1)), eq(BigDecimal.valueOf(0)));
-        verify(orderUtil).createNewOrderRow(eq(salesOrder.getLatestJson().getOrderRows().get(2)), eq(BigDecimal.valueOf(0)));
         assertThat(result.getOrderRows().stream().map(OrderRows::getSku).collect(Collectors.toList())).containsOnly("sku-3", "sku-2");
         assertEquals(BigDecimal.ZERO, salesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostGross());
         assertEquals(BigDecimal.ZERO, salesOrder.getLatestJson().getOrderHeader().getTotals().getShippingCostNet());

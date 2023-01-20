@@ -1,6 +1,5 @@
 package de.kfzteile24.salesOrderHub.helper;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.kfzteile24.salesOrderHub.configuration.DropShipmentConfig;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.sns.invoice.CoreSalesFinancialDocumentLine;
@@ -13,7 +12,6 @@ import de.kfzteile24.soh.order.dto.SumValues;
 import de.kfzteile24.soh.order.dto.UnitValues;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.stereotype.Component;
@@ -47,8 +45,6 @@ public class OrderUtil {
 
     private final ObjectUtil objectUtil;
 
-    private final OrderMapper orderMapper;
-
     public Order copyOrderJson(Order orderJson) {
         return objectUtil.deepCopyOf(orderJson, Order.class);
     }
@@ -73,14 +69,6 @@ public class OrderUtil {
 
     public String createReturnOrderNumberInSOH(String creditNoteNumber) {
         return RETURN_ORDER_NUMBER_PREFIX + ORDER_NUMBER_SEPARATOR + creditNoteNumber;
-    }
-
-    public OrderRows createNewOrderRow(OrderRows originalOrderRow, BigDecimal newQuantity) {
-        OrderRows newOrderRow = orderMapper.toOrderRow(originalOrderRow);
-        val sumValues = orderMapper.toSumValues(originalOrderRow.getUnitValues(), newQuantity);
-        newOrderRow.setSumValues(sumValues);
-        newOrderRow.setQuantity(newQuantity);
-        return newOrderRow;
     }
 
     public OrderRows createNewOrderRow(OrderItem item, List<SalesOrder> salesOrders, AtomicInteger lastRowKey) {

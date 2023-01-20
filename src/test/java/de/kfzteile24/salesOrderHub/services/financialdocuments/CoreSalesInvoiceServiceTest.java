@@ -2,6 +2,7 @@ package de.kfzteile24.salesOrderHub.services.financialdocuments;
 
 import de.kfzteile24.salesOrderHub.configuration.FeatureFlagConfig;
 import de.kfzteile24.salesOrderHub.constants.bpmn.BpmItem;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
@@ -15,6 +16,7 @@ import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.soh.order.dto.Order;
 import org.apache.commons.lang3.StringUtils;
+import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.extension.mockito.process.ProcessInstanceFake;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -64,6 +66,8 @@ class CoreSalesInvoiceServiceTest {
     private OrderUtil orderUtil;
     @Mock
     private MetricsHelper metricsHelper;
+    @Mock
+    private RuntimeService runtimeService;
     @InjectMocks
     @Spy
     private CoreSalesInvoiceService coreSalesInvoiceCreatedService;
@@ -85,6 +89,7 @@ class CoreSalesInvoiceServiceTest {
         when(salesOrderService.createOrderNumberInSOH(any(), any())).thenReturn(salesOrder.getOrderNumber(), "10");
         when(orderUtil.checkIfOrderHasOrderRows(any())).thenReturn(true);
         when(camundaHelper.waitsOnActivityForMessage(anyString(), any(BpmItem.class), any(BpmItem.class))).thenReturn(false);
+        when(runtimeService.getVariable(any(), eq(Variables.IS_ORDER_CANCELLED.getName()))).thenReturn(true);
 
         var message = getObjectByResource("coreSalesInvoiceCreatedOneItem.json", CoreSalesInvoiceCreatedMessage.class);
         var messageWrapper = MessageWrapper.builder().build();
@@ -113,6 +118,7 @@ class CoreSalesInvoiceServiceTest {
         when(orderUtil.checkIfOrderHasOrderRows(any())).thenReturn(true);
         when(camundaHelper.waitsOnActivityForMessage(anyString(), any(BpmItem.class), any(BpmItem.class))).thenReturn(true);
         when(camundaHelper.correlateMessage(any(), anyString(), any()).getProcessInstance()).thenReturn(ProcessInstanceFake.builder().build());
+        when(runtimeService.getVariable(any(), eq(Variables.IS_ORDER_CANCELLED.getName()))).thenReturn(true);
 
         var message = getObjectByResource("coreSalesInvoiceCreatedOneItem.json", CoreSalesInvoiceCreatedMessage.class);
         var messageWrapper = MessageWrapper.builder().build();

@@ -2,6 +2,7 @@ package de.kfzteile24.salesOrderHub.services.financialdocuments;
 
 import de.kfzteile24.salesOrderHub.configuration.FeatureFlagConfig;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
+import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
@@ -22,6 +23,7 @@ import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -56,6 +58,7 @@ public class CoreSalesInvoiceService {
     private final SalesOrderRowService salesOrderRowService;
     private final MetricsHelper metricsHelper;
     private final SnsPublishService snsPublishService;
+    private final RuntimeService runtimeService;
 
     @Value("${kfzteile.process-config.subsequent-order-process.publish-delay}")
     @Setter
@@ -79,17 +82,11 @@ public class CoreSalesInvoiceService {
                 var originalSalesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
                         .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
 
-                var processInstanceId = originalSalesOrder.getProcessId();
-
-                if (Objects.nonNull(processInstanceId) && camundaHelper.waitsOnActivityForMessage(originalSalesOrder.getProcessId(),
-                        MSG_ORDER_CORE_SALES_INVOICE_CREATED, ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED)) {
-                    camundaHelper.correlateMessage(ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED, originalSalesOrder);
-                }
-
                 boolean invoicePublished = isInvoicePublished(originalSalesOrder, invoiceNumber);
                 if (!invoicePublished && salesOrderService.isFullyMatchedWithOriginalOrder(originalSalesOrder, itemList)) {
                     updateOriginalSalesOrder(message, originalSalesOrder);
                     publishInvoiceEvent(originalSalesOrder);
+                    sendInvoiceCreatedMessage(originalSalesOrder);
                 } else {
                     if (salesOrderService.checkOrderNotExists(newOrderNumber)) {
                         SalesOrder subsequentOrder = salesOrderService.createSalesOrderForInvoice(
@@ -105,8 +102,10 @@ public class CoreSalesInvoiceService {
                         snsPublishService.publishOrderCreated(subsequentOrder.getOrderNumber());
                         publishInvoiceEvent(subsequentOrder);
                     }
+                    if (isOrderCancelled(originalSalesOrder)) {
+                        sendInvoiceCreatedMessage(originalSalesOrder);
+                    }
                 }
-
             } catch (Exception e) {
                 log.error("Core sales invoice created received message error:\r\nOrderNumber: {}\r\nInvoiceNumber: {}\r\nError-Message: {}",
                         orderNumber,
@@ -116,6 +115,23 @@ public class CoreSalesInvoiceService {
             }
         }
     }
+
+    private boolean isOrderCancelled(SalesOrder originalSalesOrder) {
+        var processInstanceId = originalSalesOrder.getProcessId();
+        if (processInstanceId != null) {
+            return (Boolean) runtimeService.getVariable(processInstanceId, Variables.IS_ORDER_CANCELLED.getName());
+        }
+        return false;
+    }
+
+    private void sendInvoiceCreatedMessage(SalesOrder originalSalesOrder) {
+        var processInstanceId = originalSalesOrder.getProcessId();
+        if (Objects.nonNull(processInstanceId) && camundaHelper.waitsOnActivityForMessage(originalSalesOrder.getProcessId(),
+                MSG_ORDER_CORE_SALES_INVOICE_CREATED, ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED)) {
+            camundaHelper.correlateMessage(ORDER_RECEIVED_CORE_SALES_INVOICE_CREATED, originalSalesOrder);
+        }
+    }
+
     @EnrichMessageForDlq
     public void handleInvoiceFromCore(String invoiceUrl, MessageWrapper messageWrapper) {
         final var orderNumber = InvoiceUrlExtractor.extractOrderNumber(invoiceUrl);
