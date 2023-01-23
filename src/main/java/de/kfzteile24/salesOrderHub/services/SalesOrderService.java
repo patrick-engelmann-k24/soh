@@ -208,8 +208,14 @@ public class SalesOrderService {
     public boolean isFullyMatchedWithOriginalOrder(SalesOrder originalSalesOrder,
                                                    List<CoreSalesFinancialDocumentLine> items) {
 
-        // Check if there is no other sales order namely subsequent order
-        var ordersByOrderGroupId = getOrderByOrderGroupId(originalSalesOrder.getOrderGroupId());
+        // Check if there is no other sales order namely subsequent order,
+        // filter out cancelled and dropshipment orders
+        List<SalesOrder> orderByOrderGroupId = getOrderByOrderGroupId(originalSalesOrder.getOrderGroupId());
+        var ordersByOrderGroupId = orderByOrderGroupId.stream()
+                .filter(salesOrder -> !orderUtil.isDropshipmentOrder(salesOrder.getLatestJson()))
+                .filter(salesOrder -> !salesOrder.isCancelled())
+                .collect(toList());
+
         if (ordersByOrderGroupId.size() > 1) {
             return false;
         }
