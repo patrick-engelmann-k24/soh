@@ -11,7 +11,6 @@ import de.kfzteile24.salesOrderHub.domain.property.KeyValueProperty;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderBookedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnNotifiedMessage;
-import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
@@ -107,7 +106,7 @@ public class DropshipmentOrderService {
     public void handleDropshipmentPurchaseOrderReturnConfirmed(
             DropshipmentPurchaseOrderReturnConfirmedMessage message, MessageWrapper messageWrapper) {
         checkDropshipmentOrderReturnIsPaused(message);
-        var salesCreditNoteCreatedMessage = buildSalesCreditNoteCreatedMessage(message);
+        var salesCreditNoteCreatedMessage = returnOrderHelper.buildSalesCreditNoteCreatedMessage(message);
 
         var orderNumber = salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber();
         log.info("Received dropshipment purchase order return confirmed message with order number: {}", orderNumber);
@@ -117,16 +116,6 @@ public class DropshipmentOrderService {
                 .orElseThrow(() -> new SalesOrderNotFoundException("Could not find order: " + orderNumber));
         metricsHelper.sendCustomEventForDropshipmentOrder(salesOrder, DROPSHIPMENT_ORDER_RETURN_CREATED);
     }
-
-    public SalesCreditNoteCreatedMessage buildSalesCreditNoteCreatedMessage(DropshipmentPurchaseOrderReturnConfirmedMessage message) {
-        var orderNumber = message.getSalesOrderNumber();
-        SalesOrder salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
-                .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
-        String creditNoteNumber = salesOrderReturnService.createCreditNoteNumber();
-        return returnOrderHelper.buildSalesCreditNoteCreatedMessage(message, salesOrder, creditNoteNumber);
-    }
-
-
 
     @Transactional
     public void handleDropShipmentOrderRowCancellation(String orderNumber, String sku) {

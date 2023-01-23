@@ -5,7 +5,6 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
-import de.kfzteile24.salesOrderHub.exception.SalesOrderReturnNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.ReturnOrderHelper;
 import de.kfzteile24.salesOrderHub.repositories.CreditNoteNumberCounterRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
@@ -26,7 +25,6 @@ import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.createSalesOrder
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrderReturn;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SalesOrderReturnServiceIntegrationTest extends AbstractIntegrationTest {
 
@@ -35,12 +33,6 @@ class SalesOrderReturnServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private SalesOrderReturnRepository salesOrderReturnRepository;
-
-    @Autowired
-    private SalesOrderReturnService salesOrderReturnService;
-
-    @Autowired
-    private SalesOrderService salesOrderService;
 
     @Autowired
     private ReturnOrderHelper returnOrderHelper;
@@ -55,7 +47,7 @@ class SalesOrderReturnServiceIntegrationTest extends AbstractIntegrationTest {
     @SneakyThrows
     @DisplayName("Create First Credit Note Number, Then Create Sales Credit Note, Then Create Second Credit Note Number")
     void testCreateFirstCreditNoteNumberThenCreateSalesCreditNoteThenCreateSecondCreditNoteNumber() {
-        String nextCreditNoteNumber = salesOrderReturnService.createCreditNoteNumber();
+        String creditNoteNumber = salesOrderReturnService.createCreditNoteNumber();
 
         var orderMessage = getObjectByResource("ecpOrderMessageWithTwoRows.json", Order.class);
         orderMessage.getOrderHeader().setOrderNumber(RandomStringUtils.randomNumeric(9));
@@ -65,19 +57,17 @@ class SalesOrderReturnServiceIntegrationTest extends AbstractIntegrationTest {
 
         var message = getObjectByResource("dropshipmentPurchaseOrderReturnConfirmed.json", DropshipmentPurchaseOrderReturnConfirmedMessage.class);
         message.setSalesOrderNumber(salesOrder.getOrderNumber());
-        SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage = returnOrderHelper.buildSalesCreditNoteCreatedMessage(
-                message, salesOrder, nextCreditNoteNumber);
+        SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage = returnOrderHelper.buildSalesCreditNoteCreatedMessage(message);
         salesOrderReturn.setSalesCreditNoteCreatedMessage(salesCreditNoteCreatedMessage);
 
-        salesOrderReturnService.save(salesOrderReturn, RETURN_ORDER_CREATED);
-
-        SalesOrderReturn updatedOrder = salesOrderReturnService.getByOrderNumber(salesOrderReturn.getOrderNumber())
-                .orElseThrow(() -> new SalesOrderReturnNotFoundException(salesOrderReturn.getOrderNumber()));
+        SalesOrderReturn updatedOrder = salesOrderReturnService.save(salesOrderReturn, RETURN_ORDER_CREATED);
         assertNotNull(updatedOrder);
-        assertEquals(nextCreditNoteNumber, updatedOrder.getSalesCreditNoteCreatedMessage().getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteNumber());
+        assertEquals(getNextCreditNoteNumber(creditNoteNumber), updatedOrder.getSalesCreditNoteCreatedMessage().getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteNumber());
+    }
 
-        String result = salesOrderReturnService.createCreditNoteNumber();
-        assertTrue(result.endsWith("00002"));
+    private static String getNextCreditNoteNumber(String creditNoteNumber) {
+        var length = creditNoteNumber.length();
+        return creditNoteNumber.substring(0, length - 5) + String.format("%05d", Integer.parseInt(creditNoteNumber.substring(length - 5, length)) + 1);
     }
 
     @BeforeEach
