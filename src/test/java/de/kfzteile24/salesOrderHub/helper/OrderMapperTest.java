@@ -1,16 +1,11 @@
 package de.kfzteile24.salesOrderHub.helper;
 
-import de.kfzteile24.soh.order.dto.Order;
 import de.kfzteile24.soh.order.dto.UnitValues;
-import lombok.SneakyThrows;
 import lombok.val;
-import org.assertj.core.api.AutoCloseableSoftAssertions;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 
-import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
-import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class OrderMapperTest {

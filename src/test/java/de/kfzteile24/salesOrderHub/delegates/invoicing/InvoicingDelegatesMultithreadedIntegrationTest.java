@@ -8,7 +8,6 @@ import de.kfzteile24.salesOrderHub.domain.audit.Action;
 import de.kfzteile24.salesOrderHub.domain.dropshipment.DropshipmentInvoiceRow;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.helper.DropshipmentHelper;
-import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.DropshipmentInvoiceRowRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderInvoiceRepository;
 import de.kfzteile24.salesOrderHub.repositories.SalesOrderRepository;
@@ -318,7 +317,7 @@ class InvoicingDelegatesMultithreadedIntegrationTest extends AbstractIntegration
     }
 
     private SalesOrder createSalesOrderWithRandomOrderNumber() {
-        var salesOrder = SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
+        var salesOrder = createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
         ((Order) salesOrder.getOriginalOrder()).getOrderHeader().setOrderFulfillment(DELTICOM.getName());
         String randomOrderNumber = UUID.randomUUID().toString().replace("-", "");
         salesOrder.setOrderNumber(randomOrderNumber);

@@ -143,7 +143,7 @@ class DropshipmentOrderServiceTest {
 
         when(keyValuePropertyService.getPropertyByKey(PersistentProperties.PREVENT_DROPSHIPMENT_ORDER_RETURN_CONFIRMED))
                 .thenReturn(Optional.of(KeyValueProperty.builder().typedValue(false).build()));
-        doReturn(salesCreditNoteCreatedMessage).when(dropshipmentOrderService).buildSalesCreditNoteCreatedMessage(message);
+        doReturn(salesCreditNoteCreatedMessage).when(returnOrderHelper).buildSalesCreditNoteCreatedMessage(message);
 
         when(salesOrderService.getOrderByOrderNumber(message.getSalesOrderNumber())).thenReturn(Optional.of(SalesOrder.builder().build()));
         dropshipmentOrderService.handleDropshipmentPurchaseOrderReturnConfirmed(message, messageWrapper);

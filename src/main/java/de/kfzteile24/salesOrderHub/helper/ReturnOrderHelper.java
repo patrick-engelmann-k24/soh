@@ -9,6 +9,9 @@ import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.dropshipment.DropshipmentPurchaseOrderPackageItemLine;
 import de.kfzteile24.salesOrderHub.dto.sns.shared.Address;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
+import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
+import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
+import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.returnorder.ReturnOrderServiceAdaptor;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -37,11 +40,18 @@ public class ReturnOrderHelper {
 
     @NonNull
     private final ReturnOrderServiceAdaptor adaptor;
+    @NonNull
+    private final SalesOrderReturnService salesOrderReturnService;
+    @NonNull
+    private final SalesOrderService salesOrderService;
 
     public SalesCreditNoteCreatedMessage buildSalesCreditNoteCreatedMessage(
-            DropshipmentPurchaseOrderReturnConfirmedMessage message, SalesOrder salesOrder, String creditNoteNumber) {
+            DropshipmentPurchaseOrderReturnConfirmedMessage message) {
+        SalesOrder salesOrder = salesOrderService.getOrderByOrderNumber(message.getSalesOrderNumber())
+                .orElseThrow(() -> new SalesOrderNotFoundException(message.getSalesOrderNumber()));
+
         return SalesCreditNoteCreatedMessage.builder()
-                .salesCreditNote(buildSalesCreditNote(salesOrder, buildCreditNoteLines(message), creditNoteNumber))
+                .salesCreditNote(buildSalesCreditNote(salesOrder, buildCreditNoteLines(message)))
                 .build();
     }
 
@@ -89,12 +99,11 @@ public class ReturnOrderHelper {
         return creditNoteLines;
     }
 
-    private static SalesCreditNote buildSalesCreditNote(
+    private SalesCreditNote buildSalesCreditNote(
             SalesOrder originalSalesOrder,
-            List<CreditNoteLine> creditNoteLines,
-            String creditNoteNumber) {
+            List<CreditNoteLine> creditNoteLines) {
         var salesCreditNoteHeader = SalesCreditNoteHeader.builder()
-                .creditNoteNumber(creditNoteNumber)
+                .creditNoteNumber(salesOrderReturnService.createCreditNoteNumber())
                 .creditNoteDate(now())
                 .currencyCode(originalSalesOrder.getLatestJson().getOrderHeader().getOrderCurrency())
                 .billingAddress(Address.fromBillingAddress(originalSalesOrder.getLatestJson().getOrderHeader().getBillingAddress()))

@@ -20,7 +20,6 @@ import org.camunda.bpm.engine.variable.Variables;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;

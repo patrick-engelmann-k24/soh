@@ -4,6 +4,8 @@ import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.sns.DropshipmentPurchaseOrderReturnConfirmedMessage;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
 import de.kfzteile24.salesOrderHub.exception.NotFoundException;
+import de.kfzteile24.salesOrderHub.services.SalesOrderReturnService;
+import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.returnorder.ReturnOrderServiceAdaptor;
 import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
@@ -15,6 +17,7 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Optional;
 
 import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
 import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.assertSalesCreditNoteCreatedMessage;
@@ -23,12 +26,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ReturnOrderHelperTest {
 
     @Mock
     private ReturnOrderServiceAdaptor adaptor;
+    @Mock
+    private SalesOrderService salesOrderService;
+    @Mock
+    private SalesOrderReturnService salesOrderReturnService;
     @InjectMocks
     @Spy
     private ReturnOrderHelper returnOrderHelper;
@@ -53,8 +61,10 @@ class ReturnOrderHelperTest {
         orderJson2.getOrderRows().get(1).setSku("2270-13014");
 
         doReturn(List.of(salesOrder1, salesOrder2)).when(adaptor).getSalesOrderList(any(), any());
+        when(salesOrderService.getOrderByOrderNumber(message.getSalesOrderNumber())).thenReturn(Optional.of(salesOrder));
+        when(salesOrderReturnService.createCreditNoteNumber()).thenReturn("2022200002");
         SalesCreditNoteCreatedMessage salesCreditNoteCreatedMessage =
-                returnOrderHelper.buildSalesCreditNoteCreatedMessage(message, salesOrder, "2022200002");
+                returnOrderHelper.buildSalesCreditNoteCreatedMessage(message);
 
         assertThat(salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getCreditNoteNumber()).isEqualTo("2022200002");
         assertThat(salesCreditNoteCreatedMessage.getSalesCreditNote().getSalesCreditNoteHeader().getOrderNumber()).isEqualTo(orderNumber);
@@ -71,7 +81,8 @@ class ReturnOrderHelperTest {
         salesOrder.setOrderGroupId(orderNumber);
 
         doReturn(List.of(salesOrder)).when(adaptor).getSalesOrderList(any(), any());
-        assertThatThrownBy(() -> returnOrderHelper.buildSalesCreditNoteCreatedMessage(message, salesOrder, "2022200002"))
+        when(salesOrderService.getOrderByOrderNumber(message.getSalesOrderNumber())).thenReturn(Optional.of(salesOrder));
+        assertThatThrownBy(() -> returnOrderHelper.buildSalesCreditNoteCreatedMessage(message))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("The skus, 2270-13013 are missing in received" +
                         " dropshipment purchase order return confirmed message with" +
