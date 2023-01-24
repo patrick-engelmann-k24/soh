@@ -123,9 +123,13 @@ camunda:
       firstName: K24Admin
     filter:
       create: All tasks
-    history-level: FULL
-    history-level-default: FULL
-
+    history-level: ACTIVITY
+    generic-properties:
+      properties:
+        historyCleanupStrategy: endTimeBased
+        historyTimeToLive: P5D
+        historyCleanupBatchWindowStartTime: "22:00"
+        historyCleanupBatchWindowEndTime: "10:00"
 # swagger endpoint documentation
 springdoc:
   swagger-ui:
