@@ -21,7 +21,6 @@ import java.util.Collection;
 @NoArgsConstructor
 public class SalesCreditNoteHeader {
 
-    @NotNull
     @JsonProperty("OrderGroupId")
     private String orderGroupId;
 
