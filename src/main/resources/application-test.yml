@@ -95,8 +95,7 @@ camunda:
       firstName: K24Admin
     filter:
       create: All tasks
-    history-level: FULL
-    history-level-default: FULL
+    history-level: ACTIVITY
 
 infrastructureEnvironment: stage
 

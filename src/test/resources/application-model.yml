@@ -24,8 +24,7 @@ camunda:
       id: user
       password: user
       firstName: user
-    history-level: FULL
-    history-level-default: FULL
+    history-level: ACTIVITY
     database:
       schema-update: drop-create
       schema-name: public
