@@ -81,6 +81,7 @@ class CoreSalesInvoiceServiceTest {
         salesOrder.setOrderGroupId(salesOrder.getOrderNumber());
         salesOrder.getLatestJson().getOrderHeader().setDocumentRefNumber("not null");
         salesOrder.setInvoiceEvent(new CoreSalesInvoiceCreatedMessage(new CoreSalesInvoice(new CoreSalesInvoiceHeader(), Collections.emptyList())));
+        salesOrder.setCancelled(true);
 
         when(featureFlagConfig.getIgnoreCoreSalesInvoice()).thenReturn(false);
         when(salesOrderService.checkOrderNotExists(any())).thenReturn(true);
@@ -89,7 +90,6 @@ class CoreSalesInvoiceServiceTest {
         when(salesOrderService.createOrderNumberInSOH(any(), any())).thenReturn(salesOrder.getOrderNumber(), "10");
         when(orderUtil.checkIfOrderHasOrderRows(any())).thenReturn(true);
         when(camundaHelper.waitsOnActivityForMessage(anyString(), any(BpmItem.class), any(BpmItem.class))).thenReturn(false);
-        when(runtimeService.getVariable(any(), eq(Variables.IS_ORDER_CANCELLED.getName()))).thenReturn(true);
 
         var message = getObjectByResource("coreSalesInvoiceCreatedOneItem.json", CoreSalesInvoiceCreatedMessage.class);
         var messageWrapper = MessageWrapper.builder().build();
@@ -109,6 +109,7 @@ class CoreSalesInvoiceServiceTest {
         salesOrder.setProcessId(ANY_PROCESS_ID);
         salesOrder.setId(ANY_SALES_ORDER_ID);
         salesOrder.setOrderGroupId(salesOrder.getOrderNumber());
+        salesOrder.setCancelled(true);
 
         when(salesOrderService.checkOrderNotExists(any())).thenReturn(true);
         when(salesOrderService.getOrderByOrderNumber(any())).thenReturn(Optional.of(salesOrder));
@@ -118,7 +119,6 @@ class CoreSalesInvoiceServiceTest {
         when(orderUtil.checkIfOrderHasOrderRows(any())).thenReturn(true);
         when(camundaHelper.waitsOnActivityForMessage(anyString(), any(BpmItem.class), any(BpmItem.class))).thenReturn(true);
         when(camundaHelper.correlateMessage(any(), anyString(), any()).getProcessInstance()).thenReturn(ProcessInstanceFake.builder().build());
-        when(runtimeService.getVariable(any(), eq(Variables.IS_ORDER_CANCELLED.getName()))).thenReturn(true);
 
         var message = getObjectByResource("coreSalesInvoiceCreatedOneItem.json", CoreSalesInvoiceCreatedMessage.class);
         var messageWrapper = MessageWrapper.builder().build();
