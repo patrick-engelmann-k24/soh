@@ -38,7 +38,6 @@ public class FinancialDocumentsSqsReceiveService extends AbstractSqsReceiveServi
      * Consume messages from sqs for core sales invoice created
      */
 
-    @Transactional
     @SqsListener(value = "${soh.sqs.queue.coreSalesInvoiceCreated}")
     @Trace(metricName = "Handling core sales invoice created message", dispatcher = true)
     public void queueListenerCoreSalesInvoiceCreated(CoreSalesInvoiceCreatedMessage message,

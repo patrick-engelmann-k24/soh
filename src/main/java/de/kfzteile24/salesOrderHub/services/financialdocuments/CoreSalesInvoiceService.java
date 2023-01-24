@@ -94,7 +94,7 @@ public class CoreSalesInvoiceService {
                                 originalSalesOrder,
                                 newOrderNumber);
                         if (!invoicePublished) {
-                            handleCancellationForOrderRows(originalSalesOrder, subsequentOrder.getLatestJson().getOrderRows());
+                            salesOrderRowService.handleCancellationForOrderRows(originalSalesOrder.getOrderNumber(), subsequentOrder.getLatestJson().getOrderRows());
                         }
                         if (orderUtil.checkIfOrderHasOrderRows(subsequentOrder.getLatestJson())) {
                             metricsHelper.sendCustomEvent(subsequentOrder, SUBSEQUENT_ORDER_GENERATED);
@@ -102,7 +102,7 @@ public class CoreSalesInvoiceService {
                         snsPublishService.publishOrderCreated(subsequentOrder.getOrderNumber());
                         publishInvoiceEvent(subsequentOrder);
                     }
-                    if (isOrderCancelled(originalSalesOrder)) {
+                    if (isOrderCancelled(originalSalesOrder.getOrderNumber())) {
                         sendInvoiceCreatedMessage(originalSalesOrder);
                     }
                 }
@@ -116,12 +116,10 @@ public class CoreSalesInvoiceService {
         }
     }
 
-    private boolean isOrderCancelled(SalesOrder originalSalesOrder) {
-        var processInstanceId = originalSalesOrder.getProcessId();
-        if (processInstanceId != null) {
-            return (Boolean) runtimeService.getVariable(processInstanceId, Variables.IS_ORDER_CANCELLED.getName());
-        }
-        return false;
+    private boolean isOrderCancelled(String orderNumber) {
+        var salesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
+                .orElseThrow(() -> new SalesOrderNotFoundException(orderNumber));
+        return salesOrder.isCancelled();
     }
 
     private void sendInvoiceCreatedMessage(SalesOrder originalSalesOrder) {
@@ -193,32 +191,5 @@ public class CoreSalesInvoiceService {
                 originalSalesOrder.getLatestJson().getOrderHeader().getOrderGroupId());
         originalSalesOrder.setInvoiceEvent(invoiceMsg);
         salesOrderService.updateOrder(originalSalesOrder);
-    }
-
-    protected void handleCancellationForOrderRows(SalesOrder originalSalesOrder, List<OrderRows> orderRows) {
-
-        var originalOrderRowsNotCancelled = originalSalesOrder.getLatestJson().getOrderRows().stream()
-                .filter(not(OrderRows::getIsCancelled))
-                .collect(toSet());
-
-        for (OrderRows orderRow : orderRows) {
-
-            var originalSkusToCancel = originalOrderRowsNotCancelled.stream()
-                    .filter(not(OrderRows::getIsCancelled))
-                    .filter(row -> row.getSku().equals(orderRow.getSku())).collect(Collectors.toList());
-
-            if (!originalSkusToCancel.isEmpty()) {
-                BigDecimal sumQuantity = originalSkusToCancel.stream().map(OrderRows::getQuantity)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-                if (orderRow.getQuantity().equals(sumQuantity)) {
-                    originalSkusToCancel.forEach(row ->
-                            salesOrderRowService.cancelOrderRow(row.getSku(), originalSalesOrder.getOrderNumber()));
-                } else {
-                    salesOrderRowService.cancelOrderRow(originalSkusToCancel.get(0).getSku(), originalSalesOrder.getOrderNumber());
-                }
-            }
-
-        }
     }
 }

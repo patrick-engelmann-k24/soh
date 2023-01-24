@@ -16,13 +16,17 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.RuntimeService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.text.MessageFormat;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
+import static java.util.function.Predicate.not;
+import static java.util.stream.Collectors.toSet;
 
 @Service
 @Slf4j
@@ -40,6 +44,37 @@ public class SalesOrderRowService {
 
     @NonNull
     private final SnsPublishService snsPublishService;
+
+    @Transactional
+    public void handleCancellationForOrderRows(String orderNumber, List<OrderRows> orderRows) {
+
+        final var originalSalesOrder = salesOrderService.getOrderByOrderNumber(orderNumber)
+                .orElseThrow(() -> new SalesOrderNotFoundException("Could not find order: " + orderNumber));
+
+        var originalOrderRowsNotCancelled = originalSalesOrder.getLatestJson().getOrderRows().stream()
+                .filter(not(OrderRows::getIsCancelled))
+                .collect(toSet());
+
+        for (OrderRows orderRow : orderRows) {
+
+            var originalSkusToCancel = originalOrderRowsNotCancelled.stream()
+                    .filter(not(OrderRows::getIsCancelled))
+                    .filter(row -> row.getSku().equals(orderRow.getSku())).collect(Collectors.toList());
+
+            if (!originalSkusToCancel.isEmpty()) {
+                BigDecimal sumQuantity = originalSkusToCancel.stream().map(OrderRows::getQuantity)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                if (orderRow.getQuantity().equals(sumQuantity)) {
+                    originalSkusToCancel.forEach(row ->
+                            cancelOrderRow(row.getSku(), originalSalesOrder.getOrderNumber()));
+                } else {
+                    cancelOrderRow(originalSkusToCancel.get(0).getSku(), originalSalesOrder.getOrderNumber());
+                }
+            }
+
+        }
+    }
 
     public boolean cancelOrderProcessIfFullyCancelled(SalesOrder salesOrder) {
         if (salesOrder.getLatestJson().getOrderRows().stream().allMatch(OrderRows::getIsCancelled)) {
