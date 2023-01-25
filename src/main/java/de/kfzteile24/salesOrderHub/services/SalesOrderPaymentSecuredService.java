@@ -1,28 +1,22 @@
 package de.kfzteile24.salesOrderHub.services;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
-import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.sns.OrderPaymentSecuredMessage;
 import de.kfzteile24.salesOrderHub.exception.CorrelateOrderException;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentOrderService;
 import de.kfzteile24.salesOrderHub.services.sqs.EnrichMessageForDlq;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
-import de.kfzteile24.soh.order.dto.Order;
-import de.kfzteile24.soh.order.dto.OrderHeader;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Optional;
 
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.joining;
@@ -75,16 +69,6 @@ public class SalesOrderPaymentSecuredService {
         if (CollectionUtils.isNotEmpty(exceptions)) {
             throw new CorrelateOrderException(collectErrorMessages(exceptions));
         }
-    }
-
-    public boolean hasOrderPaypalPaymentType(SalesOrder salesOrder) {
-        return Optional.of(salesOrder)
-                .map(SalesOrder::getLatestJson)
-                .map(Order::getOrderHeader)
-                .map(OrderHeader::getPayments)
-                .map(PaymentType::getPaymentType)
-                .map(paymentType -> StringUtils.equalsIgnoreCase(paymentType, PaymentType.PAYPAL.getName()))
-                .orElse(Boolean.FALSE);
     }
 
     private void correlateOrderReceivedPaymentSecured(String orderNumber, Collection<Exception> exceptions) {

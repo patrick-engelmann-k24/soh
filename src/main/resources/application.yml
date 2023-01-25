@@ -82,7 +82,6 @@ soh:
       ecpShopOrders: ${soh_sqs_ecp_shop_orders}
       bcShopOrders: ${soh_sqs_bc_shop_orders}
       coreShopOrders: ${soh_sqs_core_shop_orders}
-      orderPaymentSecured: ${soh_sqs_order_payment_secured}
       invoicesFromCore: ${soh_sqs_invoices_from_core}
       d365OrderPaymentSecured: ${soh_sqs_d365_order_payment_secured}
       dropshipmentShipmentConfirmed: ${soh_sqs_dropshipment_shipment_confirmed}

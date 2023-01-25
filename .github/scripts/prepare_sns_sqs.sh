@@ -12,7 +12,6 @@ export AWS_ACCESS_KEY_ID=000000000000
 QUEUES="
     soh-order-created-v2
     soh-sales-order-completed-v1
-    soh-order-payment-secured
     soh-invoice-address-changed
     soh-invoices-from-core
     soh-ecp-shop-orders

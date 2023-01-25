@@ -3,7 +3,6 @@ package de.kfzteile24.salesOrderHub.services.salesorder;
 import de.kfzteile24.salesOrderHub.AbstractIntegrationTest;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
-import de.kfzteile24.salesOrderHub.dto.sns.CoreDataReaderEvent;
 import de.kfzteile24.salesOrderHub.dto.sns.OrderPaymentSecuredMessage;
 import de.kfzteile24.salesOrderHub.helper.BpmUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
@@ -58,60 +57,6 @@ class SalesOrderSqsReceiveServiceIntegrationTest extends AbstractIntegrationTest
         auditLogRepository.deleteAll();
         invoiceNumberCounterRepository.deleteAll();
         invoiceNumberCounterService.init();
-    }
-
-    @Test
-    void testQueueListenerOrderPaymentSecuredWithPaypalPayment() {
-
-        var orderMessage = getObjectByResource("ecpOrderMessage.json", Order.class);
-        orderMessage.getOrderHeader().setOrderNumber("500000996");
-        orderMessage.getOrderHeader().getPayments().get(0).setType("paypal");
-        SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(orderMessage));
-
-        ProcessInstance orderProcessInstance = salesOrderProcessService.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
-
-        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(SALES_ORDER_PROCESS, salesOrder.getOrderNumber())));
-
-        var isWaitingForPaymentSecured =
-                bpmUtil.isProcessWaitingAtExpectedToken(orderProcessInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName());
-        assertTrue(isWaitingForPaymentSecured);
-
-        var message = getObjectByResource("coreDataReaderEvent.json", CoreDataReaderEvent.class);
-        salesOrderSqsReceiveService.queueListenerOrderPaymentSecured(message);
-
-        isWaitingForPaymentSecured =
-                bpmUtil.isProcessWaitingAtExpectedToken(orderProcessInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName());
-        assertTrue(isWaitingForPaymentSecured);
-
-        assertFalse(timedPollingService.pollWithDefaultTiming(() -> bpmUtil.isProcessWaitingAtExpectedToken(orderProcessInstance, MSG_ORDER_CORE_SALES_INVOICE_CREATED.getName())));
-
-    }
-
-    @Test
-    void testQueueListenerOrderPaymentSecuredWithCreditcardPayment() {
-
-        var orderMessage = getObjectByResource("ecpOrderMessage.json", Order.class);
-        orderMessage.getOrderHeader().setOrderNumber("500000996");
-        orderMessage.getOrderHeader().getPayments().get(0).setType("creditcard");
-        SalesOrder salesOrder = salesOrderService.createSalesOrder(createSalesOrderFromOrder(orderMessage));
-
-        ProcessInstance orderProcessInstance = salesOrderProcessService.createOrderProcess(salesOrder, ORDER_RECEIVED_ECP);
-
-        assertTrue(timedPollingService.pollWithDefaultTiming(() -> camundaHelper.checkIfActiveProcessExists(SALES_ORDER_PROCESS, salesOrder.getOrderNumber())));
-
-        var isWaitingForPaymentSecured =
-                bpmUtil.isProcessWaitingAtExpectedToken(orderProcessInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName());
-        assertTrue(isWaitingForPaymentSecured);
-
-        var message = getObjectByResource("coreDataReaderEvent.json", CoreDataReaderEvent.class);
-        salesOrderSqsReceiveService.queueListenerOrderPaymentSecured(message);
-
-        isWaitingForPaymentSecured =
-                bpmUtil.isProcessWaitingAtExpectedToken(orderProcessInstance, Events.MSG_ORDER_PAYMENT_SECURED.getName());
-        assertFalse(isWaitingForPaymentSecured);
-
-        assertTrue(timedPollingService.pollWithDefaultTiming(() -> bpmUtil.isProcessWaitingAtExpectedToken(orderProcessInstance, MSG_ORDER_CORE_SALES_INVOICE_CREATED.getName())));
-
     }
 
     @Test

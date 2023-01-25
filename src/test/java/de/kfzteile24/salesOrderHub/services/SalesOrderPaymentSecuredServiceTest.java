@@ -1,15 +1,11 @@
 package de.kfzteile24.salesOrderHub.services;
 
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
-import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.sns.OrderPaymentSecuredMessage;
 import de.kfzteile24.salesOrderHub.exception.CorrelateOrderException;
-import de.kfzteile24.salesOrderHub.helper.SalesOrderUtil;
 import de.kfzteile24.salesOrderHub.services.dropshipment.DropshipmentOrderService;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
-import de.kfzteile24.soh.order.dto.Order;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
@@ -20,26 +16,19 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
 import java.util.UUID;
 
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.CustomerType.NEW;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.CREDIT_CARD;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.PaymentType.PAYPAL;
-import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.row.ShipmentMethod.REGULAR;
 import static de.kfzteile24.salesOrderHub.helper.JsonTestUtil.getObjectByResource;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -100,35 +89,6 @@ class SalesOrderPaymentSecuredServiceTest {
             argThat(message -> message == Messages.ORDER_RECEIVED_PAYMENT_SECURED),
             argThat((String businessKey) -> StringUtils.equals(businessKey, "4567858"))
         );
-    }
-
-    @Test
-    void testHasOrderPaypalPaymentType() {
-        SalesOrder salesOrder = SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, PAYPAL, NEW);
-        Order order = salesOrder.getLatestJson();
-
-        try (MockedStatic<PaymentType> mockStatic = mockStatic(PaymentType.class)) {
-            mockStatic.when(() -> PaymentType.getPaymentType(any())).thenReturn("paypal");
-        }
-
-        var hasOrderPaypalPaymentType = salesOrderPaymentSecuredService.hasOrderPaypalPaymentType(salesOrder);
-
-        assertThat(hasOrderPaypalPaymentType).isTrue();
-    }
-
-    @Test
-    void testHasOrderPaymentTypeOtherAsPaypal() {
-
-        SalesOrder salesOrder = SalesOrderUtil.createNewSalesOrderV3(false, REGULAR, CREDIT_CARD, NEW);
-        Order order = salesOrder.getLatestJson();
-
-        try (MockedStatic<PaymentType> mockStatic = mockStatic(PaymentType.class)) {
-            mockStatic.when(() -> PaymentType.getPaymentType(any())).thenReturn("creditcard");
-        }
-
-        var hasOrderPaypalPaymentType = salesOrderPaymentSecuredService.hasOrderPaypalPaymentType(salesOrder);
-
-        assertThat(hasOrderPaypalPaymentType).isFalse();
     }
 
     @Test
