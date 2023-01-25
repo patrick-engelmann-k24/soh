@@ -10,7 +10,9 @@ public interface MigrationHandler {
 
     MigrationPlan createModelMigrationPlan(String sourceProcessDefinitionId, String targetProcessDefinitionId);
 
-    List<Step> getMigrationSteps();
+    List<Step> getPostMigrationSteps();
+
+    List<Step> getPreMigrationSteps();
 
     void migrate(ProcessMigration processMigration);
 }

@@ -5,8 +5,9 @@ import de.kfzteile24.salesOrderHub.dto.migration.ProcessMigration;
 import de.kfzteile24.salesOrderHub.services.processmigration.Migration;
 import org.camunda.bpm.extension.migration.plan.ProcessDefinitionSpec;
 import org.mapstruct.Mapper;
+import org.mapstruct.MappingConstants;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public interface MigrationMapper {
 
     default ProcessMigration map(Migration migration) {

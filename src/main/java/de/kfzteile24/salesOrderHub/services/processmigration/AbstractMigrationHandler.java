@@ -38,8 +38,9 @@ public abstract class AbstractMigrationHandler implements MigrationHandler {
         var migrationPlan = org.camunda.bpm.extension.migration.plan.MigrationPlan.builder()
                 .from(migrationMapper.map(processDefinition, sourceVersion))
                 .to(migrationMapper.map(processDefinition, targetVersion))
+                .steps(getPreMigrationSteps())
                 .step(new ModelStep(camundaMigrationPlan))
-                .steps(getMigrationSteps())
+                .steps(getPostMigrationSteps())
                 .build();
         applyMigration(migrationPlan);
     }
@@ -49,7 +50,12 @@ public abstract class AbstractMigrationHandler implements MigrationHandler {
     }
 
     @Override
-    public List<Step> getMigrationSteps() {
+    public List<Step> getPostMigrationSteps() {
+        return List.of();
+    }
+
+    @Override
+    public List<Step> getPreMigrationSteps() {
         return List.of();
     }
 
