@@ -22,7 +22,7 @@ public class SalesOrderMigrationV26 extends AbstractMigrationHandler {
     private final ModificationStepV26 modificationStep;
 
     @Override
-    public List<Step> getPreMigrationSteps() {
+    public List<Step> getMigrationSteps() {
         return List.of(modificationStep);
     }
 }

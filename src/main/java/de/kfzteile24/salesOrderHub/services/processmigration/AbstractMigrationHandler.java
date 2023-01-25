@@ -7,8 +7,6 @@ import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.migration.MigrationPlan;
 import org.camunda.bpm.extension.migration.Migrator;
 import org.camunda.bpm.extension.migration.plan.step.Step;
-import org.camunda.bpm.extension.migration.plan.step.model.MigrationPlanFactory;
-import org.camunda.bpm.extension.migration.plan.step.model.ModelStep;
 import org.camunda.bpm.extension.migration.plan.step.variable.strategy.ReadProcessVariable;
 import org.camunda.bpm.extension.migration.plan.step.variable.strategy.WriteProcessVariable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,16 +29,10 @@ public abstract class AbstractMigrationHandler implements MigrationHandler {
         var processDefinition = processMigration.getProcessDefinition().getName();
         var sourceVersion = processMigration.getVersion();
         var targetVersion = processQueryService.getProcessDefinitionLastVersion(processDefinition);
-        var sourceProcessDefinitionId = processQueryService.getProcessDefinitionId(processDefinition, sourceVersion);
-        var targetProcessDefinitionId = processQueryService.getProcessDefinitionId(processDefinition, targetVersion);
-        MigrationPlanFactory camundaMigrationPlan =
-                (source, target) -> createModelMigrationPlan(sourceProcessDefinitionId, targetProcessDefinitionId);
         var migrationPlan = org.camunda.bpm.extension.migration.plan.MigrationPlan.builder()
                 .from(migrationMapper.map(processDefinition, sourceVersion))
                 .to(migrationMapper.map(processDefinition, targetVersion))
-                .steps(getPreMigrationSteps())
-                .step(new ModelStep(camundaMigrationPlan))
-                .steps(getPostMigrationSteps())
+                .steps(getMigrationSteps())
                 .build();
         applyMigration(migrationPlan);
     }
@@ -50,12 +42,7 @@ public abstract class AbstractMigrationHandler implements MigrationHandler {
     }
 
     @Override
-    public List<Step> getPostMigrationSteps() {
-        return List.of();
-    }
-
-    @Override
-    public List<Step> getPreMigrationSteps() {
+    public List<Step> getMigrationSteps() {
         return List.of();
     }
 

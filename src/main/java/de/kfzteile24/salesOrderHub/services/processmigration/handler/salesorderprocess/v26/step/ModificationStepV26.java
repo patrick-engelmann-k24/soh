@@ -31,14 +31,13 @@ public class ModificationStepV26 implements Step {
         String orderNumber = processQueryService.getVariableValue(sourceProcessVariableInstances, Variables.ORDER_NUMBER.getName());
 
        stepExecutionContext.getProcessEngine().getRuntimeService()
-                .createProcessInstanceModification(sourceProcessInstanceId)
-                .cancelAllForActivity("eventMsgDropShipmentOrderTrackingInformationReceived")
-                .execute(true, true);
+                .deleteProcessInstance(sourceProcessInstanceId, "v26-instance-migration");
 
         ProcessInstance processInstance = stepExecutionContext.getProcessEngine().getRuntimeService()
                 .createProcessInstanceByKey(SALES_ORDER_PROCESS.getName())
                 .startBeforeActivity(PERSIST_DROPSHIPMENT_ORDER_ITEMS.getName())
                 .setVariables(createVariablesFromSource(sourceProcessVariableInstances))
+                .businessKey(orderNumber)
                 .execute();
 
         salesOrderService.updateProcessInstanceId(orderNumber, processInstance.getProcessInstanceId());
