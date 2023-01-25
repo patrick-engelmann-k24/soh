@@ -11,9 +11,11 @@ import org.camunda.bpm.extension.migration.plan.step.StepExecutionContext;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.PERSIST_DROPSHIPMENT_ORDER_ITEMS;
+import static java.util.stream.Collectors.toMap;
 
 @Component
 @RequiredArgsConstructor
@@ -24,21 +26,26 @@ public class ModificationStepV26 implements Step {
 
     @Override
     public void perform(StepExecutionContext stepExecutionContext) {
-        var processInstanceId = stepExecutionContext.getProcessInstanceId();
-        List<VariableInstance> processVariableInstances = processQueryService.getVariableInstances(processInstanceId);
-        String orderNumber = processQueryService.getVariableValue(processVariableInstances, Variables.ORDER_NUMBER.getName());
+        var sourceProcessInstanceId = stepExecutionContext.getProcessInstanceId();
+        List<VariableInstance> sourceProcessVariableInstances = processQueryService.getVariableInstances(sourceProcessInstanceId);
+        String orderNumber = processQueryService.getVariableValue(sourceProcessVariableInstances, Variables.ORDER_NUMBER.getName());
 
        stepExecutionContext.getProcessEngine().getRuntimeService()
-                .createProcessInstanceModification(processInstanceId)
+                .createProcessInstanceModification(sourceProcessInstanceId)
                 .cancelAllForActivity("eventMsgDropShipmentOrderTrackingInformationReceived")
                 .execute(true, true);
 
         ProcessInstance processInstance = stepExecutionContext.getProcessEngine().getRuntimeService()
                 .createProcessInstanceByKey(SALES_ORDER_PROCESS.getName())
                 .startBeforeActivity(PERSIST_DROPSHIPMENT_ORDER_ITEMS.getName())
-                .setVariable(Variables.ORDER_NUMBER.getName(), orderNumber)
+                .setVariables(createVariablesFromSource(sourceProcessVariableInstances))
                 .execute();
 
         salesOrderService.updateProcessInstanceId(orderNumber, processInstance.getProcessInstanceId());
+    }
+
+    private Map<String, Object> createVariablesFromSource(List<VariableInstance> sourceProcessVariableInstances) {
+        return sourceProcessVariableInstances.stream()
+                .collect(toMap(VariableInstance::getName, VariableInstance::getValue));
     }
 }
