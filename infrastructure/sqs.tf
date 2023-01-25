@@ -7,8 +7,6 @@ locals {
     bc_shop_orders_dlq = "${var.environment}-${local.service_prefix}-bc-shop-orders-${local.version}-dlq",
     core_shop_orders = "${var.environment}-${local.service_prefix}-core-shop-orders-${local.version}",
     core_shop_orders_dlq = "${var.environment}-${local.service_prefix}-core-shop-orders-${local.version}-dlq",
-    order_payment_secured = "${var.environment}-${local.service_prefix}-order-payment-secured-${local.version}"
-    order_payment_secured_dlq = "${var.environment}-${local.service_prefix}-order-payment-secured-${local.version}-dlq"
     invoices_from_core = "${var.environment}-${local.service_prefix}-invoices-from-core-${local.version}",
     invoices_from_core_dlq = "${var.environment}-${local.service_prefix}-invoices-from-core-${local.version}-dlq",
     d365_order_payment_secured = "${var.environment}-${local.service_prefix}-d365_order_payment_secured-${local.version}",
@@ -73,16 +71,6 @@ resource "aws_sqs_queue" "core_shop_orders_dlq" {
 resource "aws_sqs_queue" "core_shop_orders" {
   name = local.sqs_queues.core_shop_orders
   redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.core_shop_orders_dlq.arn}\",\"maxReceiveCount\":4}"
-  visibility_timeout_seconds = 120
-}
-
-resource "aws_sqs_queue" "soh_order_payment_secured_dlq" {
-  name = local.sqs_queues.order_payment_secured_dlq
-}
-
-resource "aws_sqs_queue" "soh_order_payment_secured" {
-  name = local.sqs_queues.order_payment_secured
-  redrive_policy  = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.soh_order_payment_secured_dlq.arn}\",\"maxReceiveCount\":4}"
   visibility_timeout_seconds = 120
 }
 

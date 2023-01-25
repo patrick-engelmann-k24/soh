@@ -2,7 +2,6 @@ package de.kfzteile24.salesOrderHub.services.financialdocuments;
 
 import de.kfzteile24.salesOrderHub.configuration.FeatureFlagConfig;
 import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages;
-import de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrder;
 import de.kfzteile24.salesOrderHub.dto.sns.CoreSalesInvoiceCreatedMessage;
@@ -17,22 +16,17 @@ import de.kfzteile24.salesOrderHub.services.SalesOrderService;
 import de.kfzteile24.salesOrderHub.services.SnsPublishService;
 import de.kfzteile24.salesOrderHub.services.sqs.EnrichMessageForDlq;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
-import de.kfzteile24.soh.order.dto.OrderRows;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import static de.kfzteile24.salesOrderHub.constants.CustomEventName.SUBSEQUENT_ORDER_GENERATED;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Events.MSG_ORDER_CORE_SALES_INVOICE_CREATED;
@@ -43,8 +37,6 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.PUBLISH_DELAY;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.SALES_ORDER_ID;
-import static java.util.function.Predicate.not;
-import static java.util.stream.Collectors.toSet;
 
 @Slf4j
 @Service
@@ -58,7 +50,6 @@ public class CoreSalesInvoiceService {
     private final SalesOrderRowService salesOrderRowService;
     private final MetricsHelper metricsHelper;
     private final SnsPublishService snsPublishService;
-    private final RuntimeService runtimeService;
 
     @Value("${kfzteile.process-config.subsequent-order-process.publish-delay}")
     @Setter

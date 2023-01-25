@@ -57,7 +57,6 @@ module "application_module" {
     soh_sqs_ecp_shop_orders                    = aws_sqs_queue.ecp_shop_orders.id
     soh_sqs_bc_shop_orders                     = aws_sqs_queue.bc_shop_orders.id
     soh_sqs_core_shop_orders                   = aws_sqs_queue.core_shop_orders.id
-    soh_sqs_order_payment_secured              = aws_sqs_queue.soh_order_payment_secured.id
     soh_sqs_invoices_from_core                 = aws_sqs_queue.soh_invoices_from_core.id
     soh_sqs_d365_order_payment_secured         = aws_sqs_queue.d365_order_payment_secured.id
     soh_sqs_dropshipment_shipment_confirmed    = aws_sqs_queue.soh_dropshipment_shipment_confirmed.id

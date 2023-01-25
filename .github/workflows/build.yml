@@ -23,7 +23,6 @@ env:
   soh_sqs_ecp_shop_orders: 'http://localhost:4566/000000000000/soh-ecp-shop-orders-queue'
   soh_sqs_bc_shop_orders: 'http://localhost:4566/000000000000/soh-bc-shop-orders-queue'
   soh_sqs_core_shop_orders: 'http://localhost:4566/000000000000/soh-core-shop-orders-queue'
-  soh_sqs_order_payment_secured: 'http://localhost:4566/000000000000/soh-order-payment-secured-queue'
   soh_sqs_invoices_from_core: 'http://localhost:4566/000000000000/soh-invoices-from-core-queue'
   soh_sqs_d365_order_payment_secured: 'http://localhost:4566/000000000000/soh-d365-order-payment-secured-queue'
   soh_sqs_dropshipment_shipment_confirmed:  'http://localhost:4566/000000000000/soh-dropshipment-shipment-confirmed-queue'

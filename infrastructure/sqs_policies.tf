@@ -24,14 +24,6 @@ locals {
       id  = aws_sqs_queue.core_shop_orders_dlq.id
       arn = aws_sqs_queue.core_shop_orders_dlq.arn
     })
-    soh_order_payment_secured = tomap({
-      id  = aws_sqs_queue.soh_order_payment_secured.id
-      arn = aws_sqs_queue.soh_order_payment_secured.arn
-    })
-    soh_order_payment_secured_dlq = tomap({
-      id  = aws_sqs_queue.soh_order_payment_secured_dlq.id
-      arn = aws_sqs_queue.soh_order_payment_secured_dlq.arn
-    })
     soh_invoices_from_core = tomap({
       id  = aws_sqs_queue.soh_invoices_from_core.id
       arn = aws_sqs_queue.soh_invoices_from_core.arn

@@ -10,10 +10,6 @@ data "aws_sns_topic" "sns_soh_invoice_address_changed_topic" {
   name = "soh-invoice-address-changed"
 }
 
-data "aws_sns_topic" "sns_soh_order_payment_secured" {
-  name = "soh-order-payment-secured"
-}
-
 data "aws_sns_topic" "sns_braincraft_order_received" {
   name = "braincraft-order-received-v1"
 }
@@ -153,12 +149,6 @@ resource "aws_sns_topic_subscription" "sns_subscription_core_orders" {
   endpoint = aws_sqs_queue.core_shop_orders.arn
   protocol = "sqs"
   topic_arn = data.aws_sns_topic.sns_core_sales_orders_created.arn
-}
-
-resource "aws_sns_topic_subscription" "sns_subscription_order_payment_secured" {
-  endpoint = aws_sqs_queue.soh_order_payment_secured.arn
-  protocol = "sqs"
-  topic_arn = data.aws_sns_topic.sns_soh_order_payment_secured.arn
 }
 
 # subscribe for invoices
