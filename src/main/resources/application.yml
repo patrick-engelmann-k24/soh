@@ -128,8 +128,8 @@ camunda:
       properties:
         historyCleanupStrategy: endTimeBased
         historyTimeToLive: P5D
-        historyCleanupBatchWindowStartTime: "22:00"
-        historyCleanupBatchWindowEndTime: "10:00"
+        historyCleanupBatchWindowStartTime: "21:00"
+        historyCleanupBatchWindowEndTime: "09:00"
 # swagger endpoint documentation
 springdoc:
   swagger-ui:
