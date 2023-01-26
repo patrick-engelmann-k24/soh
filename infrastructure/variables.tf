@@ -101,7 +101,3 @@ variable "prevent_set_processing" {
 variable "bucket_name" {
   type = string
 }
-
-variable "new_relic_application_logging_enabled" {
-  type = bool
-}

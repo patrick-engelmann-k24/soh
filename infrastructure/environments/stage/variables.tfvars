@@ -23,4 +23,3 @@ pricing_service_endpoint_url   = "https://s8vlbhblll.execute-api.eu-central-1.am
 ignore_set_dissolvement = true
 prevent_set_processing = false
 bucket_name                    = "staging-k24-invoices"
-new_relic_application_logging_enabled = true
