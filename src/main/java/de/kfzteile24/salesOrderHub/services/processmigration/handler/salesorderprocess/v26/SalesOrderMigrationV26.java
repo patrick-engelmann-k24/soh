@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.camunda.bpm.extension.migration.plan.step.Step;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
 import java.util.List;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
@@ -22,7 +23,7 @@ public class SalesOrderMigrationV26 extends AbstractMigrationHandler {
     private final ModificationStepV26 modificationStep;
 
     @Override
-    public List<Step> getMigrationSteps() {
+    public Collection<Step> getMigrationSteps() {
         return List.of(modificationStep);
     }
 }

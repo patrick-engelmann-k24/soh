@@ -11,11 +11,9 @@ import org.camunda.bpm.extension.migration.plan.step.StepExecutionContext;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Map;
 
 import static de.kfzteile24.salesOrderHub.constants.bpmn.ProcessDefinition.SALES_ORDER_PROCESS;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Activities.PERSIST_DROPSHIPMENT_ORDER_ITEMS;
-import static java.util.stream.Collectors.toMap;
 
 @Component
 @RequiredArgsConstructor
@@ -33,18 +31,13 @@ public class ModificationStepV26 implements Step {
        stepExecutionContext.getProcessEngine().getRuntimeService()
                 .deleteProcessInstance(sourceProcessInstanceId, "v26-instance-migration");
 
-        ProcessInstance processInstance = stepExecutionContext.getProcessEngine().getRuntimeService()
+        ProcessInstance targetProcessInstance = stepExecutionContext.getProcessEngine().getRuntimeService()
                 .createProcessInstanceByKey(SALES_ORDER_PROCESS.getName())
                 .startBeforeActivity(PERSIST_DROPSHIPMENT_ORDER_ITEMS.getName())
-                .setVariables(createVariablesFromSource(sourceProcessVariableInstances))
+                .setVariables(processQueryService.createVariablesFromSource(sourceProcessVariableInstances))
                 .businessKey(orderNumber)
                 .execute();
 
-        salesOrderService.updateProcessInstanceId(orderNumber, processInstance.getProcessInstanceId());
-    }
-
-    private Map<String, Object> createVariablesFromSource(List<VariableInstance> sourceProcessVariableInstances) {
-        return sourceProcessVariableInstances.stream()
-                .collect(toMap(VariableInstance::getName, VariableInstance::getValue));
+        salesOrderService.updateProcessInstanceId(orderNumber, targetProcessInstance.getProcessInstanceId());
     }
 }
