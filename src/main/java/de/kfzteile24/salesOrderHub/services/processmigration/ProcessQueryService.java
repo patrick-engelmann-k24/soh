@@ -12,9 +12,11 @@ import org.camunda.bpm.engine.runtime.VariableInstance;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static java.text.MessageFormat.format;
+import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toUnmodifiableList;
 
 @Service
@@ -92,5 +94,9 @@ public class ProcessQueryService {
         return processEngine.getRuntimeService().createVariableInstanceQuery()
                 .processInstanceIdIn(processInstanceId)
                 .list();
+    }
+    public Map<String, Object> createVariablesFromSource(List<VariableInstance> sourceProcessVariableInstances) {
+        return sourceProcessVariableInstances.stream()
+                .collect(toMap(VariableInstance::getName, VariableInstance::getValue));
     }
 }
