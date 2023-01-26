@@ -23,4 +23,4 @@ pricing_service_endpoint_url   = "https://2bqdw5i7yj.execute-api.eu-central-1.am
 ignore_set_dissolvement = false
 prevent_set_processing = false
 bucket_name                    = "production-k24-invoices"
-new_relic_application_logging_forwarding_enabled = false
+new_relic_application_logging_enabled = false
