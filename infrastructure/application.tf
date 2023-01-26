@@ -82,6 +82,7 @@ module "application_module" {
     soh_bpmn_http_connection_timeout_seconds   = 8
     ignore_set_dissolvement                    = var.ignore_set_dissolvement
     prevent_set_processing                     = var.prevent_set_processing
+    new_relic_application_logging_forwarding_enabled      = var.new_relic_application_logging_forwarding_enabled
   }
 
   ssm_secrets_count = 14
