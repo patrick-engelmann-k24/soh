@@ -11,21 +11,26 @@ RUN apt-get -qq update && apt-get -qq install -y --no-install-recommends unzip &
 
 FROM openjdk:14-slim-buster
 
+ARG NEW_RELIC_APPLICATION_LOGGING_ENABLED
+ARG ENVIRONMENT
+
 COPY --from=MAVEN target/soh-bpmn.jar app.jar
 COPY --from=MAVEN docker-flyway.conf /docker-flyway.conf
 COPY --from=MAVEN entrypoint.sh /entrypoint.sh
 COPY --from=MAVEN src/main/resources/db/migration/* /migrations/
 COPY --from=MAVEN /opt/newrelic/newrelic.* /opt/newrelic/
 
-ARG NEW_RELIC_APPLICATION_LOGGING_ENABLED
 ENV NEW_RELIC_APP_NAME="SOH-Business-Processing-Engine"
 ENV NEW_RELIC_LABELS="Team:SOH;Org:Boe;Platform:Bop"
 ENV NEW_RELIC_DISTRIBUTED_TRACING_ENABLED=true
-ENV NEW_RELIC_APPLICATION_LOGGING_ENABLED $NEW_RELIC_APPLICATION_LOGGING_ENABLED
+ENV NEW_RELIC_APPLICATION_LOGGING_ENABLED=$NEW_RELIC_APPLICATION_LOGGING_ENABLED
 ENV NEW_RELIC_APPLICATION_LOGGING_FORWARDING_ENABLED=true
 ENV NEW_RELIC_APPLICATION_LOGGING_METRICS_ENABLED=true
 ENV NEW_RELIC_APPLICATION_LOGGING_FORWARDING_MAX_SAMPLES_STORED=10000
 ENV NEW_RELIC_APPLICATION_LOGGING_LOCAL_DECORATING_ENABLED=false
+
+RUN echo $NEW_RELIC_APPLICATION_LOGGING_ENABLED
+RUN echo $ENVIRONMENT
 
 ADD https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/6.5.6/flyway-commandline-6.5.6-linux-x64.tar.gz /opt
 
