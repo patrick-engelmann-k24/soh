@@ -24,7 +24,9 @@ public enum CustomEventName {
     DROPSHIPMENT_ORDER_FULLY_INVOICED("DropshipmentOrderFullyInvoiced"),
     DROPSHIPMENT_ORDER_RETURN_NOTIFIED("DropshipmentOrderReturnNotified"),
     DROPSHIPMENT_ORDER_RETURN_CREATED("DropshipmentOrderReturnCreated"),
-    DROPSHIPMENT_ORDER_CREDIT_NOTE_CREATED("DropshipmentOrderCreditNoteCreated");
+    DROPSHIPMENT_ORDER_CREDIT_NOTE_CREATED("DropshipmentOrderCreditNoteCreated"),
+    BPMN_DELEGATE_EXCEPTION("SohBpmnDelegateException")
+    ;
 
     @NonNull
     private String name;

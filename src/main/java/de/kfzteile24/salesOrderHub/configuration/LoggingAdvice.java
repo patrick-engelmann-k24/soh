@@ -1,6 +1,7 @@
 package de.kfzteile24.salesOrderHub.configuration;
 
 import de.kfzteile24.salesOrderHub.helper.CustomValidator;
+import de.kfzteile24.salesOrderHub.helper.MetricsHelper;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageAttributeHelper;
 import de.kfzteile24.salesOrderHub.services.sqs.MessageWrapper;
 import de.kfzteile24.salesOrderHub.helper.SleuthHelper;
@@ -16,6 +17,7 @@ import org.springframework.context.annotation.Configuration;
 
 import javax.validation.ConstraintViolationException;
 
+import static de.kfzteile24.salesOrderHub.constants.CustomEventName.BPMN_DELEGATE_EXCEPTION;
 import static de.kfzteile24.salesOrderHub.services.sqs.AbstractSqsReceiveService.logErrorMessage;
 
 @Aspect
@@ -25,6 +27,7 @@ import static de.kfzteile24.salesOrderHub.services.sqs.AbstractSqsReceiveService
 class LoggingAdvice {
 
     private final SleuthHelper sleuthHelper;
+    private final MetricsHelper metricsHelper;
     private final MessageAttributeHelper messageAttributeHelper;
     private final CustomValidator customValidator;
 
@@ -55,6 +58,19 @@ class LoggingAdvice {
                     messageAttributeHelper.moveToDlq(messageWrapper, e);
                 }
             }
+        }
+        return null;
+    }
+
+    @SneakyThrows
+    @Around("execution(public * *..*Delegate.execute(..))")
+    Object aroundDelegateExecution(ProceedingJoinPoint joinPoint) {
+        try {
+            return joinPoint.proceed();
+        } catch (Throwable e) {
+            var delegateExecution = (DelegateExecution) joinPoint.getArgs()[0];
+            var errorMessage = e.getMessage() != null ? e.getMessage() : e.getClass().getName();
+            metricsHelper.sendCustomEventForDelegateException(delegateExecution, errorMessage, BPMN_DELEGATE_EXCEPTION);
         }
         return null;
     }
