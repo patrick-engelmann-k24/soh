@@ -325,6 +325,24 @@ class SalesOrderServiceTest {
     }
 
     @Test
+    @DisplayName("Test That Invoice is NOT Fully Matched With Original Order if first order row is cancelled")
+    void testNotFullyMatchedWithOriginalOrderIfFirstOrderRowIsCancelled() {
+        // Prepare sales order
+        var message =  getObjectByResource("testmessage.json", Order.class);
+        var salesOrder = getSalesOrder(message);
+        assertEquals(2, salesOrder.getLatestJson().getOrderRows().size());
+        OrderRows orderRow = salesOrder.getLatestJson().getOrderRows().get(0);
+        orderRow.setIsCancelled(true);
+
+        // Prepare sub-sequent delivery note obj
+        var invoiceCreatedMessage = createFullyMatchedItemsMessage(salesOrder,
+                orderRow.getSku(), BigDecimal.valueOf(1.00), BigDecimal.valueOf(1.19));
+
+        CoreSalesInvoiceHeader salesInvoiceHeader = invoiceCreatedMessage.getSalesInvoice().getSalesInvoiceHeader();
+        assertFalse(salesOrderService.isFullyMatchedWithOriginalOrder(salesOrder, salesInvoiceHeader.getInvoiceLines()));
+    }
+
+    @Test
     @DisplayName("Test That Invoice is Fully Matched With Original Order for NOT NULL Matching ShippingCostNet")
     void testFullyMatchedWithOriginalOrderNotNullShippingCostNet() {
         // Prepare sales order

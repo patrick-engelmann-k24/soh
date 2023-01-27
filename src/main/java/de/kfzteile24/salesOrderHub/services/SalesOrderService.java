@@ -221,7 +221,8 @@ public class SalesOrderService {
         }
 
         // Check if all sku names are matching with original sales order
-        var orderRows = originalSalesOrder.getLatestJson().getOrderRows();
+        var orderRows = originalSalesOrder.getLatestJson().getOrderRows().stream()
+                .filter(row -> !row.getIsCancelled()).collect(toList());
         var skuList = orderRows.stream().map(OrderRows::getSku).collect(Collectors.toSet());
         if (!items.stream().filter(item -> !item.getIsShippingCost()).allMatch(row -> skuList.contains(row.getItemNumber()))) {
             return false;
