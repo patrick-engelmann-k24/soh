@@ -5,6 +5,7 @@ import de.kfzteile24.salesOrderHub.configuration.DropShipmentConfig;
 import de.kfzteile24.salesOrderHub.delegates.helper.CamundaHelper;
 import de.kfzteile24.salesOrderHub.domain.SalesOrderReturn;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
+import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundCustomException;
 import de.kfzteile24.salesOrderHub.helper.ObjectUtil;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
 import de.kfzteile24.salesOrderHub.repositories.AuditLogRepository;
@@ -26,6 +27,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -37,6 +39,7 @@ import static de.kfzteile24.salesOrderHub.helper.SalesOrderUtil.getSalesOrder;
 import static java.math.RoundingMode.HALF_UP;
 import static java.time.LocalDateTime.now;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -153,6 +156,26 @@ class SalesOrderReturnServiceTest {
                     return true;
                 }
         ));
+    }
+
+    @Test
+    @SneakyThrows
+    @DisplayName(("Test handleSalesOrderReturn method throws exception when no sales order"))
+    void testHandleSalesOrderReturnThrowsWhenNoSalesOrder() {
+        var orderNumber = "123456789-1";
+        var orderGroupId = "123456789";
+        var message = getObjectByResource("coreSalesCreditNoteCreated.json", SalesCreditNoteCreatedMessage.class);
+        message.getSalesCreditNote().getSalesCreditNoteHeader().setOrderNumber(orderNumber);
+        message.getSalesCreditNote().getSalesCreditNoteHeader().setOrderGroupId(null);
+        when(adaptor.getSalesOrderList(orderGroupId, DROPSHIPMENT)).thenReturn(new ArrayList<>());
+
+        assertThatThrownBy(() ->
+                salesOrderReturnService.handleSalesOrderReturn(
+                        message, 
+                        DROPSHIPMENT_PURCHASE_ORDER_RETURN_CONFIRMED,
+                        DROPSHIPMENT_ORDER_RETURN_CONFIRMED))
+                .isInstanceOf(SalesOrderNotFoundCustomException.class)
+                .hasMessageContaining("Sales order not found for the given order group id 123456789 ");
     }
 
     @Test

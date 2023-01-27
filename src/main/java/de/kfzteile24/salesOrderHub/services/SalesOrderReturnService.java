@@ -11,6 +11,7 @@ import de.kfzteile24.salesOrderHub.dto.shared.creditnote.CreditNoteLine;
 import de.kfzteile24.salesOrderHub.dto.shared.creditnote.SalesCreditNote;
 import de.kfzteile24.salesOrderHub.dto.shared.creditnote.SalesCreditNoteHeader;
 import de.kfzteile24.salesOrderHub.dto.sns.SalesCreditNoteCreatedMessage;
+import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundCustomException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderNotFoundException;
 import de.kfzteile24.salesOrderHub.exception.SalesOrderReturnNotFoundException;
 import de.kfzteile24.salesOrderHub.helper.OrderUtil;
@@ -49,6 +50,7 @@ import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Messages.D
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.ORDER_NUMBER;
 import static de.kfzteile24.salesOrderHub.constants.bpmn.orderProcess.Variables.PUBLISH_DELAY;
 import static de.kfzteile24.salesOrderHub.helper.OrderUtil.getOrderGroupIdFromOrderNumber;
+import static java.text.MessageFormat.format;
 
 @Service
 @Slf4j
@@ -156,6 +158,9 @@ public class SalesOrderReturnService {
 
         if (checkReturnOrderNotExists(orderGroupId, creditNoteNumber)) {
             var salesOrders = adaptor.getSalesOrderList(orderGroupId, getSalesOrderType(message));
+            if (salesOrders == null || salesOrders.isEmpty()) {
+                throw new SalesOrderNotFoundCustomException(format("for the given order group id {0}", orderGroupId));
+            }
 
             SalesOrderReturn salesOrderReturn = createSalesOrderReturn(
                     salesCreditNoteCreatedMessage,
