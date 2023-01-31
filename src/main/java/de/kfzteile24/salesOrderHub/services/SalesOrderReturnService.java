@@ -29,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Example;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -86,6 +87,14 @@ public class SalesOrderReturnService {
         return salesOrderReturnRepository.findByOrderNumber(orderNumber);
     }
 
+    public Optional<SalesOrderReturn> getFirstByOrderNumber(String orderNumber) {
+        return salesOrderReturnRepository.findFirstByOrderNumber(orderNumber);
+    }
+
+    public long getCountByExample(SalesOrderReturn salesOrderReturn) {
+        return salesOrderReturnRepository.count(Example.of(salesOrderReturn));
+    }
+
     @Transactional(readOnly = true)
     public Optional<SalesOrder> getOrderByReturnOrderNumber(String returnOrderNumber) {
         SalesOrderReturn returnOrder = getByOrderNumber(returnOrderNumber)
@@ -133,6 +142,11 @@ public class SalesOrderReturnService {
 
         auditLogRepository.save(auditLog);
         return storedOrder;
+    }
+
+    @Transactional
+    public void delete(SalesOrderReturn order) {
+        salesOrderReturnRepository.delete(order);
     }
 
     public String createCreditNoteNumber() {
