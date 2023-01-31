@@ -15,6 +15,8 @@ public interface SalesOrderReturnRepository extends JpaRepository<SalesOrderRetu
 
     Optional<SalesOrderReturn> findByOrderNumber(String orderNumber);
 
+    Optional<SalesOrderReturn> findFirstByOrderNumber(String orderNumber);
+
     @Modifying
     @Query("update SalesOrderReturn return set return.url = :url where return.orderNumber = :orderNumber")
     void updateUrl(@Param("orderNumber") String orderNumber, @Param("url") String url);
