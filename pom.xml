@@ -18,7 +18,7 @@
     <surefire-version>3.0.0-M7</surefire-version>
     <newrelic.version>7.11.1</newrelic.version>
     <mapstruct.version>1.5.3.Final</mapstruct.version>
-    <lombok.version>1.18.24</lombok.version>
+    <lombok.version>1.18.32</lombok.version>
     <spring-wiremock-version>2.2.8.RELEASE</spring-wiremock-version>
     <camunda-bpm-assert-scenario.version>1.1.1</camunda-bpm-assert-scenario.version>
     <camunda-process-test-coverage-starter-platform8.version>1.0.3
